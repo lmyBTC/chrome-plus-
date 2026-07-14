@@ -351,7 +351,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -359,21 +359,21 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-dark-primary mb-2">
           衝刺番茄鐘
         </h1>
-        <p className="text-gray-600">
+        <p className="text-dark-secondary">
           專注執行你的核心戰役
         </p>
       </div>
 
       {/* 計時器顯示 */}
       {(state === 'running' || state === 'paused' || state === 'break') && (
-        <div className="bg-white rounded-lg shadow-lg p-8 mb-6 text-center">
-          <div className="text-6xl font-mono font-bold text-primary-600 mb-4">
+        <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-8 mb-6 text-center shadow-slate-950/40">
+          <div className="text-6xl font-mono font-bold text-slate-50 mb-4 drop-shadow-[0_0_12px_rgba(96,165,250,0.4)]">
             {formatTime(timeLeft)}
           </div>
-          <div className="text-lg text-gray-600 mb-4">
+          <div className="text-lg text-dark-secondary mb-4">
             {state === 'running' && '衝刺中...'}
             {state === 'paused' && '已暫停'}
             {state === 'break' && '休息中...'}
@@ -382,7 +382,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
             {state === 'running' && (
               <button
                 onClick={pauseSprint}
-                className="px-6 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600"
+                className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 font-semibold shadow-md shadow-yellow-950/30 transition-all"
               >
                 暫停
               </button>
@@ -390,33 +390,33 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
             {state === 'paused' && (
               <button
                 onClick={resumeSprint}
-                className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 font-semibold shadow-md shadow-green-950/30 transition-all"
               >
                 繼續
               </button>
             )}
             <button
               onClick={handleStopSprint}
-              className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 font-semibold shadow-md shadow-red-950/30 transition-all"
             >
               放棄衝刺
             </button>
           </div>
           {/* 專注白噪音控制列 */}
           {state === 'running' && (
-            <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-center space-x-6">
-              <label className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer">
+            <div className="mt-6 pt-4 border-t border-dark-border-subtle flex items-center justify-center space-x-6">
+              <label className="flex items-center space-x-2 text-sm text-dark-secondary cursor-pointer">
                 <input
                   type="checkbox"
                   checked={whiteNoiseEnabled}
                   onChange={(e) => setWhiteNoiseEnabled(e.target.checked)}
-                  className="rounded text-primary-600 focus:ring-primary-500 w-4 h-4 cursor-pointer"
+                  className="rounded text-blue-500 border-dark-border-default focus:ring-blue-500 bg-dark-card w-4 h-4 cursor-pointer"
                 />
                 <span className="font-medium">🎧 專注白噪音 (雨聲)</span>
               </label>
               {whiteNoiseEnabled && (
                 <div className="flex items-center space-x-2">
-                  <span className="text-xs text-gray-400">🔈</span>
+                  <span className="text-xs text-dark-muted">🔈</span>
                   <input
                     type="range"
                     min="0"
@@ -424,9 +424,9 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                     step="0.05"
                     value={whiteNoiseVolume}
                     onChange={(e) => setWhiteNoiseVolume(parseFloat(e.target.value))}
-                    className="w-24 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary-600"
+                    className="w-24 h-1 bg-dark-surface rounded-lg appearance-none cursor-pointer accent-blue-500"
                   />
-                  <span className="text-xs text-gray-400">🔊</span>
+                  <span className="text-xs text-dark-muted">🔊</span>
                 </div>
               )}
             </div>
@@ -435,28 +435,28 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
       )}
 
       {/* 任務列表 */}
-      <div className="bg-white rounded-lg shadow-lg p-6">
-        <div className="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 className="text-xl font-semibold text-gray-900">今日核心戰役</h2>
+      <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-6">
+        <div className="flex justify-between items-center mb-4 border-b border-dark-border-subtle pb-2">
+          <h2 className="text-xl font-semibold text-dark-primary">今日核心戰役</h2>
           <div className="flex space-x-2">
             {state === 'idle' && (
               <button
                 onClick={handleResetToday}
-                className="px-3 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded-lg text-xs transition-colors font-medium mr-1"
+                className="px-3 py-1 bg-red-950/30 hover:bg-red-900/40 border border-red-900/40 text-red-400 rounded-lg text-xs transition-colors font-medium mr-1"
               >
                 ⬅️ 重新規劃今日
               </button>
             )}
             <button
               onClick={handleSelectAll}
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs transition-colors"
+              className="px-3 py-1 bg-dark-surface hover:bg-dark-hover border border-dark-border-default text-dark-secondary rounded-lg text-xs transition-colors"
             >
               {selectedBattleIds.length === coreBattles.length && coreBattles.length > 0 ? '取消全選' : '全選'}
             </button>
             <button
               onClick={handleCopyToMarkdown}
               disabled={selectedBattleIds.length === 0}
-              className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-3 py-1 bg-blue-950/40 hover:bg-blue-900/40 border border-blue-900/50 text-blue-400 rounded-lg text-xs disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               📋 複製所選任務 (Markdown)
             </button>
@@ -474,12 +474,12 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
               onDragEnd={handleDragEnd}
               className={`flex flex-col p-4 border rounded-lg transition-all ${
                 draggedIndex === index 
-                  ? 'opacity-50 border-primary-500 bg-primary-50' 
-                  : 'bg-white hover:border-gray-300'
+                  ? 'opacity-50 border-blue-500 bg-blue-950/30' 
+                  : 'bg-dark-surface/40 hover:bg-dark-surface/80 border-dark-border-subtle hover:border-dark-border-default'
               } ${state === 'idle' ? 'cursor-grab' : ''}`}
             >
               {mission?.aiTip && (
-                <div className="mb-3 text-sm text-yellow-700 bg-yellow-50 p-3 rounded-lg border border-yellow-200">
+                <div className="mb-3 text-sm text-yellow-400 bg-yellow-950/20 p-3 rounded-lg border border-yellow-900/50">
                   ✨ <strong>AI 歷史教訓提醒：</strong> {mission.aiTip}
                 </div>
               )}
@@ -487,7 +487,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                 <div className="flex items-center flex-1 mr-4">
                   {/* 拖曳手把 */}
                   {state === 'idle' && (
-                    <div className="text-gray-400 mr-2 select-none cursor-grab active:cursor-grabbing text-lg" title="拖曳排序">
+                    <div className="text-dark-muted mr-2 select-none cursor-grab active:cursor-grabbing text-lg" title="拖曳排序">
                       ☰
                     </div>
                   )}
@@ -496,7 +496,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                     type="checkbox"
                     checked={selectedBattleIds.includes(battle.missionId)}
                     onChange={() => handleSelectToggle(battle.missionId)}
-                    className="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500 mr-3 cursor-pointer"
+                    className="w-4 h-4 text-blue-500 border-dark-border-default rounded focus:ring-blue-500 mr-3 cursor-pointer bg-dark-card"
                   />
                   <div className="flex-1">
                     {editingMissionId === battle.missionId ? (
@@ -509,7 +509,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                           if (e.key === 'Escape') setEditingMissionId(null);
                         }}
                         onBlur={() => handleSaveText(battle.missionId)}
-                        className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm font-medium"
+                        className="w-full px-2 py-1 bg-dark-card border border-dark-border-default text-dark-primary rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-medium"
                         autoFocus
                       />
                     ) : (
@@ -521,7 +521,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                               setEditingText(getMissionText(battle.missionId));
                             }
                           }}
-                          className={`font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors select-none ${mission?.isCompleted ? 'line-through text-gray-400' : ''}`}
+                          className={`font-medium text-dark-primary cursor-pointer hover:text-blue-400 transition-colors select-none ${mission?.isCompleted ? 'line-through text-slate-500' : ''}`}
                           title="雙擊編輯任務名稱"
                         >
                           {getMissionText(battle.missionId)}
@@ -532,7 +532,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                               setEditingMissionId(battle.missionId);
                               setEditingText(getMissionText(battle.missionId));
                             }}
-                            className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 border border-gray-300 text-gray-600 rounded text-xs transition-colors ml-1 font-medium"
+                            className="px-2 py-0.5 bg-dark-card hover:bg-dark-hover border border-dark-border-default text-dark-secondary rounded text-xs transition-colors ml-1 font-semibold"
                             title="編輯任務名稱"
                           >
                             ✏️ 編輯
@@ -540,7 +540,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                         )}
                       </div>
                     )}
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-dark-muted mt-1">
                       承諾時間: {battle.committedTime} {mission?.suggestedDuration ? `| AI建議: ${mission.suggestedDuration}分鐘` : ''}
                     </p>
                   </div>
@@ -550,14 +550,14 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                     <button
                       onClick={() => handleBreakdown(battle.missionId)}
                       disabled={breakingDownId === battle.missionId}
-                      className="px-3 py-1.5 bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 text-sm disabled:opacity-50"
+                      className="px-3 py-1.5 bg-purple-950/40 border border-purple-900/50 text-purple-400 rounded-lg hover:bg-purple-900/40 text-sm disabled:opacity-50"
                     >
                       {breakingDownId === battle.missionId ? '拆解中...' : '✨ AI 幫我拆'}
                     </button>
                     {!mission?.isCompleted && (
                       <button
                         onClick={() => handleCompleteBattle(battle.missionId)}
-                        className="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 text-sm font-semibold whitespace-nowrap"
+                        className="px-3 py-1.5 bg-green-950/40 border border-green-900/50 text-green-400 rounded-lg hover:bg-green-900/40 text-sm font-semibold whitespace-nowrap"
                         title="將此任務標記完成並實時同步"
                       >
                         ✓ 完成
@@ -565,13 +565,13 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                     )}
                     <button
                       onClick={() => handleStartSprint(battle.missionId, mission?.suggestedDuration)}
-                      className="px-4 py-1.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-semibold"
+                      className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 text-sm font-semibold shadow-md shadow-blue-950/40"
                     >
                       開始衝刺
                     </button>
                     <button
                       onClick={() => handleRemoveBattle(battle.missionId)}
-                      className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 text-sm transition-colors"
+                      className="px-3 py-1.5 bg-red-950/30 border border-red-900/40 text-red-400 rounded-lg hover:bg-red-900/40 text-sm transition-colors"
                       title="從今日規劃中移除"
                     >
                       ❌ 移除
@@ -581,9 +581,9 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
               </div>
               {/* 顯示子任務 */}
               {subtasks[battle.missionId] && subtasks[battle.missionId].length > 0 && (
-                <div className="mt-3 pl-4 border-l-2 border-purple-200">
-                  <p className="text-xs font-semibold text-purple-600 mb-1">AI 建議的拆解步驟：</p>
-                  <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <div className="mt-3 pl-4 border-l-2 border-purple-900/60">
+                  <p className="text-xs font-semibold text-purple-400 mb-1">AI 建議的拆解步驟：</p>
+                  <ul className="list-disc list-inside text-sm text-dark-secondary space-y-1">
                     {subtasks[battle.missionId].map((subtask, idx) => (
                       <li key={idx}>{subtask}</li>
                     ))}
@@ -597,21 +597,21 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
 
         {/* 匯入 Markdown 區塊 */}
         {state === 'idle' && (
-          <div className="mt-6 border-t pt-4">
+          <div className="mt-6 border-t border-dark-border-subtle pt-4">
             {!showImportArea ? (
               <button
                 onClick={() => setShowImportArea(true)}
-                className="w-full py-2 bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 rounded-lg text-sm text-gray-600 transition-colors flex items-center justify-center space-x-1"
+                className="w-full py-2 bg-dark-surface hover:bg-dark-hover border border-dashed border-dark-border-default rounded-lg text-sm text-dark-secondary transition-colors flex items-center justify-center space-x-1"
               >
                 <span>📥 批次匯入 Markdown 任務</span>
               </button>
             ) : (
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+              <div className="bg-dark-surface rounded-lg p-4 border border-dark-border-default">
                 <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-sm font-semibold text-gray-700">📥 貼上 Markdown 任務列表</h3>
+                  <h3 className="text-sm font-semibold text-dark-primary">📥 貼上 Markdown 任務列表</h3>
                   <button
                     onClick={() => setShowImportArea(false)}
-                    className="text-xs text-gray-500 hover:text-gray-700"
+                    className="text-xs text-dark-muted hover:text-dark-primary"
                   >
                     收合
                   </button>
@@ -620,19 +620,19 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                   value={importText}
                   onChange={(e) => setImportText(e.target.value)}
                   placeholder={`請貼入 Markdown 格式條列任務，例如：\n- [ ] 任務名稱 A (10:00-11:00)\n- [x] 已完成任務 B (13:00-14:00)\n- 普通任務 C`}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full p-3 bg-dark-card border border-dark-border-default text-dark-primary rounded-lg text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={5}
                 />
                 <div className="flex space-x-2 justify-end">
                   <button
                     onClick={() => setShowImportArea(false)}
-                    className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg text-xs transition-colors"
+                    className="px-3 py-1.5 bg-dark-hover hover:bg-dark-card border border-dark-border-default text-dark-secondary rounded-lg text-xs transition-colors"
                   >
                     取消
                   </button>
                   <button
                     onClick={handleImportMarkdown}
-                    className="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-xs font-semibold transition-colors"
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-colors shadow-md shadow-blue-950/40"
                   >
                     確認匯入
                   </button>
@@ -645,32 +645,32 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
 
       {/* 成果記錄模態框 */}
       {showResultModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4">記錄本次衝刺成果</h3>
-            <p className="text-sm text-gray-600 mb-4">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-dark-card border border-dark-border-subtle rounded-lg p-6 max-w-md w-full mx-4 shadow-2xl shadow-slate-950/80 animate-fade-in">
+            <h3 className="text-lg font-semibold mb-4 text-dark-primary">記錄本次衝刺成果</h3>
+            <p className="text-sm text-dark-secondary mb-4">
               請用一句話簡潔地記錄本次衝刺的具體產出成果
             </p>
             <textarea
               value={result}
               onChange={(e) => setResult(e.target.value)}
               placeholder="例如：完成了 SPEC 文件的使用者故事草稿"
-              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className="w-full p-3 bg-dark-surface border border-dark-border-default text-dark-primary rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
               rows={3}
             />
-            <label className="flex items-center space-x-2 mt-3 text-sm text-gray-700">
+            <label className="flex items-center space-x-2 mt-3 text-sm text-dark-secondary cursor-pointer">
               <input
                 type="checkbox"
                 checked={markAsCompleted}
                 onChange={(e) => setMarkAsCompleted(e.target.checked)}
-                className="rounded text-primary-600 focus:ring-primary-500"
+                className="rounded text-blue-500 border-dark-border-default focus:ring-blue-500 bg-dark-card w-4 h-4 cursor-pointer"
               />
               <span>同時標記此任務為「已完成」並同步至 Sheet</span>
             </label>
             <div className="flex space-x-3 mt-4">
               <button
                 onClick={handleSubmitResult}
-                className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors shadow-md shadow-blue-950/40 font-semibold"
               >
                 提交
               </button>
@@ -680,7 +680,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                   setResult('');
                   stopSprint();
                 }}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600"
+                className="flex-1 px-4 py-2 bg-dark-hover hover:bg-dark-card border border-dark-border-default text-dark-secondary rounded-lg transition-colors font-semibold"
               >
                 取消
               </button>

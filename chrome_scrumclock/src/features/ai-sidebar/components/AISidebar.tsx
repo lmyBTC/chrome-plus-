@@ -139,7 +139,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       // 處理粗體 **text**
       let formattedLine = line;
       const boldRegex = /\*\*(.*?)\*\*/g;
-      formattedLine = formattedLine.replace(boldRegex, '<strong class="font-bold text-gray-900">$1</strong>');
+      formattedLine = formattedLine.replace(boldRegex, '<strong class="font-bold text-dark-primary">$1</strong>');
 
       // 處理斜體 *text*
       const italicRegex = /\*(.*?)\*/g;
@@ -147,23 +147,23 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
 
       // 處理行內代碼 `code`
       const inlineCodeRegex = /`(.*?)`/g;
-      formattedLine = formattedLine.replace(inlineCodeRegex, '<code class="bg-gray-100 px-1 py-0.5 rounded text-red-600 font-mono text-sm">$1</code>');
+      formattedLine = formattedLine.replace(inlineCodeRegex, '<code class="bg-dark-surface px-1 py-0.5 rounded text-red-400 border border-dark-border-default font-mono text-sm">$1</code>');
 
       // 處理標題
       if (line.startsWith('### ')) {
-        return <h4 key={idx} className="text-md font-bold text-gray-800 mt-3 mb-1" dangerouslySetInnerHTML={{ __html: formattedLine.replace('### ', '') }} />;
+        return <h4 key={idx} className="text-md font-bold text-dark-primary mt-3 mb-1" dangerouslySetInnerHTML={{ __html: formattedLine.replace('### ', '') }} />;
       }
       if (line.startsWith('## ')) {
-        return <h3 key={idx} className="text-lg font-bold text-gray-800 mt-4 mb-2 border-b pb-1" dangerouslySetInnerHTML={{ __html: formattedLine.replace('## ', '') }} />;
+        return <h3 key={idx} className="text-lg font-bold text-dark-primary mt-4 mb-2 border-b border-dark-border-subtle pb-1" dangerouslySetInnerHTML={{ __html: formattedLine.replace('## ', '') }} />;
       }
       if (line.startsWith('# ')) {
-        return <h2 key={idx} className="text-xl font-bold text-gray-900 mt-4 mb-2" dangerouslySetInnerHTML={{ __html: formattedLine.replace('# ', '') }} />;
+        return <h2 key={idx} className="text-xl font-bold text-dark-primary mt-4 mb-2" dangerouslySetInnerHTML={{ __html: formattedLine.replace('# ', '') }} />;
       }
 
       // 處理無序列表
       if (line.startsWith('- ') || line.startsWith('* ')) {
         return (
-          <ul key={idx} className="list-disc pl-5 my-1 text-gray-700">
+          <ul key={idx} className="list-disc pl-5 my-1 text-dark-secondary">
             <li dangerouslySetInnerHTML={{ __html: formattedLine.substring(2) }} />
           </ul>
         );
@@ -174,7 +174,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       if (numListRegex.test(line)) {
         const match = line.match(numListRegex);
         return (
-          <ol key={idx} className="list-decimal pl-5 my-1 text-gray-700">
+          <ol key={idx} className="list-decimal pl-5 my-1 text-dark-secondary">
             <li dangerouslySetInnerHTML={{ __html: formattedLine.replace(/^\d+\.\s/, '') }} />
           </ol>
         );
@@ -186,26 +186,26 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       }
 
       // 一般段落
-      return <p key={idx} className="my-1.5 leading-relaxed text-gray-700" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
+      return <p key={idx} className="my-1.5 leading-relaxed text-dark-secondary" dangerouslySetInnerHTML={{ __html: formattedLine }} />;
     });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="w-96 bg-white border-l shadow-2xl flex flex-col h-screen overflow-hidden animate-slide-in relative z-50">
+    <div className="w-96 bg-dark-card border-l border-dark-border-subtle shadow-2xl flex flex-col h-screen overflow-hidden animate-slide-in relative z-50 shadow-slate-950/80">
       {/* 標頭 */}
-      <div className="p-4 border-b bg-gray-900 text-white flex justify-between items-center">
+      <div className="p-4 border-b border-dark-border-subtle bg-dark-surface text-white flex justify-between items-center">
         <div className="flex items-center gap-2">
           <span className="text-xl">🤖</span>
           <div>
             <h3 className="font-bold text-sm tracking-wider">Scrumclock Copilot</h3>
-            <p className="text-xs text-gray-400">Gemini 1.5 Flash 驅動</p>
+            <p className="text-xs text-dark-muted">Gemini 1.5 Flash 驅動</p>
           </div>
         </div>
         <button 
           onClick={onClose}
-          className="text-gray-400 hover:text-white transition-colors text-lg p-1"
+          className="text-dark-muted hover:text-dark-primary transition-colors text-lg p-1"
           title="收合側邊欄"
         >
           ✕
@@ -213,14 +213,14 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* 快捷寫作增強面板 */}
-      <div className="p-3 bg-gray-50 border-b">
+      <div className="p-3 bg-dark-surface border-b border-dark-border-subtle">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-semibold text-gray-500 flex items-center gap-1">
+          <span className="text-xs font-semibold text-dark-secondary flex items-center gap-1">
             📋 剪貼簿快取偵測
           </span>
           <button 
             onClick={checkClipboard}
-            className="text-[10px] text-primary-600 hover:underline flex items-center"
+            className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline flex items-center font-semibold"
             title="手動重新整理剪貼簿內容"
           >
             🔄 重新讀取
@@ -228,11 +228,11 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
         </div>
         
         {clipboardText ? (
-          <div className="mb-2 p-1.5 bg-white border rounded text-xs text-gray-500 max-h-12 overflow-y-auto italic">
+          <div className="mb-2 p-1.5 bg-dark-card border border-dark-border-default rounded text-xs text-dark-muted max-h-12 overflow-y-auto italic">
             「{clipboardText.length > 50 ? `${clipboardText.substring(0, 50)}...` : clipboardText}」
           </div>
         ) : (
-          <div className="mb-2 text-[11px] text-gray-400 italic">
+          <div className="mb-2 text-[11px] text-dark-muted italic">
             尚未偵測到已複製文字。請在 Google Docs 中複製一段文字以啟動快捷優化。
           </div>
         )}
@@ -241,28 +241,28 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
           <button
             onClick={() => handleQuickAction('polish')}
             disabled={!clipboardText}
-            className="px-2 py-1.5 bg-indigo-50 hover:bg-indigo-100 disabled:opacity-40 disabled:hover:bg-indigo-50 text-indigo-700 rounded text-xs font-medium transition-all text-center"
+            className="px-2 py-1.5 bg-indigo-950/30 border border-indigo-900/40 hover:bg-indigo-900/30 disabled:opacity-40 text-indigo-300 rounded text-xs font-semibold transition-all text-center"
           >
             ✨ 潤色
           </button>
           <button
             onClick={() => handleQuickAction('expand')}
             disabled={!clipboardText}
-            className="px-2 py-1.5 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-40 disabled:hover:bg-emerald-50 text-emerald-700 rounded text-xs font-medium transition-all text-center"
+            className="px-2 py-1.5 bg-emerald-950/30 border border-emerald-900/40 hover:bg-emerald-900/30 disabled:opacity-40 text-emerald-300 rounded text-xs font-semibold transition-all text-center"
           >
             📝 擴寫
           </button>
           <button
             onClick={() => handleQuickAction('summarize')}
             disabled={!clipboardText}
-            className="px-2 py-1.5 bg-amber-50 hover:bg-amber-100 disabled:opacity-40 disabled:hover:bg-amber-50 text-amber-700 rounded text-xs font-medium transition-all text-center"
+            className="px-2 py-1.5 bg-amber-950/30 border border-amber-900/40 hover:bg-amber-900/30 disabled:opacity-40 text-amber-300 rounded text-xs font-semibold transition-all text-center"
           >
             📊 精簡
           </button>
           <button
             onClick={() => handleQuickAction('translate')}
             disabled={!clipboardText}
-            className="px-2 py-1.5 bg-purple-50 hover:bg-purple-100 disabled:opacity-40 disabled:hover:bg-purple-50 text-purple-700 rounded text-xs font-medium transition-all text-center"
+            className="px-2 py-1.5 bg-purple-950/30 border border-purple-900/40 hover:bg-purple-900/30 disabled:opacity-40 text-purple-300 rounded text-xs font-semibold transition-all text-center"
           >
             🌐 翻譯
           </button>
@@ -270,12 +270,12 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* 訊息對話區 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dark-surface">
         {messages.length === 0 && (
-          <div className="text-center text-gray-400 py-12 px-6">
+          <div className="text-center text-dark-muted py-12 px-6">
             <span className="text-4xl block mb-3">💬</span>
-            <p className="text-sm font-semibold text-gray-600 mb-1">我是您的 AI 瑞士刀助理</p>
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-sm font-semibold text-dark-primary mb-1">我是您的 AI 瑞士刀助理</p>
+            <p className="text-xs text-dark-muted leading-relaxed">
               您可以直接輸入問題，或是使用上方面板對您從 Google Docs 複製下來的文字進行一鍵優化。
             </p>
           </div>
@@ -286,15 +286,15 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
             key={index}
             className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
           >
-            <div className="text-[10px] text-gray-400 mb-1 px-1">
+            <div className="text-[10px] text-dark-muted mb-1 px-1">
               {msg.role === 'user' ? '你' : 'Gemini Copilot'} · {msg.timestamp.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
             </div>
             
             <div 
               className={`max-w-[90%] rounded-2xl px-4 py-2.5 shadow-sm text-sm ${
                 msg.role === 'user' 
-                  ? 'bg-primary-600 text-white rounded-tr-none' 
-                  : 'bg-white text-gray-800 rounded-tl-none border border-gray-100'
+                  ? 'bg-blue-600 text-white rounded-tr-none shadow-md shadow-blue-950/30' 
+                  : 'bg-dark-card text-dark-secondary rounded-tl-none border border-dark-border-default shadow-md shadow-slate-950/20'
               }`}
             >
               {msg.role === 'user' ? (
@@ -303,10 +303,10 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
                 <div>
                   {renderMarkdown(msg.content)}
                   
-                  <div className="mt-3 pt-2 border-t border-gray-100 flex justify-end">
+                  <div className="mt-3 pt-2 border-t border-dark-border-default flex justify-end">
                     <button
                       onClick={() => copyToClipboard(msg.content)}
-                      className="px-2 py-1 bg-gray-50 hover:bg-gray-100 border rounded text-[10px] text-gray-500 font-semibold flex items-center gap-1 transition-colors"
+                      className="px-2 py-1 bg-dark-surface hover:bg-dark-hover border border-dark-border-default rounded text-[10px] text-dark-secondary font-semibold flex items-center gap-1 transition-colors"
                       title="點擊複製此生成結果並直接貼回 Docs"
                     >
                       {isCopied ? '✅ 已複製！' : '📋 點擊複製貼回 Docs'}
@@ -319,16 +319,16 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
         ))}
         {isLoading && (
           <div className="flex flex-col items-start animate-pulse">
-            <div className="text-[10px] text-gray-400 mb-1 px-1">Gemini Copilot 正在思考...</div>
-            <div className="bg-white border rounded-2xl rounded-tl-none px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
+            <div className="text-[10px] text-dark-muted mb-1 px-1">Gemini Copilot 正在思考...</div>
+            <div className="bg-dark-card border border-dark-border-default rounded-2xl rounded-tl-none px-4 py-3 text-sm text-dark-muted flex items-center gap-2">
+              <span className="w-2 h-2 bg-dark-muted rounded-full animate-bounce"></span>
+              <span className="w-2 h-2 bg-dark-muted rounded-full animate-bounce [animation-delay:0.2s]"></span>
+              <span className="w-2 h-2 bg-dark-muted rounded-full animate-bounce [animation-delay:0.4s]"></span>
             </div>
           </div>
         )}
         {errorMsg && (
-          <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
+          <div className="p-3 bg-red-950/30 border border-red-900/40 text-red-400 rounded-lg text-xs">
             ⚠️ {errorMsg}
           </div>
         )}
@@ -336,18 +336,18 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       </div>
 
       {/* 輸入區 */}
-      <div className="p-3 border-t bg-white flex flex-col gap-2">
+      <div className="p-3 border-t border-dark-border-subtle bg-dark-card flex flex-col gap-2">
         <div className="flex gap-2 items-center">
           <button
             onClick={pasteClipboardToInput}
-            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-[10px] text-gray-600 font-semibold transition-colors flex items-center gap-0.5 whitespace-nowrap"
+            className="px-2 py-1 bg-dark-surface hover:bg-dark-hover border border-dark-border-default rounded text-[10px] text-dark-secondary font-semibold transition-colors flex items-center gap-0.5 whitespace-nowrap"
             title="將剪貼簿文字直接填入輸入框"
           >
             📥 貼入剪貼簿
           </button>
           <button
             onClick={() => setMessages([])}
-            className="px-2 py-1 bg-gray-100 hover:bg-red-50 hover:text-red-600 rounded text-[10px] text-gray-600 font-semibold transition-colors ml-auto"
+            className="px-2 py-1 bg-dark-surface hover:bg-red-950/40 hover:text-red-400 border border-dark-border-default rounded text-[10px] text-dark-secondary font-semibold transition-colors ml-auto"
             title="清空目前對話紀錄"
           >
             🧹 清除對話
@@ -365,12 +365,12 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
             }}
             placeholder="請輸入您的問題，或按 Shift+Enter 換行..."
             rows={2}
-            className="flex-1 px-3 py-1.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm resize-none"
+            className="flex-1 px-3 py-1.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm resize-none"
           />
           <button
             onClick={() => handleSendMessage()}
             disabled={!inputValue.trim() || isLoading}
-            className="px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-300 text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center whitespace-nowrap"
+            className="px-4 bg-blue-600 hover:bg-blue-500 disabled:bg-dark-hover disabled:text-dark-muted text-white font-semibold rounded-xl text-sm transition-colors flex items-center justify-center whitespace-nowrap shadow-md shadow-blue-950/30"
           >
             發送
           </button>

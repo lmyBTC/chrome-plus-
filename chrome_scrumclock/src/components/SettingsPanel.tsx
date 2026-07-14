@@ -3,7 +3,11 @@ import { storage } from '../core/chrome/storage';
 import { syncService } from '../core/chrome/syncService';
 import { UserSettings } from '../types';
 
-export const SettingsPanel: React.FC = () => {
+interface SettingsPanelProps {
+  onNavigateToDocs?: () => void;
+}
+
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }) => {
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [distractionSites, setDistractionSites] = useState('');
@@ -94,20 +98,20 @@ export const SettingsPanel: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-gray-100 p-8">
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b">
+    <div className="max-w-2xl mx-auto bg-dark-card rounded-2xl shadow-xl border border-dark-border-subtle p-8 shadow-slate-950/50">
+      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-dark-border-subtle">
         <span className="text-3xl">⚙️</span>
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">全域系統設定</h1>
-          <p className="text-sm text-gray-500">配置您的個人效率瑞士刀，包含同步、AI 與專注防禦模組。</p>
+          <h1 className="text-2xl font-bold text-dark-primary">全域系統設定</h1>
+          <p className="text-sm text-dark-muted">配置您的個人效率瑞士刀，包含同步、AI 與專注防禦模組。</p>
         </div>
       </div>
 
       {message && (
         <div className={`p-4 rounded-xl mb-6 text-sm font-semibold transition-all ${
           message.type === 'success' 
-            ? 'bg-green-50 border border-green-200 text-green-700' 
-            : 'bg-red-50 border border-red-200 text-red-700'
+            ? 'bg-green-950/30 border border-green-800/60 text-green-400' 
+            : 'bg-red-950/30 border border-red-800/60 text-red-400'
         }`}>
           {message.text}
         </div>
@@ -115,28 +119,39 @@ export const SettingsPanel: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Gemini API 設定 */}
-        <div className="bg-purple-50/50 border border-purple-100 rounded-xl p-5">
-          <label className="block text-sm font-bold text-purple-900 mb-1 flex items-center gap-1.5">
+        <div className="bg-purple-950/20 border border-purple-900/50 rounded-xl p-5">
+          <label className="block text-sm font-bold text-purple-300 mb-1 flex items-center gap-1.5">
             <span>🤖</span> Gemini API Key (自備金鑰)
           </label>
-          <p className="text-xs text-purple-700/80 mb-3">
-            本插件為 100% 本地運行，不儲存您的金鑰。請至 <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-semibold hover:text-purple-900">Google AI Studio</a> 免費申請 API Key，以啟用 AI 寫作增強與側邊欄對話。
+          <p className="text-xs text-purple-300/80 mb-3">
+            本插件為 100% 本地運行，不儲存您的金鑰。請至 <a href="https://aistudio.google.com/" target="_blank" rel="noopener noreferrer" className="underline font-semibold text-purple-400 hover:text-purple-300">Google AI Studio</a> 免費申請 API Key，以啟用 AI 寫作增強與側邊欄對話。
           </p>
           <input
             type="password"
             value={geminiApiKey}
             onChange={(e) => setGeminiApiKey(e.target.value)}
             placeholder="AI Studio 申請的 API Key (AI 助理功能必備)"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-sm shadow-sm"
+            className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-dark-primary font-mono text-sm shadow-sm"
           />
         </div>
 
         {/* Google Apps Script 設定 */}
-        <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5">
-          <label className="block text-sm font-bold text-blue-900 mb-1 flex items-center gap-1.5">
-            <span>🔗</span> Google Apps Script URL (雲端同步)
-          </label>
-          <p className="text-xs text-blue-700/80 mb-3">
+        <div className="bg-blue-950/20 border border-blue-900/50 rounded-xl p-5">
+          <div className="flex justify-between items-center mb-1">
+            <label className="block text-sm font-bold text-blue-300 flex items-center gap-1.5">
+              <span>🔗</span> Google Apps Script URL (雲端同步)
+            </label>
+            {onNavigateToDocs && (
+              <button
+                onClick={onNavigateToDocs}
+                className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors"
+                type="button"
+              >
+                📖 查看安裝與說明書
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-blue-300/80 mb-3">
             貼上您部署好的 GAS Web App 連結。這將用於雙向同步您的 Google Tasks 與 Google Sheets 計畫日誌，實現完全的數據隱私主權。
           </p>
           <input
@@ -144,21 +159,21 @@ export const SettingsPanel: React.FC = () => {
             value={appsScriptUrl}
             onChange={(e) => setAppsScriptUrl(e.target.value)}
             placeholder="https://script.google.com/macros/s/.../exec"
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm shadow-sm"
+            className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
           />
 
           {/* Profile 雲端同步操作區 (GAS Cloud Sync) */}
           {appsScriptUrl.trim() && (
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50/50 border border-blue-100 rounded-xl p-5 mt-4">
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-100">
-                <span className="text-sm font-bold text-blue-900 flex items-center gap-1.5">
+            <div className="bg-gradient-to-r from-blue-950/30 to-indigo-950/20 border border-blue-900/40 rounded-xl p-5 mt-4">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-blue-900/40">
+                <span className="text-sm font-bold text-blue-300 flex items-center gap-1.5">
                   <span>🔄</span> 跨瀏覽器使用者資料同步 (Profile Sync)
                 </span>
-                <span className="text-xs text-gray-500 font-mono">
+                <span className="text-xs text-dark-muted font-mono">
                   最後同步: {lastSyncTime}
                 </span>
               </div>
-              <p className="text-xs text-blue-800/80 mb-4 leading-relaxed">
+              <p className="text-xs text-blue-300/80 mb-4 leading-relaxed">
                 如果您在多個 Chrome 使用者 (Profile) 中使用 ScrumClock，可在儲存設定後點擊以下按鈕同步。
               </p>
               <div className="flex gap-4">
@@ -166,7 +181,7 @@ export const SettingsPanel: React.FC = () => {
                   type="button"
                   disabled={isSyncing}
                   onClick={handlePullSync}
-                  className="flex-1 px-4 py-2.5 bg-white hover:bg-gray-50 text-blue-700 border border-blue-200 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-dark-card hover:bg-dark-hover text-blue-400 border border-blue-900/60 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSyncing ? '同步中...' : '📥 拉取並智慧合併'}
                 </button>
@@ -174,7 +189,7 @@ export const SettingsPanel: React.FC = () => {
                   type="button"
                   disabled={isSyncing}
                   onClick={handlePushSync}
-                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold shadow-md shadow-blue-950/50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   {isSyncing ? '同步中...' : '📤 推送本地到雲端'}
                 </button>
@@ -184,11 +199,11 @@ export const SettingsPanel: React.FC = () => {
         </div>
 
         {/* Focus Blocker 設定 */}
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-5">
-          <label className="block text-sm font-bold text-gray-800 mb-1 flex items-center gap-1.5">
+        <div className="bg-dark-surface border border-dark-border-default rounded-xl p-5">
+          <label className="block text-sm font-bold text-dark-primary mb-1 flex items-center gap-1.5">
             <span>🚫</span> 專注模式阻擋名單
           </label>
-          <p className="text-xs text-gray-500 mb-3">
+          <p className="text-xs text-dark-muted mb-3">
             當開啟「硬核專注模式」時，插件將在瀏覽器底層攔截以下網站（每行輸入一個網址，例如 facebook.com）。
           </p>
           <textarea
@@ -196,15 +211,15 @@ export const SettingsPanel: React.FC = () => {
             onChange={(e) => setDistractionSites(e.target.value)}
             placeholder="例如:&#10;youtube.com&#10;facebook.com&#10;twitter.com"
             rows={4}
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm shadow-sm"
+            className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
           />
         </div>
 
-        <div className="pt-4 border-t flex justify-end">
+        <div className="pt-4 border-t border-dark-border-subtle flex justify-end">
           <button
             type="submit"
             disabled={isSaving}
-            className="px-8 py-3 bg-primary-600 hover:bg-primary-700 disabled:bg-gray-400 text-white rounded-xl font-bold shadow-lg shadow-primary-100 transition-all flex items-center gap-2"
+            className="px-8 py-3 bg-blue-600 hover:bg-blue-500 disabled:bg-dark-hover disabled:text-dark-muted text-white rounded-xl font-bold shadow-lg shadow-blue-950/50 transition-all flex items-center gap-2"
           >
             {isSaving ? '正在儲存...' : '儲存設定'}
           </button>

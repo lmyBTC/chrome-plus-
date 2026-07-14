@@ -21,6 +21,17 @@ module.exports = {
           50: '#fffbeb',
           500: '#f59e0b',
           600: '#d97706',
+        },
+        dark: {
+          base: 'var(--color-bg-base)',
+          surface: 'var(--color-bg-surface)',
+          card: 'var(--color-bg-card)',
+          hover: 'var(--color-bg-hover)',
+          primary: 'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted: 'var(--color-text-muted)',
+          'border-default': 'var(--color-border-default)',
+          'border-subtle': 'var(--color-border-subtle)',
         }
       },
       fontFamily: {

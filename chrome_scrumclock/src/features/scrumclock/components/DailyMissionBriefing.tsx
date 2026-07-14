@@ -339,7 +339,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
       </div>
     );
   }
@@ -347,36 +347,36 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+        <h1 className="text-3xl font-bold text-dark-primary mb-2">
           每日任務簡報
         </h1>
-        <p className="text-gray-600 mb-4">
+        <p className="text-dark-secondary mb-4">
           從你的週任務中選擇 2-3 個作為今日核心戰役
         </p>
         <button
           onClick={handleSyncFromSheets}
           disabled={isSyncing}
-          className="px-4 py-2 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 disabled:opacity-50 transition-colors text-sm"
+          className="px-4 py-2 bg-blue-950/40 text-blue-400 border border-blue-900/60 rounded hover:bg-blue-900/40 disabled:opacity-50 transition-colors text-sm font-medium"
         >
-          {isSyncing ? '同步中...' : '🔄 從 Gemini (Sheet) 匯入最新計畫'}
+          {isSyncing ? '同步中...' : '🔄 從 Sheet 匯入最新計畫'}
         </button>
         <button
           onClick={handleImportFromGoogleTasks}
           disabled={isSyncing}
-          className="ml-2 px-4 py-2 bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50 transition-colors text-sm"
+          className="ml-2 px-4 py-2 bg-green-950/40 text-green-400 border border-green-900/60 rounded hover:bg-green-900/40 disabled:opacity-50 transition-colors text-sm font-medium"
         >
           {isSyncing ? '匯入中...' : '✅ 從 Google Tasks 匯入'}
         </button>
         <button
           onClick={() => setIsSettingOpen(!isSettingOpen)}
-          className="ml-2 px-4 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors text-sm"
+          className="ml-2 px-4 py-2 bg-dark-card text-dark-secondary border border-dark-border-default rounded hover:bg-dark-hover transition-colors text-sm font-medium"
         >
           ⚙️ 設定
         </button>
         
         {isSettingOpen && (
-          <div className="mt-4 p-4 bg-white rounded-lg shadow border text-left">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="mt-4 p-4 bg-dark-card rounded-lg shadow-xl border border-dark-border-default text-left shadow-slate-950/50">
+            <label className="block text-sm font-medium text-dark-secondary mb-1">
               Google Apps Script URL (同步用)
             </label>
             <div className="flex mb-4">
@@ -385,17 +385,17 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 value={appsScriptUrl}
                 onChange={(e) => setAppsScriptUrl(e.target.value)}
                 placeholder="https://script.google.com/macros/s/.../exec"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex-1 px-3 py-2 bg-dark-surface border border-dark-border-default text-dark-primary rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSaveUrl}
-                className="px-4 py-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-500 transition-colors font-semibold"
               >
                 儲存
               </button>
             </div>
             
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-dark-secondary mb-1">
               Gemini API Key (自備 AI 助理金鑰)
             </label>
             <div className="flex mb-4">
@@ -404,17 +404,17 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 value={geminiApiKey}
                 onChange={(e) => setGeminiApiKey(e.target.value)}
                 placeholder="填入您的 Gemini API Key (可到 Google AI Studio 免費申請)"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex-1 px-3 py-2 bg-dark-surface border border-dark-border-default text-dark-primary rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSaveUrl}
-                className="px-4 py-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-500 transition-colors font-semibold"
               >
                 儲存
               </button>
             </div>
 
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-dark-secondary mb-1">
               專注模式阻擋黑名單 (每行一個網址)
             </label>
             <div className="flex">
@@ -423,11 +423,11 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 onChange={(e) => setDistractionSites(e.target.value)}
                 placeholder="例如:&#10;youtube.com&#10;facebook.com"
                 rows={3}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                className="flex-1 px-3 py-2 bg-dark-surface border border-dark-border-default text-dark-primary rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
                 onClick={handleSaveUrl}
-                className="px-4 py-2 bg-primary-600 text-white rounded-r-md hover:bg-primary-700 transition-colors"
+                className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-500 transition-colors font-semibold"
               >
                 儲存
               </button>
@@ -437,16 +437,16 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
       </div>
 
       {calendarEvents.length > 0 && (
-        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+        <div className="bg-yellow-950/20 border-l-4 border-yellow-500 p-4 mb-6 rounded-r-lg">
           <div className="flex">
             <div className="flex-shrink-0">
-              <span className="text-yellow-400">📅</span>
+              <span className="text-yellow-500">📅</span>
             </div>
             <div className="ml-3">
-              <h3 className="text-sm font-medium text-yellow-800">
+              <h3 className="text-sm font-medium text-yellow-400">
                 注意：你今天有 {calendarEvents.length} 個既有行程
               </h3>
-              <div className="mt-2 text-sm text-yellow-700">
+              <div className="mt-2 text-sm text-yellow-300">
                 <ul className="list-disc pl-5 space-y-1">
                   {calendarEvents.map((event, idx) => (
                     <li key={idx}>
@@ -461,21 +461,21 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4 text-gray-900">選擇今日核心戰役</h2>
+      <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-6 mb-6 shadow-slate-950/40">
+        <h2 className="text-xl font-semibold mb-4 text-dark-primary">選擇今日核心戰役</h2>
         
         {/* 手動新增關鍵任務輸入框 */}
-        <form onSubmit={handleCreateMission} className="flex mb-5 gap-2 border-b pb-4">
+        <form onSubmit={handleCreateMission} className="flex mb-5 gap-2 border-b border-dark-border-subtle pb-4">
           <input
             type="text"
             placeholder="➕ 手動新增本週關鍵任務..."
             value={newMissionText}
             onChange={(e) => setNewMissionText(e.target.value)}
-            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="flex-1 px-3 py-2 bg-dark-surface border border-dark-border-default text-dark-primary rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
-            className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center whitespace-nowrap"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-sm font-semibold transition-colors flex items-center justify-center whitespace-nowrap shadow-md shadow-blue-950/40"
           >
             新增
           </button>
@@ -483,13 +483,13 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
 
         <div className="space-y-4">
           {weeklyMissions.map(mission => (
-            <div key={mission.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+            <div key={mission.id} className="flex items-center space-x-4 p-4 border border-dark-border-subtle bg-dark-surface/40 hover:bg-dark-surface/70 rounded-lg transition-all">
               <input
                 type="checkbox"
                 id={mission.id}
                 checked={selectedMissions.includes(mission.id)}
                 onChange={() => handleMissionToggle(mission.id)}
-                className="w-5 h-5 text-primary-600 border-gray-300 rounded focus:ring-primary-500 cursor-pointer"
+                className="w-5 h-5 text-blue-500 border-dark-border-default rounded focus:ring-blue-500 bg-dark-card cursor-pointer"
               />
               
               {editingWeeklyId === mission.id ? (
@@ -508,7 +508,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                     handleSaveWeeklyText(mission.id, editingWeeklyText);
                     setEditingWeeklyId(null);
                   }}
-                  className="flex-1 px-2 py-1 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="flex-1 px-2 py-1 bg-dark-card border border-dark-border-default text-dark-primary rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   autoFocus
                 />
               ) : (
@@ -521,7 +521,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                       }
                     }}
                     htmlFor={mission.id} 
-                    className={`cursor-pointer select-none hover:text-primary-600 transition-colors ${mission.isCompleted ? 'line-through text-gray-400' : 'text-gray-700'}`}
+                    className={`cursor-pointer select-none hover:text-blue-400 transition-colors ${mission.isCompleted ? 'line-through text-slate-500' : 'text-dark-secondary'}`}
                     title="雙擊編輯任務"
                   >
                     {mission.text}
@@ -532,7 +532,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                         setEditingWeeklyId(mission.id);
                         setEditingWeeklyText(mission.text);
                       }}
-                      className="text-gray-400 hover:text-primary-600 p-0.5 text-xs"
+                      className="text-dark-muted hover:text-blue-400 p-0.5 text-xs"
                       title="編輯名稱"
                     >
                       ✏️
@@ -545,7 +545,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 <button
                   onClick={() => handleWeeklyBreakdown(mission)}
                   disabled={breakingDownId === mission.id}
-                  className="px-3 py-1 bg-purple-100 text-purple-700 rounded hover:bg-purple-200 text-xs whitespace-nowrap font-medium disabled:opacity-50"
+                  className="px-3 py-1 bg-purple-950/40 text-purple-400 border border-purple-900/50 rounded hover:bg-purple-900/40 text-xs whitespace-nowrap font-medium disabled:opacity-50"
                 >
                   {breakingDownId === mission.id ? '拆解中...' : '🤖 拆解'}
                 </button>
@@ -553,7 +553,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
               {!mission.isCompleted && (
                 <button
                   onClick={() => handleCompleteMission(mission.id)}
-                  className="px-3 py-1 bg-green-100 text-green-700 rounded hover:bg-green-200 text-xs whitespace-nowrap font-medium"
+                  className="px-3 py-1 bg-green-950/40 text-green-400 border border-green-900/50 rounded hover:bg-green-900/40 text-xs whitespace-nowrap font-medium"
                 >
                   完成
                 </button>
@@ -561,7 +561,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
               {!mission.isCompleted && (
                 <button
                   onClick={() => handleDeleteWeeklyMission(mission.id)}
-                  className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-600 rounded text-xs whitespace-nowrap font-medium transition-colors"
+                  className="px-2.5 py-1 bg-red-950/30 hover:bg-red-900/40 text-red-400 border border-red-900/40 rounded text-xs whitespace-nowrap font-medium transition-colors"
                   title="永久刪除此任務"
                 >
                   ❌ 刪除
@@ -573,7 +573,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                   placeholder="09:00-11:00"
                   value={timeSlots[mission.id] || ''}
                   onChange={(e) => handleTimeChange(mission.id, e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="px-3 py-2 bg-dark-card border border-dark-border-default text-dark-primary rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm w-32"
                 />
               )}
             </div>
@@ -585,7 +585,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
         <button
           onClick={handleSubmit}
           disabled={selectedMissions.length === 0}
-          className="px-8 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-blue-500/20"
         >
           開始今日衝刺
         </button>
@@ -593,40 +593,40 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
 
       {/* AI 智能拆解 Modal */}
       {showBreakdownModal && targetWeeklyMission && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-gray-100 animate-fade-in">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b">
-              <h3 className="text-lg font-bold text-purple-700 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
+          <div className="bg-dark-card rounded-xl shadow-2xl p-6 max-w-lg w-full mx-4 border border-dark-border-subtle animate-fade-in shadow-slate-950/80">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-dark-border-subtle">
+              <h3 className="text-lg font-bold text-purple-400 flex items-center gap-2">
                 <span>🤖</span> AI 任務智能拆解
               </h3>
               <button 
                 onClick={() => setShowBreakdownModal(false)}
-                className="text-gray-400 hover:text-gray-600 font-semibold"
+                className="text-dark-muted hover:text-dark-primary font-semibold transition-colors"
               >
                 ✕
               </button>
             </div>
             
-            <p className="text-sm text-gray-500 mb-3">
-              週任務標題：<span className="font-semibold text-gray-800">{targetWeeklyMission.text}</span>
+            <p className="text-sm text-dark-muted mb-3">
+              週任務標題：<span className="font-semibold text-dark-primary">{targetWeeklyMission.text}</span>
             </p>
-            <p className="text-xs text-gray-400 mb-4">
+            <p className="text-xs text-dark-muted/80 mb-4">
               勾選您想要匯入為今日核心戰役的步驟。系統會自動計算並填入 committedTime 時段。
             </p>
 
-            <div className="space-y-3 max-h-60 overflow-y-auto mb-5 p-2 bg-gray-50 rounded-lg">
+            <div className="space-y-3 max-h-60 overflow-y-auto mb-5 p-2 bg-dark-surface rounded-lg">
               {breakdownMissions.map((sub, idx) => (
                 <label 
                   key={idx} 
-                  className="flex items-start gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-purple-300 transition-colors cursor-pointer select-none"
+                  className="flex items-start gap-3 p-3 bg-dark-card border border-dark-border-default rounded-lg hover:border-purple-500 hover:bg-dark-hover transition-colors cursor-pointer select-none"
                 >
                   <input
                     type="checkbox"
                     checked={selectedBreakdownIdxs.includes(idx)}
                     onChange={() => handleToggleBreakdownIdx(idx)}
-                    className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 mt-0.5"
+                    className="w-4 h-4 text-purple-400 border-dark-border-default rounded focus:ring-purple-500 mt-0.5 bg-dark-surface"
                   />
-                  <div className="text-sm text-gray-800 font-medium">{sub}</div>
+                  <div className="text-sm text-dark-secondary font-medium">{sub}</div>
                 </label>
               ))}
             </div>
@@ -635,13 +635,13 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
               <button
                 onClick={handleImportBreakdown}
                 disabled={selectedBreakdownIdxs.length === 0}
-                className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-bold transition-all"
+                className="flex-1 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-500 disabled:opacity-50 font-bold transition-all shadow-md shadow-purple-950/40"
               >
                 一鍵匯入今日戰役
               </button>
               <button
                 onClick={() => setShowBreakdownModal(false)}
-                className="flex-1 px-4 py-2.5 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-semibold transition-all"
+                className="flex-1 px-4 py-2.5 bg-dark-hover text-dark-secondary border border-dark-border-default rounded-lg hover:bg-dark-card font-semibold transition-all"
               >
                 取消
               </button>

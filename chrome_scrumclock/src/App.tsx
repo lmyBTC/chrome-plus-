@@ -11,6 +11,7 @@ import { CommandPalette } from './core/layout/CommandPalette';
 import { ToolView } from './core/layout/Sidebar';
 import { AISidebar } from './features/ai-sidebar';
 import { SettingsPanel } from './components/SettingsPanel';
+import { InstallDocs } from './components/InstallDocs';
 
 type AppState = 'briefing' | 'sprint' | 'review' | 'completed';
 type ViewState = 'flow' | 'analytics';
@@ -99,9 +100,14 @@ function App() {
     if (currentState === 'completed') return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">今日循環已完成</h1>
-          <p className="text-gray-600 mb-8">恭喜你完成了今天的規劃、衝刺與回顧！</p>
-          <button onClick={() => window.location.reload()} className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700">重新開始</button>
+          <h1 className="text-3xl font-bold text-dark-primary mb-4">今日循環已完成</h1>
+          <p className="text-dark-secondary mb-8">恭喜你完成了今天的規劃、衝刺與回顧！</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors shadow-lg shadow-blue-500/20"
+          >
+            重新開始
+          </button>
         </div>
       </div>
     );
@@ -126,7 +132,8 @@ function App() {
               {currentView === 'projects' && <ProjectManagementDemo />}
               {currentView === 'bookmarks' && <BookmarksHub />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
-              {currentView === 'settings' && <SettingsPanel />}
+              {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
+              {currentView === 'docs' && <InstallDocs />}
             </MainLayout>
           </div>
           <AISidebar isOpen={isAISidebarOpen} onClose={() => setIsAISidebarOpen(false)} />

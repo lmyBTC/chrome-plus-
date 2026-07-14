@@ -58,10 +58,10 @@ export const BookmarksHub: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">辦公室傳送門</h1>
+        <h1 className="text-3xl font-bold text-dark-primary">辦公室傳送門</h1>
         <button 
           onClick={() => setIsEditing(!isEditing)}
-          className="text-gray-500 hover:text-gray-900"
+          className="text-dark-muted hover:text-dark-primary transition-colors text-sm font-semibold"
         >
           {isEditing ? '完成編輯' : '編輯傳送門'}
         </button>
@@ -74,15 +74,15 @@ export const BookmarksHub: React.FC = () => {
               href={bookmark.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex flex-col items-center justify-center p-6 bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-32"
+              className="flex flex-col items-center justify-center p-6 bg-dark-card hover:bg-dark-hover rounded-xl shadow-md border border-dark-border-subtle hover:border-dark-border-default hover:shadow-lg transition-all h-32 shadow-slate-950/20"
             >
               <span className="text-3xl mb-3">{bookmark.icon || '🔗'}</span>
-              <span className="font-medium text-gray-700">{bookmark.title}</span>
+              <span className="font-medium text-dark-secondary">{bookmark.title}</span>
             </a>
             {isEditing && (
               <button
                 onClick={() => handleDeleteBookmark(bookmark.id)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow hover:bg-red-600"
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-400 transition-colors shadow-red-950/40"
               >
                 ×
               </button>
@@ -92,26 +92,26 @@ export const BookmarksHub: React.FC = () => {
       </div>
 
       {isEditing && (
-        <div className="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
-          <h3 className="text-lg font-medium text-gray-800 mb-4">新增傳送門</h3>
+        <div className="mt-8 p-6 bg-dark-surface rounded-xl border border-dark-border-default shadow-inner">
+          <h3 className="text-lg font-medium text-dark-primary mb-4">新增傳送門</h3>
           <div className="flex space-x-4">
             <input
               type="text"
               placeholder="名稱 (例: Notion)"
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
-              className="flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex-1 px-4 py-2 bg-dark-card text-dark-primary border border-dark-border-default rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             />
             <input
               type="url"
               placeholder="網址 (例: https://notion.so)"
               value={newUrl}
               onChange={(e) => setNewUrl(e.target.value)}
-              className="flex-2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
+              className="flex-2 px-4 py-2 bg-dark-card text-dark-primary border border-dark-border-default rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
             />
             <button
               onClick={handleAddBookmark}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors shadow-md shadow-blue-950/40 font-semibold"
             >
               新增
             </button>

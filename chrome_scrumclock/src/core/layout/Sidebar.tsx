@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ToolView = 'scrumclock' | 'projects' | 'bookmarks' | 'analytics' | 'settings';
+export type ToolView = 'scrumclock' | 'projects' | 'bookmarks' | 'analytics' | 'settings' | 'docs';
 
 interface SidebarProps {
   currentView: ToolView;
@@ -17,9 +17,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
   ];
 
   return (
-    <aside className="w-64 bg-gray-900 text-gray-300 min-h-screen flex flex-col">
+    <aside className="w-64 bg-dark-surface text-dark-secondary min-h-screen flex flex-col border-r border-dark-border-subtle">
       <div className="p-6">
-        <h1 className="text-xl font-bold text-white tracking-wider flex items-center gap-2">
+        <h1 className="text-xl font-bold text-dark-primary tracking-wider flex items-center gap-2">
           <span>🛠️</span> Swiss Knife
         </h1>
       </div>
@@ -29,10 +29,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
           <button
             key={item.id}
             onClick={() => onViewChange(item.id)}
-            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
+            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm ${
               currentView === item.id 
-                ? 'bg-gray-800 text-white font-medium shadow-sm' 
-                : 'hover:bg-gray-800 hover:text-white'
+                ? 'bg-dark-card text-dark-primary font-semibold shadow-md shadow-slate-950/20 border border-dark-border-subtle/50' 
+                : 'hover:bg-dark-hover hover:text-dark-primary'
             }`}
           >
             <span className="text-xl">{item.icon}</span>
@@ -41,7 +41,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
         ))}
       </nav>
 
-      <div className="p-6 border-t border-gray-800 text-sm text-gray-500">
+      {/* 獨立說明書入口，位於下方 */}
+      <div className="px-4 py-3 border-t border-dark-border-subtle">
+        <button
+          onClick={() => onViewChange('docs')}
+          className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-sm ${
+            currentView === 'docs'
+              ? 'bg-dark-card text-dark-primary font-semibold shadow-md shadow-slate-950/20 border border-dark-border-subtle/50' 
+              : 'text-dark-secondary hover:bg-dark-hover hover:text-dark-primary'
+          }`}
+        >
+          <span className="text-xl">📖</span>
+          <span>安裝與說明書</span>
+        </button>
+      </div>
+
+      <div className="p-6 border-t border-dark-border-subtle text-xs text-dark-muted">
         v1.0.0 Alpha
       </div>
     </aside>

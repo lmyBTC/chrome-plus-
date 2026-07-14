@@ -28,21 +28,21 @@ export const ProjectManagementDemo: React.FC = () => {
     <div className="max-w-6xl mx-auto p-8 font-sans">
       <div className="mb-8 flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">專案管理儀表板</h1>
-          <p className="text-gray-500 mt-2">模擬 Gemini 與 Scrumclock 的單一資料庫 (Google Sheet 結構)</p>
+          <h1 className="text-3xl font-extrabold text-dark-primary tracking-tight">專案管理儀表板</h1>
+          <p className="text-dark-muted mt-2">模擬 Gemini 與 Scrumclock 的單一資料庫 (Google Sheet 結構)</p>
         </div>
-        <div className="text-sm px-4 py-2 bg-blue-50 text-blue-700 rounded-full font-medium border border-blue-100 flex items-center gap-2">
+        <div className="text-sm px-4 py-2 bg-blue-950/40 text-blue-400 rounded-full font-semibold border border-blue-900/40 flex items-center gap-2 shadow-md shadow-blue-950/20">
           <span>✨</span>
           <span>Powered by Gemini 規劃大腦</span>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-8 w-fit">
+      <div className="flex space-x-1 bg-dark-surface p-1 rounded-xl mb-8 w-fit border border-dark-border-subtle">
         <button
           onClick={() => setActiveTab('taskPool')}
           className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'taskPool' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            activeTab === 'taskPool' ? 'bg-dark-card text-dark-primary shadow-md shadow-slate-950/50 border border-dark-border-subtle/50' : 'text-dark-secondary hover:text-dark-primary'
           }`}
         >
           🗂️ 任務池 (Task Pool)
@@ -50,7 +50,7 @@ export const ProjectManagementDemo: React.FC = () => {
         <button
           onClick={() => setActiveTab('inbox')}
           className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'inbox' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            activeTab === 'inbox' ? 'bg-dark-card text-dark-primary shadow-md shadow-slate-950/50 border border-dark-border-subtle/50' : 'text-dark-secondary hover:text-dark-primary'
           }`}
         >
           📥 收件匣 (Inbox)
@@ -58,7 +58,7 @@ export const ProjectManagementDemo: React.FC = () => {
         <button
           onClick={() => setActiveTab('sprintLogs')}
           className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
-            activeTab === 'sprintLogs' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
+            activeTab === 'sprintLogs' ? 'bg-dark-card text-dark-primary shadow-md shadow-slate-950/50 border border-dark-border-subtle/50' : 'text-dark-secondary hover:text-dark-primary'
           }`}
         >
           ⏱️ 番茄鐘日誌 (Sprint Logs)
@@ -66,11 +66,11 @@ export const ProjectManagementDemo: React.FC = () => {
       </div>
 
       {/* Content */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-dark-card rounded-2xl shadow-lg border border-dark-border-subtle overflow-hidden shadow-slate-950/40">
         {activeTab === 'taskPool' && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-50 text-gray-700 text-xs uppercase font-semibold">
+            <table className="w-full text-left text-sm text-dark-secondary">
+              <thead className="bg-dark-surface text-dark-primary border-b border-dark-border-subtle text-xs uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">Task ID</th>
                   <th className="px-6 py-4">Title</th>
@@ -81,29 +81,29 @@ export const ProjectManagementDemo: React.FC = () => {
                   <th className="px-6 py-4">Completed At</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-dark-border-subtle">
                 {taskPoolData.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-gray-400">{row.id}</td>
-                    <td className="px-6 py-4 font-medium text-gray-900">{row.title}</td>
+                  <tr key={idx} className="hover:bg-dark-hover/40 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-dark-muted">{row.id}</td>
+                    <td className="px-6 py-4 font-medium text-dark-primary">{row.title}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold tracking-wide ${
-                        row.status === 'DONE' ? 'bg-green-100 text-green-700' :
-                        row.status === 'TODO' ? 'bg-gray-100 text-gray-700' :
-                        'bg-blue-100 text-blue-700'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold tracking-wide border ${
+                        row.status === 'DONE' ? 'bg-green-950/40 text-green-400 border-green-800/40' :
+                        row.status === 'TODO' ? 'bg-dark-surface text-dark-muted border-dark-border-default' :
+                        'bg-blue-950/40 text-blue-400 border-blue-900/40'
                       }`}>
                         {row.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-xs font-bold ${
-                        row.priority === 'P1' ? 'bg-red-50 text-red-600 border border-red-100' :
-                        'bg-gray-50 text-gray-600 border border-gray-200'
+                      <span className={`px-2 py-1 rounded text-xs font-bold border ${
+                        row.priority === 'P1' ? 'bg-red-950/30 text-red-400 border-red-800/40' :
+                        'bg-dark-surface text-dark-secondary border-dark-border-default'
                       }`}>
                         {row.priority}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-500 italic max-w-[200px] truncate" title={row.notes}>{row.notes || '-'}</td>
+                    <td className="px-6 py-4 text-dark-muted italic max-w-[200px] truncate" title={row.notes}>{row.notes || '-'}</td>
                     <td className="px-6 py-4 text-xs">{row.created}</td>
                     <td className="px-6 py-4 text-xs">{row.completed}</td>
                   </tr>
@@ -115,8 +115,8 @@ export const ProjectManagementDemo: React.FC = () => {
 
         {activeTab === 'inbox' && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-50 text-gray-700 text-xs uppercase font-semibold">
+            <table className="w-full text-left text-sm text-dark-secondary">
+              <thead className="bg-dark-surface text-dark-primary border-b border-dark-border-subtle text-xs uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">ID</th>
                   <th className="px-6 py-4 w-1/2">Captured Text</th>
@@ -125,16 +125,16 @@ export const ProjectManagementDemo: React.FC = () => {
                   <th className="px-6 py-4">Processed</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-dark-border-subtle">
                 {inboxData.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-gray-400">{row.id}</td>
-                    <td className="px-6 py-4 text-gray-900 font-medium">{row.text}</td>
-                    <td className="px-6 py-4 text-blue-500 hover:underline cursor-pointer">{row.context}</td>
+                  <tr key={idx} className="hover:bg-dark-hover/40 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-dark-muted">{row.id}</td>
+                    <td className="px-6 py-4 text-dark-primary font-medium">{row.text}</td>
+                    <td className="px-6 py-4 text-blue-400 hover:text-blue-300 hover:underline cursor-pointer">{row.context}</td>
                     <td className="px-6 py-4 text-xs">{row.created}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        row.processed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-bold border ${
+                        row.processed ? 'bg-green-950/40 text-green-400 border-green-800/40' : 'bg-yellow-950/30 text-yellow-400 border-yellow-800/40'
                       }`}>
                         {row.processed ? 'TRUE' : 'FALSE'}
                       </span>
@@ -148,8 +148,8 @@ export const ProjectManagementDemo: React.FC = () => {
 
         {activeTab === 'sprintLogs' && (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-50 text-gray-700 text-xs uppercase font-semibold">
+            <table className="w-full text-left text-sm text-dark-secondary">
+              <thead className="bg-dark-surface text-dark-primary border-b border-dark-border-subtle text-xs uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-4">Log ID</th>
                   <th className="px-6 py-4">Task ID</th>
@@ -158,13 +158,13 @@ export const ProjectManagementDemo: React.FC = () => {
                   <th className="px-6 py-4">Timestamp</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-dark-border-subtle">
                 {sprintLogsData.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 font-mono text-xs text-gray-400">{row.logId}</td>
-                    <td className="px-6 py-4 font-mono text-blue-600 bg-blue-50/50 rounded">{row.taskId}</td>
+                  <tr key={idx} className="hover:bg-dark-hover/40 transition-colors">
+                    <td className="px-6 py-4 font-mono text-xs text-dark-muted">{row.logId}</td>
+                    <td className="px-6 py-4 font-mono text-blue-400 bg-blue-950/30 px-2 py-0.5 rounded border border-blue-900/30">{row.taskId}</td>
                     <td className="px-6 py-4 font-semibold">{row.duration}</td>
-                    <td className="px-6 py-4 text-gray-800">{row.result}</td>
+                    <td className="px-6 py-4 text-dark-primary">{row.result}</td>
                     <td className="px-6 py-4 text-xs">{row.timestamp}</td>
                   </tr>
                 ))}
@@ -174,11 +174,11 @@ export const ProjectManagementDemo: React.FC = () => {
         )}
       </div>
 
-      <div className="mt-8 bg-blue-50 border border-blue-100 rounded-xl p-6 text-sm text-blue-800">
+      <div className="mt-8 bg-blue-950/20 border border-blue-900/40 rounded-xl p-6 text-sm text-blue-300">
         <h3 className="font-bold mb-2 flex items-center gap-2">
           <span>ℹ️</span> 關於此展示頁面
         </h3>
-        <p className="opacity-90 leading-relaxed">
+        <p className="opacity-90 leading-relaxed text-dark-secondary">
           這個頁面是 <strong>Google Sheet 結構</strong> 的前端視覺化展示。在真實的工作流中，您可以將 Gemini Web App 連結至您的 Google Sheet，由 AI 直接幫您整理 Inbox、分配 Priority 並建立 Task。
           而 Scrumclock 會每天早上讀取 Task Pool，並在番茄鐘結束時將結果寫入 Sprint Logs 供 Gemini 後續分析。
         </p>
