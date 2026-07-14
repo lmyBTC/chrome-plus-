@@ -101,7 +101,7 @@
     *   *解決方案*：在 `core/api/` 引入 **Adapter 設計模式**，定義統一介面 `ITaskAdapter`，並解耦實作 `GoogleTaskAdapter` 與 `NotionTaskAdapter`。
 3.  **Chrome 新分頁 (New Tab) 覆寫**：
     *   *問題*：點擊擴充功能圖示開啟彈出視窗速度稍慢，無法作為每日工作的「第一站」。
-    *   *解決方案*：在 `manifest.json` 中配置 `"chrome_url_overrides": { "newtab": "index.html" }`，將擴充功能變成使用者開啟新分頁時的首頁指揮中心。
+    *   *解決方案*：在 `manifest.json` 中配置 `"chrome_url_overrides": { "newtab": "src/entries/newtab/index.html" }`，將擴充功能變成使用者開啟新分頁時的首頁指揮中心。
 
 ---
 

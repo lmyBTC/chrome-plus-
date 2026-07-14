@@ -8,15 +8,17 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
 
 ## 🚀 快速開始 (Quick Start)
 
-### 1. 安裝步驟 (開發者模式)
+### 1. 建置與安裝步驟 (開發者模式)
 1. 下載或複製本專案至本地目錄。
-2. 開啟 Chrome 瀏覽器，進入擴充功能管理頁面（於網址列輸入 `chrome://extensions/`）。
-3. 開啟右上角的 **「開發者模式」** (Developer mode) 開關。
-4. 點擊左上角的 **「載入未封裝擴充功能」** (Load unpacked)，並選擇本專案的 `chrome_scrumclock` 目錄。
-5. 成功載入後，即可在瀏覽器工具列中釘選並啟動 **Scrumclock**。
+2. 開啟終端機，進入 `chrome_scrumclock` 目錄，執行 `npm install` 安裝依賴。
+3. 執行 `npm run build` 編譯專案，編譯完成後會生成 `dist/` 目錄。
+4. 開啟 Chrome 瀏覽器，進入擴充功能管理頁面（於網址列輸入 `chrome://extensions/`）。
+5. 開啟右上角的 **「開發者模式」** (Developer mode) 開關。
+6. 點擊左上角的 **「載入未封裝擴充功能」** (Load unpacked)，並選擇本專案 `chrome_scrumclock` 目錄底下的 **`dist`** 資料夾。
+7. 成功載入後，即可在瀏覽器工具列中釘選並啟動 **Scrumclock**。
 
 ### 2. 配置 AI 助理 (Gemini API Key)
-1. 點擊 Scrumclock 右上角的 **設定 (Settings)** 圖示開啟設定面板。
+1. 點擊 Scrumclock 右上角的 **設定 (Settings)** 圖示開啟設定面板（或點擊擴充功能選項開啟獨立設定頁）。
 2. 在 API Key 輸入框中，填入您的免費 **Gemini API Key**（可於 [Google AI Studio](https://aistudio.google.com/) 免費申請）。
 3. 點擊儲存。您的金鑰將安全地儲存於本地 `chrome.storage.local` 中，直接與 Google 官方伺服器通訊，不經過任何第三方代理，確保商業敏感文檔的安全性與隱私。
 
@@ -73,6 +75,36 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
 *   **操作體驗**：
     *   **折疊式 AI 側邊欄**：按下 `Ctrl + Shift + K` 隨時從螢幕右側拉出。
     *   **剪貼簿快取與貼回**：自動偵測剪貼簿最新複製內容，提供一鍵「潤色」、「擴寫」等快捷 Prompt。生成結果支持一鍵複製，讓使用者直接 `Ctrl + V` 覆蓋 Docs 原文，完美避開 Docs Canvas DOM 讀寫障礙。
+
+## 📁 目錄與檔案結構 (Project Structure)
+
+本專案採用現代化的前端與多入口 Chrome 擴充功能物理聚合 (Co-location) 架構，所有頁面入口的 HTML 與 TypeScript 代碼均模組化管理：
+
+```
+chrome_scrumclock/
+├── dist/                # 編譯產出目錄 (載入 Chrome 的目標)
+├── docs/                # 技術與規格文件
+├── public/              # 靜態資源 (包含 manifest.json、阻擋頁 blocked.html 與圖示)
+├── src/
+│   ├── entries/         # 多入口頁面物理聚合區
+│   │   ├── newtab/      # 新分頁 (New Tab) 指揮中心 (React)
+│   │   │   ├── index.html
+│   │   │   └── main.tsx
+│   │   ├── popup/       # 瀏覽器圖示點擊彈窗 (React)
+│   │   │   ├── index.html
+│   │   │   └── main.tsx
+│   │   └── options/     # 獨立全域系統設定頁 (React)
+│   │       ├── index.html
+│   │       └── main.tsx
+│   ├── components/      # 跨頁面共享 React UI 元件 (如 SettingsPanel)
+│   ├── core/            # 核心系統層 (Chrome API 封裝、同步服務、API 配接器)
+│   ├── features/        # 功能模組化架構 (包含 scrumclock、AI 側邊欄、書籤等)
+│   ├── background.ts    # Background Service Worker (背景持久計時核心)
+│   ├── content.ts       # 網頁內容注入腳本
+│   └── index.css        # 全域 TailwindCSS 樣式
+├── vite.config.ts       # Vite 多入口編譯配置
+└── tsconfig.json        # TypeScript 配置
+```
 
 ---
 

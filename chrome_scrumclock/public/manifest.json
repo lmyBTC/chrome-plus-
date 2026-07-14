@@ -18,11 +18,11 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/entries/popup/index.html",
     "default_title": "每日循環儀表板"
   },
   "chrome_url_overrides": {
-    "newtab": "index.html"
+    "newtab": "src/entries/newtab/index.html"
   },
   "commands": {
     "quick_capture": {
@@ -33,7 +33,7 @@
       "description": "閃電捕捉 (Quick Capture) - 快速新增任務"
     }
   },
-  "options_page": "options.html",
+  "options_page": "src/entries/options/index.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

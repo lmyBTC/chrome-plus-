@@ -8,9 +8,9 @@ export default defineConfig({
     outDir: 'dist',
     rollupOptions: {
       input: {
-        index: resolve(__dirname, 'index.html'),
-        popup: resolve(__dirname, 'popup.html'),
-        options: resolve(__dirname, 'options.html'),
+        newtab: resolve(__dirname, 'src/entries/newtab/index.html'),
+        popup: resolve(__dirname, 'src/entries/popup/index.html'),
+        options: resolve(__dirname, 'src/entries/options/index.html'),
         background: resolve(__dirname, 'src/background.ts'),
         content: resolve(__dirname, 'src/content.ts')
       },
