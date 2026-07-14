@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>生成圖示</title>
+</head>
+<body>
+    <h1>YouTube Speed Plus 圖示生成器</h1>
+    <p>請右鍵點擊下方的圖示，選擇「另存圖片」來儲存為 PNG 檔案：</p>
+    
+    <h2>16x16 圖示</h2>
+    <canvas id="icon16" width="16" height="16"></canvas>
+    <br>
+    
+    <h2>48x48 圖示</h2>
+    <canvas id="icon48" width="48" height="48"></canvas>
+    <br>
+    
+    <h2>128x128 圖示</h2>
+    <canvas id="icon128" width="128" height="128"></canvas>
+    
+    <script>
+        function drawIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // 建立漸層背景
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#667eea');
+            gradient.addColorStop(1, '#764ba2');
+            
+            // 繪製背景圓形
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size/2 - 2, 0, 2 * Math.PI);
+            ctx.fill();
+            
+            // 白色邊框
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            
+            // 繪製播放按鈕
+            ctx.fillStyle = '#fff';
+            const playSize = size * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(size/2 - playSize/3, size/2 - playSize/2);
+            ctx.lineTo(size/2 - playSize/3, size/2 + playSize/2);
+            ctx.lineTo(size/2 + playSize/2, size/2);
+            ctx.closePath();
+            ctx.fill();
+            
+            // 繪製速度線條
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = Math.max(1, size/40);
+            ctx.lineCap = 'round';
+            
+            const startX = size * 0.55;
+            const startY = size * 0.35;
+            const lineSpacing = size * 0.15;
+            
+            for (let i = 0; i < 4; i++) {
+                const y = startY + i * lineSpacing;
+                const endX = startX + (i + 1) * size * 0.1;
+                ctx.beginPath();
+                ctx.moveTo(startX, y);
+                ctx.lineTo(endX, y);
+                ctx.stroke();
+            }
+            
+            // 繪製閃電符號
+            const lightningSize = size * 0.15;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.moveTo(size * 0.6, size * 0.25);
+            ctx.lineTo(size * 0.65, size * 0.35);
+            ctx.lineTo(size * 0.7, size * 0.3);
+            ctx.lineTo(size * 0.65, size * 0.45);
+            ctx.lineTo(size * 0.6, size * 0.4);
+            ctx.closePath();
+            ctx.fill();
+        }
+        
+        // 生成所有圖示
+        drawIcon('icon16', 16);
+        drawIcon('icon48', 48);
+        drawIcon('icon128', 128);
+    </script>
+</body>
+</html> 

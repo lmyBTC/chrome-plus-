@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 300px;
+      padding: 20px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      margin: 0;
+    }
+    
+    .container {
+      text-align: center;
+    }
+    
+    h1 {
+      font-size: 18px;
+      margin-bottom: 20px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    
+    .speed-controls {
+      margin-bottom: 20px;
+    }
+    
+    .speed-btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 16px;
+      margin: 5px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+    
+    .speed-btn:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+    
+    .speed-btn.active {
+      background: rgba(255,255,255,0.4);
+      border-color: rgba(255,255,255,0.8);
+    }
+    
+    .custom-speed {
+      margin-top: 15px;
+    }
+    
+    .custom-speed input {
+      width: 60px;
+      padding: 8px;
+      border: none;
+      border-radius: 10px;
+      text-align: center;
+      margin-right: 10px;
+      background: rgba(255,255,255,0.9);
+    }
+    
+    .custom-speed button {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .custom-speed button:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 10px;
+      font-size: 12px;
+    }
+    
+    .loop-controls {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .loop-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .loop-row label {
+      font-size: 14px;
+    }
+    
+    .loop-row input {
+      width: 60px;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      text-align: center;
+      background: rgba(255,255,255,0.9);
+    }
+    
+    .loop-btn {
+      background: rgba(255,255,255,0.2);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 12px;
+      width: 48%;
+    }
+    
+    .loop-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+    
+    .loop-btn.active {
+      background: rgba(46, 204, 113, 0.4);
+      border-color: rgba(46, 204, 113, 0.8);
+    }
+    
+    .loop-actions {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎬 YouTube Speed Plus</h1>
+    
+    <div class="speed-controls">
+      <button class="speed-btn" data-speed="0.25">0.25x</button>
+      <button class="speed-btn" data-speed="0.5">0.5x</button>
+      <button class="speed-btn" data-speed="0.75">0.75x</button>
+      <button class="speed-btn" data-speed="1">1x</button>
+      <button class="speed-btn" data-speed="1.5">1.5x</button>
+      <button class="speed-btn" data-speed="2">2x</button>
+      <button class="speed-btn" data-speed="3">3x</button>
+    </div>
+    
+    <div class="custom-speed">
+      <input type="number" id="customSpeed" min="0.1" max="16" step="0.1" value="3" placeholder="自訂速度">
+      <button id="setCustomSpeed">設定</button>
+    </div>
+    
+    <div class="status" id="status">
+      目前速度: 1x
+    </div>
+    
+    <div class="loop-controls">
+      <div class="loop-row">
+        <label>循環次數 (0 為無限)</label>
+        <input type="number" id="loopCount" min="0" value="0">
+      </div>
+      <div class="loop-row">
+        <label>起點 (秒)</label>
+        <input type="number" id="loopStart" min="0" step="1" placeholder="留空從頭">
+      </div>
+      <div class="loop-row">
+        <label>終點 (秒)</label>
+        <input type="number" id="loopEnd" min="0" step="1" placeholder="留空到尾">
+      </div>
+      <div class="loop-actions">
+        <button class="loop-btn" id="btnSetStart">擷取為起點</button>
+        <button class="loop-btn" id="btnSetEnd">擷取為終點</button>
+      </div>
+      <div class="loop-actions">
+        <button class="loop-btn" id="btnStartLoop">開始循環</button>
+        <button class="loop-btn" id="btnStopLoop">停止循環</button>
+      </div>
+    </div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html> 

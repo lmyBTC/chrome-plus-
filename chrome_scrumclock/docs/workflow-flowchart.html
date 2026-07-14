@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scrumclock 瑞士刀工作流視覺化大盤</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    /* 全新升級：純 HTML+CSS 表格式/卡片式工作流大盤 */
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --card-bg: rgba(22, 30, 49, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      
+      /* 狀態與區塊配色 */
+      --color-blue: #3b82f6;
+      --color-purple: #8b5cf6;
+      --color-orange: #f59e0b;
+      --color-red: #ef4444;
+      --color-green: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+      background: radial-gradient(circle at top, #141b2d 0%, var(--bg-primary) 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+    }
+
+    /* 頂部導航與標題區 */
+    header {
+      padding: 2rem 2rem 1.5rem 2rem;
+      border-bottom: 1px solid var(--glass-border);
+      background: rgba(11, 15, 25, 0.8);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.25rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(to right, #a5b4fc, #8b5cf6, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.35rem;
+      letter-spacing: 0.5px;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      font-weight: 300;
+    }
+
+    /* 頂部導航切換鈕 */
+    .tab-container {
+      display: flex;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid var(--glass-border);
+      padding: 0.35rem;
+      border-radius: 50px;
+      gap: 0.25rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.75rem 1.6rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--color-purple), var(--color-blue));
+      box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+
+    /* 主視覺內容區域 */
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+    }
+
+    /* Tab 區塊的隱藏與顯示 */
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.5s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 頂級卡片系統 */
+    .section-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+      color: #a5b4fc;
+      border-left: 4px solid var(--color-purple);
+      padding-left: 0.75rem;
+    }
+
+    /* 網格系統：用於系統架構組件展示 */
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+
+    .arch-card {
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .arch-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .arch-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+    }
+
+    /* 區塊顏色線條 */
+    .arch-card.blue::before { background: var(--color-blue); }
+    .arch-card.purple::before { background: var(--color-purple); }
+    .arch-card.orange::before { background: var(--color-orange); }
+    .arch-card.red::before { background: var(--color-red); }
+    .arch-card.green::before { background: var(--color-green); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 30px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-badge.blue { background: rgba(59, 130, 246, 0.15); color: #93c5fd; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .card-badge.purple { background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); }
+    .card-badge.orange { background: rgba(245, 158, 11, 0.15); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .card-badge.red { background: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .card-badge.green { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .component-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .component-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      padding: 0.75rem;
+      border-radius: 8px;
+    }
+
+    .comp-name {
+      font-weight: 600;
+      color: #e0e7ff;
+      font-size: 0.9rem;
+      margin-bottom: 0.2rem;
+      font-family: monospace;
+    }
+
+    .comp-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* 超質感表格系統 */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: var(--card-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+      margin-bottom: 2rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: rgba(15, 23, 42, 0.8);
+      padding: 1.1rem 1.25rem;
+      font-weight: 700;
+      color: #a5b4fc;
+      border-bottom: 1px solid var(--glass-border);
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      padding: 1.1rem 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      vertical-align: middle;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+      color: #ffffff;
+    }
+
+    /* 表格內的流程指示箭頭 */
+    .flow-arrow {
+      color: var(--color-purple);
+      font-weight: 800;
+      margin: 0 0.5rem;
+    }
+
+    /* 狀態機 Badges */
+    .state-badge {
+      display: inline-block;
+      padding: 0.3rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-align: center;
+      min-width: 90px;
+    }
+
+    .state-badge.idle { background: rgba(156, 163, 175, 0.15); color: #d1d5db; border: 1px solid rgba(156, 163, 175, 0.4); }
+    .state-badge.running { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); }
+    .state-badge.paused { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); }
+    .state-badge.logging { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .state-badge.break { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+
+    /* 步驟 / 時序指示標籤 */
+    .step-number {
+      background: linear-gradient(135deg, var(--color-purple), var(--color-blue));
+      color: #ffffff;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.8rem;
+      box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+    }
+
+    .actor-box {
+      font-family: monospace;
+      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      color: #e0e7ff;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      display: inline-block;
+    }
+
+    /* 💡 提示區塊 */
+    .tip-box {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .tip-box span {
+      font-size: 1.25rem;
+    }
+
+    .tip-box p {
+      font-size: 0.85rem;
+      color: #c7d2fe;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部導航與標題區 -->
+  <header>
+    <div class="brand">
+      <h1>Scrumclock 瑞士刀工作流大盤</h1>
+      <div class="subtitle">100% 離線純 HTML+CSS 表格式流程圖</div>
+    </div>
+    
+    <div class="tab-container">
+      <button class="tab-btn active" onclick="switchTab(0)">
+        <span>🌐</span> 系統架構與資料流
+      </button>
+      <button class="tab-btn" onclick="switchTab(1)">
+        <span>⏱️</span> 番茄鐘狀態生命週期
+      </button>
+      <button class="tab-btn" onclick="switchTab(2)">
+        <span>🤖</span> AI 任務智能拆解時序
+      </button>
+      <button class="tab-btn" onclick="switchTab(3)">
+        <span>✍️</span> AI 寫作助理與剪貼簿工作流
+      </button>
+    </div>
+  </header>
+
+  <!-- 主視覺內容區域 -->
+  <main>
+
+    <!-- TAB 1: 🌐 系統架構與資料流向 -->
+    <div id="tab-0" class="tab-content active">
+      <div class="section-title">瑞士刀架構元件分佈 (System Components)</div>
+      
+      <div class="grid-container">
+        <!-- 1. 前端 -->
+        <div class="arch-card blue">
+          <div class="card-header">
+            <span class="card-title">🖥️ React 前端面板</span>
+            <span class="card-badge blue">Frontend</span>
+          </div>
+          <ul class="component-list">
+            <li class="component-item">
+              <div class="comp-name">SprintPomodoro UI</div>
+              <div class="comp-desc">主操作介面，支援原位編輯任務、拖曳排序、勾選導出 Markdown 等。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">TimerContext</div>
+              <div class="comp-desc">全域計時狀態核心，統籌當前任務、時間倒數與狀態切換。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">Web Audio API</div>
+              <div class="comp-desc">內建合成器，播放專注紅噪音（雨聲）以及頌缽結束共鸣聲。</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 2. 本地資料庫 -->
+        <div class="arch-card purple">
+          <div class="card-header">
+            <span class="card-title">💾 Chrome Storage</span>
+            <span class="card-badge purple">Database</span>
+          </div>
+          <ul class="component-list">
+            <li class="component-item">
+              <div class="comp-name">chrome.storage.local</div>
+              <div class="comp-desc">Chrome 瀏覽器原生本地持久化存儲，提供極速的資料存取。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">activeTimer (SSOT)</div>
+              <div class="comp-desc">計時器單一真理源，記錄剩餘時間、當前狀態與正在衝刺的任務。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">weeklyMissions</div>
+              <div class="comp-desc">本週任務清單，包含任務內容、預估/已消耗番茄數與標籤。</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 3. 背景執行緒 -->
+        <div class="arch-card orange">
+          <div class="card-header">
+            <span class="card-title">⚙️ Background Worker</span>
+            <span class="card-badge orange">Worker</span>
+          </div>
+          <ul class="component-list">
+            <li class="component-item">
+              <div class="comp-name">background.ts</div>
+              <div class="comp-desc">Service Worker 背景背景，負責監聽計時結束、發送桌面提示。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">chrome.alarms</div>
+              <div class="comp-desc">當前端 UI 關閉時接管計時，保證番茄鐘精確計時不中斷。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">declarativeNetRequest</div>
+              <div class="comp-desc">Chrome 網路層規則引擎，負責在專注模式下攔截並重導分心網站。</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 4. 專注防線 -->
+        <div class="arch-card red">
+          <div class="card-header">
+            <span class="card-title">🛡️ 專注阻擋防線</span>
+            <span class="card-badge red">Shield</span>
+          </div>
+          <ul class="component-list">
+            <li class="component-item">
+              <div class="comp-name">blocked.html</div>
+              <div class="comp-desc">分心網站重定向目標頁。使用 onChanged 機制即時讀取 Storage 同步倒數。</div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- 5. 外部整合 -->
+        <div class="arch-card green">
+          <div class="card-header">
+            <span class="card-title">🔌 外部 API 整合層</span>
+            <span class="card-badge green">Integration</span>
+          </div>
+          <ul class="component-list">
+            <li class="component-item">
+              <div class="comp-name">Notion Webhook</div>
+              <div class="comp-desc">將完成任務與反思筆記即時寫入 Notion 專屬任務看板資料庫。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">GAS Apps Script</div>
+              <div class="comp-desc">Google 試算表日誌寫入 API，並可自動在 Google Calendar 同步排程。</div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section-title">核心資料與通訊流向明細 (Data Communication Table)</div>
+      
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 25%">發起元件與管道</th>
+              <th style="width: 25%">接收與目標元件</th>
+              <th style="width: 30%">傳遞資料與觸發動作</th>
+              <th style="width: 20%">通訊目的與機制</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="actor-box">SprintPomodoro UI</span></td>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td>調用開始、暫停、放棄、完成操作</td>
+              <td>將使用者對 UI 的按鍵行為，轉譯為計時器狀態機的切換</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td><span class="actor-box">chrome.storage.local</span></td>
+              <td>寫入更新後的 <span class="comp-name">activeTimer</span> 狀態</td>
+              <td>保證計時狀態 SSOT，所有背景網頁能同步讀取最新狀態</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td><span class="actor-box">Web Audio API</span></td>
+              <td>根據狀態切換，啟動或暫停音訊播放</td>
+              <td>`Running` 狀態下播放下雨白噪音；`Logging` 狀態下播放頌缽提示音</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td><span class="actor-box">background.ts</span></td>
+              <td><span class="comp-name">chrome.runtime.sendMessage</span></td>
+              <td>通知背景計時緒啟動/結束專注，接管 `chrome.alarms` 精確背景計時</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">background.ts</span></td>
+              <td><span class="actor-box">declarativeNetRequest</span></td>
+              <td>動態載入或移除網站阻擋規則組 (Rules)</td>
+              <td>進入或離開專注模式時，開啟或釋放對分心網站（社群網站）的攔截</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">blocked.html</span></td>
+              <td><span class="actor-box">chrome.storage.local</span></td>
+              <td><span class="comp-name">chrome.storage.onChanged</span></td>
+              <td>分心網頁被攔截後，在此頁面實時取得 Storage 剩餘時間，同屏倒數</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td><span class="actor-box">Notion Webhook API</span></td>
+              <td>POST 任務標題、專注產出反思內容與時間標籤</td>
+              <td>將完成任務無縫記錄至 Notion 看板，落實 GTD 管理</td>
+            </tr>
+            <tr>
+              <td><span class="actor-box">TimerContext</span></td>
+              <td><span class="actor-box">Google Apps Script</span></td>
+              <td>POST 日誌陣列與 committedTime 欄位</td>
+              <td>將衝刺歷史存入 Google Sheets 進行大數據分析，並自動於行事曆建立時段</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <span>💡</span>
+        <p><strong>架構設計亮點：</strong> 系統採用了 Google Chrome Extension 的單一真理源 (SSOT) 架構。當 Popup / Sidebar 等 React 前端被關閉時，計時工作會在瀏覽器核心背景 Service Worker 接管；使用者在攔截頁 blocked.html 依舊能即時看見倒數，完成了零斷裂的專注體驗。</p>
+      </div>
+    </div>
+
+    <!-- TAB 2: ⏱️ 番茄鐘狀態生命週期 -->
+    <div id="tab-1" class="tab-content">
+      <div class="section-title">番茄鐘狀態機轉移矩陣 (Pomodoro State Transition Matrix)</div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 15%">當前狀態</th>
+              <th style="width: 15%">觸發事件 / 操作</th>
+              <th style="width: 15%">目標狀態</th>
+              <th style="width: 25%">前端表現 (聲音與畫面)</th>
+              <th style="width: 30%">背景核心動作 (資料庫與網路阻擋)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="state-badge idle">Idle (閒置)</span></td>
+              <td><strong>開始衝刺 (Start)</strong></td>
+              <td><span class="state-badge running">Running (衝刺)</span></td>
+              <td>啟動 Web Audio 合成器播放<strong>紅噪音雨聲</strong>，UI 呈現紅色倒數。</td>
+              <td>寫入 activeTimer，調用 DNR **啟用社群網站阻擋**。設定背景計時鬧鐘。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge running">Running (衝刺)</span></td>
+              <td><strong>暫停衝刺 (Pause)</strong></td>
+              <td><span class="state-badge paused">Paused (暫停)</span></td>
+              <td>暫停雨聲白噪音，UI 轉為黃色，數字停止倒數。</td>
+              <td>暫停背景鬧鐘計時，調用 DNR **解除網站阻擋**（防線暫時放行）。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge paused">Paused (暫停)</span></td>
+              <td><strong>繼續衝刺 (Resume)</strong></td>
+              <td><span class="state-badge running">Running (衝刺)</span></td>
+              <td>重啟雨聲白噪音，UI 回復紅色倒數。</td>
+              <td>重設背景計時鬧鐘，調用 DNR **重新啟用網站阻擋**。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge running">Running (衝刺)</span></td>
+              <td><strong>計時結束 (Timer End)</strong></td>
+              <td><span class="state-badge logging">Logging (記錄)</span></td>
+              <td>雨聲停止，Web Audio 合成並播放**餘音頌缽音效**，UI 跳出成果記錄視窗。</td>
+              <td>解除網站阻擋（防線全面放開），網頁背景發送桌面完成通知。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge paused">Paused (暫停)</span></td>
+              <td><strong>放棄衝刺 (Cancel)</strong></td>
+              <td><span class="state-badge idle">Idle (閒置)</span></td>
+              <td>停止所有音效，UI 重置回主畫面。</td>
+              <td>**清理 activeTimer**，確認停用網站阻擋規則，關閉背景鬧鐘。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge logging">Logging (記錄)</span></td>
+              <td><strong>提交成果 (Log)</strong></td>
+              <td><span class="state-badge break">Break (休息)</span></td>
+              <td>關閉成果視窗，UI 切換為綠色休息倒數。</td>
+              <td>成果寫入本地 `todayLog`，觸發 Notion & GAS Webhook 自動非同步同步。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge logging">Logging (記錄)</span></td>
+              <td><strong>取消 (Reset)</strong></td>
+              <td><span class="state-badge idle">Idle (閒置)</span></td>
+              <td>重置回主畫面。</td>
+              <td>清理 activeTimer，回到閒置狀態。</td>
+            </tr>
+            <tr>
+              <td><span class="state-badge break">Break (休息)</span></td>
+              <td><strong>休息結束 (Break End)</strong></td>
+              <td><span class="state-badge idle">Idle (閒置)</span></td>
+              <td>播放休息結束提示音，UI 提示「準備開始下一場戰役」。</td>
+              <td>清理休息計時器狀態，等待使用者啟動新一輪番茄。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <span>⏱️</span>
+        <p><strong>狀態轉移安全機制：</strong> 在暫停（Paused）狀態下，網站阻擋會自動解除，方便使用者臨時查閱重要訊息；但放棄衝刺會徹底清除計時資料。在記錄成果（Logging）狀態下，防線已解除以利登錄筆記，只有點擊「提交成果」才會成功寫入資料庫並自動進入綠色的 Break 休息倒數，達成敏捷反思循環。</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: 🤖 AI 任務智能拆解時序 -->
+    <div id="tab-2" class="tab-content">
+      <div class="section-title">AI 週任務拆解與時間自動排程步驟表 (AI Sequence Steps)</div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%">步序</th>
+              <th style="width: 25%">發起方 與 接收方</th>
+              <th style="width: 42%">核心動作與資料負載</th>
+              <th style="width: 25%">設計容錯與自動化機制</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="step-number">1</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">React UI</span></td>
+              <td>在週任務列表上，對特定宏觀任務點選「🤖 拆解」按鈕。</td>
+              <td>觸發前端 Loading 骨架屏動畫，防止使用者重複點擊。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">2</div></td>
+              <td><span class="actor-box">React UI</span> <span class="flow-arrow">➔</span> <span class="actor-box">SyncService</span></td>
+              <td>調用 API 介面：`breakdownTask(taskId)` 傳入任務識別碼。</td>
+              <td>統一適配層 (ITaskAdapter) 以屏蔽底層遠端介面差異。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">3</div></td>
+              <td><span class="actor-box">SyncService</span> <span class="flow-arrow">➔</span> <span class="actor-box">Notion / GAS API</span></td>
+              <td>發送 POST 請求 `/ai_breakdown`，向大模型發起任務拆解。</td>
+              <td>使用非同步 AJAX Fetch API 並設定 5 秒超時機制。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">4</div></td>
+              <td><span class="actor-box">Notion / GAS API</span> <span class="flow-arrow">➔</span> <span class="actor-box">SyncService</span></td>
+              <td>回傳解析好的 JSON 陣列：包含子任務清單與 🍅 預估預算。</td>
+              <td>遠端 AI 分析並格式化為統一的 `[ { name: string, tomato: number } ]`。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">5</div></td>
+              <td><span class="actor-box">SyncService</span> 內部降級</td>
+              <td><strong>【降級容錯】</strong> 若 API 返回 503 錯誤或超時，啟動前端本地模擬。</td>
+              <td><strong>自動容錯：</strong> 前端生成標準三步驟子任務（分析、開發、整合測試）確保功能不中斷。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">6</div></td>
+              <td><span class="actor-box">SyncService</span> <span class="flow-arrow">➔</span> <span class="actor-box">使用者</span></td>
+              <td>回傳解析陣列，UI 彈出「AI 拆解預覽 Modal」。</td>
+              <td>使用者可在對話視窗上勾選需要匯入的特定子任務。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">7</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">React UI</span></td>
+              <td>使用者勾選好子任務，點擊「一鍵匯入今日戰役」按鈕。</td>
+              <td>將使用者手動確認後的子步驟推送至今日的行程列表中。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">8</div></td>
+              <td><span class="actor-box">React UI</span> <span class="flow-arrow">➔</span> <span class="actor-box">Chrome Storage</span></td>
+              <td>註冊並寫入週任務庫 `weeklyMissions` 作為關聯任務。</td>
+              <td>完成父任務與子任務的虛擬外鍵 (Parent ID) 綁定。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">9</div></td>
+              <td><span class="actor-box">React UI</span> 內部排程算法</td>
+              <td><strong>【自動排程演算法】</strong> 抓取今日任務最後一個結束時間點。</td>
+              <td><strong>自動遞增：</strong> 抓取今日最晚結束時間（若無則為 `09:00`），依據 1 🍅 = 30分鐘（25分專注+5分休息），自動遞增計算並分配時段（例如：`09:00-09:30`）。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">10</div></td>
+              <td><span class="actor-box">React UI</span> <span class="flow-arrow">➔</span> <span class="actor-box">Chrome Storage</span></td>
+              <td>將賦予了排程時間段（committedTime）的子任務寫入今日 `coreBattles`。</td>
+              <td>今日核心戰役列表寫入完成，前端即時重新渲染，使用者不需手動填寫時間！</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <span>🤖</span>
+        <p><strong>智能自動排程優勢：</strong> 這套演算法完成了從「宏觀拆解」到「微觀落地」的閉環。使用者不用再手動分配什麼任務在幾點執行，系統會抓取您今日最尾端的空閒時段，根據 AI 計算出的番茄數自動向後順延填寫，並且擁有 100% 的前端模擬 fallback 機制，無懼 CORS 與斷網風險。</p>
+      </div>
+    </div>
+
+    <!-- TAB 4: ✍️ AI 寫作助理與剪貼簿工作流 -->
+    <div id="tab-3" class="tab-content">
+      <div class="section-title">AI 寫作輔助與剪貼簿無縫工作流步驟表 (AI Sidebar & Clipboard Flow)</div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 8%">步序</th>
+              <th style="width: 25%">發起方 與 接收方</th>
+              <th style="width: 42%">核心動作與資料負載</th>
+              <th style="width: 25%">安全與使用者體驗亮點</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="step-number">1</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">Google Docs</span></td>
+              <td>使用者在 Google Docs (或是任何編輯器) 選取並複製文字 (<kbd>Ctrl+C</kbd>)。</td>
+              <td>完全不用安裝 Google 官方 Add-on 或任何複雜整合。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">2</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">AISidebar</span></td>
+              <td>點擊 `🤖 AI 寫作助理` 按鈕或按下快捷鍵 <kbd>Ctrl+Shift+K</kbd> 展開側邊欄。</td>
+              <td>側邊欄使用獨立 Shadow DOM 隔離 CSS，以防影響宿主網頁排版。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">3</div></td>
+              <td><span class="actor-box">AISidebar</span> 偵測剪貼簿</td>
+              <td>側邊欄在背景偵測剪貼簿，並顯示剛才複製的「快取文字段落」。</td>
+              <td><strong>極簡互動：</strong> 不用來回複製貼上，點擊即可直接做為 AI 優化標的。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">4</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">AISidebar</span></td>
+              <td>使用者點選優化快捷按鈕：<strong>✨ 潤色</strong>、<strong>📝 擴寫</strong>、<strong>📊 精簡</strong> 或 <strong>🌐 翻譯</strong>。</td>
+              <td>自動帶入針對該操作優化好的預設 System Instructions。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">5</div></td>
+              <td><span class="actor-box">AISidebar</span> <span class="flow-arrow">➔</span> <span class="actor-box">Chrome Storage</span></td>
+              <td>從 Storage 讀取儲存在本地的 <span class="comp-name">geminiApiKey</span>。</td>
+              <td><strong>隱私安全：</strong> 金鑰只存在用戶瀏覽器，100% 掌握在用戶手中。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">6</div></td>
+              <td><span class="actor-box">AISidebar</span> <span class="flow-arrow">➔</span> <span class="actor-box">Google Gemini API</span></td>
+              <td>發送 POST 請求至 Gemini 官方 API (Gemini 1.5 Flash)。</td>
+              <td>直接在客戶端與 Google 通訊，免除架設後端與 Token 費用。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">7</div></td>
+              <td><span class="actor-box">Google Gemini API</span> <span class="flow-arrow">➔</span> <span class="actor-box">AISidebar</span></td>
+              <td>API 回傳生成結果，側邊欄以極簡 Markdown Parser 即時渲染。</td>
+              <td>格式排版清晰，可讀性高，支援粗體、標題與條列清單。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">8</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">AISidebar</span></td>
+              <td>使用者滿意結果，點選下方 `📋 點擊複製貼回 Docs` 按鈕。</td>
+              <td>自動將生成文字再次寫入系統剪貼簿。</td>
+            </tr>
+            <tr>
+              <td><div class="step-number">9</div></td>
+              <td><span class="actor-box">使用者</span> <span class="flow-arrow">➔</span> <span class="actor-box">Google Docs</span></td>
+              <td>在 Docs 選取原文，直接按下 <kbd>Ctrl+V</kbd> 覆蓋貼上。</td>
+              <td><strong>Canvas 避讓設計：</strong> 完全繞過對 Google Docs Canvas DOM 結構的侵入與操作，穩定度達 100%。</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tip-box">
+        <span>✍️</span>
+        <p><strong>Lite 寫作助理優勢：</strong> 透過「剪貼簿快取偵測」與「一鍵複製貼回」機制的緊密配合，我們成功在「不侵入 Canvas、不申請官方 OAuth 2.0 敏感權限」的情況下，為 Max 創造了極佳的 Docs 寫作增強體驗，實踐了資深開發者以「最小技術改動，換取最大情境效益」的核心思維。</p>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // Tab 切換邏輯
+    let currentTabIndex = 0;
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function switchTab(index) {
+      if (index === currentTabIndex) return;
+
+      // 更新 Tab 按鈕狀態
+      tabButtons[currentTabIndex].classList.remove('active');
+      tabButtons[index].classList.add('active');
+
+      // 更新內容區狀態
+      tabContents[currentTabIndex].classList.remove('active');
+      tabContents[index].classList.add('active');
+
+      currentTabIndex = index;
+    }
+  </script>
+</body>
+</html>

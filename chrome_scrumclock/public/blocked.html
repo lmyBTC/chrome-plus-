@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>🚀 Scrumclock 專注衝刺中</title>
+  <style>
+    body {
+      background: radial-gradient(circle at center, #1e1b4b, #0f172a, #020617);
+      color: #f3f4f6;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+      overflow: hidden;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1.5rem;
+      padding: 3rem;
+      max-width: 600px;
+      width: 90%;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      animation: float 6s ease-in-out infinite;
+    }
+    h1 {
+      font-size: 2.25rem;
+      margin: 0 0 0.5rem 0;
+      background: linear-gradient(to right, #ef4444, #f87171);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+    }
+    .subtitle {
+      font-size: 1.125rem;
+      color: #9ca3af;
+      margin-bottom: 2rem;
+    }
+    .mission-badge {
+      background: rgba(96, 165, 250, 0.1);
+      border: 1px solid rgba(96, 165, 250, 0.2);
+      color: #60a5fa;
+      padding: 0.5rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .countdown {
+      font-size: 4.5rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-weight: 800;
+      color: #f3f4f6;
+      margin: 1rem 0 2rem 0;
+      text-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+      letter-spacing: -0.05em;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 2rem;
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      color: white;
+      text-decoration: none;
+      border-radius: 0.75rem;
+      font-weight: 700;
+      font-size: 1rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      cursor: pointer;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
+    .btn:active {
+      transform: translateY(0);
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="mission-badge" id="mission-badge">載入中...</div>
+    <h1 id="title">🚀 專注模式防禦中</h1>
+    <p class="subtitle" id="desc">此網站已被暫時阻擋，請專注推進您的核心戰役。</p>
+    
+    <div class="countdown" id="countdown">--:--</div>
+    
+    <a href="javascript:window.close()" class="btn">關閉此分頁</a>
+  </div>
+
+  <script>
+    const badgeEl = document.getElementById('mission-badge');
+    const titleEl = document.getElementById('title');
+    const descEl = document.getElementById('desc');
+    const countdownEl = document.getElementById('countdown');
+
+    let timerInterval = null;
+
+    function updatePage() {
+      chrome.storage.local.get('activeTimer', (result) => {
+        const activeTimer = result.activeTimer;
+
+        if (activeTimer && activeTimer.state === 'running') {
+          const missionText = activeTimer.missionText || '核心戰役衝刺';
+          badgeEl.textContent = `🎯 正在衝刺：${missionText}`;
+          badgeEl.style.color = '#60a5fa';
+          badgeEl.style.borderColor = 'rgba(96, 165, 250, 0.2)';
+          badgeEl.style.background = 'rgba(96, 165, 250, 0.1)';
+          titleEl.textContent = '🚀 專注模式防禦中';
+          titleEl.style.background = 'linear-gradient(to right, #ef4444, #f87171)';
+          titleEl.style.webkitBackgroundClip = 'text';
+          titleEl.style.webkitTextFillColor = 'transparent';
+          descEl.textContent = '此網站已被暫時阻擋，請專注推進您的核心戰役。';
+          countdownEl.style.color = '#f3f4f6';
+          countdownEl.style.textShadow = '0 0 20px rgba(239, 68, 68, 0.3)';
+
+          // 清理舊的 Interval
+          if (timerInterval) clearInterval(timerInterval);
+
+          // 啟動倒數
+          const endTime = activeTimer.endTime;
+          
+          function runCountdown() {
+            const remainMs = endTime - Date.now();
+            if (remainMs <= 0) {
+              clearInterval(timerInterval);
+              badgeEl.textContent = '🎉 衝刺結束';
+              badgeEl.style.color = '#34d399';
+              badgeEl.style.borderColor = 'rgba(52, 211, 153, 0.2)';
+              badgeEl.style.background = 'rgba(52, 211, 153, 0.1)';
+              titleEl.textContent = '🏆 恭喜完成這段衝刺！';
+              titleEl.style.background = 'linear-gradient(to right, #34d399, #6ee7b7)';
+              titleEl.style.webkitBackgroundClip = 'text';
+              titleEl.style.webkitTextFillColor = 'transparent';
+              descEl.textContent = '防線已暫時解除，請回到計時器頁面記錄成果並稍作休息。';
+              countdownEl.textContent = '00:00';
+              countdownEl.style.color = '#34d399';
+              countdownEl.style.textShadow = '0 0 20px rgba(52, 211, 153, 0.3)';
+              return;
+            }
+
+            const totalSeconds = Math.round(remainMs / 1000);
+            const mins = Math.floor(totalSeconds / 60);
+            const secs = totalSeconds % 60;
+            countdownEl.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+          }
+
+          runCountdown();
+          timerInterval = setInterval(runCountdown, 1000);
+
+        } else {
+          // 非運行狀態，可能是暫停、休息或閒置
+          if (timerInterval) clearInterval(timerInterval);
+          badgeEl.textContent = '☕ 目前為休息/閒置時間';
+          badgeEl.style.color = '#3b82f6';
+          badgeEl.style.borderColor = 'rgba(59, 130, 246, 0.2)';
+          badgeEl.style.background = 'rgba(59, 130, 246, 0.1)';
+          titleEl.textContent = '✨ 防線暫時解除';
+          titleEl.style.background = 'linear-gradient(to right, #60a5fa, #93c5fd)';
+          titleEl.style.webkitBackgroundClip = 'text';
+          titleEl.style.webkitTextFillColor = 'transparent';
+          descEl.textContent = '您可以正常訪問此頁面。建議在休息結束後關閉分頁以保持專注。';
+          countdownEl.textContent = '--:--';
+          countdownEl.style.color = '#9ca3af';
+          countdownEl.style.textShadow = 'none';
+        }
+      });
+    }
+
+    // 初始化與監聽 Storage 變更
+    updatePage();
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName === 'local' && changes.activeTimer) {
+        updatePage();
+      }
+    });
+  </script>
+</body>
+</html>

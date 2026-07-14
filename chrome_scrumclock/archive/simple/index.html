@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日循環儀表板</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      width: 280px;
+      background: white;
+      border-right: 1px solid #e5e7eb;
+      padding: 20px;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+      box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .sidebar-header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .sidebar-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 5px;
+    }
+    
+    .sidebar-header p {
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .nav-menu {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .nav-item {
+      margin-bottom: 8px;
+    }
+    
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 8px;
+      color: #374151;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    
+    .nav-link:hover {
+      background: #f3f4f6;
+      color: #1f2937;
+    }
+    
+    .nav-link.active {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .nav-link .icon {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    
+    .nav-link.active .icon {
+      transform: scale(1.1);
+    }
+    
+    .sidebar-footer {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      text-align: center;
+      font-size: 0.75rem;
+      color: #9ca3af;
+      border-top: 1px solid #e5e7eb;
+      padding-top: 15px;
+    }
+    
+    .main-content {
+      flex: 1;
+      margin-left: 280px;
+      padding: 20px;
+    }
+    
+    /* 響應式設計 */
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .app-layout {
+        flex-direction: column;
+      }
+      
+      .sidebar-footer {
+        position: relative;
+        bottom: auto;
+        left: auto;
+        right: auto;
+        margin-top: 20px;
+      }
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    
+    .header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 10px;
+    }
+    
+    .header p {
+      font-size: 1.1rem;
+      color: #6b7280;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .card h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 16px;
+    }
+    
+    .form-group {
+      margin-bottom: 16px;
+    }
+    
+    label {
+      display: block;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    
+    input, textarea, select {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .btn {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    
+    .btn:hover {
+      background: #2563eb;
+    }
+    
+    .btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: #6b7280;
+    }
+    
+    .btn-secondary:hover {
+      background: #4b5563;
+    }
+    
+    .timer {
+      text-align: center;
+      font-size: 4rem;
+      font-weight: 700;
+      color: #3b82f6;
+      margin: 20px 0;
+      font-family: monospace;
+    }
+    
+    .timer-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    
+    .status {
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 500;
+    }
+    
+    .status.planning {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    
+    .status.sprinting {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status.review {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    .mission-item {
+      display: flex;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    
+    .mission-item input[type="checkbox"] {
+      width: auto;
+      margin-right: 12px;
+    }
+    
+    .mission-item label {
+      flex: 1;
+      margin-bottom: 0;
+      cursor: pointer;
+    }
+    
+    .time-input {
+      width: 120px;
+      margin-left: 12px;
+    }
+    
+    .hidden {
+      display: none;
+    }
+    
+    .sprint-log {
+      background: #f8fafc;
+      padding: 16px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .sprint-log h4 {
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    
+    .sprint-log p {
+      color: #6b7280;
+      font-size: 14px;
+    }
+    
+    .sprint-log .result {
+      color: #059669;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+    
+    .history-item {
+      background: #f8fafc;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: all 0.2s;
+    }
+    
+    .history-item:hover {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      transform: translateY(-2px);
+    }
+    
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .history-date {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #1f2937;
+    }
+    
+    .history-stats {
+      display: flex;
+      gap: 16px;
+      font-size: 0.875rem;
+      color: #6b7280;
+    }
+    
+    .history-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+    }
+    
+    .history-section {
+      background: white;
+      padding: 16px;
+      border-radius: 8px;
+      border-left: 4px solid #3b82f6;
+    }
+    
+    .history-section h4 {
+      color: #374151;
+      margin-bottom: 8px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .history-section p {
+      color: #4b5563;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+    
+    .history-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    @media (max-width: 768px) {
+      .history-content {
+        grid-template-columns: 1fr;
+      }
+      
+      .history-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      
+      .history-stats {
+        flex-wrap: wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- 側邊欄 -->
+    <div class="sidebar">
+      <div class="sidebar-header">
+        <h1>每日循環儀表板</h1>
+        <p>極簡主義的每日規劃、衝刺與回顧工具</p>
+      </div>
+      
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a class="nav-link active" data-section="briefing-section">
+            <span class="icon">📋</span>
+            每日任務簡報
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-section="sprint-section">
+            <span class="icon">⏱️</span>
+            衝刺番茄鐘
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-section="result-section">
+            <span class="icon">📝</span>
+            成果記錄
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-section="review-section">
+            <span class="icon">🔍</span>
+            日終回顧
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-section="review-history-section">
+            <span class="icon">📚</span>
+            回顧紀錄
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" data-section="completed-section">
+            <span class="icon">✅</span>
+            完成狀態
+          </a>
+        </li>
+      </ul>
+      
+      <div class="sidebar-footer">
+        <p>每日循環儀表板</p>
+        <p>v1.0.0</p>
+      </div>
+    </div>
+    
+    <!-- 主要內容區域 -->
+    <div class="main-content">
+      <div class="container">
+    
+    <!-- 每日任務簡報 -->
+    <div id="briefing-section" class="card">
+      <h2>每日任務簡報</h2>
+      <div class="status planning">選擇今日核心戰役</div>
+      
+      <div id="missions-list">
+        <!-- 任務列表將由 JavaScript 動態生成 -->
+      </div>
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <button id="start-sprint-btn" class="btn">開始今日衝刺</button>
+      </div>
+    </div>
+    
+    <!-- 衝刺番茄鐘 -->
+    <div id="sprint-section" class="card hidden">
+      <h2>衝刺番茄鐘</h2>
+      <div class="status sprinting">專注執行你的核心戰役</div>
+      
+      <div class="timer" id="timer">25:00</div>
+      
+      <div class="timer-controls">
+        <button id="start-timer-btn" class="btn">開始衝刺</button>
+        <button id="pause-timer-btn" class="btn btn-secondary hidden">暫停</button>
+        <button id="resume-timer-btn" class="btn btn-success hidden">繼續</button>
+        <button id="stop-timer-btn" class="btn btn-secondary">停止</button>
+      </div>
+      
+      <div id="current-mission" style="margin-top: 20px;">
+        <h3>當前任務</h3>
+        <p id="mission-text">請選擇一個任務開始衝刺</p>
+      </div>
+    </div>
+    
+    <!-- 成果記錄 -->
+    <div id="result-section" class="card hidden">
+      <h2>記錄本次衝刺成果</h2>
+      <p style="margin-bottom: 16px;">請用一句話簡潔地記錄本次衝刺的具體產出成果</p>
+      
+      <div class="form-group">
+        <textarea id="result-input" rows="3" placeholder="例如：完成了 SPEC 文件的使用者故事草稿"></textarea>
+      </div>
+      
+      <div style="text-align: center;">
+        <button id="save-result-btn" class="btn">提交成果</button>
+        <button id="cancel-result-btn" class="btn btn-secondary">取消</button>
+      </div>
+    </div>
+    
+    <!-- 日終回顧 -->
+    <div id="review-section" class="card hidden">
+      <h2>日終回顧</h2>
+      <div class="status review">回顧今日的衝刺成果，提煉洞見</div>
+      
+      <div id="sprint-logs">
+        <!-- 衝刺記錄將由 JavaScript 動態生成 -->
+      </div>
+      
+      <div class="form-group">
+        <label for="highlight-input">今日高光時刻</label>
+        <textarea id="highlight-input" rows="3" placeholder="今天哪個衝刺讓你最有成就感？"></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="lesson-input">最大教訓</label>
+        <textarea id="lesson-input" rows="3" placeholder="如果能讓今天重來一次，你會如何調整你的衝刺計畫？"></textarea>
+      </div>
+      
+      <div class="form-group">
+        <label for="next-action-input">明日關鍵行動</label>
+        <textarea id="next-action-input" rows="3" placeholder="基於今天的回顧，你承諾在明天做出唯一一個最重要的微小改進是什麼？"></textarea>
+      </div>
+      
+      <div style="text-align: center;">
+        <button id="save-review-btn" class="btn">完成回顧</button>
+      </div>
+    </div>
+    
+        <!-- 回顧紀錄 -->
+    <div id="review-history-section" class="card hidden">
+      <h2>回顧紀錄</h2>
+      <p style="margin-bottom: 20px; color: #6b7280;">查看過去的日終回顧，從中學習和成長</p>
+      
+      <div class="history-controls" style="margin-bottom: 20px;">
+        <select id="history-filter" style="width: 200px; margin-right: 10px;">
+          <option value="all">全部記錄</option>
+          <option value="week">最近一週</option>
+          <option value="month">最近一個月</option>
+          <option value="quarter">最近三個月</option>
+        </select>
+        <button id="export-history-btn" class="btn btn-secondary">匯出記錄</button>
+      </div>
+      
+      <div id="review-history-list">
+        <!-- 回顧記錄將由 JavaScript 動態生成 -->
+      </div>
+      
+      <div id="no-history" class="hidden" style="text-align: center; padding: 40px; color: #6b7280;">
+        <p>尚無回顧記錄</p>
+        <p>完成今日的日終回顧後，記錄將顯示在這裡</p>
+      </div>
+    </div>
+    
+    <!-- 完成狀態 -->
+    <div id="completed-section" class="card hidden">
+      <h2>今日循環已完成</h2>
+      <p style="text-align: center; margin: 20px 0;">恭喜你完成了今天的規劃、衝刺與回顧！</p>
+      <div style="text-align: center;">
+        <button id="restart-btn" class="btn">重新開始</button>
+      </div>
+    </div>
+      </div>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html> 

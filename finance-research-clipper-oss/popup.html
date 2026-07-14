@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>Finance Research Clipper</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --primary-hover: #1557b0;
+      --bg-color: #f8f9fa;
+      --border-color: #dadce0;
+      --text-main: #202124;
+      --text-sub: #5f6368;
+      --success-color: #1e8e3e;
+      --error-color: #d93025;
+    }
+
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      box-sizing: border-box;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-size: 13px;
+      background-color: #ffffff;
+      color: var(--text-main);
+      box-sizing: border-box;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.15);
+    }
+
+    input[readonly] {
+      background-color: #f1f3f4;
+      color: var(--text-sub);
+      cursor: not-allowed;
+    }
+
+    textarea {
+      height: 90px;
+      resize: none;
+      line-height: 1.5;
+    }
+
+    button {
+      width: 100%;
+      background-color: var(--primary-color);
+      color: #ffffff;
+      border: none;
+      border-radius: 4px;
+      padding: 10px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background-color: var(--primary-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #status-bar {
+      margin-top: 10px;
+      font-size: 12px;
+      font-weight: 500;
+      text-align: center;
+      min-height: 18px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header" style="justify-content: space-between;">
+    <h1>🚀 投資靈感 Clipper</h1>
+    <button id="settings-btn" style="width: auto; padding: 4px 8px; background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); font-size: 14px;" title="設定">⚙️</button>
+  </div>
+
+  <div id="settings-panel" style="display: none; padding: 12px; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+    <label for="settings-url">Google Apps Script URL</label>
+    <input type="text" id="settings-url" placeholder="輸入您的 Web App URL..." style="margin-bottom: 8px; font-size: 11px;">
+    
+    <label for="settings-sheet-url">Google Sheets URL (選填)</label>
+    <input type="text" id="settings-sheet-url" placeholder="輸入您的試算表網址..." style="margin-bottom: 8px; font-size: 11px;">
+    
+    <div style="margin-top: 10px; margin-bottom: 12px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+      <label style="font-size: 10px; margin-bottom: 8px; color: var(--primary-color);">智能對話清理規則</label>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="rule-disclaimer" checked> 🧹 自動過濾 AI 免責聲明
+        </label>
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="rule-tableizer" checked> 📊 自動將條列數據轉換為表格
+        </label>
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+          <input type="checkbox" id="rule-extractor" checked> 🧠 開啟智能標的與情緒預測
+        </label>
+      </div>
+    </div>
+    
+    <button id="save-settings-btn" style="padding: 6px; font-size: 11px;">儲存設定</button>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+    <button id="mode-stock" style="flex: 1; background-color: var(--primary-color); font-size: 11px; padding: 6px;">股票擷取</button>
+    <button id="mode-ai" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); font-size: 11px; padding: 6px;">AI 研究擷取</button>
+  </div>
+  
+  <div id="stock-fields">
+    <div class="form-group">
+      <label for="ticker">觀測標的 (Ticker)</label>
+      <input type="text" id="ticker" readonly placeholder="讀取中...">
+    </div>
+    
+    <div class="form-group">
+      <label for="price">目前價格 (Price)</label>
+      <input type="text" id="price" readonly placeholder="讀取中...">
+    </div>
+
+    <div style="margin-top: 10px; padding: 8px; background: #fff; border: 1px solid var(--border-color); border-radius: 4px;">
+      <label style="font-size: 10px; margin-bottom: 8px; color: var(--primary-color);">進階數據同步</label>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+          <input type="checkbox" id="check-mktcap" checked> 市值
+        </label>
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+          <input type="checkbox" id="check-pe" checked> 本益比
+        </label>
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+          <input type="checkbox" id="check-range" checked> 當日高低
+        </label>
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px;">
+          <input type="checkbox" id="check-52w" checked> 52週高低
+        </label>
+      </div>
+      <div style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+        <label style="text-transform: none; font-size: 11px; font-weight: normal; display: flex; align-items: center; gap: 4px; color: var(--primary-color);">
+          <input type="checkbox" id="check-screenshot"> 📸 附加當前圖表截圖
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="ai-fields" style="display: none;">
+    <div class="form-group">
+      <label>選擇要擷取的對話段落</label>
+      <div id="ai-selector-container" style="background: #fff; border: 1px solid var(--border-color); border-radius: 4px; max-height: 200px; overflow-y: auto; padding: 4px;">
+        <!-- 動態插入勾選項目 -->
+        <div style="font-size: 11px; color: var(--text-sub); padding: 8px;">尚未偵測到對話內容...</div>
+      </div>
+    </div>
+  </div>
+    
+  <details id="financials-preview-details" style="margin-bottom: 14px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; padding: 8px;">
+    <summary style="font-size: 12px; font-weight: 700; color: var(--primary-color); cursor: pointer; user-select: none; outline: none;">
+      📊 進階財報與 AI 收益摘要
+    </summary>
+    <div id="financials-preview-content" style="margin-top: 8px; font-size: 11px; color: var(--text-main); max-height: 200px; overflow-y: auto; line-height: 1.4;">
+      <div style="padding: 4px; color: var(--text-sub);">尚未擷取到財報數據。</div>
+    </div>
+  </details>
+
+  <div class="form-group">
+    <label for="note">核心觀點與備註 (Note)</label>
+    <textarea id="note" autofocus tabindex="1" placeholder="寫下您的想法... (支援 Ctrl+Enter 快速送出)"></textarea>
+  </div>
+  
+  <button id="submit-btn">同步至雲端資料庫</button>
+  
+  <div style="display: flex; gap: 8px; margin-top: 8px;">
+    <button id="export-md-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 Markdown 檔案">⬇️ .md</button>
+    <button id="export-csv-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 CSV 檔案">⬇️ .csv</button>
+  </div>
+
+  <div id="status-bar"></div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日循環儀表板 - 設定</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f3f4f6;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      color: #1f2937;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+    .section {
+      margin-bottom: 32px;
+    }
+    .section h2 {
+      color: #374151;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #374151;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .button:hover {
+      background: #2563eb;
+    }
+    .button:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+    .success {
+      color: #059669;
+      background: #d1fae5;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 16px;
+    }
+    .error {
+      color: #dc2626;
+      background: #fee2e2;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>每日循環儀表板 - 設定</h1>
+    
+    <div class="section">
+      <h2>基本設定</h2>
+      <div class="form-group">
+        <label for="userName">使用者名稱</label>
+        <input type="text" id="userName" placeholder="輸入你的名字">
+      </div>
+      <div class="form-group">
+        <label for="pomodoroDuration">番茄鐘時長（分鐘）</label>
+        <input type="number" id="pomodoroDuration" min="5" max="60" value="25">
+      </div>
+      <div class="form-group">
+        <label for="breakDuration">休息時長（分鐘）</label>
+        <input type="number" id="breakDuration" min="1" max="30" value="5">
+      </div>
+      <div class="form-group">
+        <label for="endOfDayReviewTime">日終回顧時間</label>
+        <input type="time" id="endOfDayReviewTime" value="21:00">
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>北極星目標</h2>
+      <div class="form-group">
+        <label for="northStarGoal">你的北極星目標</label>
+        <textarea id="northStarGoal" rows="3" placeholder="例如：成為一個獨立開發者"></textarea>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>週任務管理</h2>
+      <div class="form-group">
+        <label for="weeklyMissions">本週關鍵任務（每行一個）</label>
+        <textarea id="weeklyMissions" rows="6" placeholder="例如：&#10;完成產品規格書&#10;學習 React Hooks&#10;設計資料庫結構"></textarea>
+      </div>
+    </div>
+    
+    <div class="section">
+      <h2>專注模式設定</h2>
+      <div class="form-group">
+        <label for="distractionSites">干擾網站（每行一個網址）</label>
+        <textarea id="distractionSites" rows="4" placeholder="例如：&#10;facebook.com&#10;youtube.com&#10;twitter.com&#10;instagram.com"></textarea>
+      </div>
+    </div>
+    
+    <div style="text-align: center;">
+      <button class="button" id="saveSettings">儲存設定</button>
+    </div>
+    
+    <div id="message"></div>
+  </div>
+  
+  <script src="options.js"></script>
+</body>
+</html> 

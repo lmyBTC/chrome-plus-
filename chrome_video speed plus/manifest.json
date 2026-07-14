@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Speed Plus",
+  "version": "1.0",
+  "description": "讓 YouTube 影片播放速度提升到 3 倍以上",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Speed Plus"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ]
+} 

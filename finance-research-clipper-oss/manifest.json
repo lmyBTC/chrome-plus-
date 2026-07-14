@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Finance Research Clipper",
+  "version": "1.0.0",
+  "description": "一鍵擷取 Google Finance 股票數據與個人筆記，自動同步至 Google Sheets。",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "https://www.google.com/finance/*",
+    "https://script.google.com/*",
+    "https://script.googleusercontent.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+S",
+        "mac": "Command+Shift+S"
+      },
+      "description": "快速開啟投資靈感 Clipper"
+    }
+  }
+}

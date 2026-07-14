@@ -1,0 +1,20 @@
+{
+  "name": "chrome-plus-workspace",
+  "version": "1.0.0",
+  "description": "Chrome 多插件開發工作區自動化管理配置",
+  "private": true,
+  "scripts": {
+    "dev:scrumclock": "npm --prefix chrome_scrumclock run dev",
+    "build:scrumclock": "npm --prefix chrome_scrumclock run build",
+    "audit:manifests": "python 0.doc_mg/tools/audit_manifests.py",
+    "task:archive": "python 0.doc_mg/tools/task_cli.py archive",
+    "task:init": "python 0.doc_mg/tools/task_cli.py init"
+  },
+  "keywords": [
+    "chrome-extension",
+    "workspace",
+    "vite"
+  ],
+  "author": "",
+  "license": "ISC"
+}
