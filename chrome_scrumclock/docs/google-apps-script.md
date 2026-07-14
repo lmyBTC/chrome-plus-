@@ -215,3 +215,11 @@ function getOrCreateBackupFile() {
 6. **誰可以存取**：所有人 (Anyone)
 7. 部署後，複製 **網頁應用程式網址 (Web App URL)**。
 8. 將該網址貼入 `chrome_scrumclock` 擴充功能的設定頁面中。
+
+---
+
+## 3. 與 AI 本地側欄助理的相容性 (AI Sidebar Compatibility)
+
+ScrumClock 新增的 **內建 Gemini 側欄助理** 與此 Google Apps Script 同步後台 **100% 無縫相容**：
+- **零代碼變更**：當您在側欄助理點擊「➕ 寫入今日戰役」時，任務會被寫入本地儲存。隨後在新分頁中進行番茄鐘衝刺與日終回顧時，這些由 AI 產生的任務日誌將會透過既有的 `log_sprint` 與 `log_review` 動作，自動上傳至您的 Google Sheets `Logs` 中。
+- **跨 Profile 備份**：由 AI 助理載入的官方對話歷史與相關設定，皆儲存於 `chrome.storage.local`，當您執行 `push_app_data` 與 `pull_app_data` 時，會一併封裝在跨瀏覽器同步資料中，自動備份於您雲端硬碟的 `scrumclock_sync_data.json` 檔案中。

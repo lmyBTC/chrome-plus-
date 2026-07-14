@@ -12,6 +12,7 @@ import { ToolView } from './core/layout/Sidebar';
 import { AISidebar } from './features/ai-sidebar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { InstallDocs } from './components/InstallDocs';
+import { GeminiManager } from './features/gemini-exporter';
 
 type AppState = 'briefing' | 'sprint' | 'review' | 'completed';
 type ViewState = 'flow' | 'analytics';
@@ -132,6 +133,7 @@ function App() {
               {currentView === 'projects' && <ProjectManagementDemo />}
               {currentView === 'bookmarks' && <BookmarksHub />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
+              {currentView === 'gemini' && <GeminiManager />}
               {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
               {currentView === 'docs' && <InstallDocs />}
             </MainLayout>

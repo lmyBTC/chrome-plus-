@@ -8,6 +8,22 @@ let distractionSites: string[] = [];
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('每日循環儀表板已安裝');
   
+  // 設定點擊 Action 圖標時開啟側邊欄
+  if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.setPanelBehavior) {
+    chrome.sidePanel
+      .setPanelBehavior({ openPanelOnActionClick: true })
+      .catch((error) => console.error("設定側欄行為失敗:", error));
+  }
+  
+  // 建立右鍵選單
+  if (typeof chrome.contextMenus !== 'undefined') {
+    chrome.contextMenus.create({
+      id: 'analyze_tasks',
+      title: '🤖 傳送至 ScrumClock 助理分析',
+      contexts: ['selection']
+    });
+  }
+  
   // 設定每日回顧鬧鐘
   const userSettings = await getUserSettings();
   const [hours, minutes] = userSettings.endOfDayReviewTime.split(':');
@@ -17,6 +33,29 @@ chrome.runtime.onInstalled.addListener(async () => {
     periodInMinutes: 24 * 60 // 每24小時重複
   });
 });
+
+// 監聽右鍵選單點擊
+if (typeof chrome.contextMenus !== 'undefined') {
+  chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'analyze_tasks' && tab?.id) {
+      const pendingData = {
+        text: info.selectionText || "",
+        title: tab.title || "",
+        url: tab.url || "",
+        timestamp: Date.now()
+      };
+
+      // 1. 寫入選取的文字到 storage
+      chrome.storage.local.set({ pendingAnalyzeText: pendingData }, () => {
+        // 2. 開啟側欄
+        if (typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
+          (chrome.sidePanel as any).open({ windowId: tab.windowId })
+            .catch((err: any) => console.error("開啟側欄失敗:", err));
+        }
+      });
+    }
+  });
+}
 
 // 監聽快捷鍵 (Quick Capture)
 chrome.commands.onCommand.addListener((command: string) => {
@@ -42,6 +81,12 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
     case 'STOP_FOCUS_MODE':
       stopFocusMode();
       chrome.alarms.clear('sprintFinished');
+      break;
+    case 'UPDATE_GEMINI_CHAT':
+      saveGeminiConversation(message.payload);
+      break;
+    case 'OPEN_DASHBOARD':
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/newtab/index.html') });
       break;
   }
 });
@@ -137,4 +182,35 @@ function showSprintFinishedNotification() {
     title: '衝刺結束',
     message: '太棒了！你的番茄鐘衝刺已經結束，快來記錄你的成果吧！'
   });
+}
+
+// 儲存 Gemini 對話資料
+async function saveGeminiConversation(conversation: any) {
+  try {
+    const result = await chrome.storage.local.get('geminiConversations');
+    const list = result.geminiConversations || [];
+    
+    // 檢查是否已存在該 ID，若存在則更新，不存在則插入最前面
+    const index = list.findIndex((c: any) => c.id === conversation.id);
+    if (index > -1) {
+      list[index] = {
+        ...list[index],
+        title: conversation.title || list[index].title,
+        messages: conversation.messages,
+        timestamp: conversation.timestamp
+      };
+    } else {
+      list.unshift(conversation);
+    }
+    
+    // 限制對話數量，例如最多保存 50 筆
+    if (list.length > 50) {
+      list.pop();
+    }
+
+    await chrome.storage.local.set({ geminiConversations: list });
+    console.log(`Gemini Exporter: 已保存對話「${conversation.title}」，目前共有 ${list.length} 筆對話`);
+  } catch (error) {
+    console.error('儲存 Gemini 對話失敗:', error);
+  }
 }

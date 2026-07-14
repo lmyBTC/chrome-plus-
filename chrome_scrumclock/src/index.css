@@ -36,4 +36,105 @@ body {
 /* 1. 全域元件與 Chart.js 圖表濾鏡 */
 canvas {
   filter: invert(0.9) hue-rotate(180deg) !important;
+}
+
+/* 2. Gemini HTML 富文本排版樣式 */
+.gemini-html-content {
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.gemini-html-content p {
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.gemini-html-content h1,
+.gemini-html-content h2,
+.gemini-html-content h3,
+.gemini-html-content h4 {
+  color: var(--color-text-primary);
+  margin-top: 14px;
+  margin-bottom: 6px;
+  font-weight: 600;
+}
+
+.gemini-html-content ul,
+.gemini-html-content ol {
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding-left: 20px;
+}
+
+.gemini-html-content ul {
+  list-style-type: disc;
+}
+
+.gemini-html-content ol {
+  list-style-type: decimal;
+}
+
+.gemini-html-content li {
+  margin-bottom: 4px;
+}
+
+.gemini-html-content pre {
+  background-color: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--color-border-default);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.gemini-html-content code {
+  font-family: 'Fira Code', Consolas, Monaco, monospace;
+  font-size: 12px;
+  background-color: rgba(255, 255, 255, 0.08);
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.gemini-html-content pre code {
+  background-color: transparent;
+  padding: 0;
+  border-radius: 0;
+}
+
+.gemini-html-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--color-border-subtle);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.gemini-html-content a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.gemini-html-content a:hover {
+  color: #60a5fa;
+}
+
+.gemini-html-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.gemini-html-content th,
+.gemini-html-content td {
+  border: 1px solid var(--color-border-default);
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.gemini-html-content th {
+  background-color: rgba(255, 255, 255, 0.05);
 } 

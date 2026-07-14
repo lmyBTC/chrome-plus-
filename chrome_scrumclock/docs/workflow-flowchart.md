@@ -17,31 +17,37 @@
 
 ```mermaid
 graph TD
-    subgraph Frontend ["React 前端面板"]
-        UI["Scrumclock UI"]
+    subgraph Frontend ["React 前端面板與側欄"]
+        UI["Scrumclock UI (儀表板)"]
         Ctx["TimerContext"]
         Aud["Web Audio API 合成器"]
+        SB["AISidebar (Side Panel 側欄助理)"]
     end
 
     subgraph Storage ["Chrome Storage"]
         CS["chrome.storage.local"]
         AT["activeTimer 狀態"]
         WM["weeklyMissions 週任務"]
+        DL["dailyLogs 今日任務與日誌"]
+        GC["geminiConversations 歷史對話"]
+        PA["pendingAnalyzeText 右鍵快取"]
     end
 
     subgraph Background ["Background Worker"]
         BG["background.ts"]
         DNR["Declarative Net Request 規則"]
         AL["chrome.alarms"]
+        CM["chrome.contextMenus 右鍵選單"]
     end
 
     subgraph Blocks ["專注防線"]
         BP["blocked.html 阻擋頁面"]
     end
 
-    subgraph Integrations ["外部 API 整合"]
+    subgraph Integrations ["外部 API 整合與本地 AI"]
         Notion["Notion Webhook API"]
         GAS["Google Sheets / Calendar API"]
+        Nano["Gemini Nano (本地 Prompt API)"]
     end
 
     %% 連線關係
@@ -52,12 +58,22 @@ graph TD
     
     BG -->|"START/STOP_FOCUS_MODE"| DNR
     BG -->|"設定衝刺與回顧鬧鐘"| AL
+    BG -->|"註冊右鍵選單"| CM
+    
+    CM -->|"點擊傳送分析"| PA
+    PA -->|"監聽並自動載入"| SB
     
     BP -->|"每秒讀取 & onChanged"| CS
     BP -->|"阻擋分心網頁"| DNR
     
     Ctx -->|"completeTaskWithNotes / pushSprintLog"| Notion
     Ctx -->|"pushSprintLog / pushToCalendar"| GAS
+
+    SB -->|"本地 Prompt API 推理"| Nano
+    SB -->|"定時同步倒數計時"| AT
+    SB -->|"一鍵匯入今日戰役"| DL
+    SB -->|"讀取並續接歷史對話"| GC
+    SB -->|"一鍵打開儀表板/設定"| BG
 ```
 </details>
 
@@ -153,7 +169,7 @@ sequenceDiagram
     User->>UI: 勾選子任務並點擊「一鍵匯入今日戰役」
     
     UI->>Storage: 註冊子任務到週任務庫 (WeeklyMissions)
-    UI->>UI: 根�### 5.1 專案目錄樹與職責分工
+    UI->>UI: 根### 5.1 專案目錄樹與職責分工
 
 ```text
 chrome_scrumclock/

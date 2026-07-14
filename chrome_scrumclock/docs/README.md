@@ -17,10 +17,9 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
 6. 點擊左上角的 **「載入未封裝擴充功能」** (Load unpacked)，並選擇本專案 `chrome_scrumclock` 目錄底下的 **`dist`** 資料夾。
 7. 成功載入後，即可在瀏覽器工具列中釘選並啟動 **Scrumclock**。
 
-### 2. 配置 AI 助理 (Gemini API Key)
-1. 點擊 Scrumclock 右上角的 **設定 (Settings)** 圖示開啟設定面板（或點擊擴充功能選項開啟獨立設定頁）。
-2. 在 API Key 輸入框中，填入您的免費 **Gemini API Key**（可於 [Google AI Studio](https://aistudio.google.com/) 免費申請）。
-3. 點擊儲存。您的金鑰將安全地儲存於本地 `chrome.storage.local` 中，直接與 Google 官方伺服器通訊，不經過任何第三方代理，確保商業敏感文檔的安全性與隱私。
+### 2. 配置與啟用 AI 助理
+*   **新版 Chrome 內建 AI (Gemini Nano)**：最新的 ScrumClock 助理支援 Chrome 內建的 Prompt API。您不需要配置任何 API Key 或網路連接，模型直接在您的電腦上本地安全運行。請在 `chrome://flags` 中將 `Optimization Guide On Device Model` 與 `Prompt API for Gemini Nano` 啟用 (Enabled) 即可使用。
+*   **自備 Gemini API Key (非內建) 備用模式**：若您的瀏覽器版本不支援內建 AI，仍可於設定面板填入您的免費 **Gemini API Key**（可於 [Google AI Studio](https://aistudio.google.com/) 申請）並儲存至本地 `chrome.storage.local` 以進行雲端 API 調用。
 
 ---
 
@@ -70,11 +69,15 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
     *   **Offline Batch Sync**：網路斷線時自動將衝刺 Log 暫存至本地 `offlineQueue`，連線後自動 flush 同步。
     *   **Context URL Capture**：快捷捕捉當前活動網頁的標題與網址，並自動附加到任務備註中。
 
-### 模組九：極簡獨立 AI 側邊欄助理 (AI Sidebar Copilot)
-*   **解決痛點**：Google Docs Canvas 渲染修改困難，且不想授權敏感的 Google 帳號全域讀寫權限。
+### 模組九：內建 Gemini 本地側欄助理與生態系深度整合 (Chrome Side Panel & Gemini Nano Copilot)
+*   **解決痛點**：高昂的雲端 AI 網路開銷與隱私外洩疑慮，以及任務拆解與計時狀態的手動填寫繁瑣。
 *   **操作體驗**：
-    *   **折疊式 AI 側邊欄**：按下 `Ctrl + Shift + K` 隨時從螢幕右側拉出。
-    *   **剪貼簿快取與貼回**：自動偵測剪貼簿最新複製內容，提供一鍵「潤色」、「擴寫」等快捷 Prompt。生成結果支持一鍵複製，讓使用者直接 `Ctrl + V` 覆蓋 Docs 原文，完美避開 Docs Canvas DOM 讀寫障礙。
+    *   **本地側欄助理**：點擊 Action 圖示直接開啟右側側欄助理，全本地端運行，保護資料隱私。
+    *   **雙向生態連動**：
+        *   **一鍵匯入任務與選取文字**：點擊匯入或右鍵選取文字點擊「傳送至 ScrumClock 助理分析」，即可拉起側欄自動載入並進行任務拆解。
+        *   **逆向寫入今日戰役**：一鍵解析助理回覆中的任務與 🍅 數，直接更新並寫入今日儀表板。
+        *   **實時番茄鐘計時狀態條**：側欄頂部顯示當前番茄鐘進行/休息狀態倒數，並在結束時主動提示敏捷成果回顧。
+        *   **載入歷史官方對話**：可於側欄直接載入並續接先前由 `geminiContent.ts` 抓取的官方歷史對話。
 
 ## 📁 目錄與檔案結構 (Project Structure)
 
@@ -91,6 +94,9 @@ chrome_scrumclock/
 │   │   │   ├── index.html
 │   │   │   └── main.tsx
 │   │   ├── popup/       # 瀏覽器圖示點擊彈窗 (React)
+│   │   │   ├── index.html
+│   │   │   └── main.tsx
+│   │   ├── sidebar/     # 側欄助理 (React)
 │   │   │   ├── index.html
 │   │   │   └── main.tsx
 │   │   └── options/     # 獨立全域系統設定頁 (React)

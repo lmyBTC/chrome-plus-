@@ -79,13 +79,17 @@
     *   **Offline Batch Sync**：實作 `offlineQueue`，網路斷線時自動將衝刺 Log 暫存在本地，連線後自動 flush 同步。
     *   **Context URL Capture**：按下 `Alt + K` 時會自動抓取當前活動分頁的標題與網址，並附加到任務備註中。
 
-### 模組九：極簡獨立 AI 側邊欄助理 (AI Sidebar Copilot)
-*   **故事背景**：身為一個重度文件編輯與寫作工作者，我希望在不需授權敏感的 Google 帳號權限（OAuth 2.0）且不干擾 Google Docs 複雜 Canvas 渲染結構的前提下，能隨時在右側叫出 AI，並依據我當前複製的文字快速進行潤色與貼回。
-*   **功能定位**：零權限、零干擾的極致寫作協作。
+### 模組九：內建 Gemini 本地側欄助理與生態系深度整合 (Chrome Side Panel & Gemini Nano Copilot)
+*   **故事背景**：我希望能夠在任何網頁瀏覽時，直接在瀏覽器右側開啟專屬的 ScrumClock 助理，且不需要 API Key、不需要網路連接，完全在本地端快速評估任務、估算番茄鐘。我還希望選取的網頁文字能一鍵送給助理，且助理給出的建議任務能直接匯入到我的今日儀表板中。
+*   **功能定位**：本地運行、零金鑰、深色美學、且與計時與任務生態系雙向打通的敏捷控制中心。
 *   **實作細節**：
-    *   **折疊式 AI 側邊欄 (AISidebar)**：提供 `Ctrl + Shift + K` (Mac: `Cmd + Shift + K`) 全域快捷鍵，隨時從螢幕右側拉出/摺疊。
-    *   **剪貼簿快取與貼回**：監測剪貼簿，提供一鍵「潤色」、「擴寫」、「精簡」、「翻譯」等快捷 Prompt。生成結果支持一鍵複製貼回，透過剪貼簿完美避開 Google Docs 的 Canvas 渲染操作難題。
-    *   **自備 API 金鑰 (SettingsPanel)**：實作獨立設定面板，使用者可自備免費的 Gemini API Key 並儲存於本地 `chrome.storage`，技術完全獨立，無隱私外洩疑慮。
+    *   **Chrome 側邊欄 (Side Panel API)**：設定為點擊 Action 圖示直接開啟右側側欄助理，不干擾宿主網頁。
+    *   **本地 Prompt API (Gemini Nano)**：調用 `ai.languageModel` 本地推理，檢測能力並支援引導下載，安全保障 100%。
+    *   **雙向生態連動**：
+        *   **逆向寫入今日戰役**：一鍵解析助理回覆中的任務與 🍅 數，直接更新至 `dailyLogs.coreBattles` 寫入今日儀表板。
+        *   **實時番茄鐘計時條**：監聽 `activeTimer` 狀態，動態呈現番茄鐘倒數或休息狀態，並在衝刺結束時主動發起敏捷回顧對話。
+        *   **右鍵選單快捷分析**：新增右鍵「🤖 傳送至 ScrumClock 助理分析」，自動開側欄並填入選取文字。
+        *   **官方歷史對話續接**：整合下拉選單，可載入 `geminiContent.ts` 抓取的官方歷史對話（`geminiConversations`）續接對話上下文。
 
 ---
 

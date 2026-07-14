@@ -3,13 +3,21 @@
   "name": "每日循環儀表板",
   "version": "1.0.0",
   "description": "極簡主義的每日規劃、衝刺與回顧工具",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
     "storage",
     "alarms",
     "notifications",
     "tabs",
     "scripting",
-    "declarativeNetRequest"
+    "declarativeNetRequest",
+    "downloads",
+    "sidePanel",
+    "contextMenus"
   ],
   "host_permissions": [
     "<all_urls>"
@@ -18,8 +26,10 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_popup": "src/entries/popup/index.html",
     "default_title": "每日循環儀表板"
+  },
+  "side_panel": {
+    "default_path": "src/entries/sidebar/index.html"
   },
   "chrome_url_overrides": {
     "newtab": "src/entries/newtab/index.html"
@@ -39,6 +49,11 @@
       "matches": ["<all_urls>"],
       "js": ["content.js"],
       "run_at": "document_start"
+    },
+    {
+      "matches": ["https://gemini.google.com/*"],
+      "js": ["geminiContent.js"],
+      "run_at": "document_end"
     }
   ]
 } 
