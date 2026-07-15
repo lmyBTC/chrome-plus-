@@ -200,7 +200,7 @@ def audit_plugin(plugin):
             errors.append("CSP 格式錯誤: MV3 中 content_security_policy 必須為物件形式，例如 { 'extension_pages': '...' }，不支援字串。")
         else:
             ep = csp.get('extension_pages', '')
-            if 'unsafe-eval' in ep:
+            if 'unsafe-eval' in ep.replace('wasm-unsafe-eval', ''):
                 errors.append("CSP 安全漏洞: 'unsafe-eval' 已被 Chrome 審查禁用，禁止出現在 extension_pages 中。")
             if 'http://' in ep:
                 errors.append("CSP 安全漏洞: extension_pages 禁止引入不安全的 http:// 外部來源。")

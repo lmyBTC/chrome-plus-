@@ -228,8 +228,11 @@ const SidebarApp: React.FC = () => {
 
     try {
       if (!aiSessionRef.current) {
-        const windowAI = (window as any).ai;
-        aiSessionRef.current = await windowAI.languageModel.create({
+        const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+        if (!aiAPI) {
+          throw new Error('無法取得本地 AI API 呼叫路徑。');
+        }
+        aiSessionRef.current = await aiAPI.create({
           systemPrompt: '你是一個專業的 Scrum 敏捷開發與番茄鐘助理。請用繁體中文回答。'
         });
       }
@@ -384,14 +387,14 @@ const SidebarApp: React.FC = () => {
 
   const checkAndInitAI = async () => {
     try {
-      const windowAI = (window as any).ai;
-      if (!windowAI || !windowAI.languageModel) {
+      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+      if (!aiAPI) {
         setAiAvailable('no');
         setIsInitializing(false);
         return;
       }
 
-      const capabilities = await windowAI.languageModel.capabilities();
+      const capabilities = await aiAPI.capabilities();
       if (capabilities.available === 'no') {
         setAiAvailable('no');
         setIsInitializing(false);
@@ -400,7 +403,7 @@ const SidebarApp: React.FC = () => {
 
       setAiAvailable('yes');
       
-      aiSessionRef.current = await windowAI.languageModel.create({
+      aiSessionRef.current = await aiAPI.create({
         systemPrompt: `你是一個專業的 Scrum 敏捷開發與番茄鐘助理。
 你會幫助使用者評估任務優先順序、拆解子任務、估算番茄鐘數量，並給予專注力與效率建議。
 請使用「繁體中文」進行回答，回答要簡短、俐落、精準且富有鼓勵語氣。`
@@ -430,8 +433,11 @@ const SidebarApp: React.FC = () => {
 
     try {
       if (!aiSessionRef.current) {
-        const windowAI = (window as any).ai;
-        aiSessionRef.current = await windowAI.languageModel.create({
+        const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+        if (!aiAPI) {
+          throw new Error('無法取得本地 AI API 呼叫路徑。');
+        }
+        aiSessionRef.current = await aiAPI.create({
           systemPrompt: '你是一個專業的 Scrum 敏捷開發與番茄鐘助理。請用繁體中文回答。'
         });
       }

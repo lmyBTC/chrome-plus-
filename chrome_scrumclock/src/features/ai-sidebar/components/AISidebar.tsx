@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { geminiService } from '../../../core/api/gemini';
 import { storage } from '../../../core/chrome/storage';
 
 interface AISidebarProps {
@@ -20,11 +19,48 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
   const [clipboardText, setClipboardText] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [aiAvailable, setAiAvailable] = useState<'checking' | 'yes' | 'no'>('checking');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const aiSessionRef = useRef<any>(null);
 
   // 滾動到最新消息
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    checkAndInitAI();
+
+    return () => {
+      if (aiSessionRef.current) {
+        try {
+          aiSessionRef.current.destroy();
+        } catch (e) {
+          console.error('銷毀 AI 會話失敗:', e);
+        }
+      }
+    };
+  }, []);
+
+  const checkAndInitAI = async () => {
+    try {
+      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+      if (!aiAPI) {
+        setAiAvailable('no');
+        return;
+      }
+
+      const capabilities = await aiAPI.capabilities();
+      if (capabilities.available === 'no') {
+        setAiAvailable('no');
+        return;
+      }
+
+      setAiAvailable('yes');
+    } catch (error) {
+      console.error('檢測本地 AI 失敗:', error);
+      setAiAvailable('no');
+    }
   };
 
   useEffect(() => {
@@ -63,11 +99,26 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
     if (!customPrompt) setInputValue('');
     setIsLoading(true);
 
+    if (aiAvailable !== 'yes') {
+      setErrorMsg('本地 Gemini Nano AI 尚未啟用。請依照上方說明在 chrome://flags 中啟用它。');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await geminiService.generateText(
-        textToSend,
-        "你是一個辦公效率與寫作助理。請用繁體中文回答，排版請清晰乾淨，多用 Markdown 的標題、清單與粗體來增強可讀性。如果使用者要求優化文章，請保留原本的優點並提供具體的改進理由。"
-      );
+      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+      if (!aiAPI) {
+        setErrorMsg('無法取得本地 AI API 呼叫路徑。');
+        setIsLoading(false);
+        return;
+      }
+      if (!aiSessionRef.current) {
+        aiSessionRef.current = await aiAPI.create({
+          systemPrompt: "你是一個辦公效率與寫作助理。請用繁體中文回答，排版請清晰乾淨，多用 Markdown 的標題、清單與粗體來增強可讀性。如果使用者要求優化文章，請保留原本的優點並提供具體的改進理由。"
+        });
+      }
+
+      const response = await aiSessionRef.current.prompt(textToSend);
       
       const aiMsg: Message = {
         role: 'model',
@@ -76,7 +127,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       };
       setMessages(prev => [...prev, aiMsg]);
     } catch (error: any) {
-      setErrorMsg(error?.message || '呼叫 API 發生錯誤。');
+      setErrorMsg(error?.message || '呼叫本地 AI 發生錯誤。');
     } finally {
       setIsLoading(false);
     }
@@ -200,7 +251,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
           <span className="text-xl">🤖</span>
           <div>
             <h3 className="font-bold text-sm tracking-wider">Scrumclock Copilot</h3>
-            <p className="text-xs text-dark-muted">Gemini 1.5 Flash 驅動</p>
+            <p className="text-xs text-dark-muted">Gemini Nano 驅動</p>
           </div>
         </div>
         <button 
@@ -211,6 +262,23 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
           ✕
         </button>
       </div>
+
+      {/* 本地 AI 啟用指引 */}
+      {aiAvailable === 'no' && (
+        <div className="p-3.5 m-3 bg-red-950/40 border border-red-900/50 text-red-400 rounded-xl text-xs leading-relaxed shadow-lg">
+          <strong className="text-sm font-semibold flex items-center gap-1 mb-1 text-red-300">
+            ⚠️ 未偵測到本地 AI 模型
+          </strong>
+          請開啟新分頁並輸入 
+          <code className="mx-1 bg-dark-surface px-1 py-0.5 rounded text-red-300 font-mono border border-red-900/30">
+            chrome://flags
+          </code>，將以下兩項設為 <strong>Enabled</strong> 並重啟瀏覽器以自動下載模型：
+          <ul className="list-disc list-inside mt-1.5 space-y-1 text-dark-muted">
+            <li><strong>Prompt API for Gemini Nano</strong></li>
+            <li><strong>Enables optimization guide on device</strong></li>
+          </ul>
+        </div>
+      )}
 
       {/* 快捷寫作增強面板 */}
       <div className="p-3 bg-dark-surface border-b border-dark-border-subtle">
