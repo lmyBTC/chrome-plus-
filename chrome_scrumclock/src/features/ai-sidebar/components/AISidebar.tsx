@@ -250,7 +250,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex items-center gap-2">
           <span className="text-xl">🤖</span>
           <div>
-            <h3 className="font-bold text-sm tracking-wider">Scrumclock Copilot</h3>
+            <h3 className="font-bold text-sm tracking-wider">PK+ Copilot</h3>
             <p className="text-xs text-dark-muted">Gemini Nano 驅動</p>
           </div>
         </div>

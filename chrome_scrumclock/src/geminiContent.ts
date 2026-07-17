@@ -350,7 +350,7 @@
       <!-- 懸浮選單 -->
       <div id="scrumclock-panel" class="panel open">
         <div class="header">
-          <h4><span>🤖</span> ScrumClock 助手</h4>
+          <h4><span>🤖</span> PK+ 助手</h4>
           <span class="indicator"></span>
         </div>
         
@@ -365,14 +365,14 @@
         <div class="menu">
           <button id="btn-manual" class="btn">📥 立即手動擷取</button>
           <button id="btn-export" class="btn">📄 快速導出 Markdown</button>
-          <button id="btn-dashboard" class="btn btn-primary">🍅 打開 ScrumClock 儀表板</button>
+          <button id="btn-dashboard" class="btn btn-primary">🍅 打開 Power Kit 儀表板</button>
         </div>
         
-        <div class="footer">ScrumClock Helper v1.0.0</div>
+        <div class="footer">PK+ Helper v1.0.0</div>
       </div>
       
       <!-- FAB 按鈕 -->
-      <div id="scrumclock-fab" class="fab" title="ScrumClock 快捷選單 (可拖曳)">
+      <div id="scrumclock-fab" class="fab" title="PK+ 快捷選單 (可拖曳)">
         <svg viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="10"></circle>
           <polyline points="12 6 12 12 16 14"></polyline>

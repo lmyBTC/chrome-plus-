@@ -29,6 +29,8 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
   // Markdown 匯入專用 States
   const [importText, setImportText] = useState('');
   const [showImportArea, setShowImportArea] = useState(false);
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [editingNotesText, setEditingNotesText] = useState('');
 
   useEffect(() => {
     loadData();
@@ -234,6 +236,22 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
       alert('儲存修改失敗');
     } finally {
       setEditingMissionId(null);
+    }
+  };
+
+  // 儲存任務備註
+  const handleSaveNotes = async (missionId: string) => {
+    try {
+      const updatedMissions = weeklyMissions.map(m => 
+        m.id === missionId ? { ...m, notes: editingNotesText.trim() } : m
+      );
+      await storage.saveWeeklyMissions(updatedMissions);
+      setWeeklyMissions(updatedMissions);
+    } catch (error) {
+      console.error('儲存備註失敗:', error);
+      alert('儲存備註失敗');
+    } finally {
+      setEditingNotesId(null);
     }
   };
 
@@ -543,6 +561,53 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
                     <p className="text-sm text-dark-muted mt-1">
                       承諾時間: {battle.committedTime} {mission?.suggestedDuration ? `| AI建議: ${mission.suggestedDuration}分鐘` : ''}
                     </p>
+                    
+                    {/* 備註顯示與編輯區塊 */}
+                    <div className="mt-2 text-sm">
+                      {editingNotesId === battle.missionId ? (
+                        <div className="flex flex-col gap-2 mt-1">
+                          <textarea
+                            value={editingNotesText}
+                            onChange={(e) => setEditingNotesText(e.target.value)}
+                            placeholder="記錄遇到的問題、備忘或執行備註..."
+                            className="w-full p-2 bg-dark-card border border-dark-border-default text-dark-primary rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+                            rows={2}
+                            autoFocus
+                          />
+                          <div className="flex justify-end space-x-2">
+                            <button
+                              onClick={() => setEditingNotesId(null)}
+                              className="px-2 py-1 bg-dark-hover border border-dark-border-default text-dark-secondary rounded text-xs transition-colors"
+                            >
+                              取消
+                            </button>
+                            <button
+                              onClick={() => handleSaveNotes(battle.missionId)}
+                              className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-xs font-semibold transition-colors"
+                            >
+                              儲存備註
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div 
+                          onClick={() => {
+                            setEditingNotesId(battle.missionId);
+                            setEditingNotesText(mission?.notes || '');
+                          }}
+                          className="group/notes flex items-center space-x-1 cursor-pointer bg-dark-card/30 hover:bg-dark-card/80 border border-transparent hover:border-dark-border-default rounded p-1.5 transition-all"
+                          title="點擊編輯任務備註"
+                        >
+                          <span className="text-dark-muted text-xs">📝 備註:</span>
+                          <span className="text-xs text-dark-secondary flex-1 break-all truncate italic">
+                            {mission?.notes || '點擊新增備註，紀錄遇到的問題...'}
+                          </span>
+                          {mission?.notes && (
+                            <span className="opacity-0 group-hover/notes:opacity-100 text-xs text-blue-400 ml-1 transition-opacity">✏️</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {state === 'idle' && (

@@ -1,5 +1,5 @@
 @echo off
-echo 每日循環儀表板 - 安裝腳本
+echo Power Kit (PK+) - 安裝腳本
 echo ================================
 
 echo 正在安裝依賴套件...
@@ -29,7 +29,7 @@ echo 3. 開啟右上角的「開發人員模式」
 echo 4. 點擊「載入未封裝項目」
 echo 5. 選擇此資料夾中的 dist 資料夾
 echo.
-echo 安裝完成後，新分頁將顯示每日循環儀表板
+echo 安裝完成後，新分頁將顯示 Power Kit (PK+)
 echo.
 
-pause 
+pause

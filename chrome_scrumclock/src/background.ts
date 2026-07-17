@@ -6,7 +6,7 @@ let distractionSites: string[] = [];
 
 // 初始化
 chrome.runtime.onInstalled.addListener(async () => {
-  console.log('每日循環儀表板已安裝');
+  console.log('Power Kit 已安裝');
   
   // 設定點擊 Action 圖標時開啟側邊欄
   if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.setPanelBehavior) {
@@ -19,7 +19,7 @@ chrome.runtime.onInstalled.addListener(async () => {
   if (typeof chrome.contextMenus !== 'undefined') {
     chrome.contextMenus.create({
       id: 'analyze_tasks',
-      title: '🤖 傳送至 ScrumClock 助理分析',
+      title: '🤖 傳送至 Power Kit 助理分析',
       contexts: ['selection']
     });
   }
@@ -170,7 +170,7 @@ function showReviewNotification() {
   chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/icon128.png',
-    title: '每日循環儀表板',
+    title: 'Power Kit',
     message: '該進行日終回顧了！打開新分頁開始回顧今天的成果。'
   });
 }

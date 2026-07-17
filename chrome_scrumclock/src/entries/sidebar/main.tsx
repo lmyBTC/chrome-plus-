@@ -412,7 +412,7 @@ const SidebarApp: React.FC = () => {
       setMessages([
         {
           role: 'model',
-          content: '👋 你好！我是你的 ScrumClock 助理。我已準備就緒，可以幫你評估今日的任務、拆解番茄鐘或提供敏捷開發建議。有什麼需要幫忙的嗎？'
+          content: '👋 你好！我是你的 PK+ 助理。我已準備就緒，可以幫你評估今日的任務、拆解番茄鐘或提供敏捷開發建議。有什麼需要幫忙的嗎？'
         }
       ]);
       setIsInitializing(false);
@@ -475,9 +475,9 @@ const SidebarApp: React.FC = () => {
               .map((b: any, index: number) => `${index + 1}. [${b.status === 'completed' ? '已完成' : '進行中'}] ${b.title} (預估: ${b.estimatedPomodoros} 🍅)`)
               .join('\n');
             
-            const prompt = `這是我目前在 ScrumClock 儀表板中規劃的今日核心戰役任務清單：\n\n${taskStr}\n\n請幫我評估任務優先順序，並給予今日的衝刺番茄鐘執行與時間分配建議。`;
+            const prompt = `這是我目前在 Power Kit 儀表板中規劃的今日核心戰役任務清單：\n\n${taskStr}\n\n請幫我評估任務優先順序，並給予今日的衝刺番茄鐘執行與時間分配建議。`;
             setInputText('');
-            setMessages(prev => [...prev, { role: 'user', content: '🍅 正在匯入我今天的 ScrumClock 核心戰役任務...' }]);
+            setMessages(prev => [...prev, { role: 'user', content: '🍅 正在匯入我今天的 Power Kit 核心戰役任務...' }]);
             setIsSending(true);
             
             try {
@@ -510,7 +510,7 @@ const SidebarApp: React.FC = () => {
             let prompt = `這是我在網頁「${title}」(${url}) 上的參考資訊：\n`;
             if (selectedText) {
               prompt += `我選取的文字內容是：\n"${selectedText}"\n`;
-              prompt += `請幫我將這段內容轉換、拆解為具體的 ScrumClock 任務清單，並預估所需的番茄鐘數量。`;
+              prompt += `請幫我將這段內容轉換、拆解為具體的 Power Kit 任務清單，並預估所需的番茄鐘數量。`;
             } else {
               prompt += `網頁標題是：${title}\n`;
               prompt += `請針對此網頁，分析其主題，並提議 2-3 個相關的學習或開發任務與番茄鐘規劃。`;
@@ -547,7 +547,7 @@ const SidebarApp: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-[#0b0f19] text-slate-300">
         <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-medium tracking-wide">正在初始化 ScrumClock AI 助理...</p>
+        <p className="text-sm font-medium tracking-wide">正在初始化 PK+ AI 助理...</p>
       </div>
     );
   }
@@ -557,7 +557,7 @@ const SidebarApp: React.FC = () => {
       <div className="flex flex-col h-screen bg-[#0b0f19] text-slate-300 p-6 overflow-y-auto">
         <div className="flex items-center gap-2 mb-6 border-b border-slate-800 pb-3">
           <span className="text-2xl">🤖</span>
-          <h2 className="text-lg font-bold text-white tracking-wide">ScrumClock 助理</h2>
+          <h2 className="text-lg font-bold text-white tracking-wide">PK+ 助理</h2>
         </div>
         
         <div className="bg-red-950/40 border border-red-800/60 rounded-2xl p-5 mb-6">
@@ -565,7 +565,7 @@ const SidebarApp: React.FC = () => {
             <span>⚠️</span> 瀏覽器尚未啟用內建 AI 功能
           </div>
           <p className="text-xs text-red-200/80 leading-relaxed mb-4">
-            ScrumClock 助理使用最新的 Chrome 內建 Gemini Nano 模型，完全在本地端運行，不需要 API 金鑰。要啟用此功能，請完成以下設定：
+            PK+ 助理使用最新的 Chrome 內建 Gemini Nano 模型，完全在本地端運行，不需要 API 金鑰。要啟用此功能，請完成以下設定：
           </p>
 
           <ol className="list-decimal pl-4 space-y-3 text-xs text-slate-300">
@@ -611,7 +611,7 @@ const SidebarApp: React.FC = () => {
           <div className="relative">
             <div className="flex items-center gap-1 cursor-pointer" onClick={() => setShowHistoryDropdown(!showHistoryDropdown)}>
               <h2 className="text-sm font-bold text-white tracking-wide hover:underline flex items-center gap-0.5">
-                ScrumClock 助理 <span className="text-[10px]">▼</span>
+                PK+ 助理 <span className="text-[10px]">▼</span>
               </h2>
             </div>
             <p className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">

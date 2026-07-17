@@ -117,7 +117,7 @@ export const AnalyticsDashboard: React.FC = () => {
   const handleExportReportToMarkdown = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     
-    let markdown = `## 📊 Scrumclock 工作報告 (${todayStr})\n\n`;
+    let markdown = `## 📊 Power Kit 工作報告 (${todayStr})\n\n`;
     
     markdown += `### 🏆 今日已完成核心戰役\n`;
     if (completedReport.today.length === 0) {

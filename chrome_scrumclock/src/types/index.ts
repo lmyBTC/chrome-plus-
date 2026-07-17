@@ -23,6 +23,18 @@ export interface WeeklyMission {
   isCompleted: boolean;
   aiTip?: string;
   suggestedDuration?: number; // in minutes
+  priority?: 'P1' | 'P2' | 'P3'; // 新增：優先級 P1/P2/P3
+  notes?: string; // 新增：執行備註/備忘
+  createdAt?: string; // 新增：建立時間 (格式: YYYY-MM-DD HH:mm)
+  completedAt?: string; // 新增：完成時間
+}
+
+export interface InboxItem {
+  id: string;
+  text: string;
+  contextUrl?: string;
+  createdAt: string;
+  processed: boolean;
 }
 
 export interface CoreBattle {
@@ -61,6 +73,7 @@ export interface AppData {
   northStarGoal: NorthStarGoal;
   weeklyMissions: WeeklyMission[];
   dailyLogs: Record<string, DailyLog>; // key: YYYY-MM-DD
+  inboxItems?: InboxItem[]; // 新增：本地收件匣快取
 }
 
 export type TimerState = 'idle' | 'running' | 'paused' | 'logging' | 'break';

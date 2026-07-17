@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "每日循環儀表板",
+  "name": "Power Kit",
   "version": "1.0.0",
   "description": "極簡主義的每日規劃、衝刺與回顧工具",
   "icons": {
@@ -30,7 +30,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "每日循環儀表板"
+    "default_title": "Power Kit"
   },
   "side_panel": {
     "default_path": "src/entries/sidebar/index.html"

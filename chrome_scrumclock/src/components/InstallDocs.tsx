@@ -119,8 +119,8 @@ function doPost(e) {
       const cal = CalendarApp.getDefaultCalendar();
       const startTime = new Date(payload.startTime);
       const endTime = new Date(payload.endTime);
-      const event = cal.createEvent(\`[Scrum] \${payload.title}\`, startTime, endTime, {
-        description: payload.description || "Scrumclock 自動同步紀錄"
+      const event = cal.createEvent(\`[Power Kit] \${payload.title}\`, startTime, endTime, {
+        description: payload.description || "Power Kit 自動同步紀錄"
       });
       return ContentService.createTextOutput(JSON.stringify({ status: "success", eventId: event.getId() }))
         .setMimeType(ContentService.MimeType.JSON);
@@ -155,7 +155,7 @@ function doPost(e) {
 }
 
 function getOrCreateBackupFile() {
-  const fileName = "scrumclock_sync_data.json";
+  const fileName = "power_kit_sync_data.json";
   const files = DriveApp.getFilesByName(fileName);
   if (files.hasNext()) {
     return files.next();
@@ -317,7 +317,7 @@ export const InstallDocs: React.FC = () => {
               🎯 核心理念：時間盒（Timeboxing）與敏捷反思的極致融合
             </h2>
             <p className="text-dark-muted leading-relaxed text-xs sm:text-sm">
-              ScrumClock 不僅僅是一個番茄鐘或待辦清單，它是一套專為個人開發者與高效工作者設計的<strong className="text-dark-primary">敏捷自我管理系統</strong>。透過將「北極星目標」拆解成「每日戰役」，再利用「AI 側欄助理」進行反思，您將能建立起一個不斷自我優化的成長閉環。
+              Power Kit 不僅僅是一個番茄鐘或待辦清單，它是一套專為個人開發者與高效工作者設計的<strong className="text-dark-primary">敏捷自我管理系統</strong>。透過將「北極星目標」拆解成「每日戰役」，再利用「AI 側欄助理」進行反思，您將能建立起一個不斷自我優化的成長閉環。
             </p>
           </div>
 
@@ -356,7 +356,7 @@ export const InstallDocs: React.FC = () => {
                 📥 3. 善用 AI 靈感收集箱 (Scratchpad)
               </h3>
               <p className="text-dark-muted leading-relaxed mb-3 text-xs sm:text-sm">
-                在任意網頁閱讀文件、寫程式或查找 API 時，選取文字按右鍵點擊 <strong className="text-dark-primary font-bold">「📥 收集至 Scrumclock 暫存區」</strong>（或使用快捷鍵 <kbd className="px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border-default font-mono text-[10px] text-dark-primary font-bold">Alt + Shift + A</kbd>）。
+                在任意網頁閱讀文件、寫程式或查找 API 時，選取文字按右鍵點擊 <strong className="text-dark-primary font-bold">「📥 收集至 Power Kit 暫存區」</strong>（或使用快捷鍵 <kbd className="px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border-default font-mono text-[10px] text-dark-primary font-bold">Alt + Shift + A</kbd>）。
               </p>
               <ul className="list-disc list-inside space-y-1.5 text-xs text-dark-muted/80 pl-2">
                 <li>碎料文字會自動追加到側欄的靈感草稿區，不佔用系統剪貼簿。</li>

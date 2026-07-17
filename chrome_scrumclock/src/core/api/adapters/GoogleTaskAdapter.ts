@@ -228,7 +228,7 @@ export class GoogleTaskAdapter implements ITaskAdapter {
           title: `[Deep Work] ${title}`,
           startTime,
           endTime,
-          description: "Scrumclock 專注模式防禦陣地"
+          description: "Power Kit 專注模式防禦陣地"
         })
       });
       const data = await response.json();

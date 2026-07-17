@@ -47,7 +47,7 @@ const PopupApp: React.FC = () => {
     <div className="w-full bg-dark-card border border-dark-border-subtle p-5 font-sans rounded-lg">
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-dark-border-subtle">
         <span className="text-xl">🕰️</span>
-        <h2 className="text-lg font-bold text-dark-primary tracking-wide">每日循環儀表板</h2>
+        <h2 className="text-lg font-bold text-dark-primary tracking-wide">Power Kit</h2>
       </div>
 
       <div className="bg-dark-surface border border-dark-border-default rounded-xl p-4 mb-4 text-center">

@@ -28,6 +28,7 @@ export const QuickCapture: React.FC = () => {
 
     setIsSubmitting(true);
     let contextText = '';
+    let contextUrl = '';
 
     try {
       if (chrome?.tabs?.query) {
@@ -35,12 +36,29 @@ export const QuickCapture: React.FC = () => {
         if (tabs && tabs.length > 0) {
           const tab = tabs[0];
           if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('chrome-extension://')) {
+            contextUrl = tab.url;
             contextText = `\n\n> **Context**: [${tab.title || 'Link'}](${tab.url})`;
           }
         }
       }
     } catch (e) {
       console.warn('Cannot access tabs API', e);
+    }
+
+    // 同步到本地 Inbox 快取
+    try {
+      const currentInbox = await storage.getInboxItems();
+      const newItem = {
+        id: 'inbox-' + Date.now(),
+        text: task.trim(),
+        contextUrl: contextUrl || undefined,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        processed: false
+      };
+      currentInbox.push(newItem);
+      await storage.saveInboxItems(currentInbox);
+    } catch (err) {
+      console.warn('本地快取 Inbox 失敗:', err);
     }
 
     await sync.quickCaptureTask(task, contextText);

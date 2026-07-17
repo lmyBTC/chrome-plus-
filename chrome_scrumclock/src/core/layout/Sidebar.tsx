@@ -21,7 +21,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     <aside className="w-64 bg-dark-surface text-dark-secondary min-h-screen flex flex-col border-r border-dark-border-subtle">
       <div className="p-6">
         <h1 className="text-xl font-bold text-dark-primary tracking-wider flex items-center gap-2">
-          <span>🛠️</span> Swiss Knife
+          <span>🛠️</span> PK+
         </h1>
       </div>
       

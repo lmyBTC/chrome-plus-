@@ -1,4 +1,4 @@
-import { AppData, UserSettings, NorthStarGoal, WeeklyMission, DailyLog } from '../../types';
+import { AppData, UserSettings, NorthStarGoal, WeeklyMission, DailyLog, InboxItem } from '../../types';
 
 // 確保 Chrome API 可用
 declare const chrome: any;
@@ -32,14 +32,16 @@ export const storage = {
       'userSettings',
       'northStarGoal',
       'weeklyMissions',
-      'dailyLogs'
+      'dailyLogs',
+      'inboxItems'
     ]);
 
     return {
       userSettings: result.userSettings || DEFAULT_SETTINGS,
       northStarGoal: result.northStarGoal || DEFAULT_NORTH_STAR_GOAL,
       weeklyMissions: result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS,
-      dailyLogs: result.dailyLogs || {}
+      dailyLogs: result.dailyLogs || {},
+      inboxItems: result.inboxItems || []
     };
   },
 
@@ -49,7 +51,8 @@ export const storage = {
       userSettings: data.userSettings,
       northStarGoal: data.northStarGoal,
       weeklyMissions: data.weeklyMissions,
-      dailyLogs: data.dailyLogs
+      dailyLogs: data.dailyLogs,
+      inboxItems: data.inboxItems || []
     });
   },
 
@@ -138,5 +141,16 @@ export const storage = {
       }
     }
     return recentLogs;
+  },
+
+  // 獲取收件匣內容
+  async getInboxItems(): Promise<InboxItem[]> {
+    const result = await chrome.storage.local.get('inboxItems');
+    return result.inboxItems || [];
+  },
+
+  // 儲存收件匣內容
+  async saveInboxItems(items: InboxItem[]): Promise<void> {
+    await chrome.storage.local.set({ inboxItems: items });
   }
 }; 

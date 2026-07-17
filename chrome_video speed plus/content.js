@@ -14,6 +14,7 @@ let currentLoopCount = 0;
 
 // 標題快捷按鈕與 Shadow DOM 控制面板變數
 let titleObserver = null;
+let injectTimer = null;
 let shadowHost = null;
 let shadowRoot = null;
 
@@ -120,7 +121,7 @@ function observePageChanges() {
       setTimeout(() => {
         videoElement = null;
         findVideoElement();
-        tryInjectButton();
+        tryInjectAllButtons();
       }, 1000);
     }
   });
@@ -378,32 +379,43 @@ function observeTitleAndInject() {
   if (titleObserver) {
     titleObserver.disconnect();
   }
+  if (injectTimer) {
+    clearInterval(injectTimer);
+  }
   
-  // 先嘗試直接注入一次
-  tryInjectButton();
+  // 先嘗試直接注入
+  tryInjectAllButtons();
   
   // 監聽 DOM 變化以防延遲載入或路由切換
   titleObserver = new MutationObserver(function() {
-    tryInjectButton();
+    tryInjectAllButtons();
   });
   
   titleObserver.observe(document.body, {
     childList: true,
     subtree: true
   });
+
+  // 每 1.5 秒定時輪詢，確保在 YouTube SPA 異步渲染下兩側按鈕均穩定存在
+  injectTimer = setInterval(() => {
+    tryInjectAllButtons();
+  }, 1500);
 }
 
-function tryInjectButton() {
+function tryInjectAllButtons() {
   // 檢查是否在影片播放頁面
   if (!window.location.href.includes('watch')) {
     removeButtonAndPanel();
     return;
   }
   
-  // 如果已經有按鈕了，就不重複注入
-  if (document.getElementById('yt-speed-plus-title-btn')) {
-    return;
-  }
+  tryInjectTitleButton();
+  tryInjectLikeButton();
+}
+
+// 1. 標題快捷按鈕的注入與管理
+function tryInjectTitleButton() {
+  const existingTitleBtn = document.getElementById('yt-speed-plus-title-btn');
   
   // 尋找標題元素
   const titleSelectors = [
@@ -422,18 +434,31 @@ function tryInjectButton() {
     }
   }
   
-  if (titleEl) {
-    console.log('找到標題元素，準備注入快捷按鈕:', titleEl);
-    injectButton(titleEl);
+  if (!titleEl) {
+    if (existingTitleBtn) {
+      existingTitleBtn.remove();
+    }
+    return;
   }
+  
+  if (existingTitleBtn) {
+    if (existingTitleBtn.parentNode !== titleEl) {
+      console.log('標題按鈕父節點已變更，移除舊按鈕以利重新注入');
+      existingTitleBtn.remove();
+    } else {
+      return;
+    }
+  }
+  
+  console.log('找到標題元素，準備注入快捷按鈕:', titleEl);
+  injectTitleButton(titleEl);
 }
 
-function injectButton(titleEl) {
+function injectTitleButton(titleEl) {
   const btn = document.createElement('button');
   btn.id = 'yt-speed-plus-title-btn';
   btn.setAttribute('title', 'YouTube Speed Plus 控制面板');
   
-  // 使用火箭與速度計意象的 SVG 圖示
   btn.innerHTML = `
     <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 4px; vertical-align: middle;">
       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
@@ -477,13 +502,116 @@ function injectButton(titleEl) {
   });
   
   titleEl.appendChild(btn);
-  console.log('快捷按鈕注入成功！');
+  console.log('標題快捷按鈕注入成功！');
+}
+
+// 2. LIKE 左側快捷按鈕的注入與管理
+function tryInjectLikeButton() {
+  const existingLikeBtn = document.getElementById('yt-speed-plus-like-btn');
+  
+  // 尋找 LIKE / DISLIKE 按鈕的容器以注入在其左側
+  const targetSelectors = [
+    'ytd-segmented-like-dislike-button-renderer',
+    '#segmented-like-button',
+    '#top-level-buttons-computed ytd-toggle-button-renderer',
+    'button[aria-label^="like this video"]',
+    'button[aria-label^="喜歡這部影片"]'
+  ];
+  
+  let targetEl = null;
+  for (const selector of targetSelectors) {
+    const el = document.querySelector(selector);
+    if (el) {
+      targetEl = el;
+      break;
+    }
+  }
+  
+  if (!targetEl) {
+    if (existingLikeBtn) {
+      console.log('找不到 LIKE 容器，移除舊 LIKE 側按鈕');
+      existingLikeBtn.remove();
+    }
+    return;
+  }
+  
+  if (existingLikeBtn) {
+    if (existingLikeBtn.parentNode !== targetEl.parentNode) {
+      console.log('LIKE 側按鈕父節點已變更，移除舊按鈕以利重新注入');
+      existingLikeBtn.remove();
+    } else {
+      return;
+    }
+  }
+  
+  console.log('找到 LIKE 相關元素，準備注入快捷按鈕:', targetEl);
+  injectLikeButton(targetEl);
+}
+
+function injectLikeButton(targetEl) {
+  const btn = document.createElement('button');
+  btn.id = 'yt-speed-plus-like-btn';
+  btn.setAttribute('title', 'YouTube Speed Plus 控制面板');
+  
+  btn.innerHTML = `
+    <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 6px; vertical-align: middle;">
+      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
+    </svg>
+    <span>Speed Plus 🚀</span>
+  `;
+  
+  btn.style.cssText = `
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    padding: 0 16px;
+    height: 36px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--yt-spec-text-primary, #ffffff);
+    background-color: var(--yt-spec-badge-chip-background, rgba(255, 255, 255, 0.1));
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 18px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: all 0.2s ease;
+    outline: none;
+    user-select: none;
+  `;
+  
+  btn.addEventListener('mouseenter', () => {
+    btn.style.backgroundColor = 'var(--yt-spec-button-chip-background-hover, rgba(255, 255, 255, 0.2))';
+    btn.style.transform = 'translateY(-1px)';
+  });
+  
+  btn.addEventListener('mouseleave', () => {
+    btn.style.backgroundColor = 'var(--yt-spec-badge-chip-background, rgba(255, 255, 255, 0.1))';
+    btn.style.transform = 'translateY(0)';
+  });
+  
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleShadowPanel(btn);
+  });
+  
+  if (targetEl && targetEl.parentNode) {
+    targetEl.parentNode.insertBefore(btn, targetEl);
+    console.log('LIKE 側快捷按鈕注入成功！');
+  } else {
+    console.warn('無法注入 LIKE 側快捷按鈕：目標元素無父節點');
+  }
 }
 
 function removeButtonAndPanel() {
-  const btn = document.getElementById('yt-speed-plus-title-btn');
-  if (btn) {
-    btn.remove();
+  const titleBtn = document.getElementById('yt-speed-plus-title-btn');
+  if (titleBtn) {
+    titleBtn.remove();
+  }
+  const likeBtn = document.getElementById('yt-speed-plus-like-btn');
+  if (likeBtn) {
+    likeBtn.remove();
   }
   const host = document.getElementById('yt-speed-plus-shadow-host');
   if (host) {

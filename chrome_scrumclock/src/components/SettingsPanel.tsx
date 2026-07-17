@@ -398,7 +398,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                     </span>
                   </div>
                   <p className="text-xs text-blue-300/80 mb-4 leading-relaxed">
-                    如果您在多個 Chrome 使用者 (Profile) 中使用 ScrumClock，可在儲存設定後點擊以下按鈕同步。
+                    如果您在多個 Chrome 使用者 (Profile) 中使用 Power Kit，可在儲存設定後點擊以下按鈕同步。
                   </p>
                   <div className="flex gap-4">
                     <button
