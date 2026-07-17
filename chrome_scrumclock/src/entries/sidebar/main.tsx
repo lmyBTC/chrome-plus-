@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import '../../index.css';
+import { getAICore, checkAiCapabilities, safeExtractJSON } from '../../utils/ai-helper';
+import { parseMarkdown } from '../../utils/markdown';
+import { parseTasksFromText } from '../../utils/task-parser';
+import { StorageQueue, useTimerSync, useContextMenuSync, useAISession } from './hooks';
 
 interface Message {
   role: 'user' | 'model' | 'system';
@@ -23,197 +27,48 @@ const formatTime = (seconds: number) => {
   return `${m}:${s}`;
 };
 
-// 支援 React 安全渲染的輕量級 Markdown 解析器 (100% 免疫 XSS)
-function parseMarkdown(text: string): React.ReactNode {
-  const lines = text.split('\n');
-  let inList = false;
-  const listItems: string[] = [];
-  const nodes: React.ReactNode[] = [];
-
-  const flushList = (key: number) => {
-    if (listItems.length > 0) {
-      nodes.push(
-        <ul key={`list-${key}`} className="list-disc pl-5 my-2 space-y-1">
-          {listItems.map((item, idx) => (
-            <li key={idx} className="text-sm text-slate-300">
-              {renderInlineStyles(item)}
-            </li>
-          ))}
-        </ul>
-      );
-      listItems.length = 0;
-    }
-  };
-
-  const renderInlineStyles = (str: string) => {
-    // 處理 **粗體** 和 `行內程式碼`
-    const parts = str.split(/(\*\*.*?\*\*|`.*?`)/);
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-bold text-slate-100">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={i} className="bg-slate-900/60 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-xs border border-slate-800/80">{part.slice(1, -1)}</code>;
-      }
-      return part;
-    });
-  };
-
-  lines.forEach((line, idx) => {
-    const trimmed = line.trim();
-    
-    // 處理無序清單
-    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-      inList = true;
-      listItems.push(trimmed.slice(2));
-      return;
-    } else {
-      if (inList) {
-        flushList(idx);
-        inList = false;
-      }
-    }
-
-    // 處理標題
-    if (trimmed.startsWith('### ')) {
-      nodes.push(<h3 key={idx} className="text-base font-bold text-slate-100 mt-4 mb-2">{renderInlineStyles(trimmed.slice(4))}</h3>);
-    } else if (trimmed.startsWith('## ')) {
-      nodes.push(<h2 key={idx} className="text-lg font-bold text-slate-100 mt-5 mb-3 border-b border-slate-800 pb-1">{renderInlineStyles(trimmed.slice(3))}</h2>);
-    } else if (trimmed.startsWith('# ')) {
-      nodes.push(<h1 key={idx} className="text-xl font-bold text-slate-100 mt-6 mb-4">{renderInlineStyles(trimmed.slice(2))}</h1>);
-    } else if (trimmed.startsWith('```')) {
-      // 簡單跳過程式碼標籤
-      return;
-    } else if (trimmed) {
-      nodes.push(
-        <p key={idx} className="text-sm text-slate-300 leading-relaxed my-2">
-          {renderInlineStyles(trimmed)}
-        </p>
-      );
-    } else {
-      nodes.push(<div key={idx} className="h-2" />);
-    }
-  });
-
-  if (inList) {
-    flushList(lines.length);
-  }
-
-  return <div className="gemini-html-content">{nodes}</div>;
-}
-
 const SidebarApp: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputText, setInputText] = useState('');
-  const [aiAvailable, setAiAvailable] = useState<'yes' | 'no' | 'checking'>('checking');
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isSending, setIsSending] = useState(false);
+  const storageQueueRef = useRef(new StorageQueue());
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle');
-
-  // 生態系統整合 State
-  const [activeTimer, setActiveTimer] = useState<any>(null);
-  const [timeLeft, setTimeLeft] = useState<number>(0);
   const [historyConversations, setHistoryConversations] = useState<any[]>([]);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
 
-  const aiSessionRef = useRef<any>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
+  // 1. 呼叫 AI Hook
+  const {
+    messages,
+    setMessages,
+    inputText,
+    setInputText,
+    aiAvailable,
+    isInitializing,
+    isSending,
+    setIsSending,
+    handleSend,
+    aiSessionRef,
+    checkAndInitAI
+  } = useAISession(storageQueueRef.current);
 
-  useEffect(() => {
-    checkAndInitAI();
-    loadHistoryConversations();
-    initTimerSync();
-    initContextMenuListener();
-
-    return () => {
-      if (aiSessionRef.current) {
-        try {
-          aiSessionRef.current.destroy();
-        } catch (e) {
-          console.error('銷毀 AI session 失敗:', e);
-        }
+  // 2. 呼叫 Timer Hook，帶入敏捷檢討觸發
+  const { activeTimer, timeLeft } = useTimerSync((sprint) => {
+    setMessages(prev => {
+      const last = prev[prev.length - 1];
+      if (last && last.role === 'model' && last.content.includes('恭喜完成一粒番茄鐘')) {
+        return prev;
       }
-    };
-  }, []);
-
-  useEffect(() => {
-    // 每次訊息更新時，平滑滾動到底部
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // 當 activeTimer running 或 break 時，開啟定時器動態倒數
-  useEffect(() => {
-    let timerId: any = null;
-    if (activeTimer && activeTimer.state === 'running' && activeTimer.endTime) {
-      const updateTime = () => {
-        const remaining = Math.max(0, activeTimer.endTime - Date.now());
-        setTimeLeft(Math.ceil(remaining / 1000));
-        
-        // 衝刺剛好結束時的檢討觸發
-        if (remaining <= 0) {
-          clearInterval(timerId);
-          triggerSprintReviewPrompt(activeTimer.sprint);
+      return [
+        ...prev,
+        {
+          role: 'model',
+          content: `🎉 恭喜完成一粒番茄鐘！
+在執行過程中有遇到任何阻礙 (Blockers) 或新的啟發嗎？需要我幫你整理回顧成果並記錄嗎？`
         }
-      };
-      updateTime();
-      timerId = setInterval(updateTime, 1000);
-    } else if (activeTimer && activeTimer.state === 'paused') {
-      setTimeLeft(Math.ceil((activeTimer.timeLeft || 0) / 1000));
-    } else if (activeTimer && activeTimer.state === 'break' && activeTimer.endTime) {
-      const updateTime = () => {
-        const remaining = Math.max(0, activeTimer.endTime - Date.now());
-        setTimeLeft(Math.ceil(remaining / 1000));
-        if (remaining <= 0) {
-          clearInterval(timerId);
-        }
-      };
-      updateTime();
-      timerId = setInterval(updateTime, 1000);
-    } else {
-      setTimeLeft(0);
-    }
-
-    return () => {
-      if (timerId) clearInterval(timerId);
-    };
-  }, [activeTimer]);
-
-  // 1. 初始化計時器同步
-  const initTimerSync = () => {
-    chrome.storage.local.get('activeTimer', (result) => {
-      if (result.activeTimer) {
-        setActiveTimer(result.activeTimer);
-      }
+      ];
     });
+  });
 
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, namespace: string) => {
-      if (namespace === 'local' && changes.activeTimer) {
-        setActiveTimer(changes.activeTimer.newValue);
-      }
-      if (namespace === 'local' && changes.geminiConversations) {
-        setHistoryConversations(changes.geminiConversations.newValue || []);
-      }
-    };
-    chrome.storage.onChanged.addListener(handleStorageChange);
-  };
-
-  // 2. 監聽右鍵選單的 pendingAnalyzeText
-  const initContextMenuListener = () => {
-    chrome.storage.local.get('pendingAnalyzeText', (result) => {
-      if (result.pendingAnalyzeText) {
-        handlePendingText(result.pendingAnalyzeText);
-      }
-    });
-
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, namespace: string) => {
-      if (namespace === 'local' && changes.pendingAnalyzeText?.newValue) {
-        handlePendingText(changes.pendingAnalyzeText.newValue);
-      }
-    };
-    chrome.storage.onChanged.addListener(handleStorageChange);
-  };
-
-  const handlePendingText = async (pendingData: any) => {
+  // 3. 呼叫 Context Menu Hook，帶入 Pending Text 處理
+  useContextMenuSync(async (pendingData) => {
     if (Date.now() - pendingData.timestamp > 10000) {
       chrome.storage.local.remove('pendingAnalyzeText');
       return;
@@ -224,27 +79,13 @@ const SidebarApp: React.FC = () => {
     const prompt = `這是我在網頁「${title}」(${url}) 上選取的文字：\n"${text}"\n\n請幫我分析這段內容，並將其拆解為具體的 Scrum 任務與番茄鐘規劃。`;
     
     setMessages(prev => [...prev, { role: 'user', content: `📥 匯入右鍵選取內容：「${text.slice(0, 30)}...」` }]);
-    setIsSending(true);
+    handleSend(prompt);
+  });
 
-    try {
-      if (!aiSessionRef.current) {
-        const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
-        if (!aiAPI) {
-          throw new Error('無法取得本地 AI API 呼叫路徑。');
-        }
-        aiSessionRef.current = await aiAPI.create({
-          systemPrompt: '你是一個專業的 Scrum 敏捷開發與番茄鐘助理。請用繁體中文回答。'
-        });
-      }
-      const response = await aiSessionRef.current.prompt(prompt);
-      setMessages(prev => [...prev, { role: 'model', content: response }]);
-    } catch (error) {
-      console.error('處理右鍵內容失敗:', error);
-      setMessages(prev => [...prev, { role: 'system', content: '❌ 處理右鍵選取內容時發生錯誤。' }]);
-    } finally {
-      setIsSending(false);
-    }
-  };
+  useEffect(() => {
+    // 每次訊息更新時，平滑滾動到底部
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
   // 3. 讀取歷史對話
   const loadHistoryConversations = async () => {
@@ -270,62 +111,9 @@ const SidebarApp: React.FC = () => {
     setShowHistoryDropdown(false);
   };
 
-  // 5. 衝刺結束時觸發主動敏捷回顧對話
-  const triggerSprintReviewPrompt = (sprint: any) => {
-    setMessages(prev => {
-      const last = prev[prev.length - 1];
-      if (last && last.role === 'model' && last.content.includes('恭喜完成一粒番茄鐘')) {
-        return prev;
-      }
-      return [
-        ...prev,
-        {
-          role: 'model',
-          content: `🎉 恭喜完成一粒番茄鐘！
-在執行過程中有遇到任何阻礙 (Blockers) 或新的啟發嗎？需要我幫你整理回顧成果並記錄嗎？`
-        }
-      ];
-    });
-  };
 
-  // 6. 正則解析 AI 回覆中的任務清單
-  const parseTasksFromText = (text: string) => {
-    const lines = text.split('\n');
-    const tasks: { title: string; estimatedPomodoros: number }[] = [];
-    
-    // 匹配如: - 任務名稱 (2 🍅) 或 * 任務名稱 2 🍅 或 - 任務名稱 2個番茄鐘
-    const regex = /(?:-|\*)\s*(.*?)\s*(?:\((\d+)\s*🍅\)|(\d+)\s*🍅|(\d+)\s*個番茄鐘)/;
-    
-    lines.forEach(line => {
-      const match = line.match(regex);
-      if (match) {
-        const title = match[1].trim();
-        const pomodoros = parseInt(match[2] || match[3] || match[4] || '1');
-        if (title && !isNaN(pomodoros)) {
-          tasks.push({ title, estimatedPomodoros: pomodoros });
-        }
-      }
-    });
 
-    if (tasks.length === 0) {
-      // 降級匹配只要有列表與 🍅
-      const altRegex = /(?:-|\*)\s*([^🍅]*?)\s*(\d+)?\s*🍅/;
-      lines.forEach(line => {
-        const match = line.match(altRegex);
-        if (match) {
-          const title = match[1].trim();
-          const pomodoros = parseInt(match[2] || '1');
-          if (title) {
-            tasks.push({ title, estimatedPomodoros: pomodoros });
-          }
-        }
-      });
-    }
-
-    return tasks;
-  };
-
-  // 7. 一鍵寫入今日核心戰役至 storage
+  // 7. 一鍵寫入今日核心戰役至 storage (修正後的正確關聯版本)
   const handleAddToDailyMissions = async (msgContent: string) => {
     const parsedTasks = parseTasksFromText(msgContent);
     if (parsedTasks.length === 0) {
@@ -334,123 +122,89 @@ const SidebarApp: React.FC = () => {
     }
 
     try {
-      const result = await chrome.storage.local.get('dailyLogs');
-      const dailyLogs = result.dailyLogs || {};
-      const today = new Date().toISOString().split('T')[0];
-      
-      if (!dailyLogs[today]) {
-        dailyLogs[today] = {
-          date: today,
-          coreBattles: [],
-          sprintLogs: [],
-          review: null
-        };
-      }
-
-      const existingBattles = dailyLogs[today].coreBattles || [];
-      let addedCount = 0;
-
-      parsedTasks.forEach(task => {
-        if (!existingBattles.some((b: any) => b.title === task.title)) {
-          existingBattles.push({
-            id: uuidv4(),
-            title: task.title,
-            estimatedPomodoros: task.estimatedPomodoros,
-            completedPomodoros: 0,
-            status: 'pending',
-            createdAt: Date.now()
-          });
-          addedCount++;
+      await storageQueueRef.current.enqueue(async () => {
+        const resultMissions = await chrome.storage.local.get('weeklyMissions');
+        const resultLogs = await chrome.storage.local.get('dailyLogs');
+        
+        const weeklyMissions = resultMissions.weeklyMissions || [];
+        const dailyLogs = resultLogs.dailyLogs || {};
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (!dailyLogs[today]) {
+          dailyLogs[today] = {
+            date: today,
+            coreBattles: [],
+            sprintLogs: [],
+            review: null
+          };
         }
+
+        const existingBattles = dailyLogs[today].coreBattles || [];
+        let updatedMissions = [...weeklyMissions];
+        let updatedBattles = [...existingBattles];
+        let addedCount = 0;
+
+        for (let i = 0; i < parsedTasks.length; i++) {
+          const task = parsedTasks[i];
+          // 搜尋 weeklyMissions 是否有同名任務
+          let mission = updatedMissions.find((m: any) => m.text.trim().toLowerCase() === task.title.trim().toLowerCase());
+          let missionId = '';
+          
+          if (!mission) {
+            // 新增 WeeklyMission 主體
+            missionId = 'mission-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
+            const newMission = {
+              id: missionId,
+              text: task.title,
+              isCompleted: false,
+              createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+              priority: 'P2' as const
+            };
+            updatedMissions.push(newMission);
+          } else {
+            missionId = mission.id;
+          }
+
+          // 檢查今日戰役是否已存在該 missionId
+          if (!updatedBattles.some((b: any) => b.missionId === missionId)) {
+            updatedBattles.push({
+              missionId: missionId,
+              committedTime: '09:00-10:00'
+            });
+            addedCount++;
+          }
+        }
+
+        if (addedCount === 0) {
+          alert('ℹ️ 任務已存在於今日儀表板中，未重複新增。');
+          return;
+        }
+
+        await chrome.storage.local.set({ 
+          weeklyMissions: updatedMissions,
+          dailyLogs: {
+            ...dailyLogs,
+            [today]: {
+              ...dailyLogs[today],
+              coreBattles: updatedBattles
+            }
+          }
+        });
+        
+        setMessages(prev => [
+          ...prev, 
+          { 
+            role: 'system', 
+            content: `✅ 已成功將 ${addedCount} 個 AI 拆解的任務匯入儀表板！` 
+          }
+        ]);
       });
-
-      if (addedCount === 0) {
-        alert('ℹ️ 任務已存在於今日儀表板中，未重複新增。');
-        return;
-      }
-
-      dailyLogs[today].coreBattles = existingBattles;
-      await chrome.storage.local.set({ dailyLogs });
-      
-      setMessages(prev => [
-        ...prev, 
-        { 
-          role: 'system', 
-          content: `✅ 已成功將 ${addedCount} 個 AI 拆解的任務匯入儀表板！` 
-        }
-      ]);
     } catch (e) {
       console.error('寫入今日任務失敗:', e);
       alert('❌ 寫入儀表板任務失敗。');
     }
   };
 
-  const checkAndInitAI = async () => {
-    try {
-      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
-      if (!aiAPI) {
-        setAiAvailable('no');
-        setIsInitializing(false);
-        return;
-      }
-
-      const capabilities = await aiAPI.capabilities();
-      if (capabilities.available === 'no') {
-        setAiAvailable('no');
-        setIsInitializing(false);
-        return;
-      }
-
-      setAiAvailable('yes');
-      
-      aiSessionRef.current = await aiAPI.create({
-        systemPrompt: `你是一個專業的 Scrum 敏捷開發與番茄鐘助理。
-你會幫助使用者評估任務優先順序、拆解子任務、估算番茄鐘數量，並給予專注力與效率建議。
-請使用「繁體中文」進行回答，回答要簡短、俐落、精準且富有鼓勵語氣。`
-      });
-
-      setMessages([
-        {
-          role: 'model',
-          content: '👋 你好！我是你的 PK+ 助理。我已準備就緒，可以幫你評估今日的任務、拆解番茄鐘或提供敏捷開發建議。有什麼需要幫忙的嗎？'
-        }
-      ]);
-      setIsInitializing(false);
-    } catch (error) {
-      console.error('初始化內建 AI 失敗:', error);
-      setAiAvailable('no');
-      setIsInitializing(false);
-    }
-  };
-
-  const handleSend = async () => {
-    if (!inputText.trim() || isSending || aiAvailable !== 'yes') return;
-
-    const userText = inputText;
-    setInputText('');
-    setMessages(prev => [...prev, { role: 'user', content: userText }]);
-    setIsSending(true);
-
-    try {
-      if (!aiSessionRef.current) {
-        const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
-        if (!aiAPI) {
-          throw new Error('無法取得本地 AI API 呼叫路徑。');
-        }
-        aiSessionRef.current = await aiAPI.create({
-          systemPrompt: '你是一個專業的 Scrum 敏捷開發與番茄鐘助理。請用繁體中文回答。'
-        });
-      }
-
-      const response = await aiSessionRef.current.prompt(userText);
-      setMessages(prev => [...prev, { role: 'model', content: response }]);
-    } catch (error) {
-      console.error('AI 回應失敗:', error);
-      setMessages(prev => [...prev, { role: 'system', content: '❌ AI 助理思考中發生錯誤，請稍後再試。' }]);
-    } finally {
-      setIsSending(false);
-    }
-  };
 
   const handleImportTasks = async () => {
     if (importStatus === 'importing') return;
@@ -465,14 +219,20 @@ const SidebarApp: React.FC = () => {
         }
 
         if (activeTab.url?.startsWith('chrome://') || activeTab.url?.startsWith('chrome-extension://')) {
-          const result = await chrome.storage.local.get('dailyLogs');
+          const result = await chrome.storage.local.get(['dailyLogs', 'weeklyMissions']);
           const dailyLogs = result.dailyLogs || {};
+          const weeklyMissions = result.weeklyMissions || [];
           const today = new Date().toISOString().split('T')[0];
           const todayLog = dailyLogs[today];
 
           if (todayLog && todayLog.coreBattles && todayLog.coreBattles.length > 0) {
             const taskStr = todayLog.coreBattles
-              .map((b: any, index: number) => `${index + 1}. [${b.status === 'completed' ? '已完成' : '進行中'}] ${b.title} (預估: ${b.estimatedPomodoros} 🍅)`)
+              .map((b: any, index: number) => {
+                const mission = weeklyMissions.find((m: any) => m.id === b.missionId);
+                const title = mission ? mission.text : '未知任務';
+                const statusText = mission?.isCompleted ? '已完成' : '進行中';
+                return `${index + 1}. [${statusText}] ${title}`;
+              })
               .join('\n');
             
             const prompt = `這是我目前在 Power Kit 儀表板中規劃的今日核心戰役任務清單：\n\n${taskStr}\n\n請幫我評估任務優先順序，並給予今日的衝刺番茄鐘執行與時間分配建議。`;
@@ -598,6 +358,64 @@ const SidebarApp: React.FC = () => {
         >
           🔄 重新偵測與初始化
         </button>
+
+        <details className="mt-4 bg-slate-900/60 border border-slate-800/80 rounded-xl p-3 text-xs">
+          <summary className="font-semibold text-slate-300 cursor-pointer hover:text-white transition-colors flex items-center gap-1 select-none">
+            🛠️ 開發者 Console 排錯代碼
+          </summary>
+          <div className="mt-2.5 text-[11px] text-slate-400 leading-relaxed">
+            <p className="mb-2">
+              按 <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300 font-mono">F12</code> 或右鍵「檢查」開啟主控台 (Console)，貼上執行以下測試代碼，即可診斷 API 狀態與報錯：
+            </p>
+            <pre className="bg-slate-950 p-2 rounded-lg border border-slate-800 overflow-x-auto text-[10px] text-emerald-400 font-mono select-all max-h-40 overflow-y-auto">
+{`(async () => {
+  console.log("=== 本地 AI 偵測測試 ===");
+  const namespaces = {
+    "self.ai": typeof self !== 'undefined' ? self.ai : undefined,
+    "window.ai": typeof window !== 'undefined' ? window.ai : undefined,
+    "chrome.aiLanguageModel": typeof chrome !== 'undefined' ? chrome.aiLanguageModel : undefined,
+    "LanguageModel": typeof LanguageModel !== 'undefined' ? LanguageModel : undefined
+  };
+  console.table(namespaces);
+
+  const getAICore = () => {
+    if (typeof self !== 'undefined' && self.ai?.languageModel) return self.ai.languageModel;
+    if (typeof window !== 'undefined' && window.ai?.languageModel) return window.ai.languageModel;
+    if (typeof chrome !== 'undefined' && chrome.aiLanguageModel) return chrome.aiLanguageModel;
+    if (typeof LanguageModel !== 'undefined') return LanguageModel;
+    return null;
+  };
+
+  const aiAPI = getAICore();
+  if (!aiAPI) {
+    console.error("❌ 找不到任何本地 AI API 命名空間。請確認 Chrome flags 與 components 設定。");
+    return;
+  }
+  console.log("✅ 成功偵測到 API 核心：", aiAPI);
+
+  try {
+    console.log("正在檢測 capabilities...");
+    const caps = await aiAPI.capabilities();
+    console.log("capabilities 結果:", caps);
+  } catch (e) {
+    console.warn("⚠️ capabilities 檢測失敗 (可能是舊版不支援無參數呼叫):", e);
+  }
+
+  try {
+    console.log("正在嘗試建立測試 Session...");
+    const session = await aiAPI.create({ systemPrompt: "你是一個測試助手。" });
+    console.log("✅ 成功建立 Session！正在進行 Prompt 測試...");
+    const response = await session.prompt("你好，請回覆『測試成功』四個字。");
+    console.log("🎉 Prompt 回應結果:", response);
+    session.destroy();
+    console.log("✅ Session 銷毀成功，VRAM 已釋放。");
+  } catch (e) {
+    console.error("❌ 建立 Session 或 Prompt 推理失敗，錯誤訊息:", e);
+  }
+})();`}
+            </pre>
+          </div>
+        </details>
       </div>
     );
   }
@@ -772,7 +590,7 @@ const SidebarApp: React.FC = () => {
             disabled={isSending || aiAvailable !== 'yes'}
           />
           <button
-            onClick={handleSend}
+            onClick={() => handleSend()}
             disabled={!inputText.trim() || isSending || aiAvailable !== 'yes'}
             className={`p-2 rounded-lg transition-all ${
               inputText.trim() && !isSending && aiAvailable === 'yes'

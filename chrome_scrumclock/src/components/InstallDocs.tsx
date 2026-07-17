@@ -164,9 +164,55 @@ function getOrCreateBackupFile() {
   }
 }`;
 
+const DEBUG_CODE = `(async () => {
+  console.log("=== 本地 AI 偵測測試 ===");
+  const namespaces = {
+    "self.ai": typeof self !== 'undefined' ? self.ai : undefined,
+    "window.ai": typeof window !== 'undefined' ? window.ai : undefined,
+    "chrome.aiLanguageModel": typeof chrome !== 'undefined' ? chrome.aiLanguageModel : undefined,
+    "LanguageModel": typeof LanguageModel !== 'undefined' ? LanguageModel : undefined
+  };
+  console.table(namespaces);
+
+  const getAICore = () => {
+    if (typeof self !== 'undefined' && self.ai?.languageModel) return self.ai.languageModel;
+    if (typeof window !== 'undefined' && window.ai?.languageModel) return window.ai.languageModel;
+    if (typeof chrome !== 'undefined' && chrome.aiLanguageModel) return chrome.aiLanguageModel;
+    if (typeof LanguageModel !== 'undefined') return LanguageModel;
+    return null;
+  };
+
+  const aiAPI = getAICore();
+  if (!aiAPI) {
+    console.error("❌ 找不到任何本地 AI API 命名空間。請確認 Chrome flags 與 components 設定。");
+    return;
+  }
+  console.log("✅ 成功偵測到 API 核心：", aiAPI);
+
+  try {
+    console.log("正在檢測 capabilities...");
+    const caps = await aiAPI.capabilities();
+    console.log("capabilities 結果:", caps);
+  } catch (e) {
+    console.warn("⚠️ capabilities 檢測失敗 (可能是舊版不支援無參數呼叫):", e);
+  }
+
+  try {
+    console.log("正在嘗試建立測試 Session...");
+    const session = await aiAPI.create({ systemPrompt: "你是一個測試助手。" });
+    console.log("✅ 成功建立 Session！正在進行 Prompt 測試...");
+    const response = await session.prompt("你好，請回覆『測試成功』四個字。");
+    console.log("🎉 Prompt 回應結果:", response);
+    session.destroy();
+    console.log("✅ Session 銷毀成功，VRAM 已釋放。");
+  } catch (e) {
+    console.error("❌ 建立 Session 或 Prompt 推理失敗，錯誤訊息:", e);
+  }
+})();`;
+
 export const InstallDocs: React.FC = () => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'setup' | 'guide'>('setup');
+  const [activeTab, setActiveTab] = useState<'setup' | 'guide' | 'debug'>('setup');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(GAS_CODE)
@@ -204,6 +250,16 @@ export const InstallDocs: React.FC = () => {
           }`}
         >
           💡 最大化利用指南
+        </button>
+        <button
+          onClick={() => setActiveTab('debug')}
+          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
+            activeTab === 'debug'
+              ? 'border-blue-500 text-blue-400 font-bold'
+              : 'border-transparent text-dark-muted hover:text-dark-primary'
+          }`}
+        >
+          🛠️ 本地 AI 偵測與排錯
         </button>
       </div>
 
@@ -400,6 +456,52 @@ export const InstallDocs: React.FC = () => {
               <div className="bg-dark-surface/50 p-3 rounded-lg border border-dark-border-default">
                 <span className="text-blue-400 font-bold block mb-1 text-xs sm:text-sm">📋 Google Tasks 聯動</span>
                 <span className="text-[11px] text-dark-muted leading-relaxed">直接在新分頁拉取與勾選您在 Google Tasks 的待辦事項，並透過語音開會結論一鍵派發任務。</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: 本地 AI 偵測與排錯 */}
+      {activeTab === 'debug' && (
+        <div className="space-y-6">
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              🤖 本地 AI (Gemini Nano) 開發排錯說明
+            </h2>
+            <p className="text-dark-muted leading-relaxed mb-4 text-xs sm:text-sm">
+              如果您在使用 AI 助理時遇到錯誤，或是不確定瀏覽器的 Gemini Nano 是否已經就緒，您可以直接使用以下偵測腳本進行排錯。
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <strong className="text-dark-primary text-xs sm:text-sm block mb-1">💡 診斷使用步驟：</strong>
+                <ol className="list-decimal list-inside space-y-1 text-xs text-dark-muted pl-1">
+                  <li>在您的瀏覽器任意位置按 <kbd className="px-1.5 py-0.5 rounded bg-dark-surface border border-dark-border-default font-mono text-[10px] text-dark-primary font-bold">F12</kbd> (或按右鍵選擇「檢查」) 開啟開發者工具。</li>
+                  <li>切換到 <strong className="text-dark-primary">Console (主控台)</strong> 分頁。</li>
+                  <li>複製下方代碼框中的完整內容，並貼到 Console 中按 Enter 執行。</li>
+                  <li>根據 Console 中輸出的日誌，您即可得知 API 命名空間是否缺失、模型是否就緒、或是否有其他錯誤資訊。</li>
+                </ol>
+              </div>
+
+              <div className="relative">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-xs font-semibold text-dark-secondary">💻 診斷排錯測試代碼：</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(DEBUG_CODE).then(() => {
+                        alert("📋 排錯代碼已複製到剪貼簿！");
+                      });
+                    }}
+                    className="text-xs bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded transition-all"
+                  >
+                    📋 複製代碼
+                  </button>
+                </div>
+
+                <pre className="bg-dark-surface p-4 rounded-lg border border-dark-border-default overflow-x-auto text-[11px] text-emerald-400 font-mono select-all max-h-80 overflow-y-auto">
+                  {DEBUG_CODE}
+                </pre>
               </div>
             </div>
           </div>

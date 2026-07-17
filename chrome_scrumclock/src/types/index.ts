@@ -27,6 +27,7 @@ export interface WeeklyMission {
   notes?: string; // 新增：執行備註/備忘
   createdAt?: string; // 新增：建立時間 (格式: YYYY-MM-DD HH:mm)
   completedAt?: string; // 新增：完成時間
+  progressPercent?: number; // 新增：進度百分比
 }
 
 export interface InboxItem {

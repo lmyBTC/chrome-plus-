@@ -6,6 +6,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     outDir: 'dist',
+    modulePreload: false,
     rollupOptions: {
       input: {
         newtab: resolve(__dirname, 'src/entries/newtab/index.html'),

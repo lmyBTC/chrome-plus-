@@ -18,7 +18,8 @@
     "downloads",
     "sidePanel",
     "contextMenus",
-    "aiLanguageModel"
+    "clipboardRead",
+    "clipboardWrite"
   ],
   "host_permissions": [
     "<all_urls>"

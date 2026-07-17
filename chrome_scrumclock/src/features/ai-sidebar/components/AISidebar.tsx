@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../../../core/chrome/storage';
+import { getAICore, checkAiCapabilities } from '../../../utils/ai-helper';
 
 interface AISidebarProps {
   isOpen: boolean;
@@ -44,14 +45,9 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
 
   const checkAndInitAI = async () => {
     try {
-      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
-      if (!aiAPI) {
-        setAiAvailable('no');
-        return;
-      }
-
-      const capabilities = await aiAPI.capabilities();
-      if (capabilities.available === 'no') {
+      const aiAPI = getAICore();
+      const isAvailable = await checkAiCapabilities(aiAPI);
+      if (!isAvailable) {
         setAiAvailable('no');
         return;
       }
@@ -106,7 +102,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
     }
 
     try {
-      const aiAPI = (window as any).ai?.languageModel || (chrome as any)?.aiLanguageModel;
+      const aiAPI = getAICore();
       if (!aiAPI) {
         setErrorMsg('無法取得本地 AI API 呼叫路徑。');
         setIsLoading(false);

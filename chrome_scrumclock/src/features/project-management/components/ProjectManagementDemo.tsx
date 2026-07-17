@@ -3,6 +3,8 @@ import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
 import { WeeklyMission, InboxItem, SprintLog } from '../../../types';
 
+declare const chrome: any;
+
 type Tab = 'taskPool' | 'inbox' | 'sprintLogs';
 
 export const ProjectManagementDemo: React.FC = () => {
@@ -47,6 +49,17 @@ export const ProjectManagementDemo: React.FC = () => {
 
   useEffect(() => {
     loadData();
+
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, namespace: string) => {
+      if (namespace === 'local' && (changes.weeklyMissions || changes.inboxItems || changes.dailyLogs)) {
+        loadData();
+      }
+    };
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
 
   const loadData = async () => {
@@ -471,6 +484,20 @@ export const ProjectManagementDemo: React.FC = () => {
                               <span className={row.isCompleted ? 'line-through text-slate-500' : ''}>
                                 {row.text}
                               </span>
+                              {row.progressPercent !== undefined && (
+                                <div className="mt-2 w-full max-w-[200px]">
+                                  <div className="flex justify-between items-center text-[10px] text-dark-muted mb-1">
+                                    <span>進度</span>
+                                    <span className="font-semibold text-emerald-400">{row.progressPercent}%</span>
+                                  </div>
+                                  <div className="w-full bg-dark-base rounded-full h-1.5 overflow-hidden border border-dark-border-subtle/30">
+                                    <div 
+                                      className="bg-emerald-500 h-full rounded-full transition-all duration-300" 
+                                      style={{ width: `${row.progressPercent}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              )}
                             </td>
                           )}
                           {visibleColumns.status && (
