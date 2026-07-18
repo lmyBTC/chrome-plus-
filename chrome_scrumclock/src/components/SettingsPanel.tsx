@@ -28,6 +28,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [lastSyncTime, setLastSyncTime] = useState('載入中...');
+  const [enableWebhook, setEnableWebhook] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   // Focus Blocker State
   const [distractionSites, setDistractionSites] = useState('');
@@ -61,6 +63,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       // AI & Cloud Sync
       setAppsScriptUrl(data.userSettings.appsScriptUrl || '');
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
+      setEnableWebhook(data.userSettings.enableWebhook || false);
+      setWebhookUrl(data.userSettings.webhookUrl || '');
       
       const time = await syncService.getLastSyncTime();
       setLastSyncTime(time);
@@ -145,7 +149,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         endOfDayReviewTime: endOfDayReviewTime || '21:00',
         appsScriptUrl: appsScriptUrl.trim(),
         geminiApiKey: geminiApiKey.trim(),
-        distractionSites: blockSites
+        distractionSites: blockSites,
+        enableWebhook: enableWebhook,
+        webhookUrl: webhookUrl.trim()
       };
 
       const updatedGoal: NorthStarGoal = {
@@ -418,6 +424,40 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                       {isSyncing ? '同步中...' : '📤 推送本地到雲端'}
                     </button>
                   </div>
+                </div>
+              )}
+            </div>
+
+            {/* 外部 Webhook 自動化同步 */}
+            <div className="bg-indigo-950/20 border border-indigo-900/50 rounded-xl p-5">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-bold text-indigo-300 flex items-center gap-1.5">
+                  <span>🔌</span> 外部 Webhook 自動化同步
+                </label>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enableWebhook}
+                    onChange={(e) => setEnableWebhook(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                </label>
+              </div>
+              <p className="text-xs text-indigo-300/80 mb-3 leading-relaxed">
+                啟用後，每當建立/完成/刪除每日任務，或更新專案進度時，系統會自動在背景發送 POST 請求至指定的 Webhook 接收端（如 n8n, Make, GAS），實現即時的跨系統數據同步。
+              </p>
+              {enableWebhook && (
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold text-dark-muted">Webhook 接收網址 (URL)</label>
+                  <input
+                    type="url"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    required={enableWebhook}
+                    placeholder="https://your-server.com/webhook"
+                    className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-dark-primary text-sm shadow-sm"
+                  />
                 </div>
               )}
             </div>

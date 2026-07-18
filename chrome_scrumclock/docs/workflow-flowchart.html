@@ -384,6 +384,9 @@
       <button class="tab-btn" onclick="switchTab(3)">
         <span>✍️</span> AI 寫作助理與剪貼簿工作流
       </button>
+      <button class="tab-btn" onclick="switchTab(4)">
+        <span>📁</span> 專案目錄與元件通訊
+      </button>
     </div>
   </header>
 
@@ -448,7 +451,7 @@
           <ul class="component-list">
             <li class="component-item">
               <div class="comp-name">background.ts</div>
-              <div class="comp-desc">Service Worker 背景背景，負責監聽計時結束、發送桌面提示。</div>
+              <div class="comp-desc">Service Worker 背景腳本，負責監聽計時結束、發送桌面提示。</div>
             </li>
             <li class="component-item">
               <div class="comp-name">chrome.alarms</div>
@@ -808,6 +811,104 @@
       <div class="tip-box">
         <span>✍️</span>
         <p><strong>Lite 寫作助理優勢：</strong> 透過「剪貼簿快取偵測」與「一鍵複製貼回」機制的緊密配合，我們成功在「不侵入 Canvas、不申請官方 OAuth 2.0 敏感權限」的情況下，為 Max 創造了極佳的 Docs 寫作增強體驗，實踐了資深開發者以「最小技術改動，換取最大情境效益」的核心思維。</p>
+      </div>
+    </div>
+
+    <!-- TAB 5: 📁 專案目錄與元件通訊 -->
+    <div id="tab-4" class="tab-content">
+      <div class="section-title">專案目錄樹與職責分工 (Project Structure)</div>
+      
+      <div class="arch-card" style="margin-bottom: 2rem;">
+        <pre style="color: #a5b4fc; font-family: monospace; font-size: 0.85rem; overflow-x: auto; padding: 1rem; background: rgba(0,0,0,0.3); border-radius: 8px;">
+chrome_scrumclock/
+├── archive/                        # 歷史歸檔檔案
+│   └── simple/                     # [原型存檔] 舊版純 JS 傳統擴充功能
+├── docs/                           # 專案設計文件與架構流程圖
+├── public/                         # 靜態資源 (不經 Vite 編譯直接輸出至 dist)
+│   ├── manifest.json               # 擴充功能設定檔 (MV3)
+│   ├── blocked.html                # DNR 攔截分心網站後的靜心引導頁
+│   └── icons/                      # 擴充功能圖示 (SVG)
+├── src/                            # React + TypeScript 核心程式碼
+│   ├── entries/                    # 擴充功能各個 HTML 的主要 JS/TS 進入點
+│   │   ├── newtab.tsx              # 新分頁儀表板入口 (原 main.tsx)
+│   │   ├── popup.ts                # 工具列小彈窗腳本 (原 popup.js)
+│   │   └── options.ts              # 設定頁面腳本 (原 options.js)
+│   ├── App.tsx                     # 應用主組件 (整合版控制中心、側邊欄、命令列等)
+│   ├── index.css                   # 全域樣式 (引入 Tailwind CSS)
+│   ├── background.ts               # Background Service Worker (計時守護與 DNR 控制)
+│   ├── content.ts                  # Content Script (用於頁面 Context 抓取)
+│   ├── components/                 # 全域共用元件
+│   │   └── SettingsPanel.tsx       # AI API 與同步選項設定面板
+│   ├── core/                       # 核心基礎服務層 (跨模組共用)
+│   │   ├── api/                    # 外部 API 與同步適配器
+│   │   ├── chrome/                 # Chrome API 封裝
+│   │   └── layout/                 # 系統 UI 外殼與控制面板佈局
+│   ├── features/                   # 功能特徵模組層 (按業務邏輯隔離)
+│   │   ├── scrumclock/             # 番茄鐘與任務核心模組
+│   │   ├── ai-sidebar/             # AI 寫作助理模組
+│   │   ├── analytics/              # 數據統計模組
+│   │   ├── bookmarks/              # 辦公傳送門書籤模組
+│   │   ├── project-management/     # 專案管理整合模組
+│   │   └── experimental-srt/       # [實驗性] 字幕讀取與解析模組
+│   └── types/                      # TypeScript 類型定義
+├── index.html                      # 主儀表板 HTML (在新分頁展示)
+├── popup.html                      # 擴充功能小視窗 HTML (瀏覽器工具列點擊)
+├── options.html                    # 擴充功能設定頁 HTML
+├── vite.config.ts                  # Vite 編譯設定檔 (指定入口與輸出)
+└── tailwind.config.js              # Tailwind CSS 樣式配置
+        </pre>
+      </div>
+
+      <div class="section-title">擴充功能進入點與 Vite 編譯對應關係 (Vite Build Mapping)</div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%">Chrome 擴充功能組件</th>
+              <th style="width: 30%"><code>public/manifest.json</code> 配置路徑</th>
+              <th style="width: 25%">開發源文件</th>
+              <th style="width: 25%">Vite 編譯後產物</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Background</strong></td>
+              <td><code>"background": { "service_worker": "background.js", "type": "module" }</code></td>
+              <td><code>src/background.ts</code></td>
+              <td><code>dist/background.js</code></td>
+            </tr>
+            <tr>
+              <td><strong>Content Script</strong></td>
+              <td><code>"content_scripts": [ { "js": ["content.js"], ... } ]</code></td>
+              <td><code>src/content.ts</code></td>
+              <td><code>dist/content.js</code></td>
+            </tr>
+            <tr>
+              <td><strong>Popup</strong></td>
+              <td><code>"action": { "default_popup": "popup.html" }</code></td>
+              <td><code>popup.html</code> <span class="flow-arrow">➔</span> <code>src/entries/popup.ts</code></td>
+              <td><code>dist/popup.html</code> + <code>dist/popup.js</code></td>
+            </tr>
+            <tr>
+              <td><strong>Options</strong></td>
+              <td><code>"options_page": "options.html"</code></td>
+              <td><code>options.html</code> <span class="flow-arrow">➔</span> <code>src/entries/options.ts</code></td>
+              <td><code>dist/options.html</code> + <code>dist/options.js</code></td>
+            </tr>
+            <tr>
+              <td><strong>Override Newtab</strong></td>
+              <td><code>"chrome_url_overrides": { "newtab": "index.html" }</code></td>
+              <td><code>index.html</code> <span class="flow-arrow">➔</span> <code>src/entries/newtab.tsx</code> <span class="flow-arrow">➔</span> <code>src/App.tsx</code></td>
+              <td><code>dist/index.html</code> + <code>dist/index.js</code> 等合併產物</td>
+            </tr>
+            <tr>
+              <td><strong>Blocked Page</strong></td>
+              <td>(由 <code>background.ts</code> DNR 重新導向至此)</td>
+              <td><code>public/blocked.html</code></td>
+              <td><code>dist/blocked.html</code> (直接複製)</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 

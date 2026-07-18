@@ -12,7 +12,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   appsScriptUrl: '',
   whiteNoiseEnabled: false,
   whiteNoiseVolume: 0.5,
-  geminiApiKey: ''
+  geminiApiKey: '',
+  enableWebhook: false,
+  webhookUrl: ''
 };
 
 const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {

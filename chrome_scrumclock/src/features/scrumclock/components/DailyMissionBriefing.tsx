@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { WeeklyMission, CoreBattle } from '../../../types';
 import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
+import { geminiService } from '../../../core/api/gemini';
+import { getAICore, checkAiCapabilities } from '../../../utils/ai-helper';
 
 interface DailyMissionBriefingProps {
   onComplete: () => void;
@@ -210,15 +212,59 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
     setBreakingDownId(mission.id);
     setTargetWeeklyMission(mission);
     try {
-      let subtasks = await sync.breakdownTask(mission.id);
+      let subtasks: string[] = [];
+
+      const prompt = `請將任務「${mission.text}」拆解為 3 到 5 個具體且可獨立執行的子步驟。每個步驟請評估所需的番茄鐘數量（1 顆番茄 = 25 分鐘專注）。\n\n請務必嚴格遵循以下回傳格式，每行一個步驟，不需任何標題或 Markdown 標記，也不要有任何項目符號（如 1. 或 -）：\n${mission.text} — [子步驟具體動作] (N 🍅)`;
+      const systemInstruction = '你是一個專業的敏捷開發 Scrum Master。你擅長將大型任務拆解為 1~3 個番茄鐘內可以完成的小型衝刺任務。只回傳規定的純文字格式，不要有多餘的問候語。';
+
+      // 優先使用 Chrome 本地端 Gemini Nano (Prompt API)
+      try {
+        const aiAPI = getAICore();
+        const isAiAvailable = await checkAiCapabilities(aiAPI);
+
+        if (aiAPI && isAiAvailable) {
+          const session = await aiAPI.create({ systemPrompt: systemInstruction });
+          const result = await session.prompt(prompt);
+          session.destroy(); // 記得釋放 VRAM
+
+          if (result) {
+            subtasks = result.split('\n')
+              .map((s: string) => s.trim())
+              .filter((s: string) => s.length > 0 && s.includes('🍅'));
+          }
+        }
+      } catch (nanoError) {
+        console.warn('Gemini Nano 本地拆解失敗，嘗試其他備援', nanoError);
+      }
+
+      // 備援方案：如果有設定 Gemini API Key，使用 Cloud API
+      if ((!subtasks || subtasks.length === 0) && geminiApiKey) {
+        try {
+          const result = await geminiService.generateText(prompt, systemInstruction);
+          if (result) {
+            subtasks = result.split('\n')
+              .map(s => s.trim())
+              .filter(s => s.length > 0 && s.includes('🍅'));
+          }
+        } catch (geminiError) {
+          console.warn('Gemini Cloud 拆解失敗，嘗試使用 Sync 備援', geminiError);
+        }
+      }
+
+      // 若都失敗，退回使用 Sync Webhook
       if (!subtasks || subtasks.length === 0) {
-        // 本地降級模擬
+        subtasks = await sync.breakdownTask(mission.id);
+      }
+
+      // 最終降級模擬
+      if (!subtasks || subtasks.length === 0) {
         subtasks = [
           `${mission.text} — 規劃與分析 (1 🍅)`,
           `${mission.text} — 核心實作與開發 (2 🍅)`,
           `${mission.text} — 測試與優化 (1 🍅)`
         ];
       }
+
       setBreakdownMissions(subtasks);
       // 預設全選
       setSelectedBreakdownIdxs(subtasks.map((_, i) => i));

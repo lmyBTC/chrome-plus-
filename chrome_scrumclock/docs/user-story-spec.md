@@ -39,27 +39,59 @@
 ### 模組三：辦公室傳送門 (Hub / Bookmarks)
 *   **故事背景**：身為一個專案經理，我希望我的新分頁 (New Tab) 不只是個番茄鐘，而是一個「指揮中心」。我希望能把最常用的數個工作系統 (如 Notion, Figma, Jira) 固定在側邊欄，一鍵即可開啟。
 *   **功能定位**：解決「頻繁的上下文切換」，整合常用工作入口。
+*   **�### 模組九：內建 Gemini 本地側欄助理與生態系深度整合 (Chrome Side Panel & Gemini Nano Copilot)
+*   **故事背景**：我希望能夠在任何網頁瀏覽時，直接在瀏覽器右側開啟專屬的 ScrumClock 助理，且不需要 API Key、不需要網路連接，完全在本地端快速評估任務、估算番茄鐘。我還希望助理能根據我的口語描述直接幫我修改、新增或刪除任務。此外，當我在官方 Gemini 網頁上工作時，能一鍵啟動 ScrumClock 儀表板，並且我選取的網頁文字能一鍵傳送給側欄助理進行分析，且助理推薦的任務可以直接匯入到我的今日看板中。
+*   **功能定位**：本地運行、零金鑰、深色美學、且與計時與任務生態系雙向打通的敏捷控制中心。
 *   **實作細節**：
-    *   在 `features/` 底下實作 `bookmarks` 模組，掛載於 Sidebar。
-    *   允許使用者自訂常用系統的圖示與網址，讓擴充功能如同專屬的個人工作桌面。
+    *   **Chrome 側邊欄 (Side Panel API)**：設定為點擊 Action 圖示直接開啟右側側欄助理，不干擾宿主網頁。
+    *   **本地 Prompt API (Gemini Nano)**：調用 `ai.languageModel` 本地推理，檢測能力並支援引導下載，安全保障 100%。
+    *   **雙向生態連動**：
+        *   **逆向寫入今日戰役**：一鍵解析助理回覆中的任務與 🍅 數，直接更新至 `dailyLogs.coreBattles` 寫入今日儀表板。
+        *   **口語化任務指令背景執行 (Daily Mission Automation)**：側欄助理具備 Gemini Nano 語意解析，能辨識口語指令（如「新增核心戰役：[任務名稱]」、「完成 [任務名稱]」、「刪除 [任務名稱]」）並直接在背景修改 Storage 狀態，與 `weeklyMissions` 及 `dailyLogs` 同步，解決以往一鍵寫入產生的「未知任務」關聯 Bug。
+        *   **生態系安全跳轉 (Secure Redirection)**：當使用者在官方 Gemini 網頁中點擊懸浮 Widget 的「開啟 ScrumClock 儀表板」時，Content Script (`geminiContent.ts`) 透過 Service Worker 通訊向背景傳送訊息，由 `background.ts` 調用特權 API 安全開啟分頁，解決 `ERR_BLOCKED_BY_CLIENT` 封鎖問題，並避免洩漏內部資源。
+        *   **實時番茄鐘計時條**：監聽 `activeTimer` 狀態，動態呈現番茄鐘倒數或休息狀態，並在衝刺結束時主動發起敏捷回顧對話。
+        *   **右鍵選單快捷分析**：新增右鍵「🤖 傳送至 ScrumClock 助理分析」，自動開側欄並填入選取文字。
+        *   **官方歷史對話續接**：整合下拉選單，可載入 `geminiContent.ts` 抓取的官方歷史對話（`geminiConversations`）續接對話上下文。
 
-### 模組四：鍵盤即王道 (Command Palette)
-*   **故事背景**：身為一個開發者，我非常討厭使用滑鼠點擊 UI。我希望整個擴充功能都能透過類似 macOS `Cmd + K` 或 VS Code `Ctrl + P` 的快速鍵進行全鍵盤操作。
-*   **功能定位**：極致提升操作效率，釋放心流。
-*   **實作細節**：
-    *   實作原生的指令輸入框，不依賴外部龐大套件，符合 Zero-Build 輕量化原則。
-    *   支援全域快捷指令，例如輸入 `> sprint` 啟動番茄鐘、`> review` 進入成果回顧、`> block [網址]` 將當前網站加入黑名單。
+---
 
-### 模組五：AI 任務拆解與動態規劃 (AI Planner)
-*   **故事背景**：當面對龐大任務時，我常因為不知道第一步該做什麼而產生拖延症；且每項任務的實際難度不同，硬性規定 25 分鐘有時反而會強行打斷我的專注。
-*   **功能定位**：解決「時間過度承諾與拆解困難」，提供敏捷輔助。
-*   **實作細節**：
-    *   新增「✨ AI 幫我拆」按鈕，呼叫 Gemini API 自動產出 3-4 個 Subtasks。
-    *   任務支援 `suggestedDuration` 欄位，番茄鐘可動態適應 15 或是 50 分鐘的專注時段。
-    *   任務支援 `aiTip` 欄位，在衝刺前自動顯示歷史教訓，避免重蹈覆轍。
+## 🏗️ 架構與技術優化空間
 
-### 模組六：網路層級專注防禦 (DNR Focus Blocker)
-*   **故事背景**：番茄鐘一開，我還是會不自覺地手癢點開 YouTube，導致好不容易建立的心流瞬間破功。
+為了確保上述高階功能模組在 Chrome 擴充功能架構下的穩定運行，Scrumclock 已針對以下技術債進行了重構：
+
+1.  **Service Worker (Background) 狀態持久化**：
+    *   *問題*：若核心計時邏輯置於前端 UI，當使用者關閉 Sidebar/Popup 分頁時，計時器會中斷。
+    *   *解決方案*：將核心計時引擎 (Timer Engine) 完全移轉至 `background.ts` (結合 Chrome Alarms API)。前端 UI 僅作為「顯示器 (View)」訂閱剩餘時間，確保 100% 後台運行。
+2.  **多端點 API 抽象層 (Adapter Pattern)**：
+    *   *問題*：未來若要將 Quick Capture 同時支援傳送到 Notion、Jira 或 Google Tasks，代碼耦合度會太高。
+    *   *解決方案*：在 `core/api/` 引入 **Adapter 設計模式**，定義統一介面 `ITaskAdapter`，並解耦實作 `GoogleTaskAdapter` 與 `NotionTaskAdapter`。
+3.  **Chrome 新分頁 (New Tab) 覆寫**：
+    *   *問題*：點擊擴充功能圖示開啟彈出視窗速度稍慢，無法作為每日工作的「第一站」。
+    *   *解決方案*：在 `manifest.json` 中配置 `"chrome_url_overrides": { "newtab": "src/entries/newtab/index.html" }`，將擴充功能變成使用者開啟新分頁時的首頁指揮中心。
+4.  **多重遞補與可用性檢測機制 (Capability Detection & Namespace Fallback)**：
+    *   *問題*：不同版本的 Chrome 瀏覽器對 Prompt API / Gemini Nano 物件命名空間不一致（如 `self.ai.languageModel`、`window.ai.languageModel`、`chrome.aiLanguageModel`、`LanguageModel`），且模型狀態可能未就緒。
+    *   *解決方案*：在 `ai-helper.ts` 中實作多層遞補載入邏輯，並設計具有降級機制的 `checkAiCapabilities` 檢測，確保在新舊版 Chrome 的高相容性與無縫降級。
+5.  **常駐會話與 VRAM 記憶體管理 (VRAM Session Lifecycle Management)**：
+    *   *問題*：重複建立 Prompt API 會話會大幅消耗顯示卡的 VRAM 記憶體，且容易導致記憶體洩漏與效能下降。
+    *   *解決方案*：在 `hooks.ts` 的 `useAISession` 中利用 `useRef` 維持 `aiSessionRef` 與 `parseSessionRef` 兩個常駐會話，並在組件銷毀 (Unmount) 時確實執行 `destroy()` 釋放記憶體。
+6.  **Storage 佇列寫入鎖定 (Concurrency-Safe Storage Queue)**：
+    *   *問題*：多個 React 前端組件、Sidebar 助理或 Background Worker 同時頻繁修改 `chrome.storage.local`（如同時寫入任務、計時 Log 與周看板）時，會產生寫入競態條件 (Race Condition) 與資料覆蓋。
+    *   *解決方案*：實作 `StorageQueue` 機制，將所有對 Chrome Storage 的寫入與更新操作放入佇列中循序執行，保證寫入時序與資料完整性。
+7.  **Canvas 隔離與安全通訊 (Canvas Separation & Secure Redirection)**：
+    *   *問題*：若直接對 Google Docs 的 Canvas DOM 進行讀寫容易崩潰且需要敏感權限；另外在官方網頁中透過普通 Link 開啟 `chrome-extension://` 頁面會因 CSP 與安全性限制被封鎖 (`ERR_BLOCKED_BY_CLIENT`)。
+    *   *解決方案*：AI 助理讀寫採用「選取複製 ➔ 側欄優化 ➔ 剪貼簿橋樑覆蓋貼回」避開 Canvas DOM 讀寫；官方網頁對話抓取與互動 Widget 改透過背景 Service Worker 發起特權訊息轉發與分發，由 `background.ts` 調用特權 API 安全開啟分頁。
+
+---
+
+## 🎯 總結與下一步決策
+
+目前 Scrumclock 的基礎地基與核心技術重構（背景計時、新分頁覆寫、網頁層阻擋、本地端 AI 整合）已全數實作完畢。後續功能擴充將持續基於**「技術極簡、隱私安全、免敏感權限」**的原則進行規劃。未來發展路徑 (Roadmap) 將聚焦於以下 4 大極簡但具備強大生產力提升效果的整合附加功能：
+
+1.  **智慧文獻與靈感收集箱 (Smart Scratchpad)**：點擊右鍵選單自動將網頁選取文字以 Markdown 引用格式存入本地 `chrome.storage.local` 暫存區，不佔用系統剪貼簿，並可一鍵傳給 AI 進行整理。
+2.  **一鍵網頁內容注入與總結 (Web Context Summarizer)**：一鍵調用 scripting 抓取當前網頁主要文字（限制 3000 字防止爆 Token），包裹成 Prompt Context 供 AI 快速進行 PR 總結或 API 代碼撰寫。
+3.  **會議語音結論聽寫與 AI 派發 (Voice Meeting Extractor)**：調用 Chrome 內建且免費的 Web Speech API，在 Client端進行實時語音轉文字，並利用 AI 萃取 Action Items 一鍵匯入 Tasks，零付費、隱私安全。
+4.  **AI 工作日報與週報自動生成器 (Focus Journey Reporter)**：一鍵讀取並序列化今日的 `dailyLogs` 專注紀錄與「成果反思」內容，自動產出專業的工作日報，並支援一鍵複製貼往 Slack、Teams 或 Notion。
+e，導致好不容易建立的心流瞬間破功。
 *   **功能定位**：物理級硬性防分心。
 *   **實作細節**：
     *   使用 Manifest V3 的 `chrome.declarativeNetRequest` (DNR) API。

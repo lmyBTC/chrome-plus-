@@ -169,7 +169,15 @@ sequenceDiagram
     User->>UI: 勾選子任務並點擊「一鍵匯入今日戰役」
     
     UI->>Storage: 註冊子任務到週任務庫 (WeeklyMissions)
-    UI->>UI: 根### 5.1 專案目錄樹與職責分工
+    UI->>UI: 根據本地狀態更新渲染今日戰役列表
+```
+</details>
+
+---
+
+## 4. 專案目錄與元件通訊架構 (Project Structure & Communication)
+
+### 4.1 專案目錄樹與職責分工
 
 ```text
 chrome_scrumclock/
@@ -248,7 +256,7 @@ chrome_scrumclock/
 
 ---
 
-### 5.2 擴充功能進入點與 Vite 編譯對應關係
+### 4.2 擴充功能進入點與 Vite 編譯對應關係
 
 Chrome 擴充功能在運行時需要將特定檔案註冊於 `manifest.json` 中。本專案透過 `vite.config.ts` 中的 `rollupOptions.input` 多入口設定，將源文件編譯並對應如下：
 
@@ -263,7 +271,7 @@ Chrome 擴充功能在運行時需要將特定檔案註冊於 `manifest.json` �
 
 ---
 
-### 5.3 運行時檔案交互與通信關聯
+### 4.3 運行時檔案交互與通信關聯
 
 在 Extension 執行時，各個獨立的 Context (Popup, New Tab, Background, Content Script) 之間主要透過 **Chrome API 通信** 與 **本地儲存** 來達成狀態同步。
 
@@ -317,7 +325,7 @@ graph TD
 
 ---
 
-### 5.4 後續檔案歸檔與結構優化分析 (Refactoring Recommendations)
+### 4.4 後續檔案歸檔與結構優化分析 (Refactoring Recommendations)
 
 以下為專案架構重構的優化方向（均已在本次優化計畫中全數落實執行）：
 
@@ -333,123 +341,4 @@ graph TD
     *   *優化內容*：將原本散落且未被引用的 `SrtReader.tsx` 與 `srtParser.ts` 實驗性字幕功能，整合並移入新建的特徵模組 `src/features/experimental-srt/` 目錄中，維持 `src/components` 和 `src/utils` 的純粹性。
 4.  **清理空資料夾** *(已完成)*：
     *   *優化內容*：已直接刪除 `src/contexts/` 空資料夾，避免結構冗餘。
-  ├── SprintPomodoro.tsx # 番茄鐘計時元件
-│   │   │       ├── DailyMissionBriefing.tsx # 週任務拆解與今日戰役
-│   │   │       ├── QuickCapture.tsx  # 閃電捕捉 (Alt+K)
-│   │   │       └── EndOfDayReview.tsx # 成果回顧與反思
-│   │   ├── ai-sidebar/             # AI 寫作助理模組
-│   │   │   ├── index.ts
-│   │   │   └── components/
-│   │   │       └── AISidebar.tsx   # 剪貼簿快取與 Prompt 處理側邊欄
-│   │   ├── analytics/              # 數據統計模組
-│   │   │   ├── index.ts
-│   │   │   └── components/
-│   │   │       └── AnalyticsDashboard.tsx # GitHub 風格熱力圖與統計
-│   │   ├── bookmarks/              # 辦公傳送門書籤模組
-│   │   │   ├── index.ts
-│   │   │   └── components/
-│   │   │       └── BookmarksHub.tsx # 工作連結傳送門
-│   │   └── project-management/     # 專案管理整合模組
-│   │       ├── index.ts
-│   │       └── components/
-│   │           └── ProjectManagementDemo.tsx # 專案任務看板 demo
-│   ├── types/                      # TypeScript 類型定義
-│   └── utils/                      # 通用工具函式 (如 SRT 解析器)
-├── index.html                      # 主儀表板 HTML (在新分頁展示)
-├── popup.html                      # 擴充功能小視窗 HTML (瀏覽器工具列點擊)
-├── options.html                    # 擴充功能設定頁 HTML
-├── vite.config.ts                  # Vite 編譯設定檔 (指定入口與輸出)
-└── tailwind.config.js              # Tailwind CSS 樣式配置
-```
-
----
-
-### 5.2 擴充功能進入點與 Vite 編譯對應關係
-
-Chrome 擴充功能在運行時需要將特定檔案註冊於 `manifest.json` 中。本專案透過 `vite.config.ts` 中的 `rollupOptions.input` 多入口設定，將源文件編譯並對應如下：
-
-| Chrome 擴充功能組件 | `public/manifest.json` 配置路徑 | 開發源文件 | Vite 編譯後產物 |
-| :--- | :--- | :--- | :--- |
-| **Background (Service Worker)** | `"background": { "service_worker": "background.js", "type": "module" }` | `src/background.ts` | `dist/background.js` |
-| **Content Script** | `"content_scripts": [ { "js": ["content.js"], ... } ]` | `src/content.ts` | `dist/content.js` |
-| **Popup (工具列彈出視窗)** | `"action": { "default_popup": "popup.html" }` | `popup.html` -> `src/popup.js` | `dist/popup.html` + `dist/popup.js` |
-| **Options (設定頁面)** | `"options_page": "options.html"` | `options.html` -> `src/options.js` | `dist/options.html` + `dist/options.js` |
-| **Override Newtab (新分頁儀表板)**| `"chrome_url_overrides": { "newtab": "index.html" }` | `index.html` -> `src/main.tsx` -> `src/App.tsx` | `dist/index.html` + `dist/index.js` 等合併產物 |
-| **Blocked Page (網站阻擋頁)** | (由 `background.ts` DNR 重新導向至此) | `public/blocked.html` | `dist/blocked.html` (直接複製) |
-
----
-
-### 5.3 運行時檔案交互與通信關聯
-
-在 Extension 執行時，各個獨立的 Context (Popup, New Tab, Background, Content Script) 之間主要透過 **Chrome API 通信** 與 **本地儲存** 來達成狀態同步。
-
-```mermaid
-graph TD
-    %% 定義節點
-    subgraph UI_Contexts ["瀏覽器頁面端 (UI Contexts)"]
-        App["App.tsx <br/>(新分頁 / 控制中心)"]
-        TimerCtx["TimerContext.tsx <br/>(React 狀態中心)"]
-        AISidebar["AISidebar.tsx <br/>(AI 寫作助理)"]
-        OptionsJS["options.js <br/>(選項設定頁)"]
-        PopupJS["popup.js <br/>(快捷狀態彈窗)"]
-    end
-
-    subgraph Scripts ["腳本端 (Isolated Contexts)"]
-        ContentTS["content.ts <br/>(Content Script)"]
-        BGTS["background.ts <br/>(Service Worker)"]
-    end
-
-    subgraph NativeAPI ["Chrome 瀏覽器原生 API"]
-        Storage["chrome.storage.local <br/>(單一事實來源 SSOT)"]
-        DNR["chrome.declarativeNetRequest <br/>(網路底層攔截)"]
-        Alarms["chrome.alarms <br/>(後台持久化鬧鐘)"]
-    end
-
-    subgraph Remote ["遠端整合端"]
-        GeminiAPI["Gemini 1.5 Flash <br/>(AI 運算)"]
-        NotionGAS["Notion / GAS Webhook <br/>(任務與日誌同步)"]
-    end
-
-    %% 通信與依賴關係
-    App -->|封裝/調用| TimerCtx
-    TimerCtx -->|讀寫狀態| Storage
-    OptionsJS -->|讀寫設定| Storage
-    PopupJS -->|讀取今日進度| Storage
-    AISidebar -->|讀取 API 金鑰| Storage
-
-    %% 訊息傳遞
-    TimerCtx -->|"chrome.runtime.sendMessage <br/>(START/STOP_FOCUS)"| BGTS
-    ContentTS -->|"chrome.runtime.sendMessage <br/>(發送當前頁面 Context)"| App
-
-    %% 背景程式運作
-    BGTS -->|啟用/關閉阻擋規則| DNR
-    BGTS -->|設定/監聽定時喚醒| Alarms
-    BGTS -->|時間到更新狀態| Storage
-
-    %% API 呼叫
-    AISidebar -->|調用| GeminiAPI
-    TimerCtx -->|透過 core/api/sync.ts| NotionGAS
-```
-
----
-
-### 5.4 後續檔案歸檔與結構優化分析 (Refactoring Recommendations)
-
-為了使目前專案架構更為洗鍊，並降低未來 AI 工具的分析負載，建議進行以下檔案歸檔與分類優化：
-
-1.  **歸檔原型目錄 `simple/`**：
-    *   *現況*：`simple/` 目錄是包含舊版單純 JS 擴充功能的完整原型，對當前的 Vite+React 主專案沒有直接依賴。
-    *   *優化*：將 `simple/` 移入 `archive/simple/` 或 `legacy/simple/` 目錄，並在 `README.md` 中標註為「歷史存檔/原型參考」，避免 AI 在進行代碼全局搜索時將其與主專案程式碼混淆。
-2.  **腳本 TypeScript 化與位置重組**：
-    *   *現況*：`src/popup.js` 與 `src/options.js` 仍為 JavaScript 且其對應的 `popup.html` 和 `options.html` 位於專案根目錄。這打破了 `src/` 底下皆為 TypeScript 及模組化元件的原則。
-    *   *優化*：
-        *   將 `src/popup.js` 升級為 `src/popup.ts` (或將 UI 改寫為 React 組件 `src/entries/popup/main.tsx`)。
-        *   將 `src/options.js` 併入 React 設定面板中，直接利用 `src/components/SettingsPanel.tsx`，讓 `options.html` 也載入 React 進入點，實現「單一 React 框架多入口」的整潔架構。
-        *   在 `src/` 下建立 `src/entries/` 資料夾，將不同 HTML 的進入點腳本統一歸檔（例如：`src/entries/newtab/`、`src/entries/popup/`、`src/entries/options/`）。
-3.  **歸類非核心/實驗性模組**：
-    *   *現況*：`src/components/SrtReader.tsx` 與 `src/utils/srtParser.ts` 屬於字幕讀取與解析功能，與專案的核心敏捷管理（Scrum）和時間防禦（Time-Boxing）無直接關聯。
-    *   *優化*：將此類實驗性或周邊輔助功能移至 `src/features/experimental-srt/` 或是 `src/features/srt-reader/`，保持 `src/components` 的全域純粹性。
-4.  **清理空資料夾**：
-    *   *現況*：`src/contexts/` 資料夾目前為空，核心的計時器 context 已移至特徵目錄 `src/features/scrumclock/contexts/TimerContext.tsx`。
-    *   *優化*：直接刪除 `src/contexts/` 空資料夾，避免結構冗餘。
 

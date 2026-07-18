@@ -10,6 +10,8 @@ export interface UserSettings {
   whiteNoiseEnabled?: boolean;
   whiteNoiseVolume?: number;
   geminiApiKey?: string;
+  enableWebhook?: boolean;
+  webhookUrl?: string;
 }
 
 export interface NorthStarGoal {

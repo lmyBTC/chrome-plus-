@@ -18,7 +18,7 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
 7. 成功載入後，即可在瀏覽器工具列中釘選並啟動 **Scrumclock**。
 
 ### 2. 配置與啟用 AI 助理
-*   **新版 Chrome 內建 AI (Gemini Nano)**：最新的 ScrumClock 助理支援 Chrome 內建的 Prompt API。您不需要配置任何 API Key 或網路連接，模型直接在您的電腦上本地安全運行。請在 `chrome://flags` 中將 `Optimization Guide On Device Model` 與 `Prompt API for Gemini Nano` 啟用 (Enabled) 即可使用。
+*   **新版 Chrome 內建 AI (Gemini Nano)**：最新的 ScrumClock 助理支援 Chrome 內建的 Prompt API（相容最新規範之 `self.ai.languageModel` 與較舊的 `LanguageModel` 命名空間）。您不需要配置任何 API Key 或網路連接，模型直接在您的電腦上本地安全運行。請在 `chrome://flags` 中將 `Optimization Guide On Device Model` 與 `Prompt API for Gemini Nano` 啟用 (Enabled) 即可使用。
 *   **自備 Gemini API Key (非內建) 備用模式**：若您的瀏覽器版本不支援內建 AI，仍可於設定面板填入您的免費 **Gemini API Key**（可於 [Google AI Studio](https://aistudio.google.com/) 申請）並儲存至本地 `chrome.storage.local` 以進行雲端 API 調用。
 
 ---
@@ -76,6 +76,8 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
     *   **雙向生態連動**：
         *   **一鍵匯入任務與選取文字**：點擊匯入或右鍵選取文字點擊「傳送至 ScrumClock 助理分析」，即可拉起側欄自動載入並進行任務拆解。
         *   **逆向寫入今日戰役**：一鍵解析助理回覆中的任務與 🍅 數，直接更新並寫入今日儀表板。
+        *   **口語化任務指令背景執行 (Daily Mission Automation)**：側欄助理具備 Gemini Nano 語意解析，能辨識口語指令（如「新增核心戰役：[任務名稱]」、「完成 [任務名稱]」、「刪除 [任務名稱]」）並直接在背景修改 Storage 狀態，與 `weeklyMissions` 及 `dailyLogs` 同步，解決以往一鍵寫入產生的「未知任務」關聯 Bug。
+        *   **生態系安全跳轉 (Secure Redirection)**：當使用者在官方 Gemini 網頁中點擊懸浮 Widget 的「開啟 ScrumClock 儀表板」時，Content Script (`geminiContent.ts`) 透過 Service Worker 通訊向背景傳送訊息，由 `background.ts` 調用特權 API 安全開啟分頁，解決 `ERR_BLOCKED_BY_CLIENT` 封鎖問題，並避免洩漏內部資源。
         *   **實時番茄鐘計時狀態條**：側欄頂部顯示當前番茄鐘進行/休息狀態倒數，並在結束時主動提示敏捷成果回顧。
         *   **載入歷史官方對話**：可於側欄直接載入並續接先前由 `geminiContent.ts` 抓取的官方歷史對話。
 
@@ -105,8 +107,12 @@ chrome_scrumclock/
 │   ├── components/      # 跨頁面共享 React UI 元件 (如 SettingsPanel)
 │   ├── core/            # 核心系統層 (Chrome API 封裝、同步服務、API 配接器)
 │   ├── features/        # 功能模組化架構 (包含 scrumclock、AI 側邊欄、書籤等)
-│   ├── background.ts    # Background Service Worker (背景持久計時核心)
-│   ├── content.ts       # 網頁內容注入腳本
+│   ├── types/           # 全域與功能模組的 TypeScript 型別定義 (d.ts)
+│   ├── utils/           # 共享工具函式 (如時間格式化、DOM 輔助)
+│   ├── App.tsx          # 共享入口的 React 主根元件
+│   ├── background.ts    # Background Service Worker (背景持久計時核心與安全訊息分發)
+│   ├── content.ts       # 網頁通用內容注入腳本
+│   ├── geminiContent.ts # 針對 Google Gemini 官方網頁的專屬對話抓取與互動 Widget 注入腳本
 │   └── index.css        # 全域 TailwindCSS 樣式
 ├── vite.config.ts       # Vite 多入口編譯配置
 └── tsconfig.json        # TypeScript 配置
