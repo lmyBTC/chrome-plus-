@@ -1,6 +1,6 @@
 # 🍅 Scrumclock 瑞士刀：高效工作者的 AI 敏捷專注助理
 
-Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10x Developer)」量身打造的 Chrome 擴充功能。它將**敏捷管理 (Scrum)**、**時間箱防禦 (Time-Boxing)** 與 **本地 AI 寫作助理** 融為一體，旨在解決現代辦公環境中大腦超載、時間碎裂與頻繁上下文切換的痛點。
+Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10x Developer)」量身打造的 Chrome 擴充功能。它將**敏捷管理 (Scrum)**、**時間箱防禦 (Time-Boxing)** 與 **本地 AI 專案助理** 融為一體，旨在解決現代辦公環境中大腦超載、時間碎裂與頻繁上下文切換的痛點。
 
 本專案貫徹 **「技術極簡、隱私安全、無敏感權限」** 且 **「對開發者最直覺好用」** 的原則，完全在 Client 端安全運行，支援用戶自備 Gemini API 金鑰。
 
@@ -172,7 +172,7 @@ graph TD
 ### 💡 架構設計特點：
 *   **狀態一致性 (SSOT)**：所有核心狀態儲存於 `chrome.storage.local`，各組件實時監聽，確保數據 100% 同步。
 *   **計時持久化**：將核心計時引擎託管給 `background.ts` (結合 Chrome Alarms API)，即使 Popup 或 Sidebar 視窗被使用者關閉，番茄鐘計時仍能精準運行。
-*   **Canvas 隔離設計**：寫作助理使用「複製 ➔ 側邊欄優化 ➔ 覆蓋貼回」的剪貼簿橋樑，避開 Google Docs 的 Canvas DOM 讀寫難題，保障 100% 穩定且無需敏感權限。
+*   **Canvas 隔離設計**：專案助理使用「複製 ➔ 側邊欄處理任務 ➔ 覆蓋貼回」的剪貼簿橋樑，避開 Google Docs 的 Canvas DOM 讀寫難題，保障 100% 穩定且無需敏感權限。
 
 ---
 

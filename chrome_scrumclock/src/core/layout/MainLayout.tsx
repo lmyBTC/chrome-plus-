@@ -42,7 +42,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             title="開啟/關閉 AI 協作側邊欄 (快捷鍵 Ctrl+Shift+K)"
           >
             <span>🤖</span>
-            <span>{isAISidebarOpen ? '收合 AI 助理' : 'AI 寫作助理'}</span>
+            <span>{isAISidebarOpen ? '收合 AI 助理' : 'AI 專案助理'}</span>
           </button>
         </header>
 

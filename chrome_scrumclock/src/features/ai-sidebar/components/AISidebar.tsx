@@ -18,6 +18,8 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [clipboardText, setClipboardText] = useState('');
+  const [pageContext, setPageContext] = useState('');
+  const [pageTitle, setPageTitle] = useState('');
   const [isCopied, setIsCopied] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [aiAvailable, setAiAvailable] = useState<'checking' | 'yes' | 'no'>('checking');
@@ -62,21 +64,42 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
       scrollToBottom();
-      checkClipboard();
+      fetchContexts();
     }
   }, [messages, isOpen]);
 
-  // 嘗試讀取剪貼簿內容 (做為輔助)
-  const checkClipboard = async () => {
+  // 嘗試讀取剪貼簿與當前網頁內容
+  const fetchContexts = async () => {
     try {
-      // 網頁版常規需要權限，如果拒絕則使用 fallback
       const text = await navigator.clipboard.readText();
       if (text && text.trim().length > 0) {
         setClipboardText(text.trim());
       }
     } catch (e) {
-      // 靜默失敗：說明瀏覽器需要權限，或不支援背景讀取
       console.log('無法直接讀取剪貼簿，將使用手動貼上');
+    }
+
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.id && tab.url && !tab.url.startsWith('chrome://')) {
+        setPageTitle(tab.title || '');
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const selection = window.getSelection()?.toString() || '';
+            if (selection) return selection;
+            const text = document.body.innerText || '';
+            return text.substring(0, 500); // 避免超過 Token 限制
+          }
+        });
+        if (results && results[0] && results[0].result) {
+          setPageContext(results[0].result);
+        } else {
+          setPageContext('');
+        }
+      }
+    } catch (e) {
+      console.log('無法擷取網頁內容:', e);
     }
   };
 
@@ -110,18 +133,34 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       }
       if (!aiSessionRef.current) {
         aiSessionRef.current = await aiAPI.create({
-          systemPrompt: "你是一個辦公效率與寫作助理。請用繁體中文回答，排版請清晰乾淨，多用 Markdown 的標題、清單與粗體來增強可讀性。如果使用者要求優化文章，請保留原本的優點並提供具體的改進理由。"
+          systemPrompt: "你是一個專案助理，主要協助專案管理、工作進度更新與任務拆解。請用繁體中文回答，排版請清晰乾淨，多用 Markdown 的標題、清單與粗體來增強可讀性。請協助使用者釐清目標，並將大任務拆分為具體可行的步驟。"
         });
       }
 
-      const response = await aiSessionRef.current.prompt(textToSend);
-      
       const aiMsg: Message = {
         role: 'model',
-        content: response,
+        content: '',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMsg]);
+
+      if (typeof aiSessionRef.current.promptStreaming === 'function') {
+        const stream = await aiSessionRef.current.promptStreaming(textToSend);
+        for await (const chunk of stream) {
+          setMessages(prev => {
+            const newMsgs = [...prev];
+            newMsgs[newMsgs.length - 1].content = chunk;
+            return newMsgs;
+          });
+        }
+      } else {
+        const response = await aiSessionRef.current.prompt(textToSend);
+        setMessages(prev => {
+          const newMsgs = [...prev];
+          newMsgs[newMsgs.length - 1].content = response;
+          return newMsgs;
+        });
+      }
     } catch (error: any) {
       setErrorMsg(error?.message || '呼叫本地 AI 發生錯誤。');
     } finally {
@@ -129,26 +168,27 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
     }
   };
 
-  // 一鍵寫作優化快捷操作
-  const handleQuickAction = (actionType: 'polish' | 'expand' | 'summarize' | 'translate') => {
-    if (!clipboardText) {
-      alert('請先複製 Docs 中的段落，再來點擊優化按鈕！');
+  // 一鍵專案管理快捷操作
+  const handleQuickAction = (actionType: 'breakdown' | 'progress' | 'risk' | 'meeting') => {
+    const contextToUse = clipboardText || pageContext;
+    if (!contextToUse) {
+      alert('請先複製內容或開啟含有任務資訊的網頁！');
       return;
     }
 
     let prompt = '';
     switch (actionType) {
-      case 'polish':
-        prompt = `請幫我潤色以下這段文字，提升其專業度與流暢度，保持原本的語意：\n\n"${clipboardText}"`;
+      case 'breakdown':
+        prompt = `請幫我將以下專案目標/內容拆解成具體可執行的子任務清單（Action Items），請用條列式呈現：\n\n"${contextToUse}"`;
         break;
-      case 'expand':
-        prompt = `請幫我擴寫以下這段文字，補充細節並使其更豐富有說服力：\n\n"${clipboardText}"`;
+      case 'progress':
+        prompt = `請根據以下雜亂的工作紀錄或文字，幫我整理成一份簡潔清晰的進度更新報告：\n\n"${contextToUse}"`;
         break;
-      case 'summarize':
-        prompt = `請幫我精簡總結以下這段文字的重點，用條列式呈現：\n\n"${clipboardText}"`;
+      case 'risk':
+        prompt = `請分析以下任務描述或計畫中可能潛在的風險，並提出具體的緩解與預防建議：\n\n"${contextToUse}"`;
         break;
-      case 'translate':
-        prompt = `請幫我將以下這段文字精確地翻譯成繁體中文（如果是中文則翻譯成專業英文），符合商務語境：\n\n"${clipboardText}"`;
+      case 'meeting':
+        prompt = `請將以下會議記錄或討論串總結出關鍵結論與後續的待辦事項：\n\n"${contextToUse}"`;
         break;
     }
 
@@ -181,7 +221,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
   };
 
   // 極簡的 Markdown 渲染 (避免第三方套件)
-  const renderMarkdown = (text: string) => {
+  const renderMarkdown = (text: string, msgIndex: number) => {
     return text.split('\n').map((line, idx) => {
       // 處理粗體 **text**
       let formattedLine = line;
@@ -207,11 +247,44 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
         return <h2 key={idx} className="text-xl font-bold text-dark-primary mt-4 mb-2" dangerouslySetInnerHTML={{ __html: formattedLine.replace('# ', '') }} />;
       }
 
-      // 處理無序列表
+      // 處理無序列表與 Checkbox
       if (line.startsWith('- ') || line.startsWith('* ')) {
+        const contentStr = formattedLine.substring(2);
+        
+        // 解析待辦清單 Checkbox
+        if (contentStr.startsWith('[ ] ') || contentStr.startsWith('[x] ')) {
+          const isChecked = contentStr.startsWith('[x] ');
+          const labelText = contentStr.substring(4);
+          
+          return (
+            <div key={idx} className="flex items-start gap-2 my-1 text-dark-secondary ml-1">
+              <input 
+                type="checkbox" 
+                className="mt-1 w-3.5 h-3.5 rounded border-dark-border-default text-blue-500 bg-dark-surface focus:ring-blue-500/30 focus:ring-offset-0 cursor-pointer"
+                checked={isChecked}
+                onChange={() => {
+                  setMessages(prev => {
+                    const newMsgs = [...prev];
+                    const msgLines = newMsgs[msgIndex].content.split('\n');
+                    const oldLine = msgLines[idx];
+                    if (isChecked) {
+                      msgLines[idx] = oldLine.replace('[x]', '[ ]');
+                    } else {
+                      msgLines[idx] = oldLine.replace('[ ]', '[x]');
+                    }
+                    newMsgs[msgIndex].content = msgLines.join('\n');
+                    return newMsgs;
+                  });
+                }}
+              />
+              <span className={isChecked ? "line-through opacity-50 transition-all" : "transition-all"} dangerouslySetInnerHTML={{ __html: labelText }} />
+            </div>
+          );
+        }
+
         return (
           <ul key={idx} className="list-disc pl-5 my-1 text-dark-secondary">
-            <li dangerouslySetInnerHTML={{ __html: formattedLine.substring(2) }} />
+            <li dangerouslySetInnerHTML={{ __html: contentStr }} />
           </ul>
         );
       }
@@ -280,55 +353,66 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
       <div className="p-3 bg-dark-surface border-b border-dark-border-subtle">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-semibold text-dark-secondary flex items-center gap-1">
-            📋 剪貼簿快取偵測
+            📋 任務內容快取
           </span>
           <button 
-            onClick={checkClipboard}
+            onClick={fetchContexts}
             className="text-[10px] text-blue-400 hover:text-blue-300 hover:underline flex items-center font-semibold"
-            title="手動重新整理剪貼簿內容"
+            title="手動重新擷取網頁內容"
           >
-            🔄 重新讀取
+            🔄 重新擷取
           </button>
         </div>
         
-        {clipboardText ? (
-          <div className="mb-2 p-1.5 bg-dark-card border border-dark-border-default rounded text-xs text-dark-muted max-h-12 overflow-y-auto italic">
-            「{clipboardText.length > 50 ? `${clipboardText.substring(0, 50)}...` : clipboardText}」
+        {(clipboardText || pageContext) ? (
+          <div className="mb-2 p-1.5 bg-dark-card border border-dark-border-default rounded text-xs text-dark-muted max-h-20 overflow-y-auto italic">
+            {clipboardText && (
+              <div className="mb-1">
+                <span className="font-bold text-dark-primary text-[10px]">📋 剪貼簿：</span>
+                「{clipboardText.length > 50 ? `${clipboardText.substring(0, 50)}...` : clipboardText}」
+              </div>
+            )}
+            {pageContext && (
+              <div>
+                <span className="font-bold text-dark-primary text-[10px]">🌐 網頁 ({pageTitle})：</span>
+                「{pageContext.length > 50 ? `${pageContext.substring(0, 50)}...` : pageContext}」
+              </div>
+            )}
           </div>
         ) : (
           <div className="mb-2 text-[11px] text-dark-muted italic">
-            尚未偵測到已複製文字。請在 Google Docs 中複製一段文字以啟動快捷優化。
+            尚未偵測到已複製文字或網頁內容。請複製任務說明或在任務系統頁面點擊重新擷取。
           </div>
         )}
 
         <div className="grid grid-cols-4 gap-1.5">
           <button
-            onClick={() => handleQuickAction('polish')}
-            disabled={!clipboardText}
+            onClick={() => handleQuickAction('breakdown')}
+            disabled={!(clipboardText || pageContext)}
             className="px-2 py-1.5 bg-indigo-950/30 border border-indigo-900/40 hover:bg-indigo-900/30 disabled:opacity-40 text-indigo-300 rounded text-xs font-semibold transition-all text-center"
           >
-            ✨ 潤色
+            🧩 任務拆解
           </button>
           <button
-            onClick={() => handleQuickAction('expand')}
-            disabled={!clipboardText}
+            onClick={() => handleQuickAction('progress')}
+            disabled={!(clipboardText || pageContext)}
             className="px-2 py-1.5 bg-emerald-950/30 border border-emerald-900/40 hover:bg-emerald-900/30 disabled:opacity-40 text-emerald-300 rounded text-xs font-semibold transition-all text-center"
           >
-            📝 擴寫
+            📊 進度總結
           </button>
           <button
-            onClick={() => handleQuickAction('summarize')}
-            disabled={!clipboardText}
+            onClick={() => handleQuickAction('risk')}
+            disabled={!(clipboardText || pageContext)}
             className="px-2 py-1.5 bg-amber-950/30 border border-amber-900/40 hover:bg-amber-900/30 disabled:opacity-40 text-amber-300 rounded text-xs font-semibold transition-all text-center"
           >
-            📊 精簡
+            ⚠️ 揪出風險
           </button>
           <button
-            onClick={() => handleQuickAction('translate')}
-            disabled={!clipboardText}
+            onClick={() => handleQuickAction('meeting')}
+            disabled={!(clipboardText || pageContext)}
             className="px-2 py-1.5 bg-purple-950/30 border border-purple-900/40 hover:bg-purple-900/30 disabled:opacity-40 text-purple-300 rounded text-xs font-semibold transition-all text-center"
           >
-            🌐 翻譯
+            📝 會議重點
           </button>
         </div>
       </div>
@@ -338,9 +422,9 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
         {messages.length === 0 && (
           <div className="text-center text-dark-muted py-12 px-6">
             <span className="text-4xl block mb-3">💬</span>
-            <p className="text-sm font-semibold text-dark-primary mb-1">我是您的 AI 瑞士刀助理</p>
+            <p className="text-sm font-semibold text-dark-primary mb-1">我是您的 AI 專案管理助理</p>
             <p className="text-xs text-dark-muted leading-relaxed">
-              您可以直接輸入問題，或是使用上方面板對您從 Google Docs 複製下來的文字進行一鍵優化。
+              您可以直接輸入問題，或是使用上方面板對您複製下來的任務內容或討論紀錄進行一鍵分析、拆解與總結。
             </p>
           </div>
         )}
@@ -365,7 +449,7 @@ export const AISidebar: React.FC<AISidebarProps> = ({ isOpen, onClose }) => {
                 <p className="whitespace-pre-wrap">{msg.content}</p>
               ) : (
                 <div>
-                  {renderMarkdown(msg.content)}
+                  {renderMarkdown(msg.content, index)}
                   
                   <div className="mt-3 pt-2 border-t border-dark-border-default flex justify-end">
                     <button

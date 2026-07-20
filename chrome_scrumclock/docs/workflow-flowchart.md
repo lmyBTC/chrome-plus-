@@ -222,7 +222,7 @@ chrome_scrumclock/
 │   │   │       ├── DailyMissionBriefing.tsx # 週任務拆解與今日戰役
 │   │   │       ├── QuickCapture.tsx  # 閃電捕捉 (Alt+K)
 │   │   │       └── EndOfDayReview.tsx # 成果回顧與反思
-│   │   ├── ai-sidebar/             # AI 寫作助理模組
+│   │   ├── ai-sidebar/             # AI 專案助理模組
 │   │   │   ├── index.ts
 │   │   │   └── components/
 │   │   │       └── AISidebar.tsx   # 剪貼簿快取與 Prompt 處理側邊欄
@@ -281,7 +281,7 @@ graph TD
     subgraph UI_Contexts ["瀏覽器頁面端 (UI Contexts)"]
         App["App.tsx <br/>(新分頁 / 控制中心)"]
         TimerCtx["TimerContext.tsx <br/>(React 狀態中心)"]
-        AISidebar["AISidebar.tsx <br/>(AI 寫作助理)"]
+        AISidebar["AISidebar.tsx <br/>(AI 專案助理)"]
         OptionsTS["options.ts <br/>(設定頁面進入點)"]
         PopupTS["popup.ts <br/>(小視窗進入點)"]
     end
