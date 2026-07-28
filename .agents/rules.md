@@ -11,6 +11,7 @@
 |**任務協議管理 (Task Protocol Management)**|`建立任務`,`開始開發`,`任務拆解`,`狀態更新`,`同步進度`|`.agents/skills/task-protocol/`|
 |**Token 節省器 (RTK Token Saver)**|`節省Token`,`壓縮輸出`,`優化指令`,`使用rtk`,`token優化`,`執行終端`,`指令節省`|`.agents/skills/token-saver/`|
 |**Chrome 插件合規審計 (Chrome Compliance Auditor)**|`安全審查`,`合規檢查`,`manifest審計`,`插件檢查`,`檢查manifest`,`上架檢查`,`原始碼掃描`,`靜態掃描`|`.agents/skills/chrome-auditor/`|
+|**AI 開發四大原則 (AI Developer Principles)**|`開發原則`,`編碼前思考`,`簡潔優先`,`精準修改`,`目標驅動`,`ai-developer`|`.agents/skills/ai-developer-principles/`|
 <!-- SKILL_TREE_END -->
 
 ## 1. Chrome 插件開發與技術規範
