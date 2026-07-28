@@ -18,7 +18,7 @@
 ```mermaid
 graph TD
     subgraph Frontend ["React 前端面板與側欄"]
-        UI["Scrumclock UI (儀表板)"]
+        UI["NewTabApp (MIT 焦點模式) / Scrumclock UI"]
         Ctx["TimerContext"]
         Aud["Web Audio API 合成器"]
         SB["AISidebar (Side Panel 側欄助理)"]
@@ -26,7 +26,7 @@ graph TD
 
     subgraph Storage ["Chrome Storage"]
         CS["chrome.storage.local"]
-        AT["activeTimer 狀態"]
+        AT["activeTimer / todayMit 狀態"]
         WM["weeklyMissions 週任務"]
         DL["dailyLogs 今日任務與日誌"]
         GC["geminiConversations 歷史對話"]
@@ -36,7 +36,7 @@ graph TD
     subgraph Background ["Background Worker"]
         BG["background.ts"]
         DNR["Declarative Net Request 規則"]
-        AL["chrome.alarms"]
+        AL["chrome.alarms (午間/晚間回顧)"]
         CM["chrome.contextMenus 右鍵選單"]
     end
 
@@ -46,7 +46,8 @@ graph TD
 
     subgraph Integrations ["外部 API 整合與本地 AI"]
         Notion["Notion Webhook API"]
-        GAS["Google Sheets / Calendar API"]
+        GAS["Google Sheets / Apps Script"]
+        GAPI["原生 Google REST APIs (Tasks/Calendar)"]
         Nano["Gemini Nano (本地 Prompt API)"]
     end
 
@@ -67,7 +68,8 @@ graph TD
     BP -->|"阻擋分心網頁"| DNR
     
     Ctx -->|"completeTaskWithNotes / pushSprintLog"| Notion
-    Ctx -->|"pushSprintLog / pushToCalendar"| GAS
+    Ctx -->|"pushSprintLog"| GAS
+    UI -->|"原生 OAuth 雙向同步 MIT/時間塊"| GAPI
 
     SB -->|"本地 Prompt API 推理"| Nano
     SB -->|"定時同步倒數計時"| AT
@@ -104,7 +106,8 @@ stateDiagram-v2
     [*] --> Idle : "初始化"
     
     state Idle {
-        [*] --> 規劃今日核心戰役
+        [*] --> 設定今日MIT
+        設定今日MIT --> 規劃今日核心戰役
         規劃今日核心戰役 --> 選擇_新增任務
         選擇_新增任務 --> AI智能拆解
         AI智能拆解 --> 拖曳排序_編輯
@@ -191,6 +194,7 @@ chrome_scrumclock/
 ├── src/                            # React + TypeScript 核心程式碼
 │   ├── entries/                    # 擴充功能各個 HTML 的主要 JS/TS 進入點
 │   │   ├── newtab.tsx              # 新分頁儀表板入口 (原 main.tsx)
+│   │   ├── NewTabApp.tsx           # 新分頁 MIT 焦點模式應用
 │   │   ├── popup.ts                # 工具列小彈窗腳本 (原 popup.js)
 │   │   └── options.ts              # 設定頁面腳本 (原 options.js)
 │   ├── App.tsx                     # 應用主組件 (整合版控制中心、側邊欄、命令列等)
@@ -198,7 +202,7 @@ chrome_scrumclock/
 │   ├── background.ts               # Background Service Worker (計時守護與 DNR 控制)
 │   ├── content.ts                  # Content Script (用於頁面 Context 抓取)
 │   ├── components/                 # 全域共用元件
-│   │   └── SettingsPanel.tsx       # AI API 與同步選項設定面板
+│   │   └── SettingsPanel.tsx       # 全域系統設定面板 (包含 Google 帳號授權、Gemini API Key 與同步選項)
 │   ├── core/                       # 核心基礎服務層 (跨模組共用)
 │   │   ├── api/                    # 外部 API 與同步適配器
 │   │   │   ├── gemini.ts           # Gemini API 客戶端
@@ -279,7 +283,7 @@ Chrome 擴充功能在運行時需要將特定檔案註冊於 `manifest.json` �
 graph TD
     %% 定義節點
     subgraph UI_Contexts ["瀏覽器頁面端 (UI Contexts)"]
-        App["App.tsx <br/>(新分頁 / 控制中心)"]
+        App["App.tsx / NewTabApp.tsx <br/>(新分頁 / 焦點模式控制中心)"]
         TimerCtx["TimerContext.tsx <br/>(React 狀態中心)"]
         AISidebar["AISidebar.tsx <br/>(AI 專案助理)"]
         OptionsTS["options.ts <br/>(設定頁面進入點)"]
@@ -300,6 +304,7 @@ graph TD
     subgraph Remote ["遠端整合端"]
         GeminiAPI["Gemini 1.5 Flash <br/>(AI 運算)"]
         NotionGAS["Notion / GAS Webhook <br/>(任務與日誌同步)"]
+        GoogleAPI["Google Tasks / Calendar <br/>(原生 OAuth 同步)"]
     end
 
     %% 通信與依賴關係
@@ -321,6 +326,7 @@ graph TD
     %% API 呼叫
     AISidebar -->|調用| GeminiAPI
     TimerCtx -->|透過 core/api/sync.ts| NotionGAS
+    App -->|透過 core/api/googleApi.ts| GoogleAPI
 ```
 
 ---

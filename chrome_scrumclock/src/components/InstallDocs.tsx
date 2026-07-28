@@ -233,31 +233,28 @@ export const InstallDocs: React.FC = () => {
       <div className="flex justify-center gap-4 mb-8 border-b border-dark-border-subtle">
         <button
           onClick={() => setActiveTab('setup')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
-            activeTab === 'setup'
+          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'setup'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
-          }`}
+            }`}
         >
           🔧 後台同步設定
         </button>
         <button
           onClick={() => setActiveTab('guide')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
-            activeTab === 'guide'
+          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'guide'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
-          }`}
+            }`}
         >
           💡 最大化利用指南
         </button>
         <button
           onClick={() => setActiveTab('debug')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
-            activeTab === 'debug'
+          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'debug'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
-          }`}
+            }`}
         >
           🛠️ 本地 AI 偵測與排錯
         </button>

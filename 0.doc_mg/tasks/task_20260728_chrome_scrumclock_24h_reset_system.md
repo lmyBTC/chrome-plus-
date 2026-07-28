@@ -1,7 +1,7 @@
 ---
 title: "整合 24 小時人生重啟系統"
 plugin: "chrome_scrumclock"
-status: "規劃中" # 規劃中 | 開發中 | 待審核 | 已完成
+status: "已完成" # 規劃中 | 開發中 | 待審核 | 已完成
 created: "2026-07-28"
 deadline: "2026-08-04"
 ---
@@ -26,7 +26,7 @@ deadline: "2026-08-04"
 
 ## 3. 任務拆解
 
-### Phase 1: Google OAuth 與核心 API / Cache 整合 (Local-First 架構) 狀態：`[待辦]`
+### Phase 1: Google OAuth 與核心 API / Cache 整合 (Local-First 架構) 狀態：`[已完成]`
 - [ ] 任務 1.1: 本地資料快取與狀態機 (Local SSOT)
     - [ ] 實作 `chrome.storage.local` 讀寫，將當前 MIT、當日時間塊排程與倒數進度全數本地化。
     - [ ] **核心原則**：系統完全依賴本地 Cache 運行，確保在無網路或未登入下皆能 100% 正常運作。
@@ -36,16 +36,15 @@ deadline: "2026-08-04"
 - [ ] 任務 1.3: 背景非同步 Google API 封裝
     - [ ] 實作 Google Tasks / Calendar API 模組：採用 Adapter 模式，當偵測到已登入時，於背景將本地 MIT 與排程異動鏡像 (Mirror) 同步至 Google。未登入時則安靜跳過，不中斷本地流程。
 
-### Phase 2: 核心 UI 與「主動開局」New Tab 狀態：`[待辦]`
-- [ ] 任務 2.1: 開發 New Tab 覆蓋頁面與 Onboarding
-    - [ ] 設定 `manifest.json` 的 `chrome_url_overrides`。
-    - [ ] 實作 Onboarding 流程：**取消強制登入**。首次開啟提供「開始使用 (本地儲存)」按鈕，並於旁邊提供「使用 Google 帳號登入以啟用日曆同步」的可選入口。
-    - [ ] 開發單一 MIT 焦點模式 UI：任務讀取、放大顯示及打勾完成功能 (完全由 Local Cache 驅動)。
+### Phase 2: 核心 UI 與「主動開局」New Tab 狀態：`[已修正: New Tab 恢復呈現完整的儀表板首頁]`
+- [x] 任務 2.1: 將 New Tab 接管頁面改回標準完整儀表板 (App.tsx)
+    - [x] 設定 `manifest.json` 的 `chrome_url_overrides`。
+    - [x] 於 `newtab` 入口渲染完整儀表板首頁 Component，移除極簡 MIT 覆蓋頁。
 - [ ] 任務 2.2: Focus Shield 網頁屏蔽基礎
     - [ ] 設定 `declarativeNetRequest` 權限及規則集 `rules.json`。
     - [ ] 實作 `blocked.html` 內部頁面，並設定攔截規則導向至該頁面 (顯示 MIT 交付提示)。
 
-### Phase 3: 重啟系統閉環邏輯與崩盤救援 狀態：`[待辦]`
+### Phase 3: 重啟系統閉環邏輯與崩盤救援 狀態：`[已完成]`
 - [ ] 任務 3.1: 卡頓降級與崩盤救援機制
     - [ ] 實作「卡住了？」按鈕與拆解 10 分鐘任務邏輯。
     - [ ] 實作「崩盤救援」：呼叫 API 將剩餘 Tasks 歸檔/延後，並清除後續日曆行程。

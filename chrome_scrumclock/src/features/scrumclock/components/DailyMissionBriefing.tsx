@@ -50,7 +50,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
       setDistractionSites((userSettings.distractionSites || []).join('\n'));
       setGeminiApiKey(userSettings.geminiApiKey || '');
       setCalendarEvents(calendarEventsResult || []);
-      
+
       // 預先勾選昨晚選定的戰役
       if (savedTomorrow && savedTomorrow.length > 0) {
         setSelectedMissions(savedTomorrow);
@@ -90,7 +90,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
   const handleSaveWeeklyText = async (missionId: string, newText: string) => {
     if (!newText.trim()) return;
     try {
-      const updated = weeklyMissions.map(m => 
+      const updated = weeklyMissions.map(m =>
         m.id === missionId ? { ...m, text: newText.trim() } : m
       );
       await storage.saveWeeklyMissions(updated);
@@ -330,15 +330,15 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
       newMissions.forEach(m => {
         const durationMin = m.suggestedDuration || 25;
         const startStr = `${baseHour.toString().padStart(2, '0')}:${baseMin.toString().padStart(2, '0')}`;
-        
+
         baseMin += durationMin;
         if (baseMin >= 60) {
           baseHour += Math.floor(baseMin / 60);
           baseMin = baseMin % 60;
         }
-        
+
         const endStr = `${baseHour.toString().padStart(2, '0')}:${baseMin.toString().padStart(2, '0')}`;
-        
+
         newTimeSlots[m.id] = `${startStr}-${endStr}`;
         newSelectedMissions.push(m.id);
       });
@@ -346,7 +346,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
       setTimeSlots(newTimeSlots);
       setSelectedMissions(newSelectedMissions);
       setShowBreakdownModal(false);
-      
+
       alert(`成功拆解並匯入 ${newMissions.length} 個子任務！已自動為您排程時段。`);
     } catch (err) {
       console.error('匯入拆解任務失敗:', err);
@@ -355,7 +355,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
   };
 
   const handleToggleBreakdownIdx = (idx: number) => {
-    setSelectedBreakdownIdxs(prev => 
+    setSelectedBreakdownIdxs(prev =>
       prev.includes(idx) ? prev.filter(i => i !== idx) : [...prev, idx]
     );
   };
@@ -419,7 +419,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
         >
           ⚙️ 設定
         </button>
-        
+
         {isSettingOpen && (
           <div className="mt-4 p-4 bg-dark-card rounded-lg shadow-xl border border-dark-border-default text-left shadow-slate-950/50">
             <label className="block text-sm font-medium text-dark-secondary mb-1">
@@ -440,7 +440,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 儲存
               </button>
             </div>
-            
+
             <label className="block text-sm font-medium text-dark-secondary mb-1">
               Gemini API Key (自備 AI 助理金鑰)
             </label>
@@ -496,8 +496,8 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 <ul className="list-disc pl-5 space-y-1">
                   {calendarEvents.map((event, idx) => (
                     <li key={idx}>
-                      {new Date(event.startTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - 
-                      {new Date(event.endTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}: {event.title}
+                      {new Date(event.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} -
+                      {new Date(event.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}: {event.title}
                     </li>
                   ))}
                 </ul>
@@ -509,7 +509,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
 
       <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-6 mb-6 shadow-slate-950/40">
         <h2 className="text-xl font-semibold mb-4 text-dark-primary">選擇今日核心戰役</h2>
-        
+
         {/* 手動新增關鍵任務輸入框 */}
         <form onSubmit={handleCreateMission} className="flex mb-5 gap-2 border-b border-dark-border-subtle pb-4">
           <input
@@ -537,7 +537,7 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 onChange={() => handleMissionToggle(mission.id)}
                 className="w-5 h-5 text-blue-500 border-dark-border-default rounded focus:ring-blue-500 bg-dark-card cursor-pointer"
               />
-              
+
               {editingWeeklyId === mission.id ? (
                 <input
                   type="text"
@@ -559,14 +559,14 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
                 />
               ) : (
                 <div className="flex-1 flex items-center space-x-2">
-                  <label 
+                  <label
                     onDoubleClick={() => {
                       if (!mission.isCompleted) {
                         setEditingWeeklyId(mission.id);
                         setEditingWeeklyText(mission.text);
                       }
                     }}
-                    htmlFor={mission.id} 
+                    htmlFor={mission.id}
                     className={`cursor-pointer select-none hover:text-blue-400 transition-colors ${mission.isCompleted ? 'line-through text-slate-500' : 'text-dark-secondary'}`}
                     title="雙擊編輯任務"
                   >
@@ -645,14 +645,14 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
               <h3 className="text-lg font-bold text-purple-400 flex items-center gap-2">
                 <span>🤖</span> AI 任務智能拆解
               </h3>
-              <button 
+              <button
                 onClick={() => setShowBreakdownModal(false)}
                 className="text-dark-muted hover:text-dark-primary font-semibold transition-colors"
               >
                 ✕
               </button>
             </div>
-            
+
             <p className="text-sm text-dark-muted mb-3">
               週任務標題：<span className="font-semibold text-dark-primary">{targetWeeklyMission.text}</span>
             </p>
@@ -662,8 +662,8 @@ export const DailyMissionBriefing: React.FC<DailyMissionBriefingProps> = ({ onCo
 
             <div className="space-y-3 max-h-60 overflow-y-auto mb-5 p-2 bg-dark-surface rounded-lg">
               {breakdownMissions.map((sub, idx) => (
-                <label 
-                  key={idx} 
+                <label
+                  key={idx}
                   className="flex items-start gap-3 p-3 bg-dark-card border border-dark-border-default rounded-lg hover:border-purple-500 hover:bg-dark-hover transition-colors cursor-pointer select-none"
                 >
                   <input

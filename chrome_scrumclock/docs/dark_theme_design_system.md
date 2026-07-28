@@ -67,6 +67,9 @@
 ## 三、 元件 UI/UX 色彩對照表 (Component Specifications)
 
 ### 1. 敏捷番茄鐘 (Scrum Clock Flow)
+- **MIT 焦點模式 (New Tab)**:
+  - 任務文字採用大字體 (`text-5xl`) 與 `text-white`，並於完成時加上 `text-slate-500 line-through`。
+  - 完成按鈕狀態切換使用霓虹發光效果：`bg-emerald-500 border-emerald-500 text-white shadow-[0_0_30px_rgba(16,185,129,0.5)]`。
 - **每日任務簡報 (Daily Mission Briefing)**:
   - 任務輸入框背景改用 `bg-slate-800`，邊框 `border-slate-700`，聚焦時呈現藍色發光 `shadow-lg shadow-blue-500/10`。
   - 「從 Google Tasks 匯入」按鈕使用 `bg-slate-800/80` 代替白底，輔以 `border-slate-700` 邊框與綠色圖標。

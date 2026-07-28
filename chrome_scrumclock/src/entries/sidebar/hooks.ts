@@ -53,7 +53,7 @@ export function useTimerSync(onSprintReviewTrigger: (sprint: any) => void) {
       const updateTime = () => {
         const remaining = Math.max(0, activeTimer.endTime - Date.now());
         setTimeLeft(Math.ceil(remaining / 1000));
-        
+
         if (remaining <= 0) {
           clearInterval(timerId);
           onSprintReviewTrigger(activeTimer.sprint);
@@ -159,7 +159,7 @@ export function useAISession(storageQueue: StorageQueue) {
       }
 
       setAiAvailable('yes');
-      
+
       const createOptions: any = {
         systemPrompt: CHAT_SYSTEM_PROMPT,
         expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
@@ -216,16 +216,16 @@ export function useAISession(storageQueue: StorageQueue) {
       await storageQueue.enqueue(async () => {
         const result = await chrome.storage.local.get('weeklyMissions');
         const missions: any[] = result.weeklyMissions || [];
-        
+
         const cleanTargetName = data.projectName.trim().toLowerCase();
         const index = missions.findIndex(m => {
           const cleanMissionName = m.text.trim().toLowerCase();
           return cleanMissionName.includes(cleanTargetName) || cleanTargetName.includes(cleanMissionName);
         });
-        
+
         let updatedMissions = [...missions];
         let finalActionText = '';
-        
+
         if (index !== -1 && data.actionType === 'update') {
           const originalMission = updatedMissions[index];
           updatedMissions[index] = {
@@ -250,9 +250,9 @@ export function useAISession(storageQueue: StorageQueue) {
           updatedMissions.push(newMission);
           finalActionText = `新增專案「${data.projectName}」`;
         }
-        
+
         await chrome.storage.local.set({ weeklyMissions: updatedMissions });
-        
+
         triggerWebhook('project_updated', {
           projectName: data.projectName,
           actionType: data.actionType,
@@ -260,7 +260,7 @@ export function useAISession(storageQueue: StorageQueue) {
           statusSummary: data.statusSummary,
           finalActionText
         });
-        
+
         setMessages(prev => [
           ...prev,
           {
@@ -293,11 +293,11 @@ export function useAISession(storageQueue: StorageQueue) {
       await storageQueue.enqueue(async () => {
         const resultMissions = await chrome.storage.local.get('weeklyMissions');
         const resultLogs = await chrome.storage.local.get('dailyLogs');
-        
+
         const weeklyMissions = resultMissions.weeklyMissions || [];
         const dailyLogs = resultLogs.dailyLogs || {};
         const today = new Date().toISOString().split('T')[0];
-        
+
         if (!dailyLogs[today]) {
           dailyLogs[today] = {
             date: today,
@@ -306,25 +306,25 @@ export function useAISession(storageQueue: StorageQueue) {
             review: null
           };
         }
-        
+
         const coreBattles: any[] = dailyLogs[today].coreBattles || [];
         const cleanTargetName = data.targetName.trim().toLowerCase();
-        
+
         const findMissionIndex = () => {
           return weeklyMissions.findIndex((m: any) => {
             const cleanMissionName = m.text.trim().toLowerCase();
             return cleanMissionName.includes(cleanTargetName) || cleanTargetName.includes(cleanMissionName);
           });
         };
-        
+
         let updatedMissions = [...weeklyMissions];
         let updatedBattles = [...coreBattles];
         let finalActionText = '';
-        
+
         if (data.actionType === 'create') {
           let missionId = '';
           const index = findMissionIndex();
-          
+
           if (index !== -1) {
             missionId = weeklyMissions[index].id;
             if (!coreBattles.some((b: any) => b.missionId === missionId)) {
@@ -346,7 +346,7 @@ export function useAISession(storageQueue: StorageQueue) {
               priority: 'P2' as const
             };
             updatedMissions.push(newMission);
-            
+
             updatedBattles.push({
               missionId: newId,
               committedTime: '09:00-10:00'
@@ -383,8 +383,8 @@ export function useAISession(storageQueue: StorageQueue) {
             finalActionText = `已從今日戰役中移除與「${data.targetName}」相關的任務`;
           }
         }
-        
-        await chrome.storage.local.set({ 
+
+        await chrome.storage.local.set({
           weeklyMissions: updatedMissions,
           dailyLogs: {
             ...dailyLogs,
@@ -394,18 +394,18 @@ export function useAISession(storageQueue: StorageQueue) {
             }
           }
         });
-        
+
         let eventType: 'task_created' | 'task_completed' | 'task_deleted' = 'task_created';
         if (data.actionType === 'complete') eventType = 'task_completed';
         else if (data.actionType === 'delete') eventType = 'task_deleted';
-        
+
         triggerWebhook(eventType, {
           targetName: data.targetName,
           actionType: data.actionType,
           estimatedPomodoros: data.estimatedPomodoros || 1,
           finalActionText
         });
-        
+
         setMessages(prev => [
           ...prev,
           {

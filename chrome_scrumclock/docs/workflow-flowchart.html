@@ -406,8 +406,8 @@
           </div>
           <ul class="component-list">
             <li class="component-item">
-              <div class="comp-name">SprintPomodoro UI</div>
-              <div class="comp-desc">主操作介面，支援原位編輯任務、拖曳排序、勾選導出 Markdown 等。</div>
+              <div class="comp-name">NewTabApp (焦點模式) / SprintPomodoro UI</div>
+              <div class="comp-desc">主操作介面，包含新分頁單一 MIT 焦點模式與原有的看板排序、拖曳等。</div>
             </li>
             <li class="component-item">
               <div class="comp-name">TimerContext</div>
@@ -432,8 +432,8 @@
               <div class="comp-desc">Chrome 瀏覽器原生本地持久化存儲，提供極速的資料存取。</div>
             </li>
             <li class="component-item">
-              <div class="comp-name">activeTimer (SSOT)</div>
-              <div class="comp-desc">計時器單一真理源，記錄剩餘時間、當前狀態與正在衝刺的任務。</div>
+              <div class="comp-name">activeTimer / todayMit (SSOT)</div>
+              <div class="comp-desc">計時器單一真理源，記錄今日唯一任務、剩餘時間、當前狀態與正在衝刺的任務。</div>
             </li>
             <li class="component-item">
               <div class="comp-name">weeklyMissions</div>
@@ -454,8 +454,8 @@
               <div class="comp-desc">Service Worker 背景腳本，負責監聽計時結束、發送桌面提示。</div>
             </li>
             <li class="component-item">
-              <div class="comp-name">chrome.alarms</div>
-              <div class="comp-desc">當前端 UI 關閉時接管計時，保證番茄鐘精確計時不中斷。</div>
+              <div class="comp-name">chrome.alarms (含午/晚間回顧)</div>
+              <div class="comp-desc">接管計時，並提供 13:30 與 21:00 的定時喚醒校準提醒。</div>
             </li>
             <li class="component-item">
               <div class="comp-name">declarativeNetRequest</div>
@@ -491,7 +491,11 @@
             </li>
             <li class="component-item">
               <div class="comp-name">GAS Apps Script</div>
-              <div class="comp-desc">Google 試算表日誌寫入 API，並可自動在 Google Calendar 同步排程。</div>
+              <div class="comp-desc">Google 試算表日誌寫入 API，用於儲存衝刺與反思備份。</div>
+            </li>
+            <li class="component-item">
+              <div class="comp-name">原生 Google Tasks/Calendar API</div>
+              <div class="comp-desc">透過 OAuth 雙向同步今日 MIT 與時間塊至 Google 原生服務。</div>
             </li>
           </ul>
         </div>

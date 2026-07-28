@@ -32,6 +32,11 @@ chrome.runtime.onInstalled.addListener(async () => {
     when: getNextReviewTime(parseInt(hours), parseInt(minutes)),
     periodInMinutes: 24 * 60 // 每24小時重複
   });
+
+  chrome.alarms.create('midDayReview', {
+    when: getNextReviewTime(13, 30),
+    periodInMinutes: 24 * 60
+  });
 });
 
 // 監聽右鍵選單點擊
@@ -86,7 +91,10 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
       saveGeminiConversation(message.payload);
       break;
     case 'OPEN_DASHBOARD':
-      chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/newtab/index.html') });
+      chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/sidebar/index.html') });
+      break;
+    case 'GOOGLE_AUTH_LOGIN':
+      // 可以集中處理背景 Auth 邏輯
       break;
   }
 });
@@ -96,7 +104,9 @@ chrome.runtime.onMessage.addListener((message: any, sender: any, sendResponse: a
 // 監聽鬧鐘
 chrome.alarms.onAlarm.addListener((alarm: any) => {
   if (alarm.name === 'dailyReview') {
-    showReviewNotification();
+    showReviewNotification('晚間復盤', '該進行日終回顧了！打開新分頁開始回顧今天的成果。');
+  } else if (alarm.name === 'midDayReview') {
+    showReviewNotification('午間校準', '下午好！檢查一下您的 MIT 進度，並適時調整您的步調。');
   } else if (alarm.name === 'sprintFinished') {
     showSprintFinishedNotification();
   }
@@ -166,12 +176,12 @@ function stopFocusMode() {
 }
 
 // 顯示回顧通知
-function showReviewNotification() {
+function showReviewNotification(title: string, message: string) {
   chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/icon128.png',
-    title: 'Power Kit',
-    message: '該進行日終回顧了！打開新分頁開始回顧今天的成果。'
+    title: `Power Kit - ${title}`,
+    message: message
   });
 }
 

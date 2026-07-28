@@ -9,8 +9,12 @@
    - `Tasks` (用來管理北極星目標與週任務)
    - `Logs` (用來記錄每日衝刺與回顧)
 
-### 🚀 進階：啟用 Google Tasks API
-如果你想要讓 Scrumclock 可以直接讀取你的 Google Tasks：
+### 🚀 進階：啟用 Google Tasks API (已降級為備用)
+> **24 小時重啟系統架構更新提示**：
+> 本專案已全面升級為「本地原生 Google OAuth API 雙向同步」架構，透過 Chrome Identity API 直連 Google，不再強制依賴 Google Apps Script 進行 Tasks 與 Calendar 的寫入。 
+> 此 GAS 腳本目前主要保留作為 **跨 Profile 離線備份** 或進階 Notion / Google Sheets 數據倉儲同步用途。
+
+如果你仍想要讓舊版 Scrumclock 可以透過 GAS 讀取你的 Google Tasks：
 1. 在 Apps Script 編輯器左側選單，點擊 **「服務 (Services)」** 旁邊的 `+`。
 2. 找到 **Google Tasks API**，點擊新增 (Add)。
 3. 同意授權即可。

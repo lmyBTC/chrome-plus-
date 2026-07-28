@@ -117,8 +117,10 @@
         const activeTimer = result.activeTimer;
 
         if (activeTimer && activeTimer.state === 'running') {
-          const missionText = activeTimer.missionText || '核心戰役衝刺';
-          badgeEl.textContent = `🎯 正在衝刺：${missionText}`;
+          chrome.storage.local.get(['todayMit'], (mitResult) => {
+            const mit = mitResult.todayMit;
+            const missionText = activeTimer.missionText || (mit && mit.title) || '核心戰役衝刺';
+            badgeEl.textContent = `🎯 正在衝刺：${missionText}`;
           badgeEl.style.color = '#60a5fa';
           badgeEl.style.borderColor = 'rgba(96, 165, 250, 0.2)';
           badgeEl.style.background = 'rgba(96, 165, 250, 0.1)';

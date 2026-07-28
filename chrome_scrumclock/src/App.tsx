@@ -13,6 +13,8 @@ import { AISidebar } from './features/ai-sidebar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { InstallDocs } from './components/InstallDocs';
 import { GeminiManager } from './features/gemini-exporter';
+import { auth } from './core/chrome/auth';
+import { OnboardingScreen } from './components/OnboardingScreen';
 
 type AppState = 'briefing' | 'sprint' | 'review' | 'completed';
 type ViewState = 'flow' | 'analytics';
@@ -25,9 +27,15 @@ function App() {
   const [currentState, setCurrentState] = useState<AppState>('briefing');
   const [isLoading, setIsLoading] = useState(true);
   const [isAISidebarOpen, setIsAISidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isSkippedLogin, setIsSkippedLogin] = useState(false);
 
   useEffect(() => {
-    checkCurrentState();
+    // 檢查登入狀態
+    auth.getCachedToken().then(token => {
+      setIsAuthenticated(!!token);
+      checkCurrentState();
+    });
     
     // 註冊全域快捷鍵 Ctrl+Shift+K (或 Cmd+Shift+K)
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -85,13 +93,27 @@ function App() {
     setCurrentState('completed');
   };
 
-  if (isLoading) {
+  if (isLoading || isAuthenticated === null) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="flex items-center justify-center min-h-screen bg-dark-base">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
   }
+
+  // 登入處理
+  const handleLogin = async () => {
+    const token = await auth.login();
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    await auth.logout();
+    setIsAuthenticated(false);
+    setIsSkippedLogin(false);
+  };
 
   // 番茄鐘專屬的主畫面流
   const renderScrumclockFlow = () => {
@@ -128,13 +150,21 @@ function App() {
               onViewChange={setCurrentView}
               isAISidebarOpen={isAISidebarOpen}
               onToggleAISidebar={() => setIsAISidebarOpen(!isAISidebarOpen)}
+              onLogout={isAuthenticated ? handleLogout : undefined}
             >
               {currentView === 'scrumclock' && renderScrumclockFlow()}
               {currentView === 'projects' && <ProjectManagementDemo />}
               {currentView === 'bookmarks' && <BookmarksHub />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'gemini' && <GeminiManager />}
-              {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
+              {currentView === 'settings' && (
+                <SettingsPanel 
+                  onNavigateToDocs={() => setCurrentView('docs')} 
+                  isAuthenticated={isAuthenticated}
+                  onLogin={handleLogin}
+                  onLogout={handleLogout}
+                />
+              )}
               {currentView === 'docs' && <InstallDocs />}
             </MainLayout>
           </div>

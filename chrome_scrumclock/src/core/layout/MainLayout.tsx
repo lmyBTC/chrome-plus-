@@ -6,6 +6,7 @@ interface MainLayoutProps {
   onViewChange: (view: ToolView) => void;
   isAISidebarOpen: boolean;
   onToggleAISidebar: () => void;
+  onLogout?: () => void;
   children: React.ReactNode;
 }
 
@@ -14,6 +15,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
   onViewChange, 
   isAISidebarOpen,
   onToggleAISidebar,
+  onLogout,
   children 
 }) => {
   return (
@@ -31,19 +33,31 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
             {currentView === 'settings' && '⚙️ 全域設定'}
             {currentView === 'docs' && '📖 安裝與說明書'}
           </h2>
-          
-          <button
-            onClick={onToggleAISidebar}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform active:scale-95 ${
-              isAISidebarOpen
-                ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40'
-                : 'bg-dark-surface border border-dark-border-default text-purple-400 hover:bg-dark-hover'
-            }`}
-            title="開啟/關閉 AI 協作側邊欄 (快捷鍵 Ctrl+Shift+K)"
-          >
-            <span>🤖</span>
-            <span>{isAISidebarOpen ? '收合 AI 助理' : 'AI 專案助理'}</span>
-          </button>
+          <div className="flex items-center gap-3">
+            {onLogout && (
+              <button
+                onClick={onLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 bg-dark-surface border border-dark-border-default text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                title="登出 Google 帳號"
+              >
+                <span>🚪</span>
+                <span>登出</span>
+              </button>
+            )}
+
+            <button
+              onClick={onToggleAISidebar}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 transform active:scale-95 ${
+                isAISidebarOpen
+                  ? 'bg-purple-600 text-white shadow-md shadow-purple-950/40'
+                  : 'bg-dark-surface border border-dark-border-default text-purple-400 hover:bg-dark-hover'
+              }`}
+              title="開啟/關閉 AI 協作側邊欄 (快捷鍵 Ctrl+Shift+K)"
+            >
+              <span>🤖</span>
+              <span>{isAISidebarOpen ? '收合 AI 助理' : 'AI 專案助理'}</span>
+            </button>
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 bg-dark-base">

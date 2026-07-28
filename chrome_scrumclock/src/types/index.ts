@@ -71,12 +71,31 @@ export interface DailyLog {
   review?: DailyReview;
 }
 
+export interface MostImportantTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  syncedToGoogle: boolean;
+  googleTaskId?: string;
+}
+
+export interface TimeBlock {
+  id: string;
+  title: string;
+  startTime: string; // HH:mm
+  endTime: string; // HH:mm
+  syncedToGoogle: boolean;
+  googleEventId?: string;
+}
+
 export interface AppData {
   userSettings: UserSettings;
   northStarGoal: NorthStarGoal;
   weeklyMissions: WeeklyMission[];
   dailyLogs: Record<string, DailyLog>; // key: YYYY-MM-DD
   inboxItems?: InboxItem[]; // 新增：本地收件匣快取
+  todayMit?: MostImportantTask; // 當日 MIT
+  todaySchedule?: TimeBlock[]; // 當日時間塊
 }
 
 export type TimerState = 'idle' | 'running' | 'paused' | 'logging' | 'break';

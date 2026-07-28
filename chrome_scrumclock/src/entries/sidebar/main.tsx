@@ -77,7 +77,7 @@ const SidebarApp: React.FC = () => {
     chrome.storage.local.remove('pendingAnalyzeText');
     const { text, title, url } = pendingData;
     const prompt = `這是我在網頁「${title}」(${url}) 上選取的文字：\n"${text}"\n\n請幫我分析這段內容，並將其拆解為具體的 Scrum 任務與番茄鐘規劃。`;
-    
+
     setMessages(prev => [...prev, { role: 'user', content: `📥 匯入右鍵選取內容：「${text.slice(0, 30)}...」` }]);
     handleSend(prompt);
   });
@@ -125,11 +125,11 @@ const SidebarApp: React.FC = () => {
       await storageQueueRef.current.enqueue(async () => {
         const resultMissions = await chrome.storage.local.get('weeklyMissions');
         const resultLogs = await chrome.storage.local.get('dailyLogs');
-        
+
         const weeklyMissions = resultMissions.weeklyMissions || [];
         const dailyLogs = resultLogs.dailyLogs || {};
         const today = new Date().toISOString().split('T')[0];
-        
+
         if (!dailyLogs[today]) {
           dailyLogs[today] = {
             date: today,
@@ -149,7 +149,7 @@ const SidebarApp: React.FC = () => {
           // 搜尋 weeklyMissions 是否有同名任務
           let mission = updatedMissions.find((m: any) => m.text.trim().toLowerCase() === task.title.trim().toLowerCase());
           let missionId = '';
-          
+
           if (!mission) {
             // 新增 WeeklyMission 主體
             missionId = 'mission-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7);
@@ -180,7 +180,7 @@ const SidebarApp: React.FC = () => {
           return;
         }
 
-        await chrome.storage.local.set({ 
+        await chrome.storage.local.set({
           weeklyMissions: updatedMissions,
           dailyLogs: {
             ...dailyLogs,
@@ -190,12 +190,12 @@ const SidebarApp: React.FC = () => {
             }
           }
         });
-        
+
         setMessages(prev => [
-          ...prev, 
-          { 
-            role: 'system', 
-            content: `✅ 已成功將 ${addedCount} 個 AI 拆解的任務匯入儀表板！` 
+          ...prev,
+          {
+            role: 'system',
+            content: `✅ 已成功將 ${addedCount} 個 AI 拆解的任務匯入儀表板！`
           }
         ]);
       });
@@ -234,12 +234,12 @@ const SidebarApp: React.FC = () => {
                 return `${index + 1}. [${statusText}] ${title}`;
               })
               .join('\n');
-            
+
             const prompt = `這是我目前在 Power Kit 儀表板中規劃的今日核心戰役任務清單：\n\n${taskStr}\n\n請幫我評估任務優先順序，並給予今日的衝刺番茄鐘執行與時間分配建議。`;
             setInputText('');
             setMessages(prev => [...prev, { role: 'user', content: '🍅 正在匯入我今天的 Power Kit 核心戰役任務...' }]);
             setIsSending(true);
-            
+
             try {
               const response = await aiSessionRef.current.prompt(prompt);
               setMessages(prev => [...prev, { role: 'model', content: response }]);
@@ -319,7 +319,7 @@ const SidebarApp: React.FC = () => {
           <span className="text-2xl">🤖</span>
           <h2 className="text-lg font-bold text-white tracking-wide">PK+ 助理</h2>
         </div>
-        
+
         <div className="bg-red-950/40 border border-red-800/60 rounded-2xl p-5 mb-6">
           <div className="flex items-center gap-2 text-red-400 font-bold mb-3 text-sm">
             <span>⚠️</span> 瀏覽器尚未啟用內建 AI 功能
@@ -352,7 +352,7 @@ const SidebarApp: React.FC = () => {
           </ol>
         </div>
 
-        <button 
+        <button
           onClick={checkAndInitAI}
           className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-bold rounded-xl shadow-lg shadow-indigo-950/40 transition-all text-xs"
         >
@@ -368,7 +368,7 @@ const SidebarApp: React.FC = () => {
               按 <code className="bg-slate-950 px-1 py-0.5 rounded text-slate-300 font-mono">F12</code> 或右鍵「檢查」開啟主控台 (Console)，貼上執行以下測試代碼，即可診斷 API 狀態與報錯：
             </p>
             <pre className="bg-slate-950 p-2 rounded-lg border border-slate-800 overflow-x-auto text-[10px] text-emerald-400 font-mono select-all max-h-40 overflow-y-auto">
-{`(async () => {
+              {`(async () => {
   console.log("=== 本地 AI 偵測測試 ===");
   const namespaces = {
     "self.ai": typeof self !== 'undefined' ? self.ai : undefined,
@@ -476,19 +476,18 @@ const SidebarApp: React.FC = () => {
           >
             ⚙️
           </button>
-          
+
           <button
             onClick={handleImportTasks}
             disabled={importStatus === 'importing'}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${
-              importStatus === 'importing'
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg transition-all ${importStatus === 'importing'
                 ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
                 : importStatus === 'success'
-                ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
-                : importStatus === 'error'
-                ? 'bg-red-950/60 text-red-400 border border-red-800/40'
-                : 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/40 hover:scale-[1.02]'
-            }`}
+                  ? 'bg-emerald-950/60 text-emerald-400 border border-emerald-800/40'
+                  : importStatus === 'error'
+                    ? 'bg-red-950/60 text-red-400 border border-red-800/40'
+                    : 'bg-indigo-950/60 hover:bg-indigo-900/80 text-indigo-300 border border-indigo-800/40 hover:scale-[1.02]'
+              }`}
           >
             <span>🍅</span>
             {importStatus === 'importing' ? '分析中...' : importStatus === 'success' ? '匯入成功' : importStatus === 'error' ? '匯入失敗' : '一鍵匯入任務'}
@@ -498,13 +497,12 @@ const SidebarApp: React.FC = () => {
 
       {/* 實時番茄鐘計時狀態條 */}
       {activeTimer && activeTimer.state && activeTimer.state !== 'idle' && (
-        <div className={`px-4 py-2 text-xs font-semibold flex items-center justify-between border-b ${
-          activeTimer.state === 'running' 
-            ? 'bg-red-950/30 text-red-400 border-red-900/40' 
+        <div className={`px-4 py-2 text-xs font-semibold flex items-center justify-between border-b ${activeTimer.state === 'running'
+            ? 'bg-red-950/30 text-red-400 border-red-900/40'
             : activeTimer.state === 'paused'
-            ? 'bg-yellow-950/30 text-yellow-500 border-yellow-900/40'
-            : 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40'
-        }`}>
+              ? 'bg-yellow-950/30 text-yellow-500 border-yellow-900/40'
+              : 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40'
+          }`}>
           <div className="flex items-center gap-1.5">
             <span>{activeTimer.state === 'break' ? '💡 休息中' : '🍅 專注衝刺中'}</span>
             <span className="opacity-80 font-normal truncate max-w-[140px]">
@@ -538,14 +536,13 @@ const SidebarApp: React.FC = () => {
                 {isUser ? '👤 你' : '🤖 助理'}
               </span>
               <div
-                className={`p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
-                  isUser
+                className={`p-3 rounded-2xl text-sm leading-relaxed shadow-md ${isUser
                     ? 'bg-indigo-600 text-white rounded-tr-none'
                     : 'bg-slate-900/80 border border-slate-800 text-slate-200 rounded-tl-none'
-                }`}
+                  }`}
               >
                 {isUser ? <p className="whitespace-pre-wrap">{msg.content}</p> : parseMarkdown(msg.content)}
-                
+
                 {/* 🔄 逆向整合：一鍵寫入今日戰役按鈕 */}
                 {!isUser && index > 0 && (msg.content.includes('🍅') || msg.content.includes('-') || msg.content.includes('*')) && (
                   <button
@@ -592,11 +589,10 @@ const SidebarApp: React.FC = () => {
           <button
             onClick={() => handleSend()}
             disabled={!inputText.trim() || isSending || aiAvailable !== 'yes'}
-            className={`p-2 rounded-lg transition-all ${
-              inputText.trim() && !isSending && aiAvailable === 'yes'
+            className={`p-2 rounded-lg transition-all ${inputText.trim() && !isSending && aiAvailable === 'yes'
                 ? 'bg-indigo-600 text-white hover:bg-indigo-500 hover:scale-105 active:scale-95'
                 : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-            }`}
+              }`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
               <path d="M3.105 2.289a.75.75 0 0 0-.826.95l1.414 4.925A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.896 28.896 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.289Z" />

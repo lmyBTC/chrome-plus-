@@ -1,4 +1,4 @@
-import { AppData, UserSettings, NorthStarGoal, WeeklyMission, DailyLog, InboxItem } from '../../types';
+import { AppData, UserSettings, NorthStarGoal, WeeklyMission, DailyLog, InboxItem, MostImportantTask, TimeBlock } from '../../types';
 
 // 確保 Chrome API 可用
 declare const chrome: any;
@@ -35,7 +35,9 @@ export const storage = {
       'northStarGoal',
       'weeklyMissions',
       'dailyLogs',
-      'inboxItems'
+      'inboxItems',
+      'todayMit',
+      'todaySchedule'
     ]);
 
     return {
@@ -43,7 +45,9 @@ export const storage = {
       northStarGoal: result.northStarGoal || DEFAULT_NORTH_STAR_GOAL,
       weeklyMissions: result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS,
       dailyLogs: result.dailyLogs || {},
-      inboxItems: result.inboxItems || []
+      inboxItems: result.inboxItems || [],
+      todayMit: result.todayMit,
+      todaySchedule: result.todaySchedule || []
     };
   },
 
@@ -54,7 +58,9 @@ export const storage = {
       northStarGoal: data.northStarGoal,
       weeklyMissions: data.weeklyMissions,
       dailyLogs: data.dailyLogs,
-      inboxItems: data.inboxItems || []
+      inboxItems: data.inboxItems || [],
+      todayMit: data.todayMit,
+      todaySchedule: data.todaySchedule || []
     });
   },
 
@@ -154,5 +160,27 @@ export const storage = {
   // 儲存收件匣內容
   async saveInboxItems(items: InboxItem[]): Promise<void> {
     await chrome.storage.local.set({ inboxItems: items });
+  },
+
+  // 獲取當日 MIT
+  async getTodayMit(): Promise<MostImportantTask | undefined> {
+    const result = await chrome.storage.local.get('todayMit');
+    return result.todayMit;
+  },
+
+  // 儲存當日 MIT
+  async saveTodayMit(mit: MostImportantTask): Promise<void> {
+    await chrome.storage.local.set({ todayMit: mit });
+  },
+
+  // 獲取當日排程
+  async getTodaySchedule(): Promise<TimeBlock[]> {
+    const result = await chrome.storage.local.get('todaySchedule');
+    return result.todaySchedule || [];
+  },
+
+  // 儲存當日排程
+  async saveTodaySchedule(schedule: TimeBlock[]): Promise<void> {
+    await chrome.storage.local.set({ todaySchedule: schedule });
   }
 }; 
