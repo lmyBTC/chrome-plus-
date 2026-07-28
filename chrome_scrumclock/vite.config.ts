@@ -1,9 +1,23 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
+import { execSync } from 'child_process'
+import pkg from './package.json'
+
+let gitHash = ''
+try {
+  gitHash = execSync('git rev-parse --short HEAD').toString().trim()
+} catch (e) {
+  gitHash = 'dev'
+}
+
+const appVersion = `${pkg.version}-${gitHash}`
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(appVersion),
+  },
   build: {
     outDir: 'dist',
     modulePreload: false,

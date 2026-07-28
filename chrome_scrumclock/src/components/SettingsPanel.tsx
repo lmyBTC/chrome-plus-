@@ -137,17 +137,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
     setIsAuthLoading(true);
     setMessage(null);
     try {
+      let res: { token: string | null; error?: string } | undefined;
       if (onLogin) {
         await onLogin();
       } else {
-        await auth.login();
+        res = await auth.login();
       }
-      const token = await auth.getCachedToken();
+      const token = res?.token || (await auth.getCachedToken());
       setIsGoogleAuth(!!token);
       if (token) {
         setMessage({ type: 'success', text: '🎉 Google 帳號授權登入成功！已開啟雲端同步功能。' });
       } else {
-        setMessage({ type: 'error', text: '❌ 登入取消或未取得 Token。' });
+        const errorDetail = res?.error ? `: ${res.error}` : '';
+        setMessage({ type: 'error', text: `❌ 登入失敗${errorDetail}` });
       }
     } catch (err: any) {
       setMessage({ type: 'error', text: `❌ 登入發生錯誤: ${err?.message || err}` });
@@ -463,6 +465,25 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   <span>{isAuthLoading ? '登入處理中...' : '使用 Google 帳號登入'}</span>
                 </button>
               )}
+
+              {/* OAuth Client ID 未設定警告 */}
+              {(() => {
+                const manifestClientId = typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.oauth2?.client_id;
+                const isClientIdMissing = !manifestClientId || manifestClientId.includes('YOUR_CLIENT_ID');
+                if (isClientIdMissing) {
+                  return (
+                    <div className="mt-3 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-300 flex flex-col gap-1">
+                      <div className="font-bold flex items-center gap-1">
+                        <span>⚠️</span> 尚未配置有效的 Google OAuth Client ID
+                      </div>
+                      <p className="text-amber-300/80 leading-relaxed">
+                        目前 <code>public/manifest.json</code> 中的 <code>client_id</code> 為預設值。請參考專案 <code>docs/google-oauth-setup.md</code> 完成申請與配置以啟用同步。
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             {/* Gemini API 設定 */}

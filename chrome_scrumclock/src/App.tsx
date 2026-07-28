@@ -103,8 +103,8 @@ function App() {
 
   // 登入處理
   const handleLogin = async () => {
-    const token = await auth.login();
-    if (token) {
+    const res = await auth.login();
+    if (res.token) {
       setIsAuthenticated(true);
     }
   };

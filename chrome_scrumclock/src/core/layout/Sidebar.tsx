@@ -57,8 +57,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
         </button>
       </div>
 
-      <div className="p-6 border-t border-dark-border-subtle text-xs text-dark-muted">
-        v1.0.0 Alpha
+      <div className="p-6 border-t border-dark-border-subtle text-xs text-dark-muted flex items-center justify-between">
+        <span>
+          v{typeof __APP_VERSION__ !== 'undefined'
+            ? __APP_VERSION__
+            : (typeof chrome !== 'undefined' && chrome?.runtime?.getManifest?.()?.version) || '1.0.0'}
+        </span>
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-dark-card border border-dark-border-subtle text-dark-muted">Alpha</span>
       </div>
     </aside>
   );

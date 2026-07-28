@@ -33,8 +33,8 @@ export async function checkAiCapabilities(aiAPI: any): Promise<boolean> {
 
   try {
     const caps = await aiAPI.capabilities({
-      expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-      expectedOutputs: [{ type: 'text', languages: ['zh', 'en'] }]
+      expectedInputs: [{ type: 'text', languages: ['en'] }],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }]
     });
     return caps.available !== 'no';
   } catch (e) {

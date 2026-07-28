@@ -162,8 +162,8 @@ export function useAISession(storageQueue: StorageQueue) {
 
       const createOptions: any = {
         systemPrompt: CHAT_SYSTEM_PROMPT,
-        expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['zh'] }]
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
       };
 
       try {
@@ -176,8 +176,8 @@ export function useAISession(storageQueue: StorageQueue) {
 
       const parseOptions: any = {
         systemPrompt: PARSE_SYSTEM_PROMPT,
-        expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['zh'] }]
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
       };
 
       try {
@@ -453,8 +453,8 @@ export function useAISession(storageQueue: StorageQueue) {
           console.warn('常駐意圖解析會話不存在，現場建立臨時會話...');
           const parseOptions: any = {
             systemPrompt: PARSE_SYSTEM_PROMPT,
-            expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-            expectedOutputs: [{ type: 'text', languages: ['zh'] }]
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }]
           };
 
           try {
@@ -514,8 +514,8 @@ export function useAISession(storageQueue: StorageQueue) {
         if (!aiSessionRef.current) {
           const createOptions: any = {
             systemPrompt: CHAT_SYSTEM_PROMPT,
-            expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-            expectedOutputs: [{ type: 'text', languages: ['zh'] }]
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }]
           };
           try {
             aiSessionRef.current = await aiAPI.create(createOptions);

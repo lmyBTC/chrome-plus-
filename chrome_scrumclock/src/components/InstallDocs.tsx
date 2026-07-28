@@ -212,7 +212,7 @@ const DEBUG_CODE = `(async () => {
 
 export const InstallDocs: React.FC = () => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'setup' | 'guide' | 'debug'>('setup');
+  const [activeTab, setActiveTab] = useState<'setup' | 'oauth' | 'guide' | 'debug'>('setup');
 
   const handleCopy = () => {
     navigator.clipboard.writeText(GAS_CODE)
@@ -230,19 +230,28 @@ export const InstallDocs: React.FC = () => {
       </div>
 
       {/* Tab 切換選單 */}
-      <div className="flex justify-center gap-4 mb-8 border-b border-dark-border-subtle">
+      <div className="flex justify-center gap-2 sm:gap-4 mb-8 border-b border-dark-border-subtle flex-wrap">
         <button
           onClick={() => setActiveTab('setup')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'setup'
+          className={`px-4 sm:px-6 py-3 font-semibold text-xs sm:text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'setup'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
             }`}
         >
-          🔧 後台同步設定
+          🔧 GAS 後台同步設定
+        </button>
+        <button
+          onClick={() => setActiveTab('oauth')}
+          className={`px-4 sm:px-6 py-3 font-semibold text-xs sm:text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'oauth'
+              ? 'border-blue-500 text-blue-400 font-bold'
+              : 'border-transparent text-dark-muted hover:text-dark-primary'
+            }`}
+        >
+          🔑 Google OAuth 授權
         </button>
         <button
           onClick={() => setActiveTab('guide')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'guide'
+          className={`px-4 sm:px-6 py-3 font-semibold text-xs sm:text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'guide'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
             }`}
@@ -251,7 +260,7 @@ export const InstallDocs: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('debug')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'debug'
+          className={`px-4 sm:px-6 py-3 font-semibold text-xs sm:text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${activeTab === 'debug'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
             }`}
@@ -356,6 +365,88 @@ export const InstallDocs: React.FC = () => {
               <li>點擊下方 **部署 (Deploy)** 按鈕。過程中如有要求安全性授權核准，請依照提示點擊確認。</li>
               <li>部署完成後，複製產生的 <strong className="text-dark-primary">網頁應用程式網址 (Web App URL)</strong>。</li>
               <li>回到插件中的「全域設定」，在 **Google Apps Script URL (同步用)** 中貼上此網址並儲存，即完成雙向同步！</li>
+            </ol>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 1.5: Google OAuth 2.0 授權設定 */}
+      {activeTab === 'oauth' && (
+        <div className="space-y-6 text-dark-secondary">
+          <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 border border-blue-500/20 rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-blue-400 mb-2 flex items-center gap-2">
+              🔑 Google OAuth 2.0 雙向同步設定指南
+            </h2>
+            <p className="text-dark-muted leading-relaxed text-xs sm:text-sm">
+              授權登入 Google 帳號後，系統可自動將您的今日任務同步至 <strong className="text-dark-primary">Google Tasks</strong>，並將每日番茄鐘復盤寫入 <strong className="text-dark-primary">Google Calendar</strong>。請依照下方步驟設定 OAuth 2.0 Client ID。
+            </p>
+          </div>
+
+          {/* 步驟 1 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h3 className="text-base font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+              取得擴充套件 ID (Extension ID)
+            </h3>
+            <ol className="list-decimal list-inside space-y-2 pl-2 text-dark-muted text-xs sm:text-sm">
+              <li>開啟 Chrome 瀏覽器並造訪 <code className="bg-dark-surface px-2 py-0.5 rounded border border-dark-border-default text-blue-300">chrome://extensions/</code>。</li>
+              <li>開啟右上角的 <strong className="text-dark-primary">「開發者模式 (Developer mode)」</strong>。</li>
+              <li>找到 <strong className="text-dark-primary">Power Kit (Chrome Scrumclock)</strong> 擴充套件，複製其 ID（長度為 32 位英文字母）。</li>
+            </ol>
+          </div>
+
+          {/* 步驟 2 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h3 className="text-base font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
+              在 Google Cloud Console 設定 OAuth 用戶端
+            </h3>
+            <ol className="list-decimal list-inside space-y-2 pl-2 text-dark-muted text-xs sm:text-sm">
+              <li>造訪 <a href="https://console.cloud.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline font-semibold">Google Cloud Console</a>。</li>
+              <li>建立新專案或選擇既有專案。</li>
+              <li>導覽至 <strong className="text-dark-primary">API 與服務 &gt; 憑證 (Credentials)</strong>。</li>
+              <li>點擊 <strong className="text-dark-primary">+ 建立憑證 &gt; OAuth 用戶端 ID (OAuth client ID)</strong>。</li>
+              <li>應用程式類型選擇 <strong className="text-dark-primary">Chrome 應用程式 (Chrome extension)</strong>。</li>
+              <li>填寫說明與參數：
+                <ul className="list-disc list-inside pl-6 mt-1 text-dark-muted">
+                  <li>名稱：<code className="bg-dark-surface px-1.5 py-0.5 rounded text-dark-primary">Chrome Scrumclock Sync</code></li>
+                  <li>項目 ID (Application ID)：貼上步驟 1 取得的 32 位元 Extension ID。</li>
+                </ul>
+              </li>
+              <li>點擊 <strong className="text-dark-primary">建立 (CREATE)</strong>，複製產生的 Client ID (格式如：<code className="bg-dark-surface px-1.5 py-0.5 rounded text-amber-300">xxxx.apps.googleusercontent.com</code>)。</li>
+            </ol>
+          </div>
+
+          {/* 步驟 3 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h3 className="text-base font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
+              啟用 Google Tasks API 與 Google Calendar API
+            </h3>
+            <ol className="list-decimal list-inside space-y-2 pl-2 text-dark-muted text-xs sm:text-sm">
+              <li>在 Google Cloud Console 中前往 <strong className="text-dark-primary">API 與服務 &gt; 啟用的 API 和服務</strong>。</li>
+              <li>點擊 <strong className="text-dark-primary">+ 啟用 API 和服務</strong>。</li>
+              <li>搜尋並啟用以下兩項 API：
+                <ul className="list-disc list-inside pl-6 mt-1 text-dark-primary font-semibold">
+                  <li>Google Tasks API</li>
+                  <li>Google Calendar API</li>
+                </ul>
+              </li>
+            </ol>
+          </div>
+
+          {/* 步驟 4 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h3 className="text-base font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
+              修改 public/manifest.json 並重新打包
+            </h3>
+            <ol className="list-decimal list-inside space-y-2 pl-2 text-dark-muted text-xs sm:text-sm">
+              <li>開啟專案檔 <code className="bg-dark-surface px-2 py-0.5 rounded text-blue-300">public/manifest.json</code>。</li>
+              <li>將 <code className="text-dark-primary">"oauth2.client_id"</code> 的值替換為步驟 2 取得的 Client ID。</li>
+              <li>於終端機執行 <code className="bg-dark-surface px-2 py-0.5 rounded text-emerald-400">npm run build</code>。</li>
+              <li>至 <code className="bg-dark-surface px-2 py-0.5 rounded text-blue-300">chrome://extensions/</code> 點擊擴充套件的 <strong className="text-dark-primary">重新載入 (Reload)</strong> 按鈕。</li>
+              <li>前往設定面板點擊 <strong className="text-dark-primary font-bold">「使用 Google 帳號登入」</strong>，即可完成雙向同步連結！</li>
             </ol>
           </div>
         </div>
