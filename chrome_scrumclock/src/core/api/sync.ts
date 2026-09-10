@@ -21,6 +21,17 @@ export const sync = {
     const adapter = await getAdapter();
     return adapter.pullTasksFromSheets();
   },
+  async fullPullTasksFromSheets(): Promise<boolean> {
+    const adapter = await getAdapter();
+    if ((adapter as any).fullPullTasksFromSheets) {
+      return (adapter as any).fullPullTasksFromSheets();
+    }
+    return adapter.pullTasksFromSheets();
+  },
+  async pushTasksToSheets(missions: WeeklyMission[]): Promise<boolean> {
+    const adapter = await getAdapter();
+    return adapter.pushTasksToSheets(missions);
+  },
   async pullTasksFromGoogleTasks(): Promise<boolean> {
     const adapter = await getAdapter();
     return adapter.pullTasksFromGoogleTasks();

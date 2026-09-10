@@ -10,6 +10,7 @@ export class GoogleTaskAdapter implements ITaskAdapter {
         return false;
       }
 
+      // 裸 GET（無 action）= GAS 預設分支：讀取 Sheet Task 分頁的 B1(北極星) 與 B2+(週任務)
       const response = await fetch(settings.appsScriptUrl, {
         method: 'GET',
         redirect: 'follow'
@@ -17,17 +18,115 @@ export class GoogleTaskAdapter implements ITaskAdapter {
 
       const data = await response.json();
       if (data.status === 'success' && data.data) {
-        if (data.data.northStarGoal) {
-          await storage.saveNorthStarGoal(data.data.northStarGoal);
+        // 如果 GAS 有回傳試算表真實網址，自動儲存至設定並同步至傳送門
+        const returnedSheetUrl = data.spreadsheetUrl || data.data.spreadsheetUrl;
+        if (returnedSheetUrl) {
+          settings.spreadsheetUrl = returnedSheetUrl;
+          await storage.saveUserSettings(settings);
+
+          const bookmarkRes = await chrome.storage.local.get('bookmarks');
+          if (bookmarkRes && Array.isArray(bookmarkRes.bookmarks)) {
+            const updatedBookmarks = bookmarkRes.bookmarks.map((b: any) => {
+              if (b.id === 'google-sheets' || b.url.includes('sheets.google.com') || b.title.toLowerCase().includes('google sheets')) {
+                return { ...b, url: returnedSheetUrl };
+              }
+              return b;
+            });
+            await chrome.storage.local.set({ bookmarks: updatedBookmarks });
+          }
         }
-        if (data.data.weeklyMissions) {
-          await storage.saveWeeklyMissions(data.data.weeklyMissions);
+
+        // 合併北極星目標（僅在雲端有實際內容時才更新）
+        const cloudGoal = data.data.northStarGoal;
+        if (cloudGoal && cloudGoal.text && cloudGoal.text !== '設定你的北極星目標') {
+          await storage.saveNorthStarGoal(cloudGoal);
         }
+
+        // 智慧合併週任務：以 ID 去重取聯集，Sheet 空時不覆寫本地
+        const cloudMissions: WeeklyMission[] = data.data.weeklyMissions || [];
+        if (cloudMissions.length > 0) {
+          const localMissions = await storage.getWeeklyMissions();
+          const missionMap = new Map<string, WeeklyMission>();
+
+          // 先放雲端(Sheet)資料作為基底
+          cloudMissions.forEach(m => missionMap.set(m.id, { ...m }));
+
+          // 本地資料疊加（isCompleted 取 OR，本地 aiTip 優先）
+          localMissions.forEach(localM => {
+            const existing = missionMap.get(localM.id);
+            if (existing) {
+              missionMap.set(localM.id, {
+                ...existing,
+                ...localM,
+                isCompleted: existing.isCompleted || localM.isCompleted,
+                aiTip: localM.aiTip || existing.aiTip,
+                suggestedDuration: localM.suggestedDuration || existing.suggestedDuration
+              });
+            } else {
+              missionMap.set(localM.id, { ...localM });
+            }
+          });
+
+          await storage.saveWeeklyMissions(Array.from(missionMap.values()));
+        }
+
         return true;
       }
       return false;
     } catch (error) {
       console.error('Pull Tasks Error:', error);
+      return false;
+    }
+  }
+
+  async fullPullTasksFromSheets(): Promise<boolean> {
+    try {
+      const settings = await storage.getUserSettings();
+      if (!settings.appsScriptUrl) return false;
+
+      const response = await fetch(settings.appsScriptUrl, {
+        method: 'GET',
+        redirect: 'follow'
+      });
+      const data = await response.json();
+      if (data.status === 'success' && data.data) {
+        if (data.data.northStarGoal) {
+          await storage.saveNorthStarGoal(data.data.northStarGoal);
+        }
+        // 完全拉取：直接覆寫本地（Sheet 空時保持空）
+        await storage.saveWeeklyMissions(data.data.weeklyMissions || []);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Full Pull Tasks Error:', error);
+      return false;
+    }
+  }
+
+  async pushTasksToSheets(missions: WeeklyMission[]): Promise<boolean> {
+    try {
+      const settings = await storage.getUserSettings();
+      if (!settings.appsScriptUrl) return false;
+
+      const response = await fetch(settings.appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'sync_tasks_to_sheet',
+          tasks: missions.map(m => ({
+            id: m.id,
+            text: m.text,
+            isCompleted: m.isCompleted
+          }))
+        }),
+        redirect: 'follow'
+      });
+
+      const data = await response.json();
+      return data.status === 'success';
+    } catch (error) {
+      console.error('Push Tasks to Sheet Error:', error);
       return false;
     }
   }

@@ -5,6 +5,7 @@ export interface UserSettings {
   endOfDayReviewTime: string; // HH:mm format
   distractionSites: string[];
   appsScriptUrl?: string;
+  spreadsheetUrl?: string;
   taskAdapter?: 'google' | 'notion';
   notionWebhookUrl?: string;
   whiteNoiseEnabled?: boolean;

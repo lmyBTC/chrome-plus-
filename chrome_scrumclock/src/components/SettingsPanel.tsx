@@ -26,6 +26,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
 
   // AI & Sync States
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
+  const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [lastSyncTime, setLastSyncTime] = useState('載入中...');
   const [enableWebhook, setEnableWebhook] = useState(false);
@@ -62,6 +63,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       
       // AI & Cloud Sync
       setAppsScriptUrl(data.userSettings.appsScriptUrl || '');
+      setSpreadsheetUrl(data.userSettings.spreadsheetUrl || '');
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
       setEnableWebhook(data.userSettings.enableWebhook || false);
       setWebhookUrl(data.userSettings.webhookUrl || '');
@@ -148,6 +150,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         breakDuration: Number(breakDuration) || 5,
         endOfDayReviewTime: endOfDayReviewTime || '21:00',
         appsScriptUrl: appsScriptUrl.trim(),
+        spreadsheetUrl: spreadsheetUrl.trim(),
         geminiApiKey: geminiApiKey.trim(),
         distractionSites: blockSites,
         enableWebhook: enableWebhook,
@@ -163,6 +166,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       await storage.saveUserSettings(updatedSettings);
       await storage.saveNorthStarGoal(updatedGoal);
       await storage.saveWeeklyMissions(newMissions);
+
+      // 同步更新辦公室傳送門的 Google Sheets 書籤網址
+      if (spreadsheetUrl.trim()) {
+        const bookmarkRes = await chrome.storage.local.get('bookmarks');
+        if (bookmarkRes && Array.isArray(bookmarkRes.bookmarks)) {
+          const updatedBookmarks = bookmarkRes.bookmarks.map((b: any) => {
+            if (b.id === 'google-sheets' || b.url.includes('sheets.google.com') || b.title.toLowerCase().includes('google sheets')) {
+              return { ...b, url: spreadsheetUrl.trim() };
+            }
+            return b;
+          });
+          await chrome.storage.local.set({ bookmarks: updatedBookmarks });
+        }
+      }
 
       // 5. 重新配置日終回顧鬧鐘
       const [hours, minutes] = updatedSettings.endOfDayReviewTime.split(':');
@@ -391,6 +408,23 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                 placeholder="https://script.google.com/macros/s/.../exec"
                 className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
               />
+
+              {/* Google Sheets 專案試算表網址 */}
+              <div className="mt-4">
+                <label className="block text-sm font-bold text-blue-300 flex items-center gap-1.5 mb-1">
+                  <span>📊</span> Google Sheets 試算表網址 (選填 / 傳送門直達)
+                </label>
+                <p className="text-xs text-blue-300/80 mb-2">
+                  填寫此網址後，「辦公室傳送門」的 Google Sheets 捷徑將會直接開啟您的專案計畫表。
+                </p>
+                <input
+                  type="url"
+                  value={spreadsheetUrl}
+                  onChange={(e) => setSpreadsheetUrl(e.target.value)}
+                  placeholder="https://docs.google.com/spreadsheets/d/.../edit"
+                  className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
+                />
+              </div>
 
               {/* GAS Cloud Sync Actions */}
               {appsScriptUrl.trim() && (

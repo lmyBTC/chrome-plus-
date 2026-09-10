@@ -8,6 +8,11 @@ export class NotionTaskAdapter implements ITaskAdapter {
     return false;
   }
 
+  async pushTasksToSheets(_missions: import('../../../types').WeeklyMission[]): Promise<boolean> {
+    console.warn('NotionTaskAdapter does not support pushing tasks to Google Sheets');
+    return false;
+  }
+
   async pullTasksFromGoogleTasks(): Promise<boolean> {
     console.warn('NotionTaskAdapter does not support Google Tasks');
     return false;

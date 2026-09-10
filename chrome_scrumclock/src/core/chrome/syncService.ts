@@ -99,6 +99,7 @@ export const syncService = {
         ...localData.userSettings,
         // 確保關鍵的連接/配置參數保留本地
         appsScriptUrl: localData.userSettings.appsScriptUrl || cloudData.userSettings?.appsScriptUrl,
+        spreadsheetUrl: localData.userSettings.spreadsheetUrl || cloudData.userSettings?.spreadsheetUrl,
         geminiApiKey: localData.userSettings.geminiApiKey || cloudData.userSettings?.geminiApiKey,
       };
 

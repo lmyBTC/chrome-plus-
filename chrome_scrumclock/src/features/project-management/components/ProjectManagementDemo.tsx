@@ -15,6 +15,11 @@ export const ProjectManagementDemo: React.FC = () => {
   const [inProgressIds, setInProgressIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [syncModal, setSyncModal] = useState<{ open: boolean; message?: string }>({
+    open: false
+  });
+  const [syncFeedback, setSyncFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [northStarText, setNorthStarText] = useState<string>('');
 
   // 新增任務用的 States
   const [newTitle, setNewTitle] = useState('');
@@ -73,6 +78,7 @@ export const ProjectManagementDemo: React.FC = () => {
       setWeeklyMissions(missions);
       setInboxItems(inbox.filter(item => !item.processed));
       setInProgressIds(todayLog.coreBattles.map(b => b.missionId));
+      setNorthStarText(allData.northStarGoal?.text || '');
 
       // 載入所有歷程的番茄鐘衝刺日誌
       const dailyLogs = allData.dailyLogs || {};
@@ -266,25 +272,155 @@ export const ProjectManagementDemo: React.FC = () => {
 
   // 點擊同步試算表
   const handleSync = async () => {
+    const localMissions = await storage.getWeeklyMissions();
+    // 排除預設示範任務（id 以 mission- 開頭且內容為預設範本）
+    const hasRealTasks = localMissions.some(
+      m => !m.id.startsWith('mission-') || (m.id.startsWith('mission-') && m.text && m.text !== '完成產品規格書' && m.text !== '學習 React Hooks')
+    );
+
+    if (!hasRealTasks || localMissions.length === 0) {
+      // 本地為空 → 自動完全拉取
+      await doFullPull();
+    } else {
+      // 本地有資料 → 顯示三選一 Modal
+      setSyncModal({ open: true });
+    }
+  };
+
+  const doSmartMerge = async () => {
+    setSyncModal({ open: false });
     setIsSyncing(true);
+    setSyncFeedback(null);
     try {
-      await sync.pullTasksFromSheets();
+      const ok = await sync.pullTasksFromSheets();
       await loadData();
+      setSyncFeedback(ok
+        ? { type: 'success', text: '✅ 智慧合併完成！本地與試算表任務已合併。' }
+        : { type: 'error', text: '❌ 拉取失敗，請確認 GAS URL 與試算表格式。' }
+      );
     } catch (e) {
-      console.error('同步失敗:', e);
-      alert('同步失敗: ' + (e instanceof Error ? e.message : e));
+      setSyncFeedback({ type: 'error', text: '❌ 同步發生錯誤: ' + (e instanceof Error ? e.message : e) });
     } finally {
       setIsSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 4000);
+    }
+  };
+
+  const doFullPull = async () => {
+    setSyncModal({ open: false });
+    setIsSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const ok = await sync.fullPullTasksFromSheets();
+      await loadData();
+      setSyncFeedback(ok
+        ? { type: 'success', text: '✅ 完全拉取成功！本地任務已更新為試算表內容。' }
+        : { type: 'error', text: '❌ 拉取失敗，請確認 GAS URL 與試算表格式。' }
+      );
+    } catch (e) {
+      setSyncFeedback({ type: 'error', text: '❌ 拉取發生錯誤: ' + (e instanceof Error ? e.message : e) });
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 4000);
+    }
+  };
+
+  const doPushToSheet = async () => {
+    setSyncModal({ open: false });
+    setIsSyncing(true);
+    setSyncFeedback(null);
+    try {
+      const localMissions = await storage.getWeeklyMissions();
+      const ok = await sync.pushTasksToSheets(localMissions);
+      setSyncFeedback(ok
+        ? { type: 'success', text: '✅ 本地任務已上傳至 Google Sheet Task 分頁！' }
+        : { type: 'error', text: '❌ 上傳失敗，請確認 GAS 已重新部署（含 sync_tasks_to_sheet action）。' }
+      );
+    } catch (e) {
+      setSyncFeedback({ type: 'error', text: '❌ 上傳發生錯誤: ' + (e instanceof Error ? e.message : e) });
+    } finally {
+      setIsSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 4000);
     }
   };
 
   return (
     <div className="max-w-6xl mx-auto p-8 font-sans">
+
+      {/* 三選一同步 Modal */}
+      {syncModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-4 animate-fade-in">
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-2xl">🔄</span>
+              <div>
+                <h3 className="text-base font-bold text-white">同步試算表任務</h3>
+                <p className="text-xs text-gray-400 mt-0.5">本地已有任務，請選擇同步方式</p>
+              </div>
+            </div>
+            <button
+              onClick={doSmartMerge}
+              className="w-full py-3 px-4 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 font-semibold text-sm text-left transition-all flex items-center gap-3"
+            >
+              <span className="text-lg">🔀</span>
+              <div>
+                <div className="font-bold">智慧合併</div>
+                <div className="text-xs text-blue-400/70 font-normal">本地 + 試算表取聯集，不刪除任何任務</div>
+              </div>
+            </button>
+            <button
+              onClick={doFullPull}
+              className="w-full py-3 px-4 rounded-xl bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 text-amber-300 font-semibold text-sm text-left transition-all flex items-center gap-3"
+            >
+              <span className="text-lg">📥</span>
+              <div>
+                <div className="font-bold">完全拉取</div>
+                <div className="text-xs text-amber-400/70 font-normal">以試算表內容覆蓋本地（本地獨有任務將消失）</div>
+              </div>
+            </button>
+            <button
+              onClick={doPushToSheet}
+              className="w-full py-3 px-4 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-semibold text-sm text-left transition-all flex items-center gap-3"
+            >
+              <span className="text-lg">📤</span>
+              <div>
+                <div className="font-bold">本地上傳</div>
+                <div className="text-xs text-emerald-400/70 font-normal">將插件任務寫入試算表 Task 分頁</div>
+              </div>
+            </button>
+            <button
+              onClick={() => setSyncModal({ open: false })}
+              className="mt-1 text-xs text-gray-500 hover:text-gray-300 transition-colors text-center"
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 同步結果 Toast */}
+      {syncFeedback && (
+        <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-semibold border backdrop-blur-md transition-all ${
+          syncFeedback.type === 'success'
+            ? 'bg-emerald-900/80 border-emerald-600/50 text-emerald-200'
+            : 'bg-red-900/80 border-red-600/50 text-red-200'
+        }`}>
+          {syncFeedback.text}
+        </div>
+      )}
+
       <div className="mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-extrabold text-dark-primary tracking-tight">專案管理儀表板</h1>
           <p className="text-dark-muted mt-2">基於 Chrome Local Storage 與 Google Sheets/Notion 的單一資料庫實時同步</p>
+          {northStarText && northStarText !== '設定你的北極星目標' && (
+            <div className="mt-3 flex items-center gap-2 px-4 py-2 bg-indigo-950/50 border border-indigo-800/40 rounded-xl w-fit">
+              <span className="text-lg">🌟</span>
+              <span className="text-sm font-semibold text-indigo-300">{northStarText}</span>
+            </div>
+          )}
         </div>
+
         <div className="flex items-center gap-3">
           <button
             onClick={handleSync}

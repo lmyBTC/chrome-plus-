@@ -10,6 +10,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   endOfDayReviewTime: '21:00',
   distractionSites: ['facebook.com', 'youtube.com', 'twitter.com', 'instagram.com'],
   appsScriptUrl: '',
+  spreadsheetUrl: '',
   whiteNoiseEnabled: false,
   whiteNoiseVolume: 0.5,
   geminiApiKey: '',
