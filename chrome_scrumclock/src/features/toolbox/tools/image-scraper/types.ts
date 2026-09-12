@@ -1,9 +1,11 @@
-export type ImageFormat = 'jpg' | 'jpeg' | 'png' | 'webp' | 'gif' | 'svg' | 'unknown';
+export type ImageFormat = 'jpg' | 'jpeg' | 'png' | 'webp' | 'gif' | 'svg' | 'mp4' | 'webm' | 'unknown';
 
 export interface ScrapedImage {
   id: string;
   url: string;
   rawUrl: string;
+  posterUrl?: string;
+  mediaType?: 'image' | 'video';
   alt?: string;
   title?: string;
   width?: number;

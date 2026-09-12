@@ -3,13 +3,13 @@ import { ScrapedImage, ImageFormat, DownloadTaskOptions, DownloadProgress, Activ
 import { fetchAndExtractFromUrl, extractFromActiveTab } from './services/imageExtractor';
 import {
   BatchDownloader,
-  copyUrlsToClipboard,
-  exportUrlsAsTxt,
   downloadImage,
+  fetchMediaBlob,
   sanitizePathSegment,
   isFileSystemAccessSupported,
   pickDownloadDirectory,
-  saveBlobToDirectory
+  saveBlobToDirectory,
+  getExtensionFromUrl
 } from './services/downloader';
 
 const FLICKR_DEMO_URL = 'https://www.flickr.com/photos/yukirasei/albums/72177720323023386/';
@@ -36,7 +36,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
 
   // 篩選控制
   const [formatFilters, setFormatFilters] = useState<Set<ImageFormat>>(
-    new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'unknown'])
+    new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'unknown'])
   );
   const [minWidth, setMinWidth] = useState<number>(0);
   const [searchKeyword, setSearchKeyword] = useState<string>('');
@@ -106,17 +106,58 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
         if (!targetUrl.trim()) {
           throw new Error('請輸入欲爬取的網頁網址');
         }
-        const { title, images: extracted } = await fetchAndExtractFromUrl(targetUrl);
-        setPageTitle(title || '未知網頁');
+
+        const isInstagram = /instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/i.test(targetUrl);
+        let extractedImages: ScrapedImage[] = [];
+        let extractedTitle = '未知網頁';
+
+        // 若輸入的是 Instagram 貼文網址
+        if (isInstagram && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+          // 檢查使用者是否已經在某個分頁打開了該 Instagram 貼文
+          const cleanTarget = targetUrl.split('?')[0].replace(/\/+$/, '');
+          const tabs = await chrome.tabs.query({});
+          const matchedTab = tabs.find(t => t.url && t.url.split('?')[0].replace(/\/+$/, '') === cleanTarget);
+
+          if (matchedTab && matchedTab.id) {
+            // 直接借用已打開分頁進行原生提取！
+            const res = await extractFromActiveTab({
+              targetTabId: matchedTab.id,
+              mode: 'fast',
+              onCarouselProgress: setCarouselProgress
+            });
+            extractedImages = res.images;
+            extractedTitle = res.tabTitle;
+          } else {
+            // 若未開啟該分頁，嘗試常規 fetch
+            try {
+              const res = await fetchAndExtractFromUrl(targetUrl);
+              extractedImages = res.images;
+              extractedTitle = res.title;
+            } catch (fetchErr) {
+              console.warn('URL fetch 失敗:', fetchErr);
+            }
+
+            // 若提取數量為 0 或沒有影片，提示切換至分頁模式
+            if (extractedImages.length === 0) {
+              throw new Error('Instagram 影片與貼文受防盜鏈保護。請在瀏覽器分頁中開啟該貼文，並使用「採集當前分頁」即可一鍵抓取完整影片與高畫質圖片！');
+            }
+          }
+        } else {
+          const { title, images: extracted } = await fetchAndExtractFromUrl(targetUrl);
+          extractedImages = extracted;
+          extractedTitle = title;
+        }
+
+        setPageTitle(extractedTitle || '未知網頁');
         // 依當前格式篩選設定預設選取狀態 (非符合格式者預設取消勾選)
-        const formattedExtracted = extracted.map(img => ({
+        const formattedExtracted = extractedImages.map(img => ({
           ...img,
           selected: formatFilters.has(img.format) ? img.selected : false
         }));
         setImages(formattedExtracted);
 
         // 自動推測適合的資料夾名稱
-        const defaultFolderName = (title || 'scraped-images')
+        const defaultFolderName = (extractedTitle || 'scraped-images')
           .replace(/[^\w\u4e00-\u9fa5-_]/g, '_')
           .slice(0, 30);
         setDownloadFolder(defaultFolderName || 'Toolbox-Album');
@@ -272,25 +313,8 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
   };
 
   // 啟動批次下載
-  const handleBatchDownload = async (promptPickerIfNone: boolean = false) => {
+  const handleBatchDownload = async () => {
     if (selectedCount === 0) return;
-
-    let dirHandle = targetDirHandle;
-    // 若使用者主動點擊指定目錄下載且尚未選取目錄
-    if (!dirHandle && promptPickerIfNone && isFileSystemAccessSupported()) {
-      try {
-        dirHandle = await pickDownloadDirectory();
-        if (dirHandle) {
-          setTargetDirHandle(dirHandle);
-          setTargetDirName(dirHandle.name || '已選定資料夾');
-        } else {
-          return; // 使用者取消了資料夾選取
-        }
-      } catch (err: any) {
-        alert(`選取資料夾失敗: ${err?.message || err}`);
-        return;
-      }
-    }
 
     const downloader = new BatchDownloader();
     downloaderRef.current = downloader;
@@ -300,7 +324,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
       namingPattern,
       prefix: namingPrefix,
       concurrency: 3,
-      directoryHandle: dirHandle
+      directoryHandle: targetDirHandle
     };
 
     const targetImages = images.filter(img => img.selected && formatFilters.has(img.format));
@@ -310,8 +334,9 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
       await downloader.run(targetImages, options, progress => {
         setDownloadProgress({ ...progress });
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error('下載佇列中斷:', err);
+      alert(`下載失敗: ${err?.message || err}`);
     }
   };
 
@@ -323,43 +348,56 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
     }
   };
 
-  // 單張立即下載
+  // 單張/單片立即下載（若支援目錄選擇，優先存入選定或新選目錄）
   const handleDownloadSingle = async (img: ScrapedImage) => {
     try {
-      const ext = img.url.split('.').pop()?.split('?')[0] || img.format;
-      const filename = img.url.split('/').pop()?.split('?')[0] || `image_${img.id}.${ext}`;
+      const isVideo = img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm';
+      let ext = getExtensionFromUrl(img.url, img.format);
+      if (isVideo && ext !== 'mp4' && ext !== 'webm') {
+        ext = 'mp4';
+      }
+
+      const validMediaExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'mp4', 'webm']);
+      let rawName = img.url.split('/').pop()?.split('?')[0] || '';
+      const currentExt = rawName.split('.').pop()?.toLowerCase() || '';
+      if (!rawName || !validMediaExts.has(currentExt)) {
+        rawName = `${isVideo ? 'video' : 'image'}_${img.id}.${ext}`;
+      }
+      const filename = sanitizePathSegment(rawName);
       
-      if (targetDirHandle) {
+      let targetDir = targetDirHandle;
+      if (!targetDir && isFileSystemAccessSupported()) {
+        try {
+          const picked = await pickDownloadDirectory();
+          if (picked) {
+            targetDir = picked;
+            setTargetDirHandle(picked);
+            setTargetDirName(picked.name || '已選定資料夾');
+          }
+        } catch {
+          // 若使用者取消選擇則繼續向下 fallback
+        }
+      }
+
+      if (targetDir) {
         // 直接存入已選定的本機目錄（免彈窗）
-        let targetDir = targetDirHandle;
+        let finalDir = targetDir;
         if (downloadFolder.trim()) {
           try {
             const sub = sanitizePathSegment(downloadFolder);
-            targetDir = await targetDirHandle.getDirectoryHandle(sub, { create: true });
+            finalDir = await targetDir.getDirectoryHandle(sub, { create: true });
           } catch {
-            targetDir = targetDirHandle;
+            finalDir = targetDir;
           }
         }
-        const res = await fetch(img.url);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const blob = await res.blob();
-        await saveBlobToDirectory(targetDir, sanitizePathSegment(filename), blob);
+        const blob = await fetchMediaBlob(img.url);
+        await saveBlobToDirectory(finalDir, filename, blob);
       } else {
         const folder = sanitizePathSegment(downloadFolder);
         await downloadImage(img.url, `PowerKit-Toolbox/${folder}/${filename}`);
       }
     } catch (err: any) {
       alert(`下載失敗: ${err?.message || '未知錯誤'}`);
-    }
-  };
-
-  // 複製所有符合格式且已選連結
-  const handleCopyUrls = async () => {
-    const targetImages = images.filter(img => img.selected && formatFilters.has(img.format));
-    const ok = await copyUrlsToClipboard(targetImages);
-    if (ok) {
-      setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000);
     }
   };
 
@@ -556,23 +594,6 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
               </button>
             </div>
 
-            {/* 針對輪巡模式的情境引導提示 */}
-            {activeTabMode === 'carousel-traverse' && (
-              <div className="p-3 bg-indigo-950/40 border border-indigo-800/50 rounded-lg text-xs text-indigo-200 flex items-start gap-2.5 leading-relaxed">
-                <span className="text-base leading-none mt-0.5">💡</span>
-                <div>
-                  <strong>Facebook / Instagram 多圖相簿採集指引：</strong>
-                  <div className="text-indigo-300/90 mt-1 space-y-1">
-                    <div>
-                      📷 <strong>Instagram 多圖貼文（如 14 張貼文，img_index=1~14）</strong>：直接在該分頁點擊「開始自動輪巡相簿」，系統將自動偵測並優先嘗試同源貼文秒級解析，或精準模擬點擊「下一頁」逐張採集至最後一張，全數升級 1080px+ 高畫質原圖！
-                    </div>
-                    <div>
-                      🖼️ <strong>Facebook 貼文多圖 (+26)</strong>：請先點擊照片進入大圖檢視器（Theater 劇院模式），再啟動輪巡，將為您完整收集所有原圖。
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* 觸發與進度控制區 */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-dark-surface rounded-lg border border-dark-border-subtle">
@@ -668,9 +689,16 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                 <div>
                   <h3 className="text-sm font-semibold text-dark-primary">{pageTitle}</h3>
                   <div className="flex items-center gap-2 mt-0.5 text-xs text-dark-secondary">
-                    <span>共發現 {images.length} 張圖片</span>
+                    <span>
+                      共發現 {images.length} 個媒體項目
+                      {images.some(img => img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm') && (
+                        <span className="text-purple-300 ml-1">
+                          (含 {images.filter(img => img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm').length} 部影片)
+                        </span>
+                      )}
+                    </span>
                     <span>•</span>
-                    <span className="text-blue-400 font-medium">已選取 {selectedCount} 張</span>
+                    <span className="text-blue-400 font-medium">已選取 {selectedCount} 個</span>
                     {images.some(img => img.isHighResUpgrade) && (
                       <>
                         <span>•</span>
@@ -711,33 +739,37 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
               {/* 格式標籤 */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-dark-muted mr-1">格式篩選:</span>
-                {(['jpg', 'png', 'webp', 'gif', 'svg'] as ImageFormat[]).map(fmt => {
+                {(['jpg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm'] as ImageFormat[]).map(fmt => {
                   const isChecked = formatFilters.has(fmt);
+                  const isVid = fmt === 'mp4' || fmt === 'webm';
                   return (
                     <button
                       key={fmt}
                       onClick={(e) => toggleFormatFilter(fmt, e.altKey)}
                       title="點擊切換；按住 Alt+點擊可「僅選此格式」"
-                      className={`px-2.5 py-1 rounded-md uppercase font-semibold transition-all ${
+                      className={`px-2.5 py-1 rounded-md uppercase font-semibold transition-all flex items-center gap-1 ${
                         isChecked
-                          ? 'bg-blue-600/30 text-blue-300 border border-blue-500/50 shadow-sm'
+                          ? isVid
+                            ? 'bg-purple-600/30 text-purple-300 border border-purple-500/60 shadow-sm'
+                            : 'bg-blue-600/30 text-blue-300 border border-blue-500/50 shadow-sm'
                           : 'bg-dark-surface text-dark-muted border border-dark-border-subtle opacity-60 hover:opacity-100'
                       }`}
                     >
-                      {fmt}
+                      {isVid && <span>🎥</span>}
+                      <span>{fmt}</span>
                     </button>
                   );
                 })}
                 <button
                   type="button"
                   onClick={() => {
-                    const all = new Set<ImageFormat>(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'unknown']);
+                    const all = new Set<ImageFormat>(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'unknown']);
                     setFormatFilters(all);
                   }}
                   className="text-[10px] text-dark-muted hover:text-blue-400 underline ml-1 cursor-pointer transition-colors"
-                  title="重設為顯示所有圖片格式"
+                  title="重設為顯示所有圖片與影片格式"
                 >
-                  全部格式
+                  全部媒體
                 </button>
               </div>
 
@@ -844,53 +876,68 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                   )}
                 </div>
 
-                {/* 下載與匯出按鈕群 */}
+                {/* 下載動作按鈕群 */}
                 <div className="flex items-center gap-2 flex-wrap">
-                  <button
-                    onClick={handleCopyUrls}
-                    disabled={selectedCount === 0}
-                    className="px-3 py-2 bg-dark-card hover:bg-dark-hover disabled:opacity-50 text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors"
-                  >
-                    {copySuccess ? '✅ 已複製連結！' : '📋 複製 URL'}
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      const targetImages = images.filter(img => img.selected && formatFilters.has(img.format));
-                      exportUrlsAsTxt(targetImages, `${downloadFolder}-urls.txt`);
-                    }}
-                    disabled={selectedCount === 0}
-                    className="px-3 py-2 bg-dark-card hover:bg-dark-hover disabled:opacity-50 text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors"
-                  >
-                    💾 匯出 TXT
-                  </button>
-
-                  {!targetDirHandle && isFileSystemAccessSupported() && (
+                  {targetDirHandle ? (
                     <button
-                      onClick={() => handleBatchDownload(true)}
-                      disabled={selectedCount === 0 || downloadProgress?.isDownloading}
-                      className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium text-xs rounded-lg shadow-sm transition-all flex items-center gap-1.5"
-                      title="選取一次目標資料夾後，自動批量存入且不跳出確認視窗"
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const newDir = await pickDownloadDirectory();
+                          if (newDir) {
+                            setTargetDirHandle(newDir);
+                            setTargetDirName(newDir.name || '已選定資料夾');
+                          }
+                        } catch (err: any) {
+                          alert(`更換資料夾失敗: ${err?.message || err}`);
+                        }
+                      }}
+                      className="px-3 py-2 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors flex items-center gap-1.5"
+                      title="更換當前儲存的本機目標資料夾"
                     >
                       <span>📁</span>
-                      <span>指定資料夾下載</span>
+                      <span>更換資料夾 ({targetDirName})</span>
                     </button>
+                  ) : (
+                    isFileSystemAccessSupported() && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const dir = await pickDownloadDirectory();
+                            if (dir) {
+                              setTargetDirHandle(dir);
+                              setTargetDirName(dir.name || '已選定資料夾');
+                            }
+                          } catch (err: any) {
+                            console.warn('選取資料夾略過:', err);
+                          }
+                        }}
+                        className="px-3 py-2 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors flex items-center gap-1.5"
+                        title="可選：指定一個本機資料夾，自動建立相簿並免彈窗直存"
+                      >
+                        <span>📁</span>
+                        <span>指定本機資料夾</span>
+                      </button>
+                    )
                   )}
 
                   <button
-                    onClick={() => handleBatchDownload(false)}
+                    type="button"
+                    onClick={handleBatchDownload}
                     disabled={selectedCount === 0 || downloadProgress?.isDownloading}
                     className={`px-5 py-2 disabled:opacity-50 text-white font-medium text-xs rounded-lg shadow-md transition-all flex items-center gap-2 ${
                       targetDirHandle
                         ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
-                        : 'bg-indigo-600 hover:bg-indigo-500 shadow-indigo-600/20'
+                        : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
                     }`}
+                    title="立即開始下載所選圖片檔案存入本機"
                   >
                     <span>{targetDirHandle ? '⚡' : '⬇️'}</span>
                     <span>
                       {targetDirHandle
-                        ? `批量儲存至 ${targetDirName} (${selectedCount} 張)`
-                        : `下載所選 (${selectedCount} 張)`}
+                        ? `批量下載至 ${targetDirName} (${selectedCount} 張)`
+                        : `下載圖片 (${selectedCount} 張)`}
                     </span>
                   </button>
                 </div>
@@ -951,41 +998,65 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                 >
                   {/* 縮圖預覽容器 */}
                   <div className="relative aspect-square bg-slate-950 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={img.url}
-                      alt={img.alt || `圖片 ${index + 1}`}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      onError={e => {
-                        // 載入失敗時降級顯示
-                        (e.target as HTMLImageElement).src = img.rawUrl;
-                      }}
-                    />
+                    {(() => {
+                      const isVideo = img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm';
+                      const thumbSrc = img.posterUrl || img.url;
+                      return (
+                        <>
+                          <img
+                            src={thumbSrc}
+                            alt={img.alt || (isVideo ? `影片 ${index + 1}` : `圖片 ${index + 1}`)}
+                            loading="lazy"
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            onError={e => {
+                              // 載入失敗時降級顯示
+                              (e.target as HTMLImageElement).src = img.rawUrl;
+                            }}
+                          />
 
-                    {/* 勾選標籤 */}
-                    <div className="absolute top-2 left-2 z-10">
-                      <div
-                        className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
-                          img.selected
-                            ? 'bg-blue-600 text-white shadow'
-                            : 'bg-black/60 border border-white/50 text-transparent'
-                        }`}
-                      >
-                        ✓
-                      </div>
-                    </div>
+                          {/* 影片中央播放小圖示 */}
+                          {isVideo && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <div className="w-10 h-10 rounded-full bg-black/60 backdrop-blur-sm border border-white/40 flex items-center justify-center text-white text-sm shadow-md group-hover:scale-110 transition-transform">
+                                ▶
+                              </div>
+                            </div>
+                          )}
 
-                    {/* 畫質 / 格式徽章 */}
-                    <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
-                      <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-black/70 text-white backdrop-blur-sm">
-                        {img.format}
-                      </span>
-                      {img.isHighResUpgrade && (
-                        <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-amber-500/90 text-black">
-                          HD
-                        </span>
-                      )}
-                    </div>
+                          {/* 勾選標籤 */}
+                          <div className="absolute top-2 left-2 z-10">
+                            <div
+                              className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
+                                img.selected
+                                  ? 'bg-blue-600 text-white shadow'
+                                  : 'bg-black/60 border border-white/50 text-transparent'
+                              }`}
+                            >
+                              ✓
+                            </div>
+                          </div>
+
+                          {/* 畫質 / 格式徽章 */}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
+                            <span
+                              className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded backdrop-blur-sm flex items-center gap-1 ${
+                                isVideo
+                                  ? 'bg-purple-600/90 text-white border border-purple-400/40 shadow-sm'
+                                  : 'bg-black/70 text-white'
+                              }`}
+                            >
+                              {isVideo && <span>🎥</span>}
+                              <span>{img.format}</span>
+                            </span>
+                            {img.isHighResUpgrade && (
+                              <span className="text-[9px] font-bold px-1 py-0.5 rounded bg-amber-500/90 text-black">
+                                HD
+                              </span>
+                            )}
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     {/* 懸浮放大 / 下載動作按鈕群 */}
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -1060,13 +1131,29 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
               </button>
             </div>
 
-            {/* Modal Image Body */}
+            {/* Modal Image / Video Body */}
             <div className="flex-1 bg-black/90 p-4 flex items-center justify-center overflow-auto min-h-[300px]">
-              <img
-                src={previewImage.url}
-                alt="大圖預覽"
-                className="max-h-[65vh] max-w-full object-contain rounded"
-              />
+              {(() => {
+                const isVideo = previewImage.mediaType === 'video' || previewImage.format === 'mp4' || previewImage.format === 'webm';
+                if (isVideo) {
+                  return (
+                    <video
+                      src={previewImage.url}
+                      poster={previewImage.posterUrl}
+                      controls
+                      autoPlay
+                      className="max-h-[65vh] max-w-full rounded shadow-xl bg-black"
+                    />
+                  );
+                }
+                return (
+                  <img
+                    src={previewImage.url}
+                    alt="大圖預覽"
+                    className="max-h-[65vh] max-w-full object-contain rounded"
+                  />
+                );
+              })()}
             </div>
 
             {/* Modal Footer */}
@@ -1086,7 +1173,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(previewImage.url);
-                    alert('已複製圖片網址！');
+                    alert('已複製媒體網址！');
                   }}
                   className="px-3 py-1.5 bg-dark-surface hover:bg-dark-hover text-dark-primary rounded border border-dark-border-subtle transition-colors"
                 >
@@ -1096,7 +1183,9 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                   onClick={() => handleDownloadSingle(previewImage)}
                   className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium transition-colors"
                 >
-                  下載此圖
+                  {(previewImage.mediaType === 'video' || previewImage.format === 'mp4' || previewImage.format === 'webm')
+                    ? '下載此影片'
+                    : '下載此圖'}
                 </button>
               </div>
             </div>

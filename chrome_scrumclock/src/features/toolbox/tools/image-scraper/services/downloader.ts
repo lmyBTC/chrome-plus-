@@ -16,7 +16,9 @@ export function sanitizePathSegment(segment: string): string {
  */
 export function getExtensionFromUrl(url: string, fallbackFormat: string = 'jpg'): string {
   try {
-    const pathname = new URL(url).pathname;
+    const pathname = new URL(url).pathname.toLowerCase();
+    if (pathname.includes('.mp4')) return 'mp4';
+    if (pathname.includes('.webm')) return 'webm';
     const match = pathname.match(/\.([a-zA-Z0-9]+)$/);
     if (match && match[1]) {
       return match[1].toLowerCase();
@@ -24,7 +26,8 @@ export function getExtensionFromUrl(url: string, fallbackFormat: string = 'jpg')
   } catch {
     // 略過錯誤
   }
-  return fallbackFormat.toLowerCase();
+  const cleanFallback = fallbackFormat.toLowerCase();
+  return cleanFallback === 'unknown' ? 'jpg' : cleanFallback;
 }
 
 /**
@@ -70,21 +73,155 @@ export async function saveBlobToDirectory(
 }
 
 /**
+ * 安全取得當前使用者正在瀏覽的分頁 (相容 SidePanel / Popup / DevTools)
+ */
+async function getActiveTab(): Promise<chrome.tabs.Tab | null> {
+  if (typeof chrome === 'undefined' || !chrome.tabs) return null;
+  try {
+    const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tabs && tabs[0]) return tabs[0];
+    const allActive = await chrome.tabs.query({ active: true });
+    return (allActive && allActive[0]) || null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * 安全取得媒體檔案的二進制 Blob
+ * 具備三重防護機制：
+ * 1. 優先在 Extension 環境直接 fetch
+ * 2. 次選：透過當前分頁 Context 代理抓取（帶有 Instagram 完整 Referer、Cookies 與瀏覽器快取）
+ * 3. 終極保底：直接從分頁 DOM 找到 <img> 節點繪製到 Canvas 導出高清 JPEG Data URL
+ */
+export async function fetchMediaBlob(url: string): Promise<Blob> {
+  // 1. 若已經是 blob: 或 data: 網址，直接轉換
+  if (url.startsWith('blob:') || url.startsWith('data:')) {
+    const res = await fetch(url);
+    return await res.blob();
+  }
+
+  // 2. 針對影片檔案，優先在 Extension Context 進行串流 fetch
+  // 具有 <all_urls> 權限的擴充功能可直接下載 CDN MP4 串流，避免透過 executeScript 序列化數十 MB 的 Base64 Data URL 造成記憶體溢出
+  const isVideo = url.includes('.mp4') || url.includes('.webm');
+  if (isVideo) {
+    try {
+      const res = await fetch(url);
+      if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('text') && !contentType.includes('html')) {
+          return await res.blob();
+        }
+      }
+    } catch (err) {
+      console.warn('[Downloader] 影片在 Extension Context 直接 fetch 失敗，嘗試分頁代理:', err);
+    }
+  }
+
+  // 3. 次選：嘗試在目前分頁 (Instagram / Facebook 頁面) 的同源 Context 內提取（抗防盜鏈）
+  const tab = await getActiveTab();
+  if (tab && tab.id && typeof chrome !== 'undefined' && chrome.scripting) {
+    try {
+      const results = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        args: [url],
+        func: async (mediaUrl: string) => {
+          // 策略 A: 在分頁同源 Context 內直接 fetch（自帶 Referer 與分頁 Session）
+          try {
+            const r = await fetch(mediaUrl, { credentials: 'include' });
+            if (r.ok) {
+              const contentType = r.headers.get('content-type') || '';
+              if (!contentType.includes('text') && !contentType.includes('html')) {
+                const b = await r.blob();
+                // 若檔案過大 (> 25MB)，避免轉 DataURL 造成 IPC 序列化溢出
+                if (b.size > 25 * 1024 * 1024) {
+                  return null;
+                }
+                return new Promise<string | null>((resolve) => {
+                  const reader = new FileReader();
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.onerror = () => resolve(null);
+                  reader.readAsDataURL(b);
+                });
+              }
+            }
+          } catch {}
+
+          // 策略 B: 若 fetch 被擋，直接從 DOM 的 <img> 節點繪製到 Canvas 導出 Data URL
+          try {
+            const imgs = Array.from(document.querySelectorAll('img'));
+            const targetImg = imgs.find(img => img.src === mediaUrl || img.currentSrc === mediaUrl) as HTMLImageElement | undefined;
+            if (targetImg && targetImg.naturalWidth > 0 && targetImg.naturalHeight > 0) {
+              const canvas = document.createElement('canvas');
+              canvas.width = targetImg.naturalWidth;
+              canvas.height = targetImg.naturalHeight;
+              const ctx = canvas.getContext('2d');
+              if (ctx) {
+                ctx.drawImage(targetImg, 0, 0);
+                return canvas.toDataURL('image/jpeg', 0.98);
+              }
+            }
+          } catch {}
+
+          return null;
+        }
+      });
+
+      const dataUrl = results?.[0]?.result;
+      if (dataUrl && typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+        const res = await fetch(dataUrl);
+        return await res.blob();
+      }
+    } catch (tabErr) {
+      console.warn('[Downloader] 分頁代理抓取失敗:', tabErr);
+    }
+  }
+
+  // 4. 終極保底：在當前 Extension Context 進行普通 fetch
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const contentType = res.headers.get('content-type') || '';
+      if (!contentType.includes('text') && !contentType.includes('html')) {
+        return await res.blob();
+      }
+    }
+  } catch (err) {
+    console.warn('[Downloader] Extension Context fetch 失敗:', err);
+  }
+
+  throw new Error('無法取得媒體二進制資料（伺服器拒絕存取或防盜鏈阻擋）');
+}
+
+/**
  * 單一檔案下載 (支援 Chrome Extension API 與 Web fallback)
+ * 核心保證：
+ * 1. 遠端圖片一律先轉為本機 Blob Object URL 再送入下載器
+ * 2. 嚴禁在出錯時降級為傳入遠端 URL，杜絕 Chrome 自動覆蓋為 .txt 壞檔！
  */
 export async function downloadImage(url: string, fullPath: string): Promise<number> {
   const isExtension = typeof chrome !== 'undefined' && chrome.downloads && typeof chrome.downloads.download === 'function';
 
   if (isExtension) {
+    const blob = await fetchMediaBlob(url);
+    if (blob.type.includes('text') || blob.type.includes('html')) {
+      throw new Error('伺服器回傳文字錯誤頁面，非有效圖片檔案');
+    }
+    const downloadTargetUrl = URL.createObjectURL(blob);
+
     return new Promise((resolve, reject) => {
       chrome.downloads.download(
         {
-          url,
+          url: downloadTargetUrl,
           filename: fullPath,
           conflictAction: 'uniquify',
           saveAs: false
         },
         downloadId => {
+          setTimeout(() => {
+            URL.revokeObjectURL(downloadTargetUrl);
+          }, 30000);
+
           if (chrome.runtime.lastError) {
             reject(new Error(chrome.runtime.lastError.message));
           } else if (downloadId === undefined) {
@@ -173,6 +310,7 @@ export class BatchDownloader {
         const index = nextIndex++;
         const item = selectedImages[index];
 
+        const validMediaExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'mp4', 'webm']);
         const ext = getExtensionFromUrl(item.url, item.format);
         let fileName = '';
 
@@ -185,7 +323,10 @@ export class BatchDownloader {
           try {
             const parsedName = new URL(item.url).pathname.split('/').pop()?.split('?')[0] || `img_${index + 1}.${ext}`;
             fileName = sanitizePathSegment(parsedName);
-            if (!fileName.includes('.')) fileName += `.${ext}`;
+            const currentExt = fileName.split('.').pop()?.toLowerCase() || '';
+            if (!validMediaExts.has(currentExt)) {
+              fileName = `${fileName}.${ext}`;
+            }
           } catch {
             fileName = `img_${index + 1}.${ext}`;
           }
@@ -195,9 +336,7 @@ export class BatchDownloader {
           updateProgress(fileName);
           if (targetDirectory) {
             // 直接抓取 Blob 並儲存至選取之目錄（零彈窗模式）
-            const res = await fetch(item.url);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const blob = await res.blob();
+            const blob = await fetchMediaBlob(item.url);
             await saveBlobToDirectory(targetDirectory, fileName, blob);
           } else {
             // 完整儲存路徑：PowerKit-Toolbox/folder/filename (使用 chrome.downloads)
