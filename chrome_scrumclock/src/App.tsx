@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { TimerProvider, DailyMissionBriefing, SprintPomodoro, EndOfDayReview } from './features/scrumclock';
+import { TimerProvider, DailyMissionBriefing, SprintPomodoro, EndOfDayReview, QuickCapture } from './features/scrumclock';
 import { AnalyticsDashboard } from './features/analytics';
 import { BookmarksHub } from './features/bookmarks';
 import { ProjectManagementDemo } from './features/project-management';
-import { QuickCapture } from './features/scrumclock/components/QuickCapture';
+
 import { storage } from './core/chrome/storage';
 import { offlineQueue } from './core/api/offlineQueue';
 import { MainLayout } from './core/layout/MainLayout';
@@ -13,6 +13,7 @@ import { AISidebar } from './features/ai-sidebar';
 import { SettingsPanel } from './components/SettingsPanel';
 import { InstallDocs } from './components/InstallDocs';
 import { GeminiManager } from './features/gemini-exporter';
+import { ToolboxHub } from './features/toolbox';
 
 type AppState = 'briefing' | 'sprint' | 'review' | 'completed';
 type ViewState = 'flow' | 'analytics';
@@ -133,6 +134,7 @@ function App() {
               {currentView === 'projects' && <ProjectManagementDemo />}
               {currentView === 'bookmarks' && <BookmarksHub />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
+              {currentView === 'toolbox' && <ToolboxHub />}
               {currentView === 'gemini' && <GeminiManager />}
               {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
               {currentView === 'docs' && <InstallDocs />}

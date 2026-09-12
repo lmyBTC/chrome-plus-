@@ -1,26 +1,16 @@
+import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features/gemini-exporter';
+
+
 (function () {
-  console.log("Gemini Exporter: Content script 載入成功");
-
-  interface GeminiMessage {
-    role: 'user' | 'model';
-    content: string;
-  }
-
-  interface GeminiConversation {
-    id: string;
-    title: string;
-    messages: GeminiMessage[];
-    timestamp: number;
-  }
-
   // 狀態管理
-  const widgetState = {
+  const widgetState: GeminiWidgetState = {
     title: '未偵測到對話',
     messageCount: 0,
-    status: 'idle', // 'idle' | 'syncing' | 'success' | 'error'
-    lastSyncTime: null as number | null,
-    activeConversation: null as GeminiConversation | null
+    status: 'idle',
+    lastSyncTime: null,
+    activeConversation: null
   };
+
 
   let debounceTimer: NodeJS.Timeout | null = null;
   let hostDiv: HTMLDivElement | null = null;

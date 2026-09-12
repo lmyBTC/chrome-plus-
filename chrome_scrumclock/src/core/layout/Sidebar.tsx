@@ -1,6 +1,6 @@
 import React from 'react';
 
-export type ToolView = 'scrumclock' | 'projects' | 'bookmarks' | 'analytics' | 'settings' | 'docs' | 'gemini';
+export type ToolView = 'scrumclock' | 'projects' | 'bookmarks' | 'analytics' | 'toolbox' | 'settings' | 'docs' | 'gemini';
 
 interface SidebarProps {
   currentView: ToolView;
@@ -13,6 +13,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
     { id: 'projects', label: '專案管理 (Demo)', icon: '📋' },
     { id: 'bookmarks', label: '辦公室傳送門', icon: '🚪' },
     { id: 'analytics', label: '數據統計', icon: '📊' },
+    { id: 'toolbox', label: '實用工具箱', icon: '🧰' },
     { id: 'gemini', label: 'Gemini 匯出器 🤖', icon: '🤖' },
     { id: 'settings', label: '全域設定', icon: '⚙️' },
   ];

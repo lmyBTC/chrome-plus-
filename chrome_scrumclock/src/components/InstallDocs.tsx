@@ -270,28 +270,113 @@ export const InstallDocs: React.FC = () => {
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
             <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
               <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
-              建立 Google 試算表
+              建立 Google 試算表與欄位配置
             </h2>
-            <ol className="list-decimal list-inside space-y-2 pl-2">
+            <ol className="list-decimal list-inside space-y-3 pl-2">
               <li>前往您的 Google 雲端硬碟，建立一個全新的 <strong className="text-dark-primary">Google 試算表</strong>。</li>
-              <li>在該試算表中，建立兩個工作表 (Tabs)，分別命名為：
+              <li>
+                在該試算表中，建立兩個工作表 (Tabs 分頁)，務必完全一致命名為：
                 <ul className="list-disc list-inside pl-6 mt-1 text-dark-muted">
-                  <li><strong className="text-dark-primary">Tasks</strong> (用來管理北極星目標與週任務)</li>
-                  <li><strong className="text-dark-primary">Logs</strong> (用來記錄每日衝刺與回顧)</li>
+                  <li><strong className="text-blue-400 font-mono">Tasks</strong> (用來管理北極星目標與週任務)</li>
+                  <li><strong className="text-blue-400 font-mono">Logs</strong> (用來記錄每日衝刺與回顧)</li>
                 </ul>
-              </li>
-              <li>在 <strong className="text-dark-primary">Tasks</strong> 工作表結構中：
-                <ul className="list-disc list-inside pl-6 mt-1 text-dark-muted">
-                  <li>A1 填寫：`北極星目標`，B1 填寫：您的北極星目標 (例如：`成為獨立開發者`)</li>
-                  <li>A2 填寫：`本週關鍵任務`，B2 以下每行填寫一個關鍵任務</li>
-                </ul>
-              </li>
-              <li>在 <strong className="text-dark-primary">Logs</strong> 工作表結構中，在第一列 (A1~F1) 分別填入以下標題：
-                <div className="mt-2 bg-dark-surface p-2 rounded-lg font-mono text-xs border border-dark-border-default overflow-x-auto text-dark-primary whitespace-nowrap">
-                  Timestamp | Date | Type | Mission / Highlight | Result / Lesson | Next Action
-                </div>
               </li>
             </ol>
+
+            {/* 資料讀取邏輯解析卡片 */}
+            <div className="mt-5 bg-gradient-to-r from-blue-950/40 to-indigo-950/20 border border-blue-900/50 rounded-xl p-4">
+              <h3 className="text-sm font-bold text-blue-300 mb-2 flex items-center gap-1.5">
+                <span>🔍</span> 後台讀取邏輯說明 (How it works)
+              </h3>
+              <ul className="text-xs text-blue-200/80 space-y-1.5 leading-relaxed pl-1">
+                <li>• <strong>只讀取 B 欄</strong>：Apps Script 後台鎖定讀取 B 欄數值。<strong>B1 儲存格</strong>對應「北極星目標」，<strong>B2 以下</strong>每列對應一個「週任務」。</li>
+                <li>• <strong>A 欄純為人類閱讀用</strong>：GAS 程式碼完全不讀取 A 欄，A 欄僅供您填寫標籤備忘（如：北極星目標、本週任務）。</li>
+                <li>• <strong>分頁名稱必須為 Tasks</strong>：若分頁為「工作表1」或「Sheet1」，後台將無法找到對象。</li>
+              </ul>
+            </div>
+
+            {/* Tasks 欄位視覺化範例表格 */}
+            <div className="mt-5">
+              <h3 className="text-sm font-bold text-dark-primary mb-2 flex items-center gap-1.5">
+                <span>📋</span> Tasks 工作表正確填寫範例：
+              </h3>
+              <div className="border border-dark-border-default rounded-xl overflow-hidden shadow-sm">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-dark-surface text-dark-muted font-mono border-b border-dark-border-default">
+                    <tr>
+                      <th className="py-2 px-3 w-16 text-center border-r border-dark-border-default">列號</th>
+                      <th className="py-2 px-4 border-r border-dark-border-default">A 欄 (人類標籤，選填)</th>
+                      <th className="py-2 px-4 text-blue-300 font-bold border-r border-dark-border-default">B 欄 (★ 插件實際讀取內容)</th>
+                      <th className="py-2 px-4 text-dark-muted">對應儀表板位置</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-dark-border-subtle bg-dark-card/60">
+                    <tr className="hover:bg-dark-hover/50">
+                      <td className="py-2 px-3 text-center font-mono text-dark-muted border-r border-dark-border-default">1</td>
+                      <td className="py-2 px-4 text-dark-secondary border-r border-dark-border-default">北極星目標</td>
+                      <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default bg-blue-950/20">
+                        成為獨立開發者 (或您的長期目標)
+                      </td>
+                      <td className="py-2 px-4 text-dark-muted">頂部「北極星目標」</td>
+                    </tr>
+                    <tr className="hover:bg-dark-hover/50">
+                      <td className="py-2 px-3 text-center font-mono text-dark-muted border-r border-dark-border-default">2</td>
+                      <td className="py-2 px-4 text-dark-secondary border-r border-dark-border-default">本週任務 1</td>
+                      <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default bg-blue-950/20">
+                        完成產品規格書
+                      </td>
+                      <td className="py-2 px-4 text-dark-muted">週任務清單第 1 項</td>
+                    </tr>
+                    <tr className="hover:bg-dark-hover/50">
+                      <td className="py-2 px-3 text-center font-mono text-dark-muted border-r border-dark-border-default">3</td>
+                      <td className="py-2 px-4 text-dark-secondary border-r border-dark-border-default">本週任務 2</td>
+                      <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default bg-blue-950/20">
+                        學習 React Hooks
+                      </td>
+                      <td className="py-2 px-4 text-dark-muted">週任務清單第 2 項</td>
+                    </tr>
+                    <tr className="hover:bg-dark-hover/50">
+                      <td className="py-2 px-3 text-center font-mono text-dark-muted border-r border-dark-border-default">4</td>
+                      <td className="py-2 px-4 text-dark-secondary border-r border-dark-border-default">本週任務 3</td>
+                      <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default bg-blue-950/20">
+                        部署第一個 SaaS 產品
+                      </td>
+                      <td className="py-2 px-4 text-dark-muted">週任務清單第 3 項</td>
+                    </tr>
+                    <tr className="hover:bg-dark-hover/50">
+                      <td className="py-2 px-3 text-center font-mono text-dark-muted border-r border-dark-border-default">5+</td>
+                      <td className="py-2 px-4 text-dark-muted italic border-r border-dark-border-default">(可留空)</td>
+                      <td className="py-2 px-4 text-dark-secondary border-r border-dark-border-default bg-blue-950/20">
+                        更多任務...（每格填寫一個）
+                      </td>
+                      <td className="py-2 px-4 text-dark-muted">依序往下新增</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Logs 欄位結構說明 */}
+            <div className="mt-5">
+              <h3 className="text-sm font-bold text-dark-primary mb-1.5 flex items-center gap-1.5">
+                <span>📊</span> Logs 工作表結構（每日衝刺與回顧自動記錄）：
+              </h3>
+              <p className="text-xs text-dark-muted mb-2">
+                請在 <strong className="text-dark-primary font-mono">Logs</strong> 工作表的第一列 (A1~F1) 建立以下標題，後續番茄鐘衝刺與日終回顧將自動由外掛往下寫入：
+              </p>
+              <div className="bg-dark-surface p-2.5 rounded-xl font-mono text-xs border border-dark-border-default overflow-x-auto text-blue-300 whitespace-nowrap shadow-inner">
+                Timestamp | Date | Type | Mission / Highlight | Result / Lesson | Next Action
+              </div>
+            </div>
+
+            {/* 常見錯誤避坑提醒 */}
+            <div className="mt-5 p-3.5 bg-amber-950/20 border border-amber-800/40 rounded-xl text-xs text-amber-300/90 space-y-1">
+              <div className="font-bold flex items-center gap-1 text-amber-200">
+                <span>⚠️</span> 常見踩坑提醒：
+              </div>
+              <div>• <strong>切勿把任務填在 A 欄</strong>：若填在 A 欄，插件會抓取不到內容。</div>
+              <div>• <strong>切勿保留預設分頁名稱「工作表1」</strong>：請右鍵分頁重新命名為「Tasks」與「Logs」。</div>
+            </div>
           </div>
 
           {/* 步驟 2 */}

@@ -44,6 +44,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ children, onNavi
       shortcut: ['a'],
       keywords: 'analytics stats data 統計 數據',
       perform: () => onNavigate('analytics'),
+    },
+    {
+      id: 'toolbox',
+      name: '切換至：實用工具箱',
+      shortcut: ['t'],
+      keywords: 'toolbox tools scraper images 工具箱 圖片 爬蟲 下載',
+      perform: () => onNavigate('toolbox'),
     }
   ];
 

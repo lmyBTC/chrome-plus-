@@ -5,6 +5,8 @@ import { getAICore, checkAiCapabilities, safeExtractJSON } from '../../utils/ai-
 import { parseMarkdown } from '../../utils/markdown';
 import { parseTasksFromText } from '../../utils/task-parser';
 import { StorageQueue, useTimerSync, useContextMenuSync, useAISession } from './hooks';
+import { ImageScraper } from '../../features/toolbox';
+
 
 interface Message {
   role: 'user' | 'model' | 'system';
@@ -33,6 +35,7 @@ const SidebarApp: React.FC = () => {
   const [importStatus, setImportStatus] = useState<'idle' | 'importing' | 'success' | 'error'>('idle');
   const [historyConversations, setHistoryConversations] = useState<any[]>([]);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<'assistant' | 'image-scraper'>('assistant');
 
   // 1. 呼叫 AI Hook
   const {
@@ -496,114 +499,154 @@ const SidebarApp: React.FC = () => {
         </div>
       </div>
 
-      {/* 實時番茄鐘計時狀態條 */}
-      {activeTimer && activeTimer.state && activeTimer.state !== 'idle' && (
-        <div className={`px-4 py-2 text-xs font-semibold flex items-center justify-between border-b ${
-          activeTimer.state === 'running' 
-            ? 'bg-red-950/30 text-red-400 border-red-900/40' 
-            : activeTimer.state === 'paused'
-            ? 'bg-yellow-950/30 text-yellow-500 border-yellow-900/40'
-            : 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40'
-        }`}>
-          <div className="flex items-center gap-1.5">
-            <span>{activeTimer.state === 'break' ? '💡 休息中' : '🍅 專注衝刺中'}</span>
-            <span className="opacity-80 font-normal truncate max-w-[140px]">
-              {activeTimer.sprint?.missionId ? `任務 ID: ${activeTimer.sprint.missionId.slice(0, 8)}` : '未命名任務'}
-            </span>
-          </div>
-          <span className="font-mono text-sm tracking-wide font-bold">
-            {formatTime(timeLeft)}
+      {/* 側邊欄頂部功能切換 Tabs */}
+      <div className="flex items-center px-3 py-2 gap-2 bg-[#0a1024] border-b border-slate-800/80 sticky top-[57px] z-10">
+        <button
+          type="button"
+          onClick={() => setSidebarTab('assistant')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            sidebarTab === 'assistant'
+              ? 'bg-indigo-600 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <span>🤖</span>
+          <span>PK+ 助理</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setSidebarTab('image-scraper')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            sidebarTab === 'image-scraper'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+          }`}
+        >
+          <span>🖼️</span>
+          <span>圖片採集器</span>
+          <span className="bg-amber-500/20 text-amber-300 text-[10px] px-1 py-0.2 rounded font-normal border border-amber-500/30">
+            同屏採集
           </span>
+        </button>
+      </div>
+
+      {sidebarTab === 'image-scraper' ? (
+        <div className="flex-1 overflow-y-auto p-2 bg-[#0b0f19] scrollbar-thin scrollbar-thumb-slate-800">
+          <ImageScraper defaultMode="active-tab" defaultActiveTabMode="carousel-traverse" isSidebar={true} />
         </div>
-      )}
-
-      {/* 聊天訊息區 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
-        {messages.map((msg, index) => {
-          if (msg.role === 'system') {
-            return (
-              <div key={index} className="text-center text-xs text-slate-500 italic py-1 bg-slate-900/40 border border-slate-850/60 rounded-xl my-2">
-                {msg.content}
+      ) : (
+        <>
+          {/* 實時番茄鐘計時狀態條 */}
+          {activeTimer && activeTimer.state && activeTimer.state !== 'idle' && (
+            <div className={`px-4 py-2 text-xs font-semibold flex items-center justify-between border-b ${
+              activeTimer.state === 'running' 
+                ? 'bg-red-950/30 text-red-400 border-red-900/40' 
+                : activeTimer.state === 'paused'
+                ? 'bg-yellow-950/30 text-yellow-500 border-yellow-900/40'
+                : 'bg-emerald-950/30 text-emerald-400 border-emerald-900/40'
+            }`}>
+              <div className="flex items-center gap-1.5">
+                <span>{activeTimer.state === 'break' ? '💡 休息中' : '🍅 專注衝刺中'}</span>
+                <span className="opacity-80 font-normal truncate max-w-[140px]">
+                  {activeTimer.sprint?.missionId ? `任務 ID: ${activeTimer.sprint.missionId.slice(0, 8)}` : '未命名任務'}
+                </span>
               </div>
-            );
-          }
-
-          const isUser = msg.role === 'user';
-          return (
-            <div
-              key={index}
-              className={`flex flex-col max-w-[85%] ${isUser ? 'ml-auto items-end' : 'mr-auto items-start'}`}
-            >
-              <span className="text-[10px] text-slate-500 mb-1 px-1">
-                {isUser ? '👤 你' : '🤖 助理'}
+              <span className="font-mono text-sm tracking-wide font-bold">
+                {formatTime(timeLeft)}
               </span>
-              <div
-                className={`p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
-                  isUser
-                    ? 'bg-indigo-600 text-white rounded-tr-none'
-                    : 'bg-slate-900/80 border border-slate-800 text-slate-200 rounded-tl-none'
+            </div>
+          )}
+
+          {/* 聊天訊息區 */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
+            {messages.map((msg, index) => {
+              if (msg.role === 'system') {
+                return (
+                  <div key={index} className="text-center text-xs text-slate-500 italic py-1 bg-slate-900/40 border border-slate-850/60 rounded-xl my-2">
+                    {msg.content}
+                  </div>
+                );
+              }
+
+              const isUser = msg.role === 'user';
+              return (
+                <div
+                  key={index}
+                  className={`flex flex-col max-w-[85%] ${isUser ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                >
+                  <span className="text-[10px] text-slate-500 mb-1 px-1">
+                    {isUser ? '👤 你' : '🤖 助理'}
+                  </span>
+                  <div
+                    className={`p-3 rounded-2xl text-sm leading-relaxed shadow-md ${
+                      isUser
+                        ? 'bg-indigo-600 text-white rounded-tr-none'
+                        : 'bg-slate-900/80 border border-slate-800 text-slate-200 rounded-tl-none'
+                    }`}
+                  >
+                    {isUser ? <p className="whitespace-pre-wrap">{msg.content}</p> : parseMarkdown(msg.content)}
+                    
+                    {/* 🔄 逆向整合：一鍵寫入今日戰役按鈕 */}
+                    {!isUser && index > 0 && (msg.content.includes('🍅') || msg.content.includes('-') || msg.content.includes('*')) && (
+                      <button
+                        onClick={() => handleAddToDailyMissions(msg.content)}
+                        className="mt-2 text-xs flex items-center gap-1 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-850/60 hover:border-indigo-700/60 text-indigo-300 px-2 py-1 rounded-lg active:scale-95 transition-all font-semibold shadow-sm"
+                      >
+                        <span>➕</span> 寫入今日戰役儀表板
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {isSending && (
+              <div className="flex flex-col items-start max-w-[85%] mr-auto">
+                <span className="text-[10px] text-slate-500 mb-1 px-1">🤖 助理</span>
+                <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-2xl rounded-tl-none flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                  <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* 輸入區 */}
+          <div className="p-3 border-t border-slate-800 bg-[#0b0f19] sticky bottom-0">
+            <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-850 rounded-xl p-1.5 focus-within:border-indigo-500/50 transition-all">
+              <input
+                type="text"
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    handleSend();
+                  }
+                }}
+                placeholder="詢問關於任務的規劃與建議..."
+                className="flex-1 bg-transparent border-none text-sm text-slate-200 placeholder-slate-500 focus:outline-none pl-2.5 py-1"
+                disabled={isSending || aiAvailable !== 'yes'}
+              />
+              <button
+                onClick={() => handleSend()}
+                disabled={!inputText.trim() || isSending || aiAvailable !== 'yes'}
+                className={`p-2 rounded-lg transition-all ${
+                  inputText.trim() && !isSending && aiAvailable === 'yes'
+                    ? 'bg-indigo-600 text-white hover:bg-indigo-500 hover:scale-105 active:scale-95'
+                    : 'bg-slate-800 text-slate-600 cursor-not-allowed'
                 }`}
               >
-                {isUser ? <p className="whitespace-pre-wrap">{msg.content}</p> : parseMarkdown(msg.content)}
-                
-                {/* 🔄 逆向整合：一鍵寫入今日戰役按鈕 */}
-                {!isUser && index > 0 && (msg.content.includes('🍅') || msg.content.includes('-') || msg.content.includes('*')) && (
-                  <button
-                    onClick={() => handleAddToDailyMissions(msg.content)}
-                    className="mt-2 text-xs flex items-center gap-1 bg-indigo-950/40 hover:bg-indigo-900/60 border border-indigo-850/60 hover:border-indigo-700/60 text-indigo-300 px-2 py-1 rounded-lg active:scale-95 transition-all font-semibold shadow-sm"
-                  >
-                    <span>➕</span> 寫入今日戰役儀表板
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-
-        {isSending && (
-          <div className="flex flex-col items-start max-w-[85%] mr-auto">
-            <span className="text-[10px] text-slate-500 mb-1 px-1">🤖 助理</span>
-            <div className="bg-slate-900/80 border border-slate-800 p-3 rounded-2xl rounded-tl-none flex items-center gap-1">
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-              <span className="w-1.5 h-1.5 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                  <path d="M3.105 2.289a.75.75 0 0 0-.826.95l1.414 4.925A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.896 28.896 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.289Z" />
+                </svg>
+              </button>
             </div>
           </div>
-        )}
-        <div ref={chatEndRef} />
-      </div>
-
-      {/* 輸入區 */}
-      <div className="p-3 border-t border-slate-800 bg-[#0b0f19] sticky bottom-0">
-        <div className="flex items-center gap-2 bg-slate-900/60 border border-slate-850 rounded-xl p-1.5 focus-within:border-indigo-500/50 transition-all">
-          <input
-            type="text"
-            value={inputText}
-            onChange={e => setInputText(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') {
-                handleSend();
-              }
-            }}
-            placeholder="詢問關於任務的規劃與建議..."
-            className="flex-1 bg-transparent border-none text-sm text-slate-200 placeholder-slate-500 focus:outline-none pl-2.5 py-1"
-            disabled={isSending || aiAvailable !== 'yes'}
-          />
-          <button
-            onClick={() => handleSend()}
-            disabled={!inputText.trim() || isSending || aiAvailable !== 'yes'}
-            className={`p-2 rounded-lg transition-all ${
-              inputText.trim() && !isSending && aiAvailable === 'yes'
-                ? 'bg-indigo-600 text-white hover:bg-indigo-500 hover:scale-105 active:scale-95'
-                : 'bg-slate-800 text-slate-600 cursor-not-allowed'
-            }`}
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-              <path d="M3.105 2.289a.75.75 0 0 0-.826.95l1.414 4.925A1.5 1.5 0 0 0 5.135 9.25h6.115a.75.75 0 0 1 0 1.5H5.135a1.5 1.5 0 0 0-1.442 1.086l-1.414 4.926a.75.75 0 0 0 .826.95 28.896 28.896 0 0 0 15.293-7.154.75.75 0 0 0 0-1.115A28.897 28.897 0 0 0 3.105 2.289Z" />
-            </svg>
-          </button>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 };

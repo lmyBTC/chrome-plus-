@@ -1,14 +1,7 @@
-export interface GeminiMessage {
-  role: 'user' | 'model';
-  content: string;
-}
+import { GeminiMessage, GeminiConversation } from '../types';
 
-export interface GeminiConversation {
-  id: string;
-  title: string;
-  messages: GeminiMessage[];
-  timestamp: number;
-}
+export type { GeminiMessage, GeminiConversation };
+
 
 /**
  * 將對話資料轉換為 Markdown 格式
