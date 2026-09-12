@@ -395,141 +395,116 @@ async function extractInstagramPostDirectly(
       const postArticle = document.querySelector('article') || document.querySelector('div[role="dialog"]') || document.body;
 
       // -------------------------------------------------------------
-      // 維度 1：從頁面 Meta 標籤與 JSON-LD (最權威之單一貼文來源)
+      // 維度 1：深度挖掘頁面 <script> 中的官方完整原片 (browser_native_hd_url / video_versions)
+      // 這是 Instagram 官方專為 Web HTML5 播放器提供的單一、完整 MP4 直鏈 (非 DASH 分段)
       // -------------------------------------------------------------
       try {
-        // 1.1 檢查 og:video
-        const ogVideo = document.querySelector('meta[property="og:video"], meta[property="og:video:url"], meta[property="og:video:secure_url"]');
-        const ogVideoUrl = ogVideo?.getAttribute('content');
-        const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
-        if (ogVideoUrl && ogVideoUrl.includes('.mp4')) {
-          addMedia({
-            url: ogVideoUrl,
-            posterUrl: ogImage || undefined,
-            mediaType: 'video',
-            alt: 'Instagram 貼文影片'
-          });
-        }
+        const scripts = Array.from(document.querySelectorAll('script'));
+        for (const s of scripts) {
+          const text = s.textContent || '';
+          if (!text) continue;
 
-        // 1.2 檢查 JSON-LD 中的 contentUrl
-        const jsonLdScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
-        for (const s of jsonLdScripts) {
-          try {
-            const data = JSON.parse(s.textContent || '');
-            if (data.contentUrl && typeof data.contentUrl === 'string' && data.contentUrl.includes('.mp4')) {
+          // 1.1 優先提取最高清晰度 browser_native_hd_url (完整影音合一原片)
+          const hdMatch = text.match(/"browser_native_hd_url"\s*:\s*"([^"]+)"/);
+          if (hdMatch && hdMatch[1]) {
+            const rawUrl = hdMatch[1].replace(/\\\//g, '/').replace(/\\u0026/g, '&').replace(/&amp;/g, '&');
+            if (rawUrl.startsWith('https:') && !rawUrl.includes('bytestart=') && !rawUrl.includes('byteend=')) {
               addMedia({
-                url: data.contentUrl,
-                posterUrl: data.thumbnailUrl || ogImage || undefined,
+                url: rawUrl,
                 mediaType: 'video',
-                alt: data.name || data.description || 'Instagram 貼文影片'
+                alt: 'Instagram 官方高清影片'
               });
-            }
-          } catch {}
-        }
-      } catch {}
-
-      // -------------------------------------------------------------
-      // 維度 2：解析單一媒體項目函式
-      // -------------------------------------------------------------
-      const parseSingleMediaItem = (item: any) => {
-        if (!item || typeof item !== 'object') return;
-        const isVideo = item.is_video || item.media_type === 2 || (item.video_versions && item.video_versions.length > 0);
-        const poster = item.image_versions2?.candidates?.[0]?.url;
-        const alt = item.accessibility_caption || item.caption?.text || (isVideo ? 'Instagram 影片' : 'Instagram 圖片');
-
-        if (isVideo && Array.isArray(item.video_versions) && item.video_versions.length > 0) {
-          const sortedVideos = [...item.video_versions].sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
-          const bestVideo = sortedVideos[0];
-          if (bestVideo && bestVideo.url) {
-            addMedia({
-              url: bestVideo.url,
-              posterUrl: poster,
-              mediaType: 'video',
-              width: bestVideo.width,
-              height: bestVideo.height,
-              alt
-            });
-            return;
-          }
-        }
-
-        if (item.image_versions2?.candidates && Array.isArray(item.image_versions2.candidates) && item.image_versions2.candidates.length > 0) {
-          const bestImg = item.image_versions2.candidates[0];
-          if (bestImg && bestImg.url) {
-            addMedia({
-              url: bestImg.url,
-              mediaType: 'image',
-              width: bestImg.width,
-              height: bestImg.height,
-              alt
-            });
-          }
-        }
-      };
-
-      // -------------------------------------------------------------
-      // 維度 3：同源帶 Cookie 發起 API 查詢 (精準匹配當前 shortcode)
-      // -------------------------------------------------------------
-      if (shortcode && results.length === 0) {
-        try {
-          // 嘗試 3.1: 官方 GraphQL LoadPostQuery
-          const docId = '8845758582119845';
-          const bodyParams = new URLSearchParams({
-            doc_id: docId,
-            variables: JSON.stringify({ shortcode })
-          });
-          const gqlResp = await fetch('https://www.instagram.com/api/graphql', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/x-www-form-urlencoded',
-              'x-ig-app-id': '936619743392459',
-              'x-requested-with': 'XMLHttpRequest'
-            },
-            body: bodyParams.toString()
-          });
-          if (gqlResp.ok) {
-            const gqlData = await gqlResp.json();
-            const item = gqlData?.data?.xdt_shortcode_media || gqlData?.data?.xdt_api__v1__media__shortcode__web_info?.items?.[0];
-            if (item) {
-              if (item.carousel_media && Array.isArray(item.carousel_media)) {
-                item.carousel_media.forEach((m: any) => parseSingleMediaItem(m));
-              } else {
-                parseSingleMediaItem(item);
-              }
+              break;
             }
           }
-        } catch {}
 
-        if (results.length === 0) {
-          try {
-            // 嘗試 3.2: 經典 Web 端點
-            const resp = await fetch(`/p/${shortcode}/?__a=1&__d=dis`, {
-              headers: {
-                'x-ig-app-id': '936619743392459',
-                'x-requested-with': 'XMLHttpRequest'
-              }
-            });
-            if (resp.ok) {
-              const data = await resp.json();
-              const item = data?.items?.[0];
-              if (item) {
-                if (item.carousel_media && Array.isArray(item.carousel_media)) {
-                  item.carousel_media.forEach((m: any) => parseSingleMediaItem(m));
-                } else {
-                  parseSingleMediaItem(item);
-                }
-              }
+          // 1.2 次選提取 browser_native_sd_url
+          const sdMatch = text.match(/"browser_native_sd_url"\s*:\s*"([^"]+)"/);
+          if (sdMatch && sdMatch[1]) {
+            const rawUrl = sdMatch[1].replace(/\\\//g, '/').replace(/\\u0026/g, '&').replace(/&amp;/g, '&');
+            if (rawUrl.startsWith('https:') && !rawUrl.includes('bytestart=') && !rawUrl.includes('byteend=')) {
+              addMedia({
+                url: rawUrl,
+                mediaType: 'video',
+                alt: 'Instagram 影片'
+              });
+              break;
             }
-          } catch {}
+          }
+
+          // 1.3 提取 video_versions 中的頂級完整 MP4
+          const vvMatch = text.match(/"video_versions"\s*:\s*\[\s*\{[^}]*"url"\s*:\s*"([^"]+)"/);
+          if (vvMatch && vvMatch[1]) {
+            const rawUrl = vvMatch[1].replace(/\\\//g, '/').replace(/\\u0026/g, '&').replace(/&amp;/g, '&');
+            if (rawUrl.startsWith('https:') && !rawUrl.includes('bytestart=') && !rawUrl.includes('byteend=')) {
+              addMedia({
+                url: rawUrl,
+                mediaType: 'video',
+                alt: 'Instagram 貼文影片'
+              });
+              break;
+            }
+          }
+
+          // 1.4 提取 video_url
+          const vuMatch = text.match(/"video_url"\s*:\s*"([^"]+)"/);
+          if (vuMatch && vuMatch[1]) {
+            const rawUrl = vuMatch[1].replace(/\\\//g, '/').replace(/\\u0026/g, '&').replace(/&amp;/g, '&');
+            if (rawUrl.startsWith('https:') && !rawUrl.includes('bytestart=') && !rawUrl.includes('byteend=')) {
+              addMedia({
+                url: rawUrl,
+                mediaType: 'video',
+                alt: 'Instagram 貼文影片'
+              });
+              break;
+            }
+          }
         }
+      } catch (err) {
+        console.warn('Script 完整直鏈掃描出錯:', err);
       }
 
       // -------------------------------------------------------------
-      // 維度 4：深度探測當前 postArticle 內的 React Fiber / Props
+      // 維度 2：從頁面 Meta 標籤與 JSON-LD (官方規範)
       // -------------------------------------------------------------
       if (results.length === 0) {
         try {
-          // 4.1 探測 article 本身或播放器容器
+          // 2.1 檢查 og:video
+          const ogVideo = document.querySelector('meta[property="og:video"], meta[property="og:video:url"], meta[property="og:video:secure_url"]');
+          const ogVideoUrl = ogVideo?.getAttribute('content');
+          const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+          if (ogVideoUrl && ogVideoUrl.includes('.mp4')) {
+            addMedia({
+              url: ogVideoUrl,
+              posterUrl: ogImage || undefined,
+              mediaType: 'video',
+              alt: 'Instagram 貼文影片'
+            });
+          }
+
+          // 2.2 檢查 JSON-LD 中的 contentUrl
+          const jsonLdScripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
+          for (const s of jsonLdScripts) {
+            try {
+              const data = JSON.parse(s.textContent || '');
+              if (data.contentUrl && typeof data.contentUrl === 'string' && data.contentUrl.includes('.mp4')) {
+                addMedia({
+                  url: data.contentUrl,
+                  posterUrl: data.thumbnailUrl || ogImage || undefined,
+                  mediaType: 'video',
+                  alt: data.name || data.description || 'Instagram 貼文影片'
+                });
+              }
+            } catch {}
+          }
+        } catch {}
+      }
+
+      // -------------------------------------------------------------
+      // 維度 3：深度探測當前 postArticle 內的 React Fiber / Props
+      // -------------------------------------------------------------
+      if (results.length === 0) {
+        try {
           const candidateNodes = [
             postArticle,
             ...Array.from(postArticle.querySelectorAll('div[aria-label="Video player"], [data-instancekey], video'))
@@ -544,12 +519,28 @@ async function extractInstagramPostDirectly(
             while (node && depth < 30) {
               const props = node.memoizedProps || node;
               if (props) {
-                // 檢查是否為當前貼文的 media/item
                 const targetMedia = props.media || props.item || props.post || props.videoData;
                 if (targetMedia) {
-                  if (Array.isArray(targetMedia.video_versions)) {
-                    parseSingleMediaItem(targetMedia);
-                    if (results.length > 0) break;
+                  if (targetMedia.browser_native_hd_url) {
+                    addMedia({
+                      url: targetMedia.browser_native_hd_url,
+                      mediaType: 'video',
+                      alt: 'Instagram 官方高清影片'
+                    });
+                    break;
+                  }
+                  if (Array.isArray(targetMedia.video_versions) && targetMedia.video_versions.length > 0) {
+                    const sorted = [...targetMedia.video_versions].sort((a: any, b: any) => (b.width || 0) - (a.width || 0));
+                    if (sorted[0]?.url) {
+                      addMedia({
+                        url: sorted[0].url,
+                        mediaType: 'video',
+                        alt: 'Instagram 影片',
+                        width: sorted[0].width,
+                        height: sorted[0].height
+                      });
+                      break;
+                    }
                   }
                   if (targetMedia.url && typeof targetMedia.url === 'string' && targetMedia.url.includes('.mp4')) {
                     addMedia({
@@ -560,9 +551,13 @@ async function extractInstagramPostDirectly(
                     break;
                   }
                 }
-                if (Array.isArray(props.video_versions) && props.video_versions.length > 0) {
-                  parseSingleMediaItem(props);
-                  if (results.length > 0) break;
+                if (props.browser_native_hd_url) {
+                  addMedia({
+                    url: props.browser_native_hd_url,
+                    mediaType: 'video',
+                    alt: 'Instagram 官方高清影片'
+                  });
+                  break;
                 }
               }
               node = node.return || node.child || node.sibling;
@@ -575,47 +570,13 @@ async function extractInstagramPostDirectly(
         }
       }
 
-      // -------------------------------------------------------------
-      // 維度 5：當前播放器直接關聯最新 1 部 Performance MP4 (保底)
-      // -------------------------------------------------------------
-      if (!results.some(x => x.mediaType === 'video')) {
-        const activeVideo = postArticle.querySelector('video') as HTMLVideoElement | null;
-        if (activeVideo) {
-          const poster = activeVideo.getAttribute('poster') || undefined;
-
-          // 優先檢查 video 標籤本身非 blob 的 src
-          let vSrc = activeVideo.currentSrc || activeVideo.src;
-          if (vSrc && !vSrc.startsWith('blob:') && vSrc.includes('.mp4')) {
-            addMedia({
-              url: vSrc,
-              posterUrl: poster,
-              mediaType: 'video',
-              width: activeVideo.videoWidth || undefined,
-              height: activeVideo.videoHeight || undefined,
-              alt: 'Instagram 影片'
-            });
-          } else {
-            // 若為 blob，只取最後請求的 1 個 MP4 (按時間降序排序)
-            try {
-              const resources = (window.performance.getEntriesByType('resource') as PerformanceResourceTiming[])
-                .filter(r => r.name.includes('.mp4') && (r.name.includes('fbcdn.net') || r.name.includes('cdninstagram.com')))
-                .sort((a, b) => b.startTime - a.startTime);
-              if (resources.length > 0) {
-                addMedia({
-                  url: resources[0].name,
-                  posterUrl: poster,
-                  mediaType: 'video',
-                  width: activeVideo.videoWidth || undefined,
-                  height: activeVideo.videoHeight || undefined,
-                  alt: 'Instagram 影片'
-                });
-              }
-            } catch {}
-          }
+      // 補上封面縮圖 (若有)
+      const posterImg = postArticle.querySelector('img')?.src || (postArticle.querySelector('video') as HTMLVideoElement | null)?.poster;
+      results.forEach(item => {
+        if (!item.posterUrl && posterImg) {
+          item.posterUrl = posterImg;
         }
-      }
-
-      return results;
+      });
 
       return results;
     }
@@ -841,7 +802,12 @@ async function extractCarouselFromActiveTab(
             if (!chosenUrl || chosenUrl.startsWith('blob:')) {
               try {
                 const resources = window.performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-                const candidate = resources.find(r => r.name.includes('.mp4') && !r.name.startsWith('blob:'));
+                const candidate = resources.find(r => 
+                  r.name.includes('.mp4') && 
+                  !r.name.startsWith('blob:') && 
+                  !r.name.includes('bytestart=') && 
+                  !r.name.includes('byteend=')
+                );
                 if (candidate) {
                   chosenUrl = candidate.name;
                 }
@@ -1216,11 +1182,16 @@ export async function extractFromActiveTab(options?: ActiveTabScrapeOptions): Pr
           } catch {}
         }
 
-        // 強化：若仍為 blob:，探測 performance resource
+        // 強化：若仍為 blob:，探測 performance resource (嚴格排除 DASH 分段 Range 請求)
         if (!vSrc || vSrc.startsWith('blob:')) {
           try {
             const resources = window.performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-            const candidate = resources.find(r => r.name.includes('.mp4') && !r.name.startsWith('blob:'));
+            const candidate = resources.find(r => 
+              r.name.includes('.mp4') && 
+              !r.name.startsWith('blob:') && 
+              !r.name.includes('bytestart=') && 
+              !r.name.includes('byteend=')
+            );
             if (candidate) {
               vSrc = candidate.name;
             }

@@ -4,6 +4,7 @@
 
 ## 檔案清單說明
 - `test_ig.js`: Node.js 環境下的 Instagram 網址與 HTML 解析邏輯驗證腳本。
+- `test_ig_video.js`: Instagram DASH 串流與官方 `browser_native_hd_url` MP4 影音提取探測腳本。
 - `test_ig_api.js`: Instagram GraphQL / API 請求格式與回應探測腳本。
 - `parse_ig.js`: Instagram 原始碼的正則過濾與圖片連結提取腳本。
 - `parse_og.js`: Open Graph (og:image) 標籤提取與測試腳本。

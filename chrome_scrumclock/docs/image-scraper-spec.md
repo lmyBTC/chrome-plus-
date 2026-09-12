@@ -2,7 +2,7 @@
 
 > **文件路徑**: `chrome_scrumclock/docs/image-scraper-spec.md`  
 > **維護指南**: [`src/features/toolbox/tools/image-scraper/功能說明.md`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/tools/image-scraper/功能說明.md)  
-> **最後更新**: 2026-09-12 (新增：Instagram 多圖輪播貼文 Carousel 深度採集與高清升級)
+> **最後更新**: 2026-09-12 (新增：Instagram 影片與 DASH 串流解析攻克、官方 1080p MP4 直採與擴充套件原生串流下載)
 
 ---
 
@@ -54,12 +54,13 @@
 
 ---
 
-## 4. Instagram 多圖輪播貼文 (Carousel) 採集規範
+## 4. Instagram 多圖輪播貼文 (Carousel) 與 DASH 串流影片採集規範
 
 ### 4.1 痛點與根因分析
 - **DOM 虛擬化延遲載入**：Instagram 貼文輪播（如 14 張貼文，`?img_index=1` ~ `14`）初始僅渲染首張圖片，其餘圖片在未切換前不在 DOM 中。
 - **切換按鈕語系與標籤多樣性**：繁中環境下下一頁標籤常為「下一頁」或「下一張」，且該屬性常位於內部 `<svg>`。原生 `.click()` 必須向上穿透至父層 `<button>`。
 - **等尺寸 Stable Sort 盲點**：輪播圖片尺寸相同時，傳統面積排序會固定選中排在前端的舊圖，導致過早判斷重複中斷。
+- **DASH / MSE 分塊串流與偽裝 Blob**：Instagram 影片在 DOM `<video>` 標籤中使用 `blob:https://...` 虛擬協議，網路請求全部為極小二進位分塊（帶有 `bytestart=` 與 `byteend=` 參數）。若抓取這些分塊會因缺少 `moov atom` 索引頭部而變成 0:00 的損毀影片。此外全域正則掃描會抓到 200+ 個 SPA 背景預載的無效推薦分塊。
 
 ### 4.2 雙軌自動採集架構 (Dual-Track Extraction)
 1. **快軌 (Direct Path) - 原生資料秒級直出**：
@@ -72,6 +73,19 @@
    - **天然終止信號**：以貼文「下一頁按鈕消失/卸載」作為最後一張之判斷標準，連續無新圖時自動平滑收斂完成。
 3. **CDN 高畫質升級 (HD Upgrade)**：
    - 對 `*.fbcdn.net` 與 `*.cdninstagram.com` 之圖片，自動過濾清除 URL 中包含之 `stp` 縮圖與裁切指令（如 `c0.120.1080.1080a`、`s640x640` 等），全量還原為 1080px+ 原始高畫質原圖。
+
+### 4.3 Instagram 串流影片破解與下載架構
+1. **官方原生高畫質單檔挖掘 (`browser_native_hd_url`)**：
+   - 繞過動態分塊，直接深度掃描頁面內聯 `<script>` 標籤，匹配官方留給純 HTML5 播放器的原生 1080p MP4 單檔直鏈。
+   - 自動還原 JSON 轉義字符（`\u0026` -> `&`，`\/` -> `/`）。
+2. **Shortcode 嚴格作用域綁定**：
+   - 鎖定當前 URL 的 Post Shortcode（例如 `DbPu-KzvdnG`），嚴格只獲取該貼文所屬區塊之影音資源，完全阻斷全頁 200+ 快取分塊污染。
+3. **DASH Range 分塊自動剔除**：
+   - 全面攔截並丟棄任何包含 `bytestart=` 或 `byteend=` 之 Range 請求網址。
+4. **React Fiber 節點穿透備援**：
+   - 探測貼文節點的 `__reactFiber$` 樹狀鏈路，提取 memoizedProps 中的 `video_versions` 與 `playback_url`。
+5. **擴充套件原生串流下載 (`downloader.ts`)**：
+   - 針對 `.mp4` 影片，優先使用擴充套件 Context 原生 `fetch()` 串流轉換為 Blob，避免經由 `executeScript` 序列化 Base64 Data URL 造成瀏覽器分頁記憶體溢出。
 
 ---
 
