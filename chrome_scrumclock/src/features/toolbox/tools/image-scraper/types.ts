@@ -15,6 +15,7 @@ export interface ScrapedImage {
   status?: 'idle' | 'downloading' | 'completed' | 'error';
   errorMessage?: string;
   isHighResUpgrade?: boolean;
+  isDownloaded?: boolean;
 }
 
 export interface ScrapeFilterOptions {
@@ -30,12 +31,14 @@ export interface DownloadTaskOptions {
   prefix: string;
   concurrency?: number;
   directoryHandle?: any; // FileSystemDirectoryHandle
+  skipExisting?: boolean;
 }
 
 export interface DownloadProgress {
   total: number;
   current: number;
   successCount: number;
+  skippedCount: number;
   failureCount: number;
   isDownloading: boolean;
   activeItemName?: string;

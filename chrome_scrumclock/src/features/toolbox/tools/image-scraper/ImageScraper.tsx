@@ -64,6 +64,8 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
   // 分頁採集進階選項
   const [activeTabMode, setActiveTabMode] = useState<ActiveTabScrapeMode>(defaultActiveTabMode);
   const [carouselProgress, setCarouselProgress] = useState<CarouselProgress | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [skipExisting, setSkipExisting] = useState<boolean>(true);
   const abortTraverseRef = useRef<boolean>(false);
 
   // 自動偵測當前主視窗分頁狀態
@@ -324,7 +326,8 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
       namingPattern,
       prefix: namingPrefix,
       concurrency: 3,
-      directoryHandle: targetDirHandle
+      directoryHandle: targetDirHandle,
+      skipExisting
     };
 
     const targetImages = images.filter(img => img.selected && formatFilters.has(img.format));
@@ -333,6 +336,17 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
     try {
       await downloader.run(targetImages, options, progress => {
         setDownloadProgress({ ...progress });
+      });
+
+      // 下載完成後，更新 images 狀態：將下載成功或跳過的項目標記為 isDownloaded，並取消勾選
+      setImages(prevImages => {
+        const downloadedIds = new Set(targetImages.filter(img => img.isDownloaded).map(img => img.id));
+        return prevImages.map(img => {
+          if (downloadedIds.has(img.id)) {
+            return { ...img, isDownloaded: true, selected: false };
+          }
+          return img;
+        });
       });
     } catch (err: any) {
       console.error('下載佇列中斷:', err);
@@ -396,63 +410,70 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
         const folder = sanitizePathSegment(downloadFolder);
         await downloadImage(img.url, `PowerKit-Toolbox/${folder}/${filename}`);
       }
+
+      // 成功儲存後標記為已存並取消選取
+      setImages(prev => prev.map(item => item.id === img.id ? { ...item, isDownloaded: true, selected: false } : item));
     } catch (err: any) {
       alert(`下載失敗: ${err?.message || '未知錯誤'}`);
     }
   };
 
   return (
-    <div className={`flex flex-col ${isSidebar ? 'gap-4 p-1' : 'gap-6'}`}>
+    <div className={`flex flex-col ${isSidebar ? 'gap-3 p-1' : 'gap-6'}`}>
       {/* 頂部說明卡片與輸入列 */}
-      <div className={`bg-dark-card border border-dark-border-subtle rounded-xl ${isSidebar ? 'p-4' : 'p-6'} shadow-sm`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
-          <div>
-            <div className="flex items-center justify-between">
-              <h2 className={`${isSidebar ? 'text-base' : 'text-xl'} font-bold text-dark-primary flex items-center gap-2`}>
-                <span>🖼️</span> 網頁圖片爬取與批量下載器
-              </h2>
-              {isSidebar && (
-                <button
-                  type="button"
-                  onClick={() => chrome.tabs.create({ url: 'chrome://newtab' })}
-                  className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2 flex items-center gap-1 cursor-pointer"
-                  title="在新分頁開啟全螢幕儀表板"
-                >
-                  <span>🖥️ 全螢幕</span>
-                </button>
-              )}
-            </div>
-            {!isSidebar && (
-              <p className="text-sm text-dark-secondary mt-1">
-                一鍵提取任意網頁或 Flickr 相簿所有高畫質原圖，支援條件篩選、全選預覽與多執行緒平滑下載。
-              </p>
-            )}
+      <div className={`bg-dark-card border border-dark-border-subtle rounded-xl ${isSidebar ? 'p-3' : 'p-6'} shadow-sm`}>
+        <div className={`flex items-center justify-between gap-2 ${isSidebar ? 'mb-2.5' : 'mb-4'}`}>
+          <div className="flex items-center gap-2">
+            <h2 className={`${isSidebar ? 'text-sm' : 'text-xl'} font-bold text-dark-primary flex items-center gap-1.5`}>
+              <span>🖼️</span> <span>{isSidebar ? '圖片採集器' : '網頁圖片爬取與批量下載器'}</span>
+            </h2>
           </div>
 
-          {/* 模式切換 */}
-          <div className="flex items-center bg-dark-surface p-1 rounded-lg border border-dark-border-subtle self-start md:self-auto">
-            <button
-              onClick={() => setCrawlMode('url')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                crawlMode === 'url'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-dark-secondary hover:text-dark-primary'
-              }`}
-            >
-              🌐 指定網址
-            </button>
-            <button
-              onClick={() => setCrawlMode('active-tab')}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-                crawlMode === 'active-tab'
-                  ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-dark-secondary hover:text-dark-primary'
-              }`}
-            >
-              📑 抓取當前分頁
-            </button>
+          <div className="flex items-center gap-1.5">
+            {/* 模式切換 */}
+            <div className="flex items-center bg-dark-surface p-0.5 rounded-lg border border-dark-border-subtle">
+              <button
+                type="button"
+                onClick={() => setCrawlMode('url')}
+                className={`px-2 py-1 text-xs font-medium rounded transition-all cursor-pointer ${
+                  crawlMode === 'url'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-dark-secondary hover:text-dark-primary'
+                }`}
+              >
+                🌐 網址
+              </button>
+              <button
+                type="button"
+                onClick={() => setCrawlMode('active-tab')}
+                className={`px-2 py-1 text-xs font-medium rounded transition-all cursor-pointer ${
+                  crawlMode === 'active-tab'
+                    ? 'bg-blue-600 text-white shadow-sm'
+                    : 'text-dark-secondary hover:text-dark-primary'
+                }`}
+              >
+                📑 分頁
+              </button>
+            </div>
+
+            {isSidebar && (
+              <button
+                type="button"
+                onClick={() => chrome.tabs.create({ url: 'chrome://newtab' })}
+                className="text-xs text-blue-400 hover:text-blue-300 p-1 hover:bg-dark-surface rounded transition-colors"
+                title="在新分頁開啟全螢幕儀表板"
+              >
+                <span>🖥️</span>
+              </button>
+            )}
           </div>
         </div>
+
+        {!isSidebar && (
+          <p className="text-sm text-dark-secondary mb-4">
+            一鍵提取任意網頁或 Flickr 相簿所有高畫質原圖，支援條件篩選、全選預覽與多執行緒平滑下載。
+          </p>
+        )}
 
         {/* 輸入與觸發區 */}
         {crawlMode === 'url' ? (
@@ -522,147 +543,191 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2.5">
             {/* 當前鎖定分頁即時指示條 */}
             {currentTabInfo && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-emerald-950/30 border border-emerald-800/50 rounded-lg text-xs text-emerald-300">
+              <div className="flex items-center gap-2 px-2.5 py-1.5 bg-emerald-950/25 border border-emerald-800/40 rounded-lg text-xs text-emerald-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0"></span>
-                <span className="font-semibold flex-shrink-0">當前鎖定分頁：</span>
-                <span className="truncate flex-1 text-slate-200 font-medium" title={currentTabInfo.title}>
+                <span className="font-semibold flex-shrink-0">鎖定分頁：</span>
+                <span className="truncate flex-1 text-slate-200 font-medium text-[11px]" title={currentTabInfo.title}>
                   {currentTabInfo.title || currentTabInfo.url}
                 </span>
               </div>
             )}
 
-            {/* 分頁模式選擇 */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* 分頁模式選擇：精簡 Segmented Tabs */}
+            <div className="grid grid-cols-3 gap-1 p-1 bg-dark-surface rounded-lg border border-dark-border-subtle text-xs">
               <button
                 type="button"
                 onClick={() => setActiveTabMode('fast')}
-                className={`p-3 rounded-lg border text-left transition-all ${
+                className={`py-1.5 px-1.5 rounded font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
                   activeTabMode === 'fast'
-                    ? 'bg-blue-900/20 border-blue-500/60 shadow-sm'
-                    : 'bg-dark-surface border-dark-border-subtle hover:border-dark-border'
+                    ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                    : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-hover/40'
                 }`}
+                title="瞬間提取當前 DOM 樹中已渲染之所有圖片（最快）"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">⚡</span>
-                  <span className="text-sm font-semibold text-dark-primary">快速快照</span>
-                </div>
-                <p className="text-xs text-dark-secondary mt-1">
-                  瞬間提取當前 DOM 樹中已渲染之所有圖片（最快）。
-                </p>
+                <span>⚡</span>
+                <span className="truncate">快速快照</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTabMode('deep-scroll')}
-                className={`p-3 rounded-lg border text-left transition-all ${
+                className={`py-1.5 px-1.5 rounded font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
                   activeTabMode === 'deep-scroll'
-                    ? 'bg-blue-900/20 border-blue-500/60 shadow-sm'
-                    : 'bg-dark-surface border-dark-border-subtle hover:border-dark-border'
+                    ? 'bg-blue-600 text-white shadow-sm font-semibold'
+                    : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-hover/40'
                 }`}
+                title="自動向下平滑滑動以觸發延遲載入 (Lazy-load) 圖片"
               >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">📜</span>
-                  <span className="text-sm font-semibold text-dark-primary">深度自動滾動</span>
-                </div>
-                <p className="text-xs text-dark-secondary mt-1">
-                  自動向下平滑滑動以觸發延遲載入 (Lazy-load) 圖片。
-                </p>
+                <span>📜</span>
+                <span className="truncate">深度滾動</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveTabMode('carousel-traverse')}
-                className={`p-3 rounded-lg border text-left transition-all relative overflow-hidden ${
+                className={`py-1.5 px-1.5 rounded font-medium transition-all flex items-center justify-center gap-1 cursor-pointer ${
                   activeTabMode === 'carousel-traverse'
-                    ? 'bg-indigo-900/30 border-indigo-500 shadow-sm'
-                    : 'bg-dark-surface border-dark-border-subtle hover:border-dark-border'
+                    ? 'bg-indigo-600 text-white shadow-sm font-semibold'
+                    : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-hover/40'
                 }`}
+                title="自動模擬切換下一張，逐張擷取 FB / IG 貼文多圖"
               >
-                <span className="absolute top-1.5 right-1.5 bg-indigo-500/30 text-indigo-300 text-[10px] px-1.5 py-0.5 rounded font-medium border border-indigo-500/30">
-                  FB / IG 多圖相簿
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-base">🔄</span>
-                  <span className="text-sm font-semibold text-dark-primary">相簿劇院輪巡</span>
-                </div>
-                <p className="text-xs text-dark-secondary mt-1">
-                  自動模擬切換下一張，逐張擷取 FB / IG 貼文多圖。
-                </p>
+                <span>🔄</span>
+                <span className="truncate">相簿輪巡</span>
               </button>
             </div>
 
-
-            {/* 觸發與進度控制區 */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-dark-surface rounded-lg border border-dark-border-subtle">
-              <div className="text-sm text-dark-secondary flex-1">
-                {activeTabMode === 'carousel-traverse' ? (
-                  carouselProgress?.isTraversing ? (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2 text-indigo-400 font-medium text-xs">
-                        <div className="w-3.5 h-3.5 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
-                        <span>{carouselProgress.statusText}</span>
-                      </div>
-                      <div className="w-full bg-dark-card h-1.5 rounded-full overflow-hidden">
-                        <div
-                          className="bg-indigo-500 h-full transition-all duration-300 rounded-full"
-                          style={{
-                            width: `${Math.min(100, Math.max(5, (carouselProgress.currentCount / 30) * 100))}%`
-                          }}
-                        />
-                      </div>
+            {/* 雙核心高能主控列 (Dual Action Bar: 輪巡與下載同屏聯動) */}
+            <div className="flex flex-col gap-2 p-2.5 bg-dark-surface/90 rounded-lg border border-dark-border-subtle shadow-inner">
+              {/* 輪巡進度條 (輪巡進行時即時展示) */}
+              {activeTabMode === 'carousel-traverse' && carouselProgress?.isTraversing && (
+                <div className="flex flex-col gap-1 px-0.5">
+                  <div className="flex items-center justify-between text-[11px] text-indigo-400 font-medium">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-3 h-3 border-2 border-indigo-400/30 border-t-indigo-400 rounded-full animate-spin" />
+                      <span className="truncate max-w-[190px]">{carouselProgress.statusText}</span>
                     </div>
-                  ) : (
-                    <span>點擊右側按鈕開始自動輪巡並逐張採集相簿。</span>
-                  )
-                ) : activeTabMode === 'deep-scroll' ? (
-                  <span>將在活躍分頁向下平滑滾動以觸發延遲載入圖片，隨後收集所有項目。</span>
-                ) : (
-                  <span>將直接提取瀏覽器<strong>當前活躍分頁</strong>已渲染之所有 DOM 圖片。</span>
-                )}
-              </div>
+                    <span className="text-indigo-300 font-mono text-[10px]">已採集 {carouselProgress.currentCount} 張</span>
+                  </div>
+                  <div className="w-full bg-dark-card h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="bg-indigo-500 h-full transition-all duration-300 rounded-full"
+                      style={{
+                        width: `${Math.min(100, Math.max(8, (carouselProgress.currentCount / 30) * 100))}%`
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
-              <div className="flex items-center gap-2">
-                {/* 輪巡中可隨時停止 */}
-                {isLoading && activeTabMode === 'carousel-traverse' && (
+              {/* 雙核心按鈕區：左【輪巡/採集】+ 右【立即下載】 */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* 按鈕 1: 輪巡/採集控制 */}
+                {isLoading && activeTabMode === 'carousel-traverse' ? (
                   <button
+                    type="button"
                     onClick={handleStopTraverse}
-                    className="px-4 py-2 bg-red-600/80 hover:bg-red-600 text-white text-xs font-semibold rounded-lg transition-all shadow-sm flex items-center gap-1.5"
+                    className="w-full py-2 px-2 bg-red-600 hover:bg-red-500 text-white font-semibold text-xs rounded-lg transition-all shadow-md shadow-red-600/20 flex items-center justify-center gap-1 cursor-pointer"
+                    title="立即停止相簿輪巡並保留已採集圖片"
                   >
-                    <span>🛑</span>
-                    <span>停止並匯出</span>
+                    <span className="text-sm">🛑</span>
+                    <span className="truncate">停止並匯出</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleStartScrape}
+                    disabled={isLoading}
+                    className={`w-full py-2 px-2 font-semibold text-xs rounded-lg transition-all shadow-md flex items-center justify-center gap-1 cursor-pointer ${
+                      activeTabMode === 'carousel-traverse'
+                        ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/25'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25'
+                    } disabled:opacity-50`}
+                    title={
+                      activeTabMode === 'carousel-traverse'
+                        ? '自動遍歷下一張並逐張採集 FB / IG 相簿'
+                        : activeTabMode === 'deep-scroll'
+                        ? '向下平滑滾動以觸發延遲加載'
+                        : '瞬間提取當前頁面所有圖片'
+                    }
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span className="truncate">{activeTabMode === 'carousel-traverse' ? '輪巡中...' : '採集中...'}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-sm">{activeTabMode === 'carousel-traverse' ? '🔄' : activeTabMode === 'deep-scroll' ? '📜' : '⚡'}</span>
+                        <span className="truncate">
+                          {activeTabMode === 'carousel-traverse'
+                            ? images.length > 0 ? '繼續輪巡相簿' : '開始輪巡相簿'
+                            : activeTabMode === 'deep-scroll'
+                            ? '深度滾動抓取'
+                            : '即時快照'}
+                        </span>
+                      </>
+                    )}
                   </button>
                 )}
 
+                {/* 按鈕 2: 立即下載 (同屏一鍵觸發！) */}
                 <button
-                  onClick={handleStartScrape}
-                  disabled={isLoading}
-                  className={`px-6 py-2.5 font-medium text-sm rounded-lg transition-all shadow-md flex items-center gap-2 whitespace-nowrap ${
-                    activeTabMode === 'carousel-traverse'
-                      ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-600/20'
-                      : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/20'
-                  } disabled:opacity-50`}
+                  type="button"
+                  onClick={handleBatchDownload}
+                  disabled={selectedCount === 0 || downloadProgress?.isDownloading}
+                  className={`w-full py-2 px-2 font-semibold text-xs rounded-lg shadow-md transition-all flex items-center justify-center gap-1 ${
+                    selectedCount > 0
+                      ? targetDirHandle
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/25 ring-1 ring-emerald-400/40 cursor-pointer'
+                        : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/25 cursor-pointer'
+                      : 'bg-dark-card text-dark-muted border border-dark-border-subtle cursor-not-allowed opacity-50'
+                  }`}
+                  title={
+                    selectedCount > 0
+                      ? `立即下載已選取的 ${selectedCount} 個項目 (儲存至 ${targetDirName || '預設下載匣'})`
+                      : '請先透過左側按鈕輪巡或選取圖片'
+                  }
                 >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>{activeTabMode === 'carousel-traverse' ? '相簿輪巡中...' : '採集中...'}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{activeTabMode === 'carousel-traverse' ? '🔄' : activeTabMode === 'deep-scroll' ? '📜' : '🔍'}</span>
-                      <span>
-                        {activeTabMode === 'carousel-traverse'
-                          ? '開始自動輪巡相簿'
-                          : activeTabMode === 'deep-scroll'
-                          ? '深度滾動並抓取'
-                          : '即時快照當前分頁'}
-                      </span>
-                    </>
-                  )}
+                  <span className="text-sm">{downloadProgress?.isDownloading ? '⏳' : targetDirHandle ? '⚡' : '⬇️'}</span>
+                  <span className="truncate">
+                    {downloadProgress?.isDownloading
+                      ? `下載中 (${downloadProgress.current}/${downloadProgress.total})`
+                      : selectedCount > 0
+                      ? `立即下載 (${selectedCount}張)`
+                      : '下載圖片 (0張)'}
+                  </span>
                 </button>
+              </div>
+
+              {/* 儲存目錄與快捷切換指示列 */}
+              <div className="flex items-center justify-between text-[11px] text-dark-muted pt-1 border-t border-dark-border-subtle/50 px-0.5">
+                <div className="flex items-center gap-1.5 truncate max-w-[210px]">
+                  <span>📁</span>
+                  <span className="truncate text-dark-secondary" title={targetDirName ? `儲存至: ${targetDirName} (免逐張彈窗)` : '儲存至瀏覽器預設下載匣'}>
+                    {targetDirName ? (
+                      <span className="text-emerald-300 font-mono text-[10px]">
+                        {targetDirName} <span className="text-[9px] px-1 py-0.2 bg-emerald-950/80 text-emerald-400 rounded border border-emerald-800/40">免彈窗</span>
+                      </span>
+                    ) : (
+                      '預設下載匣'
+                    )}
+                  </span>
+                </div>
+
+                {isFileSystemAccessSupported() && (
+                  <button
+                    type="button"
+                    onClick={handlePickDirectory}
+                    className="text-blue-400 hover:text-blue-300 underline text-[10px] cursor-pointer flex-shrink-0 transition-colors"
+                    title="指定本機資料夾，建立獨立相簿並免彈窗直存"
+                  >
+                    {targetDirHandle ? '更換目錄' : '選定資料夾'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -679,270 +744,262 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
 
       {/* 爬取結果面板 */}
       {images.length > 0 && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-3">
           {/* 控制工具列 */}
-          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-5 shadow-sm flex flex-col gap-4">
+          <div className={`bg-dark-card border border-dark-border-subtle rounded-xl ${isSidebar ? 'p-3 gap-2.5' : 'p-5 gap-4'} shadow-sm flex flex-col`}>
             {/* 頂部資訊列 */}
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-dark-border-subtle/60 pb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-lg">📁</span>
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dark-border-subtle/60 pb-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-base">📁</span>
                 <div>
-                  <h3 className="text-sm font-semibold text-dark-primary">{pageTitle}</h3>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-dark-secondary">
-                    <span>
-                      共發現 {images.length} 個媒體項目
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs font-semibold text-dark-primary truncate max-w-[150px]" title={pageTitle}>
+                      {pageTitle}
+                    </h3>
+                    <span className="text-[11px] text-dark-muted">
+                      共 {images.length} 項
                       {images.some(img => img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm') && (
                         <span className="text-purple-300 ml-1">
-                          (含 {images.filter(img => img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm').length} 部影片)
+                          (含 {images.filter(img => img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm').length} 影片)
                         </span>
                       )}
                     </span>
-                    <span>•</span>
-                    <span className="text-blue-400 font-medium">已選取 {selectedCount} 個</span>
+                    <span className="text-blue-400 font-medium text-[11px]">
+                      已選 {selectedCount}
+                    </span>
                     {images.some(img => img.isHighResUpgrade) && (
-                      <>
-                        <span>•</span>
-                        <span className="text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800/40">
-                          ✨ 已自動升級高清畫質
-                        </span>
-                      </>
+                      <span className="text-amber-400 bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-800/40 text-[10px]">
+                        ✨ 高清原圖
+                      </span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* 選取快捷操作 */}
-              <div className="flex items-center gap-2 text-xs">
+              {/* 選取快捷操作與進階開關 */}
+              <div className="flex items-center gap-1.5 text-xs">
                 <button
+                  type="button"
                   onClick={() => handleSelectAll(true)}
-                  className="px-3 py-1.5 bg-dark-surface hover:bg-dark-hover text-dark-primary rounded-md border border-dark-border-subtle transition-colors"
+                  className="px-2 py-1 bg-dark-surface hover:bg-dark-hover text-dark-primary rounded border border-dark-border-subtle transition-colors text-[11px] cursor-pointer"
+                  title="全選所有圖片"
                 >
                   全選
                 </button>
                 <button
+                  type="button"
                   onClick={() => handleSelectAll(false)}
-                  className="px-3 py-1.5 bg-dark-surface hover:bg-dark-hover text-dark-secondary rounded-md border border-dark-border-subtle transition-colors"
+                  className="px-2 py-1 bg-dark-surface hover:bg-dark-hover text-dark-secondary rounded border border-dark-border-subtle transition-colors text-[11px] cursor-pointer"
+                  title="取消全部選取"
                 >
-                  取消全選
+                  取消
                 </button>
-                <button
-                  onClick={handleInvertSelect}
-                  className="px-3 py-1.5 bg-dark-surface hover:bg-dark-hover text-dark-secondary rounded-md border border-dark-border-subtle transition-colors"
-                >
-                  反向選取
-                </button>
-              </div>
-            </div>
-
-            {/* 篩選器與搜尋 */}
-            <div className="flex flex-wrap items-center justify-between gap-4 text-xs">
-              {/* 格式標籤 */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-dark-muted mr-1">格式篩選:</span>
-                {(['jpg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm'] as ImageFormat[]).map(fmt => {
-                  const isChecked = formatFilters.has(fmt);
-                  const isVid = fmt === 'mp4' || fmt === 'webm';
-                  return (
-                    <button
-                      key={fmt}
-                      onClick={(e) => toggleFormatFilter(fmt, e.altKey)}
-                      title="點擊切換；按住 Alt+點擊可「僅選此格式」"
-                      className={`px-2.5 py-1 rounded-md uppercase font-semibold transition-all flex items-center gap-1 ${
-                        isChecked
-                          ? isVid
-                            ? 'bg-purple-600/30 text-purple-300 border border-purple-500/60 shadow-sm'
-                            : 'bg-blue-600/30 text-blue-300 border border-blue-500/50 shadow-sm'
-                          : 'bg-dark-surface text-dark-muted border border-dark-border-subtle opacity-60 hover:opacity-100'
-                      }`}
-                    >
-                      {isVid && <span>🎥</span>}
-                      <span>{fmt}</span>
-                    </button>
-                  );
-                })}
                 <button
                   type="button"
-                  onClick={() => {
-                    const all = new Set<ImageFormat>(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'unknown']);
-                    setFormatFilters(all);
-                  }}
-                  className="text-[10px] text-dark-muted hover:text-blue-400 underline ml-1 cursor-pointer transition-colors"
-                  title="重設為顯示所有圖片與影片格式"
+                  onClick={handleInvertSelect}
+                  className="px-2 py-1 bg-dark-surface hover:bg-dark-hover text-dark-secondary rounded border border-dark-border-subtle transition-colors text-[11px] cursor-pointer"
+                  title="反向選取"
                 >
-                  全部媒體
+                  反選
                 </button>
-              </div>
-
-              {/* 寬度過濾與關鍵字 */}
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-dark-muted">最小寬度:</span>
-                  <select
-                    value={minWidth}
-                    onChange={e => setMinWidth(Number(e.target.value))}
-                    className="bg-dark-surface border border-dark-border-subtle text-dark-primary rounded px-2 py-1 outline-none"
-                  >
-                    <option value={0}>不限</option>
-                    <option value={200}>&gt; 200px (排除圖示)</option>
-                    <option value={500}>&gt; 500px (中大圖)</option>
-                    <option value={1000}>&gt; 1000px (高清大圖)</option>
-                  </select>
-                </div>
-
-                <input
-                  type="text"
-                  placeholder="搜尋檔名或描述..."
-                  value={searchKeyword}
-                  onChange={e => setSearchKeyword(e.target.value)}
-                  className="bg-dark-surface border border-dark-border-subtle rounded px-2.5 py-1 text-dark-primary placeholder-dark-muted outline-none w-36 focus:w-44 transition-all"
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className={`px-2 py-1 rounded border transition-colors text-[11px] flex items-center gap-1 cursor-pointer ${
+                    showAdvanced
+                      ? 'bg-blue-600/30 text-blue-300 border-blue-500/50'
+                      : 'bg-dark-surface text-dark-secondary border-dark-border-subtle hover:text-dark-primary'
+                  }`}
+                  title="展開/收合詳細儲存設定與篩選條件"
+                >
+                  <span>⚙️</span>
+                  <span>{showAdvanced ? '收起' : '進階'}</span>
+                </button>
               </div>
             </div>
 
-            {/* 下載操作列與本機目錄設定 */}
-            <div className="bg-dark-surface p-4 rounded-lg border border-dark-border-subtle flex flex-col gap-3 mt-2">
-              {/* 目錄設定與免彈窗模式切換 */}
-              <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-dark-border-subtle/60 text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-dark-muted font-medium">下載儲存目標:</span>
-                  {targetDirHandle ? (
-                    <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 px-2.5 py-1 rounded-md font-mono">
-                      <span>📁 {targetDirName}</span>
-                      <span className="text-[10px] px-1.5 py-0.2 bg-emerald-600/30 text-emerald-200 rounded font-sans">免彈窗模式</span>
-                      <button
-                        onClick={handleClearDirectory}
-                        title="取消自訂目錄，改用瀏覽器預設下載匣"
-                        className="text-dark-muted hover:text-red-400 ml-1 transition-colors"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-dark-secondary font-mono bg-dark-card px-2 py-1 rounded border border-dark-border-subtle">
-                        瀏覽器預設下載匣 (PowerKit-Toolbox/)
-                      </span>
-                      {isFileSystemAccessSupported() && (
-                        <button
-                          onClick={handlePickDirectory}
-                          className="px-2.5 py-1 bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 rounded transition-colors flex items-center gap-1.5"
-                        >
-                          <span>📁</span>
-                          <span>選取本機資料夾 (推薦・免逐張彈窗)</span>
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
+            {/* 格式標籤篩選列 */}
+            <div className="flex items-center gap-1 flex-wrap text-xs">
+              <span className="text-dark-muted mr-1 text-[11px]">格式:</span>
+              {(['jpg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm'] as ImageFormat[]).map(fmt => {
+                const isChecked = formatFilters.has(fmt);
+                const isVid = fmt === 'mp4' || fmt === 'webm';
+                return (
+                  <button
+                    key={fmt}
+                    onClick={(e) => toggleFormatFilter(fmt, e.altKey)}
+                    title="點擊切換；按住 Alt+點擊可「僅選此格式」"
+                    className={`px-2 py-0.5 rounded text-[10px] uppercase font-semibold transition-all flex items-center gap-0.5 cursor-pointer ${
+                      isChecked
+                        ? isVid
+                          ? 'bg-purple-600/30 text-purple-300 border border-purple-500/60 shadow-sm'
+                          : 'bg-blue-600/30 text-blue-300 border border-blue-500/50 shadow-sm'
+                        : 'bg-dark-surface text-dark-muted border border-dark-border-subtle opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    {isVid && <span>🎥</span>}
+                    <span>{fmt}</span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => {
+                  const all = new Set<ImageFormat>(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'mp4', 'webm', 'unknown']);
+                  setFormatFilters(all);
+                }}
+                className="text-[10px] text-dark-muted hover:text-blue-400 underline ml-1 cursor-pointer transition-colors"
+                title="重設為顯示所有圖片與影片格式"
+              >
+                全部
+              </button>
+            </div>
 
-                <div className="text-[11px] text-dark-muted hidden lg:block">
-                  💡 快捷鍵：按住 <kbd className="px-1 py-0.5 bg-dark-card border border-dark-border-subtle rounded font-mono text-[10px] text-dark-primary">Shift</kbd> + 點擊可連續範圍勾選/取消
-                </div>
-              </div>
-
-              <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-                <div className="flex flex-wrap items-center gap-3 text-xs">
+            {/* 可折疊之進階選項與目錄設定 (側邊欄預設收起，避免佔據垂直空間) */}
+            {(showAdvanced || !isSidebar) && (
+              <div className="bg-dark-surface/90 p-3 rounded-lg border border-dark-border-subtle flex flex-col gap-3 animate-fadeIn text-xs">
+                {/* 寬度過濾與關鍵字搜尋 */}
+                <div className="flex flex-wrap items-center justify-between gap-2.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-dark-muted">子資料夾名:</span>
-                    <input
-                      type="text"
-                      value={downloadFolder}
-                      onChange={e => setDownloadFolder(e.target.value)}
-                      className="bg-dark-card border border-dark-border-subtle rounded px-2 py-1 text-dark-primary outline-none text-xs font-mono w-40"
-                      placeholder="資料夾名稱"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-dark-muted">命名:</span>
+                    <span className="text-dark-muted text-[11px]">最小寬度:</span>
                     <select
-                      value={namingPattern}
-                      onChange={e => setNamingPattern(e.target.value as any)}
-                      className="bg-dark-card border border-dark-border-subtle rounded px-2 py-1 text-dark-primary outline-none"
+                      value={minWidth}
+                      onChange={e => setMinWidth(Number(e.target.value))}
+                      className="bg-dark-card border border-dark-border-subtle text-dark-primary rounded px-2 py-1 outline-none text-xs"
                     >
-                      <option value="original">保留原始檔名</option>
-                      <option value="sequence">自訂前綴 + 序號</option>
+                      <option value={0}>不限</option>
+                      <option value={200}>&gt; 200px</option>
+                      <option value={500}>&gt; 500px</option>
+                      <option value={1000}>&gt; 1000px</option>
                     </select>
                   </div>
 
-                  {namingPattern === 'sequence' && (
-                    <input
-                      type="text"
-                      value={namingPrefix}
-                      onChange={e => setNamingPrefix(e.target.value)}
-                      placeholder="前綴 (如 photo)"
-                      className="bg-dark-card border border-dark-border-subtle rounded px-2 py-1 text-dark-primary outline-none w-24"
-                    />
-                  )}
+                  <input
+                    type="text"
+                    placeholder="搜尋檔名或描述..."
+                    value={searchKeyword}
+                    onChange={e => setSearchKeyword(e.target.value)}
+                    className="bg-dark-card border border-dark-border-subtle rounded px-2 py-1 text-dark-primary placeholder-dark-muted outline-none w-32 focus:w-40 transition-all text-xs"
+                  />
                 </div>
 
-                {/* 下載動作按鈕群 */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  {targetDirHandle ? (
+                {/* 資料夾與命名設定 */}
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-dark-border-subtle/60">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <span className="text-dark-muted text-[11px]">子資料夾:</span>
+                      <input
+                        type="text"
+                        value={downloadFolder}
+                        onChange={e => setDownloadFolder(e.target.value)}
+                        className="bg-dark-card border border-dark-border-subtle rounded px-2 py-1 text-dark-primary outline-none text-xs font-mono w-28"
+                        placeholder="資料夾名稱"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <span className="text-dark-muted text-[11px]">命名:</span>
+                      <select
+                        value={namingPattern}
+                        onChange={e => setNamingPattern(e.target.value as any)}
+                        className="bg-dark-card border border-dark-border-subtle rounded px-1.5 py-1 text-dark-primary outline-none text-xs"
+                      >
+                        <option value="original">原始檔名</option>
+                        <option value="sequence">序號命名</option>
+                      </select>
+                    </div>
+
+                    {namingPattern === 'sequence' && (
+                      <input
+                        type="text"
+                        value={namingPrefix}
+                        onChange={e => setNamingPrefix(e.target.value)}
+                        placeholder="前綴"
+                        className="bg-dark-card border border-dark-border-subtle rounded px-1.5 py-1 text-dark-primary outline-none w-16 text-xs"
+                      />
+                    )}
+
+                    {/* 智慧跳過重複檔案開關 */}
+                    <label className="flex items-center gap-1.5 text-dark-secondary hover:text-dark-primary text-xs cursor-pointer select-none ml-1">
+                      <input
+                        type="checkbox"
+                        checked={skipExisting}
+                        onChange={e => setSkipExisting(e.target.checked)}
+                        className="rounded border-dark-border-subtle bg-dark-card text-blue-600 focus:ring-0 focus:ring-offset-0 w-3.5 h-3.5 cursor-pointer"
+                      />
+                      <span>跳過已存在檔案</span>
+                    </label>
+                  </div>
+
+                  {/* 目錄設定與下載按鈕 */}
+                  {/* 目錄設定與下載按鈕 (對調順序：立即下載優先於選定資料夾) */}
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={async () => {
-                        try {
-                          const newDir = await pickDownloadDirectory();
-                          if (newDir) {
-                            setTargetDirHandle(newDir);
-                            setTargetDirName(newDir.name || '已選定資料夾');
-                          }
-                        } catch (err: any) {
-                          alert(`更換資料夾失敗: ${err?.message || err}`);
-                        }
-                      }}
-                      className="px-3 py-2 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors flex items-center gap-1.5"
-                      title="更換當前儲存的本機目標資料夾"
+                      onClick={handleBatchDownload}
+                      disabled={selectedCount === 0 || downloadProgress?.isDownloading}
+                      className={`px-3 py-1.5 disabled:opacity-50 text-white font-medium text-xs rounded-lg shadow transition-all flex items-center gap-1.5 cursor-pointer ${
+                        targetDirHandle
+                          ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
+                          : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
+                      }`}
+                      title={
+                        targetDirHandle
+                          ? `批量下載至 ${targetDirName} (${selectedCount} 張)`
+                          : `直接下載至預設下載匣 (${selectedCount} 張)`
+                      }
                     >
-                      <span>📁</span>
-                      <span>更換資料夾 ({targetDirName})</span>
+                      <span>{targetDirHandle ? '⚡' : '⬇️'}</span>
+                      <span>立即下載 ({selectedCount}張)</span>
                     </button>
-                  ) : (
-                    isFileSystemAccessSupported() && (
+
+                    {targetDirHandle ? (
                       <button
                         type="button"
                         onClick={async () => {
                           try {
-                            const dir = await pickDownloadDirectory();
-                            if (dir) {
-                              setTargetDirHandle(dir);
-                              setTargetDirName(dir.name || '已選定資料夾');
+                            const newDir = await pickDownloadDirectory();
+                            if (newDir) {
+                              setTargetDirHandle(newDir);
+                              setTargetDirName(newDir.name || '已選定資料夾');
                             }
                           } catch (err: any) {
-                            console.warn('選取資料夾略過:', err);
+                            alert(`更換資料夾失敗: ${err?.message || err}`);
                           }
                         }}
-                        className="px-3 py-2 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded-lg border border-dark-border-subtle transition-colors flex items-center gap-1.5"
-                        title="可選：指定一個本機資料夾，自動建立相簿並免彈窗直存"
+                        className="px-2.5 py-1 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded border border-dark-border-subtle transition-colors flex items-center gap-1 cursor-pointer"
+                        title="更換當前儲存的本機目標資料夾"
                       >
                         <span>📁</span>
-                        <span>指定本機資料夾</span>
+                        <span>更換資料夾</span>
                       </button>
-                    )
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleBatchDownload}
-                    disabled={selectedCount === 0 || downloadProgress?.isDownloading}
-                    className={`px-5 py-2 disabled:opacity-50 text-white font-medium text-xs rounded-lg shadow-md transition-all flex items-center gap-2 ${
-                      targetDirHandle
-                        ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20'
-                        : 'bg-blue-600 hover:bg-blue-500 shadow-blue-600/20'
-                    }`}
-                    title="立即開始下載所選圖片檔案存入本機"
-                  >
-                    <span>{targetDirHandle ? '⚡' : '⬇️'}</span>
-                    <span>
-                      {targetDirHandle
-                        ? `批量下載至 ${targetDirName} (${selectedCount} 張)`
-                        : `下載圖片 (${selectedCount} 張)`}
-                    </span>
-                  </button>
+                    ) : (
+                      isFileSystemAccessSupported() && (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const dir = await pickDownloadDirectory();
+                              if (dir) {
+                                setTargetDirHandle(dir);
+                                setTargetDirName(dir.name || '已選定資料夾');
+                              }
+                            } catch (err: any) {
+                              console.warn('選取資料夾略過:', err);
+                            }
+                          }}
+                          className="px-2.5 py-1 bg-dark-card hover:bg-dark-hover text-dark-secondary hover:text-dark-primary text-xs rounded border border-dark-border-subtle transition-colors flex items-center gap-1 cursor-pointer"
+                          title="可選：指定一個本機資料夾，自動建立相簿並免彈窗直存"
+                        >
+                          <span>📁</span>
+                          <span>選定資料夾</span>
+                        </button>
+                      )
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* 下載進度條 */}
             {downloadProgress && downloadProgress.isDownloading && (
@@ -959,6 +1016,9 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-emerald-400">成功: {downloadProgress.successCount}</span>
+                    {downloadProgress.skippedCount > 0 && (
+                      <span className="text-amber-400">跳過重複: {downloadProgress.skippedCount}</span>
+                    )}
                     {downloadProgress.failureCount > 0 && (
                       <span className="text-red-400">失敗: {downloadProgress.failureCount}</span>
                     )}
@@ -1000,7 +1060,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                   <div className="relative aspect-square bg-slate-950 flex items-center justify-center overflow-hidden">
                     {(() => {
                       const isVideo = img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm';
-                      const thumbSrc = img.posterUrl || img.url;
+                      const thumbSrc = isVideo ? (img.posterUrl || img.url) : img.url;
                       return (
                         <>
                           <img
@@ -1023,8 +1083,8 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                             </div>
                           )}
 
-                          {/* 勾選標籤 */}
-                          <div className="absolute top-2 left-2 z-10">
+                          {/* 勾選標籤與已存標籤 */}
+                          <div className="absolute top-2 left-2 z-10 flex items-center gap-1">
                             <div
                               className={`w-5 h-5 rounded flex items-center justify-center transition-all ${
                                 img.selected
@@ -1034,6 +1094,12 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                             >
                               ✓
                             </div>
+                            {img.isDownloaded && (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600/90 text-white border border-emerald-400/40 shadow-sm flex items-center gap-0.5">
+                                <span>✓</span>
+                                <span>已存</span>
+                              </span>
+                            )}
                           </div>
 
                           {/* 畫質 / 格式徽章 */}
@@ -1071,14 +1137,16 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
                         🔍
                       </button>
                       <button
-                        title="單張下載"
+                        title={img.isDownloaded ? "已存過，點擊重新下載" : "單張下載"}
                         onClick={e => {
                           e.stopPropagation();
                           handleDownloadSingle(img);
                         }}
-                        className="p-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full transition-transform hover:scale-110"
+                        className={`p-2 rounded-full transition-transform hover:scale-110 text-white ${
+                          img.isDownloaded ? 'bg-slate-700 hover:bg-slate-600' : 'bg-emerald-600 hover:bg-emerald-500'
+                        }`}
                       >
-                        ⬇️
+                        {img.isDownloaded ? '💾' : '⬇️'}
                       </button>
                     </div>
                   </div>

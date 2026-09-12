@@ -148,6 +148,26 @@ export function useAISession(storageQueue: StorageQueue) {
     };
   }, []);
 
+  // 安全建立 Chrome Prompt API 會話（解決 Unsupported LanguageModel API languages: [de, en, es, fr, ja] 報錯）
+  const createSafeAISession = async (aiAPI: any, systemPrompt: string) => {
+    // 嘗試 1: 使用合規的 ISO 語言代碼 (Chrome Nano 目前白名單: de, en, es, fr, ja)
+    try {
+      return await aiAPI.create({
+        systemPrompt,
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
+      });
+    } catch {
+      // 嘗試 2: 若舊版或新版不需 expectedInputs，僅傳入 systemPrompt
+      try {
+        return await aiAPI.create({ systemPrompt });
+      } catch {
+        // 嘗試 3: 無參數直接建立
+        return await aiAPI.create();
+      }
+    }
+  };
+
   const checkAndInitAI = async () => {
     try {
       const aiAPI = getAICore();
@@ -160,36 +180,12 @@ export function useAISession(storageQueue: StorageQueue) {
 
       setAiAvailable('yes');
       
-      const createOptions: any = {
-        systemPrompt: CHAT_SYSTEM_PROMPT,
-        expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['zh'] }]
-      };
+      aiSessionRef.current = await createSafeAISession(aiAPI, CHAT_SYSTEM_PROMPT);
 
       try {
-        aiSessionRef.current = await aiAPI.create(createOptions);
-      } catch (error) {
-        delete createOptions.expectedInputs;
-        delete createOptions.expectedOutputs;
-        aiSessionRef.current = await aiAPI.create(createOptions);
-      }
-
-      const parseOptions: any = {
-        systemPrompt: PARSE_SYSTEM_PROMPT,
-        expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-        expectedOutputs: [{ type: 'text', languages: ['zh'] }]
-      };
-
-      try {
-        parseSessionRef.current = await aiAPI.create(parseOptions);
-      } catch (parseError) {
-        try {
-          delete parseOptions.expectedInputs;
-          delete parseOptions.expectedOutputs;
-          parseSessionRef.current = await aiAPI.create(parseOptions);
-        } catch (e) {
-          console.warn('建立常駐意圖解析會話失敗，將於執行時動態建立:', e);
-        }
+        parseSessionRef.current = await createSafeAISession(aiAPI, PARSE_SYSTEM_PROMPT);
+      } catch (e) {
+        console.warn('建立常駐意圖解析會話失敗，將於執行時動態建立:', e);
       }
 
       setMessages([
@@ -451,19 +447,7 @@ export function useAISession(storageQueue: StorageQueue) {
       try {
         if (!parseSession) {
           console.warn('常駐意圖解析會話不存在，現場建立臨時會話...');
-          const parseOptions: any = {
-            systemPrompt: PARSE_SYSTEM_PROMPT,
-            expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-            expectedOutputs: [{ type: 'text', languages: ['zh'] }]
-          };
-
-          try {
-            parseSession = await aiAPI.create(parseOptions);
-          } catch (e) {
-            delete parseOptions.expectedInputs;
-            delete parseOptions.expectedOutputs;
-            parseSession = await aiAPI.create(parseOptions);
-          }
+          parseSession = await createSafeAISession(aiAPI, PARSE_SYSTEM_PROMPT);
           isTempSession = true;
         }
 
@@ -512,18 +496,7 @@ export function useAISession(storageQueue: StorageQueue) {
 
       if (!isProjectActionProcessed) {
         if (!aiSessionRef.current) {
-          const createOptions: any = {
-            systemPrompt: CHAT_SYSTEM_PROMPT,
-            expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-            expectedOutputs: [{ type: 'text', languages: ['zh'] }]
-          };
-          try {
-            aiSessionRef.current = await aiAPI.create(createOptions);
-          } catch (e) {
-            delete createOptions.expectedInputs;
-            delete createOptions.expectedOutputs;
-            aiSessionRef.current = await aiAPI.create(createOptions);
-          }
+          aiSessionRef.current = await createSafeAISession(aiAPI, CHAT_SYSTEM_PROMPT);
         }
 
         const response = await aiSessionRef.current.prompt(textToProcess);

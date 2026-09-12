@@ -32,14 +32,14 @@ export async function checkAiCapabilities(aiAPI: any): Promise<boolean> {
   }
 
   try {
-    const caps = await aiAPI.capabilities({
-      expectedInputs: [{ type: 'text', languages: ['zh', 'en'] }],
-      expectedOutputs: [{ type: 'text', languages: ['zh', 'en'] }]
-    });
+    const caps = await aiAPI.capabilities();
     return caps.available !== 'no';
   } catch (e) {
     try {
-      const caps = await aiAPI.capabilities();
+      const caps = await aiAPI.capabilities({
+        expectedInputs: [{ type: 'text', languages: ['en'] }],
+        expectedOutputs: [{ type: 'text', languages: ['en'] }]
+      });
       return caps.available !== 'no';
     } catch (err) {
       console.warn('執行 capabilities 檢測失敗，改為直接依據 create 方法判斷:', err);

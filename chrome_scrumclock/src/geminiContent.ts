@@ -16,8 +16,18 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
   let hostDiv: HTMLDivElement | null = null;
   let shadow: ShadowRoot | null = null;
 
+  // 檢查擴充功能上下文是否有效 (防止 Extension context invalidated)
+  function isExtensionValid(): boolean {
+    try {
+      return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+    } catch {
+      return false;
+    }
+  }
+
   // 防抖抓取
   function debounceExtract() {
+    if (!isExtensionValid()) return;
     if (debounceTimer) {
       clearTimeout(debounceTimer);
     }
@@ -28,6 +38,7 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
 
   // 解析與擷取
   function extractAndSave(silent = false): boolean {
+    if (!isExtensionValid()) return false;
     if (!silent) {
       widgetState.status = 'syncing';
       updateWidgetUI();
@@ -104,13 +115,17 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
     }
 
     // 同步至 background
-    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-      chrome.runtime.sendMessage({
-        type: 'UPDATE_GEMINI_CHAT',
-        payload: conversationData
-      }).catch(() => {
-        // 忽略錯誤
-      });
+    if (isExtensionValid() && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+      try {
+        chrome.runtime.sendMessage({
+          type: 'UPDATE_GEMINI_CHAT',
+          payload: conversationData
+        }).catch(() => {
+          // 忽略錯誤
+        });
+      } catch {
+        // 忽略擴充功能上下文失效錯誤
+      }
     }
 
     return true;
@@ -118,6 +133,7 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
 
   // 建立 Widget
   function createWidget() {
+    if (!isExtensionValid()) return;
     if (document.getElementById('scrumclock-widget-root')) return;
 
     hostDiv = document.createElement('div');
@@ -132,15 +148,20 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
     document.body.appendChild(hostDiv);
 
     // 讀取歷史拖曳位置 (加入安全防禦)
-    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get('widgetPosition', (result) => {
-        if (result.widgetPosition && hostDiv) {
-          hostDiv.style.right = 'auto';
-          hostDiv.style.bottom = 'auto';
-          hostDiv.style.left = `${result.widgetPosition.left}px`;
-          hostDiv.style.top = `${result.widgetPosition.top}px`;
-        }
-      });
+    if (isExtensionValid() && typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        chrome.storage.local.get('widgetPosition', (result) => {
+          if (!isExtensionValid()) return;
+          if (result && result.widgetPosition && hostDiv) {
+            hostDiv.style.right = 'auto';
+            hostDiv.style.bottom = 'auto';
+            hostDiv.style.left = `${result.widgetPosition.left}px`;
+            hostDiv.style.top = `${result.widgetPosition.top}px`;
+          }
+        });
+      } catch {
+        // 忽略失效錯誤
+      }
     }
 
     shadow = hostDiv.attachShadow({ mode: 'open' });
@@ -562,6 +583,10 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
 
   // 監聽 DOM 變動
   const observer = new MutationObserver((mutations) => {
+    if (!isExtensionValid()) {
+      observer.disconnect();
+      return;
+    }
     let hasChange = false;
     for (const mutation of mutations) {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
@@ -580,6 +605,7 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
 
   // 初始化
   function init() {
+    if (!isExtensionValid()) return;
     const container = document.body;
     if (container) {
       createWidget();
@@ -601,11 +627,16 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
 
   // 當網址改變時（例如切換對話），也觸發擷取
   let lastUrl = location.href;
-  new MutationObserver(() => {
+  const urlObserver = new MutationObserver(() => {
+    if (!isExtensionValid()) {
+      urlObserver.disconnect();
+      return;
+    }
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       console.log("Gemini Exporter: 偵測到網址切換，重新擷取...");
       debounceExtract();
     }
-  }).observe(document, { subtree: true, childList: true });
+  });
+  urlObserver.observe(document, { subtree: true, childList: true });
 })();
