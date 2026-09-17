@@ -187,11 +187,14 @@
   </footer>
 
   <!-- 設定彈窗 (Modal) -->
-  <div id="settings-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; width: 440px; box-shadow: var(--shadow-lg);">
-      <h3 style="margin-bottom: 16px; color: #fff;">⚙️ 雲端同步設定</h3>
+  <div id="settings-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; width: 460px; box-shadow: var(--shadow-lg);">
+      <h3 style="margin-bottom: 8px; color: #fff;">⚙️ 雲端同步設定 (選填)</h3>
+      <p style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 16px; line-height: 1.4;">
+        💡 <b>本地優先提示</b>：本儀表板所有採集數據、歷史清單、CSV/Markdown 匯出皆已自動保存在本機瀏覽器中。雲端 Google Sheets 為可選擴充，不需設定即可直接使用所有功能！
+      </p>
       <div style="margin-bottom: 14px;">
-        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Apps Script Webhook URL</label>
+        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Apps Script Webhook URL (選填)</label>
         <input type="text" id="setting-gas-url" class="search-input" style="padding-left: 12px;" placeholder="https://script.google.com/macros/s/.../exec">
       </div>
       <div style="margin-bottom: 20px;">
@@ -199,7 +202,7 @@
         <input type="text" id="setting-sheets-url" class="search-input" style="padding-left: 12px;" placeholder="https://docs.google.com/spreadsheets/d/...">
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px;">
-        <button id="btn-close-settings" class="btn-action btn-secondary" style="padding: 6px 14px;">取消</button>
+        <button id="btn-close-settings" class="btn-action btn-secondary" style="padding: 6px 14px;">關閉</button>
         <button id="btn-save-settings" class="btn-action btn-primary" style="padding: 6px 14px;">儲存設定</button>
       </div>
     </div>

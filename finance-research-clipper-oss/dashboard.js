@@ -89,12 +89,22 @@
 
   // 初始化載入本地數據
   function init() {
-    chrome.storage.local.get(['latestStockData', 'stockHistory', 'gasUrl', 'sheetsUrl', 'contextNote'], (res) => {
-      if (res.gasUrl) settingGasUrl.value = res.gasUrl;
-      if (res.sheetsUrl) settingSheetsUrl.value = res.sheetsUrl;
+    console.log('[FinanceClipper] 儀表板初始化中 (純本地模式優先)...');
+    chrome.storage.local.get([
+      'latestStockData', 'stockHistory', 
+      'gasUrl', 'sheetsUrl', 
+      'appsScriptUrl', 'userSpreadsheetUrl', 
+      'contextNote'
+    ], (res) => {
+      const activeGasUrl = res.gasUrl || res.appsScriptUrl || '';
+      const activeSheetsUrl = res.sheetsUrl || res.userSpreadsheetUrl || '';
+
+      if (activeGasUrl) settingGasUrl.value = activeGasUrl;
+      if (activeSheetsUrl) settingSheetsUrl.value = activeSheetsUrl;
       if (res.contextNote) noteInput.value = res.contextNote;
 
       historyList = res.stockHistory || [];
+      console.log(`[FinanceClipper] 本地已載入 ${historyList.length} 檔歷史標的。`);
       renderHistoryList();
       renderSheetTabs();
 
@@ -408,35 +418,70 @@
   // 觸發背景採集
   function triggerCrawl(keyword) {
     if (!keyword || !keyword.trim()) {
+      console.warn('[FinanceClipper] 請輸入有效的股票代號或名稱！');
       showToast('請輸入有效的股票代號或名稱！');
       return;
     }
 
-    const cleanKeyword = keyword.trim();
+    const cleanKeyword = keyword.trim().toUpperCase();
+    console.log(`[FinanceClipper] 🚀 發起深度採集: [${cleanKeyword}]`);
     btnCrawl.disabled = true;
     crawlSpinner.style.display = 'inline-block';
     showToast(`⚡ 正在背景啟動 4合1 深度採集 [${cleanKeyword}]...`);
 
-    chrome.runtime.sendMessage({
-      action: 'CRAWL_STOCK',
-      keyword: cleanKeyword
-    }, (res) => {
+    // 防卡死前端保護：15 秒超時強制限流復原
+    let hasResponded = false;
+    const safetyTimer = setTimeout(() => {
+      if (!hasResponded) {
+        console.warn(`[FinanceClipper] ⚠️ 採集請求 [${cleanKeyword}] 等待逾時 (15s)，自動重設按鈕狀態。`);
+        btnCrawl.disabled = false;
+        crawlSpinner.style.display = 'none';
+        showToast(`⚠️ 背景採集超時，請檢查網路或重試！`);
+      }
+    }, 15000);
+
+    try {
+      chrome.runtime.sendMessage({
+        action: 'CRAWL_STOCK',
+        keyword: cleanKeyword
+      }, (res) => {
+        hasResponded = true;
+        clearTimeout(safetyTimer);
+        btnCrawl.disabled = false;
+        crawlSpinner.style.display = 'none';
+
+        if (chrome.runtime.lastError) {
+          console.error('[FinanceClipper] ❌ 背景通訊錯誤:', chrome.runtime.lastError.message);
+          showToast(`❌ 通訊錯誤：${chrome.runtime.lastError.message}`);
+          return;
+        }
+
+        console.log('[FinanceClipper] 📥 收到採集回應結果:', res);
+
+        if (res && res.success && res.data) {
+          console.log(`[FinanceClipper] ✅ [${res.data.ticker}] 採集成功:`, res.data);
+          showToast(`✅ [${res.data.ticker}] 採集完成！`);
+          // 重新讀取本地 storage 更新歷史清單
+          chrome.storage.local.get(['stockHistory'], (storageRes) => {
+            historyList = storageRes.stockHistory || [];
+            renderHistoryList();
+            renderSheetTabs();
+            renderStock(res.data);
+          });
+        } else {
+          const errMsg = res ? res.error : '未知錯誤';
+          console.error(`[FinanceClipper] ❌ 採集失敗:`, errMsg);
+          showToast(`❌ 採集失敗：${errMsg}`);
+        }
+      });
+    } catch (e) {
+      hasResponded = true;
+      clearTimeout(safetyTimer);
       btnCrawl.disabled = false;
       crawlSpinner.style.display = 'none';
-
-      if (res && res.success && res.data) {
-        showToast(`✅ [${res.data.ticker}] 採集完成！`);
-        // 重新讀取本地 storage 更新歷史清單
-        chrome.storage.local.get(['stockHistory'], (storageRes) => {
-          historyList = storageRes.stockHistory || [];
-          renderHistoryList();
-          renderSheetTabs();
-          renderStock(res.data);
-        });
-      } else {
-        showToast(`❌ 採集失敗：${res ? res.error : '未知錯誤'}`);
-      }
-    });
+      console.error('[FinanceClipper] 發送訊息異常:', e);
+      showToast(`❌ 發送請求失敗: ${e.message}`);
+    }
   }
 
   // 匯出 Markdown
@@ -634,11 +679,24 @@
     btnCloseSettings.addEventListener('click', () => {
       settingsModal.style.display = 'none';
     });
+    // 點擊半透明遮罩背景時自動關閉
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        settingsModal.style.display = 'none';
+      }
+    });
     btnSaveSettings.addEventListener('click', () => {
       const gasUrl = settingGasUrl.value.trim();
       const sheetsUrl = settingSheetsUrl.value.trim();
-      chrome.storage.local.set({ gasUrl, sheetsUrl }, () => {
+      // 同步雙向儲存，確保 popup.js 與 dashboard.js 都能無縫讀取
+      chrome.storage.local.set({ 
+        gasUrl, 
+        sheetsUrl,
+        appsScriptUrl: gasUrl,
+        userSpreadsheetUrl: sheetsUrl
+      }, () => {
         settingsModal.style.display = 'none';
+        console.log('[FinanceClipper] 雲端設定已儲存 (可選)');
         showToast('✅ 雲端同步設定已儲存！');
       });
     });

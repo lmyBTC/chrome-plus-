@@ -36,7 +36,7 @@
   }
 
   /**
-   * 1. 抓取 Overview 分頁數據
+   * 1. 抓取 Overview 總覽數據
    */
   function scrapeOverview() {
     const data = {
@@ -48,22 +48,41 @@
     };
 
     try {
-      // 標的名稱與代號
-      const symbolAttr = document.querySelector('[data-symbol]')?.getAttribute('data-symbol');
-      const h1Text = document.querySelector('h1')?.innerText?.trim();
+      // 1. 標的代號提取 (嚴格排除「財經」等非股票標籤)
       const urlSymbolMatch = window.location.pathname.match(/\/quote\/([A-Z0-9_.:-]+)/i);
-      data.symbol = symbolAttr || h1Text || (urlSymbolMatch ? urlSymbolMatch[1] : 'UNKNOWN');
+      let detectedSymbol = urlSymbolMatch ? urlSymbolMatch[1] : '';
 
-      // 即時價格
+      const symbolAttr = document.querySelector('[data-symbol]')?.getAttribute('data-symbol');
+      const h1El = document.querySelector('h1');
+      const h1Text = h1El?.innerText?.trim() || '';
+
+      if (!detectedSymbol && symbolAttr) detectedSymbol = symbolAttr;
+      if (!detectedSymbol && h1Text && !/^(財經|Google 財經|Google Finance|Search)$/i.test(h1Text)) {
+        detectedSymbol = h1Text;
+      }
+
+      data.symbol = detectedSymbol || 'UNKNOWN';
+
+      // 2. 即時價格 (優先檢驗有效格式)
       const priceContainer = document.querySelector('[data-last-price]');
-      const priceEl = priceContainer || document.querySelector('div[class*="price"], span[class*="price"], .YMlKvd, .fxKb7e, .N6SYTe');
-      data.price = priceContainer ? priceContainer.getAttribute('data-last-price') : (priceEl?.innerText?.trim() || 'N/A');
+      const priceCandidates = [
+        priceContainer?.getAttribute('data-last-price'),
+        document.querySelector('.N6SYTe')?.innerText?.trim(),
+        document.querySelector('span[jsname="Pdsbrc"]')?.innerText?.trim(),
+        document.querySelector('.YMlKvd')?.innerText?.trim(),
+        document.querySelector('.fxKb7e')?.innerText?.trim(),
+        document.querySelector('div[class*="price"], span[class*="price"]')?.innerText?.trim()
+      ].filter(Boolean);
 
-      // 語意化擷取 Key Stats（市值、本益比、52週高低範圍等）
+      // 挑選符合金額特徵的候選值 ($123.45, NT$123, 123.45 等)
+      const validPrice = priceCandidates.find((p) => /[$€£¥NT]?[\d,]+(?:\.\d+)?/.test(p));
+      data.price = validPrice || (priceCandidates[0] || 'N/A');
+
+      // 3. 語意化擷取 Key Stats（支援中英雙語：市值、本益比、52週高低範圍、殖利率等）
       const allTextEls = Array.from(document.querySelectorAll('div, span'))
         .filter((el) => {
           return el.children.length === 0 &&
-            /Market cap|P\/E ratio|Avg Volume|High|Low|52-wk|Dividend yield|CDI/i.test(el.innerText);
+            /Market cap|P\/E ratio|Avg Volume|High|Low|52-wk|Dividend yield|Beta|市值|本益比|成交量|最高|最低|52 週|殖利率/i.test(el.innerText);
         });
 
       allTextEls.forEach((labelEl) => {
@@ -71,7 +90,7 @@
         const parent = labelEl.parentElement;
         if (parent) {
           const valEl = Array.from(parent.children).find((c) => c !== labelEl && c.innerText.trim().length > 0);
-          if (valEl) {
+          if (valEl && valEl.innerText.trim() && !data.stats[label]) {
             data.stats[label] = valEl.innerText.trim();
           }
         }
@@ -101,13 +120,13 @@
         .map((el) => el.innerText?.trim() || '')
         .filter((t) => t.length > 0);
 
-      // 目標價與分析師共識定位
-      const targetSection = textBlocks.find((t) => /Target price|Price target|Analyst rating|Consensus|Buy|Hold|Sell/i.test(t));
+      // 目標價與分析師共識定位 (支援中英文)
+      const targetSection = textBlocks.find((t) => /Target price|Price target|Analyst rating|Consensus|Buy|Hold|Sell|目標價|分析師評級|分析師|評級|買進|持有|賣出/i.test(t));
       if (targetSection) {
         data.ratingsSummary = targetSection.slice(0, 1500);
 
-        // 提取共識字眼 (如 Strong Buy, Buy, Hold, Underperform, Sell)
-        const consensusMatch = targetSection.match(/(Strong Buy|Moderate Buy|Buy|Hold|Underperform|Sell|Strong Sell)/i);
+        // 提取共識字眼 (如 Strong Buy, Buy, Hold, 強力買進, 買進, 持有)
+        const consensusMatch = targetSection.match(/(Strong Buy|Moderate Buy|Buy|Hold|Underperform|Sell|Strong Sell|強力買進|買進|加碼|持有|減碼|賣出)/i);
         if (consensusMatch) {
           data.consensus = consensusMatch[0];
         }
@@ -206,17 +225,25 @@
   }
 
   /**
-   * 切換指定 Tab 並等待內容渲染
+   * 輕量切換指定 Tab (支援中英文 Tab，若存在才點擊，最長等待 600ms，絕不阻塞卡死)
    */
-  async function navigateToTab(tabName) {
-    // 1. 尋找對應的頁籤按鈕 (優先尋找包含 tab=xxx 的連結或 role="tab")
+  async function tryNavigateToTab(tabName) {
+    const tabPatterns = {
+      financials: /^(財務|財務狀況|Financials)$/i,
+      analysis: /^(分析|分析師評級|Analysis)$/i,
+      earnings: /^(收益|財報|Earnings)$/i,
+      overview: /^(總覽|Overview)$/i
+    };
+
+    const pattern = tabPatterns[tabName.toLowerCase()] || new RegExp(`^${tabName}$`, 'i');
+
     const tabButton = Array.from(document.querySelectorAll('[role="tab"], button, a'))
       .find((el) => {
         const text = el.innerText?.trim() || '';
         const href = el.getAttribute('href') || '';
         const ariaControls = el.getAttribute('aria-controls') || '';
         return (
-          new RegExp(`^${tabName}$`, 'i').test(text) ||
+          pattern.test(text) ||
           href.includes(`tab=${tabName}`) ||
           ariaControls.toLowerCase().includes(tabName)
         );
@@ -224,28 +251,12 @@
 
     if (tabButton) {
       tabButton.click();
-    } else {
-      // 備案：利用 SPA History API 或 Query 觸發
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.set('tab', tabName);
-      window.history.pushState({}, '', currentUrl.toString());
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      await sleep(600);
     }
-
-    // 2. 智慧等待 DOM 水合完成
-    await waitForCondition(() => {
-      // 判斷 URL 是否已切換，或是該分頁特有的內容是否出現在畫面
-      const currentTab = new URL(window.location.href).searchParams.get('tab') || 'overview';
-      return currentTab.toLowerCase() === tabName.toLowerCase() || document.readyState === 'complete';
-    }, 3000);
-
-    // 額外給予微量時間讓 client-side virtual dom 完成掛載
-    await sleep(800);
   }
 
   /**
-   * 主調度器：依序切換 Tab 並收集全部數據
-   * @param {Function} onProgress 進度通知回呼函式
+   * 主調度器：單頁優先全面提取 + 輕量輔助探測
    */
   async function runFullStockScraper(onProgress) {
     const results = {
@@ -256,41 +267,42 @@
       financials: null
     };
 
-    const tabs = [
-      { name: 'overview', fn: scrapeOverview, title: 'Overview 總覽' },
-      { name: 'analysis', fn: scrapeAnalysis, title: 'Analysis 分析師評級' },
-      { name: 'earnings', fn: scrapeEarnings, title: 'Earnings 財報表現' },
-      { name: 'financials', fn: scrapeFinancials, title: 'Financials 財務報表' }
-    ];
+    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取行情概覽...');
+    results.overview = scrapeOverview();
 
-    for (const tab of tabs) {
-      if (typeof onProgress === 'function') {
-        onProgress(`⚡ 正在切換並擷取 ${tab.title}...`);
-      }
+    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取分析師評級與目標價...');
+    results.analysis = scrapeAnalysis();
 
+    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取財報與損益表...');
+    results.earnings = scrapeEarnings();
+    results.financials = scrapeFinancials();
+
+    // 若損益表未抓到表格且有財務分頁按鈕，做一次輕量嘗試
+    if ((!results.financials.statements || results.financials.statements.length === 0)) {
       try {
-        await navigateToTab(tab.name);
-        results[tab.name] = tab.fn();
-      } catch (tabErr) {
-        results[tab.name] = { tab: tab.name, error: true };
+        await tryNavigateToTab('financials');
+        const secondaryFin = scrapeFinancials();
+        if (secondaryFin.statements && secondaryFin.statements.length > 0) {
+          results.financials = secondaryFin;
+        }
+      } catch (e) {
+        // 忽略輕量嘗試錯誤
       }
     }
 
-    if (typeof onProgress === 'function') {
-      onProgress('✅ 4 大分頁數據擷取完成！');
-    }
-
+    if (typeof onProgress === 'function') onProgress('✅ 數據萃取完成！');
     return results;
   }
 
-  // 導出至全域
+  // 導出至全域 (確保 navigateToTab 與 tryNavigateToTab 皆有定義)
   global.FinanceCrawler = {
     runFullStockScraper,
     scrapeOverview,
     scrapeAnalysis,
     scrapeEarnings,
     scrapeFinancials,
-    navigateToTab
+    navigateToTab: tryNavigateToTab,
+    tryNavigateToTab
   };
 
 })(typeof window !== 'undefined' ? window : this);

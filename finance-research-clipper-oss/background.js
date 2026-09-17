@@ -74,6 +74,35 @@ function waitForTabLoaded(tabId, timeout = 12000) {
   });
 }
 
+// 輔助工具：根據關鍵字智能構建 Google Finance 確切行情頁 URL
+function resolveGoogleFinanceUrl(keyword) {
+  const clean = keyword.trim().toUpperCase();
+  // 1. 已自帶交易所 (如 NVDA:NASDAQ, 2330:TPE)
+  if (clean.includes(':')) {
+    return `https://www.google.com/finance/quote/${clean}`;
+  }
+  // 2. 台股純數字代號 (如 2330, 2454, 2317)
+  if (/^\d{4,6}$/.test(clean)) {
+    return `https://www.google.com/finance/quote/${clean}:TPE`;
+  }
+  // 3. 常見美股在 NASDAQ
+  const nasdaqList = ['NVDA', 'TSLA', 'AAPL', 'MSFT', 'AMZN', 'GOOGL', 'GOOG', 'META', 'NFLX', 'AMD', 'INTC', 'PLTR', 'ARM', 'SMCI', 'AVGO', 'QCOM', 'TXN', 'COST', 'ASML'];
+  if (nasdaqList.includes(clean)) {
+    return `https://www.google.com/finance/quote/${clean}:NASDAQ`;
+  }
+  // 4. 常見美股在 NYSE
+  const nyseList = ['TSM', 'BABA', 'DIS', 'BA', 'IBM', 'JPM', 'WMT', 'BRK.A', 'BRK.B', 'V', 'MA', 'NKE', 'KO', 'PEP', 'PG', 'UNH', 'LLY', 'XOM', 'CVX'];
+  if (nyseList.includes(clean)) {
+    return `https://www.google.com/finance/quote/${clean}:NYSE`;
+  }
+  // 5. 1~5 碼英文字母預設嘗試 NASDAQ 直連
+  if (/^[A-Z]{1,5}$/.test(clean)) {
+    return `https://www.google.com/finance/quote/${clean}:NASDAQ`;
+  }
+  // 6. 其他文字則使用搜尋頁
+  return `https://www.google.com/finance?q=${encodeURIComponent(clean)}`;
+}
+
 /**
  * 3. 核心後台爬蟲管線：根據股票代號或名稱在背景採集
  */
@@ -82,8 +111,9 @@ async function crawlStockByKeyword(keyword) {
     throw new Error('請提供有效的股票代號或名稱');
   }
 
-  const cleanQuery = keyword.trim();
-  const targetUrl = `https://www.google.com/finance?q=${encodeURIComponent(cleanQuery)}`;
+  const cleanQuery = keyword.trim().toUpperCase();
+  const targetUrl = resolveGoogleFinanceUrl(cleanQuery);
+  console.log(`[FinanceClipper:BG] 啟動爬蟲，目標網址: ${targetUrl}`);
 
   let bgTab = null;
 
@@ -94,11 +124,39 @@ async function crawlStockByKeyword(keyword) {
       active: false
     });
 
-    // 等待跳轉與載入
-    await waitForTabLoaded(bgTab.id, 12000);
+    // 等待跳轉與載入 (最多 8 秒)
+    await waitForTabLoaded(bgTab.id, 8000);
 
     // 短暫緩衝讓 DOM 水合
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 800));
+
+    // 檢查若當前分頁仍在搜尋清單頁 (未進入 /quote/)，嘗試點擊第一筆結果跳轉
+    try {
+      const currentTab = await chrome.tabs.get(bgTab.id);
+      if (currentTab.url && !currentTab.url.includes('/quote/')) {
+        console.log('[FinanceClipper:BG] 當前仍在搜尋清單頁，嘗試自動導航進入第一筆個股...');
+        const clickResult = await chrome.scripting.executeScript({
+          target: { tabId: bgTab.id },
+          func: () => {
+            const quoteLink = document.querySelector('a[href*="/quote/"]');
+            if (quoteLink) {
+              const href = quoteLink.getAttribute('href');
+              quoteLink.click();
+              return href;
+            }
+            return null;
+          }
+        });
+
+        if (clickResult && clickResult[0] && clickResult[0].result) {
+          console.log('[FinanceClipper:BG] 成功定位個股跳轉:', clickResult[0].result);
+          await waitForTabLoaded(bgTab.id, 6000);
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+    } catch (navErr) {
+      console.warn('[FinanceClipper:BG] 搜尋清單跳轉輔助略過:', navErr.message);
+    }
 
     // 注入 crawler.js 模組
     await chrome.scripting.executeScript({
@@ -106,12 +164,12 @@ async function crawlStockByKeyword(keyword) {
       files: ['crawler.js']
     });
 
-    // 呼叫 4合1 SPA 動態爬蟲
+    // 呼叫快速萃取爬蟲
     const execResults = await chrome.scripting.executeScript({
       target: { tabId: bgTab.id },
       func: async () => {
         if (!window.FinanceCrawler || typeof window.FinanceCrawler.runFullStockScraper !== 'function') {
-          throw new Error('FinanceCrawler 未成功載入');
+          throw new Error('FinanceCrawler 模組未載入');
         }
         return await window.FinanceCrawler.runFullStockScraper();
       }
@@ -129,32 +187,40 @@ async function crawlStockByKeyword(keyword) {
     const earnings = rawData.earnings || {};
     const financials = rawData.financials || {};
 
+    let resolvedTicker = overview.symbol || cleanQuery;
+    // 嚴格校驗：若 ticker 仍為首頁關鍵字，說明未成功進入個股
+    if (/^(財經|Google 財經|Google Finance|Search|UNKNOWN)$/i.test(resolvedTicker)) {
+      resolvedTicker = cleanQuery;
+    }
+
     const stockItem = {
-      id: `${overview.symbol || cleanQuery.toUpperCase()}_${Date.now()}`,
-      ticker: overview.symbol || cleanQuery.toUpperCase(),
+      id: `${resolvedTicker}_${Date.now()}`,
+      ticker: resolvedTicker,
       query: cleanQuery,
       price: overview.price || 'N/A',
       stats: overview.stats || {},
       analyst: {
         consensus: analysis.consensus || 'N/A',
-        targetHigh: analysis.targetHigh || 'N/A',
-        targetMedian: analysis.targetMedian || 'N/A',
-        targetLow: analysis.targetLow || 'N/A',
-        summary: analysis.summary || ''
+        targetHigh: (analysis.targetPrice && analysis.targetPrice.high) || 'N/A',
+        targetMedian: (analysis.targetPrice && analysis.targetPrice.median) || 'N/A',
+        targetLow: (analysis.targetPrice && analysis.targetPrice.low) || 'N/A',
+        summary: analysis.ratingsSummary || ''
       },
       earnings: {
-        epsActual: earnings.epsActual || 'N/A',
-        epsEstimate: earnings.epsEstimate || 'N/A',
-        revenueActual: earnings.revenueActual || 'N/A',
-        revenueEstimate: earnings.revenueEstimate || 'N/A',
-        table: earnings.table || []
+        epsActual: (earnings.latestQuarter && earnings.latestQuarter.epsActual) || 'N/A',
+        epsEstimate: (earnings.latestQuarter && earnings.latestQuarter.epsEstimate) || 'N/A',
+        revenueActual: (earnings.latestQuarter && earnings.latestQuarter.revenueActual) || 'N/A',
+        revenueEstimate: (earnings.latestQuarter && earnings.latestQuarter.revenueEstimate) || 'N/A',
+        table: earnings.history || []
       },
       financials: {
-        table: financials.table || []
+        table: financials.statements && financials.statements.length > 0 ? financials.statements[0] : []
       },
       timestamp: new Date().toISOString(),
       updatedAt: new Date().toLocaleString()
     };
+
+    console.log(`[FinanceClipper:BG] 爬取完成 [${stockItem.ticker}] 即時價格: ${stockItem.price}`);
 
     // 儲存至本地 chrome.storage.local (更新當前數據與歷史清單)
     await new Promise((resolve) => {
