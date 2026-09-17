@@ -91,6 +91,84 @@
           </div>
         </section>
 
+        <!-- 🤖 Gemini Nano 智能研報速讀卡片 (本地端 LLM 推論) -->
+        <section class="card ai-report-card">
+          <div class="card-title ai-card-header">
+            <div class="ai-title-left">
+              <span class="ai-sparkle-icon">✨</span>
+              <span class="ai-title-text">Gemini Nano 智能研報速讀</span>
+              <span id="ai-model-badge" class="badge badge-ai">On-Device AI</span>
+              <span id="ai-status-indicator" class="ai-status-dot" title="連線狀態"></span>
+            </div>
+            <div class="ai-actions-right">
+              <button id="btn-generate-ai" class="btn-ai-generate">
+                <span id="ai-btn-spinner" class="ai-spinner" style="display: none;">⏳</span>
+                <span>✨ 產生 AI 解讀</span>
+              </button>
+              <button id="btn-refresh-ai" class="btn-ai-refresh" style="display: none;" title="重新分析 (忽略快取)">
+                🔄
+              </button>
+              <button id="btn-copy-ai-markdown" class="btn-ai-copy" style="display: none;" title="複製 AI 研報 Markdown">
+                📋 複製摘要
+              </button>
+            </div>
+          </div>
+
+          <!-- AI 載入中骨架屏動畫 (Skeleton) -->
+          <div id="ai-loading-container" class="ai-skeleton-wrap" style="display: none;">
+            <div class="skeleton-line skeleton-title shimmer"></div>
+            <div class="skeleton-line skeleton-p shimmer"></div>
+            <div class="skeleton-line skeleton-p shimmer"></div>
+            <div class="skeleton-line skeleton-sub shimmer"></div>
+          </div>
+
+          <!-- AI 尚未生成引導狀態 -->
+          <div id="ai-idle-state" class="ai-idle-prompt">
+            <p>點擊右上角「<b>✨ 產生 AI 解讀</b>」，即可由 ScrumClock 本機端 Gemini Nano 自動為本檔標的提煉「三句話速讀」、「多空看點」與「財務健康警示」，完全零網路請求、100% 隱私保護。</p>
+          </div>
+
+          <!-- AI 分析結果呈現容器 -->
+          <div id="ai-result-container" class="ai-result-panel" style="display: none;">
+            <!-- 📌 三句話精準速讀 -->
+            <div class="ai-section">
+              <h4 class="ai-subheading">📌 三句話精準速讀</h4>
+              <ul id="ai-quick-take-list" class="ai-list quick-take-list"></ul>
+            </div>
+
+            <!-- 多空雙欄對比 -->
+            <div class="ai-bull-bear-grid">
+              <div class="ai-card-half bull-half">
+                <h4 class="ai-subheading bull-subheading">🟢 多方核心看點 (Bull Case)</h4>
+                <ul id="ai-bull-case-list" class="ai-list bull-list"></ul>
+              </div>
+              <div class="ai-card-half bear-half">
+                <h4 class="ai-subheading bear-subheading">🔴 空方核心疑慮 (Bear Case)</h4>
+                <ul id="ai-bear-case-list" class="ai-list bear-list"></ul>
+              </div>
+            </div>
+
+            <!-- 💡 財務健康度評語 -->
+            <div class="ai-section">
+              <h4 class="ai-subheading">💡 財務健康與估值評語</h4>
+              <div id="ai-financial-health-text" class="ai-health-box"></div>
+            </div>
+
+            <div class="ai-footer-info">
+              <span id="ai-meta-timestamp" class="ai-timestamp">生成時間：--</span>
+              <span id="ai-meta-source" class="ai-source">推論核心：Gemini Nano (On-Device)</span>
+            </div>
+          </div>
+
+          <!-- 未開啟 Gemini Nano 之指引區塊 -->
+          <div id="ai-error-notice" class="ai-notice-box" style="display: none;">
+            <div class="ai-notice-title">⚠️ 尚未啟用 Chrome 本地內建 AI 或連線未設定</div>
+            <p id="ai-error-message" class="ai-notice-desc"></p>
+            <div class="ai-notice-actions">
+              <button id="btn-open-ai-settings" class="btn-action btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;">設定 ScrumClock 插件 ID</button>
+            </div>
+          </div>
+        </section>
+
         <!-- 中段雙欄卡片 -->
         <div class="grid-two-cols">
           <!-- 分析師評級與目標價階梯 -->
@@ -153,6 +231,9 @@
           <textarea id="dashboard-note-input" class="note-textarea" placeholder="在此撰寫您的投資觀點、風險提示或核心論述 (支援自動合併)..."></textarea>
           
           <div class="action-buttons-group">
+            <button id="btn-add-scrum-task" class="btn-action btn-scrum-task" style="background: linear-gradient(135deg, #4f46e5, #3b82f6); color: #ffffff; border: none; font-weight: 600;" title="將本標的研究筆記一鍵轉入 ScrumClock 今日作戰任務">
+              🎯 加入今日作戰戰役
+            </button>
             <button id="btn-copy-markdown" class="btn-action btn-primary">
               📋 一鍵複製 Markdown
             </button>
@@ -161,6 +242,9 @@
             </button>
             <button id="btn-send-gas" class="btn-action btn-success">
               ☁️ 發送至 Google Sheets (GAS)
+            </button>
+            <button id="btn-batch-send-gas" class="btn-action btn-secondary" title="將全部歷史追蹤清單批次同步至 Google Sheets">
+              📦 批次同步全部標的
             </button>
           </div>
         </section>
@@ -197,6 +281,18 @@
         <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Apps Script Webhook URL (選填)</label>
         <input type="text" id="setting-gas-url" class="search-input" style="padding-left: 12px;" placeholder="https://script.google.com/macros/s/.../exec">
       </div>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">GAS Webhook 安全金鑰 / Secret Token (選填)</label>
+        <input type="password" id="setting-gas-secret" class="search-input" style="padding-left: 12px;" placeholder="若試算表有設定 SECRET_TOKEN 請填入">
+      </div>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">🤖 ScrumClock (Power Kit) 插件 ID (用於本地 Gemini Nano)</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="setting-scrumclock-id" class="search-input" style="padding-left: 12px; flex: 1;" placeholder="輸入 ScrumClock 插件 ID (32位元字串)">
+          <button id="btn-test-ai-conn" class="btn-action btn-secondary" style="white-space: nowrap; font-size: 0.8rem;">測試連線</button>
+        </div>
+        <div id="scrumclock-conn-status" style="font-size: 0.78rem; margin-top: 4px; color: var(--text-muted);"></div>
+      </div>
       <div style="margin-bottom: 20px;">
         <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Sheets URL (選填)</label>
         <input type="text" id="setting-sheets-url" class="search-input" style="padding-left: 12px;" placeholder="https://docs.google.com/spreadsheets/d/...">
@@ -211,6 +307,7 @@
   <!-- 吐司提示容器 -->
   <div id="toast-container" class="toast-container"></div>
 
+  <script src="aiClient.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>

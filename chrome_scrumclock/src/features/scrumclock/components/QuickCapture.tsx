@@ -67,6 +67,23 @@ export const QuickCapture: React.FC = () => {
     window.close();
   };
 
+  // 辨識 $TICKER 股票代碼
+  const tickerMatch = task.match(/\$([A-Za-z0-9]+)/);
+  const detectedTicker = tickerMatch ? tickerMatch[1].toUpperCase() : null;
+  const hasFinanceTag = task.includes('#投資研究');
+
+  const applyFinanceSuggestion = () => {
+    if (!detectedTicker) return;
+    let updated = task;
+    if (!hasFinanceTag) {
+      updated = updated.trim() + ' #投資研究';
+    }
+    setTask(updated);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
   return (
     <div className="h-screen w-screen bg-dark-base flex flex-col items-center justify-center p-6">
       <div className="w-full max-w-md bg-dark-card rounded-xl shadow-lg p-6 border border-dark-border-subtle shadow-slate-950/40">
@@ -80,10 +97,28 @@ export const QuickCapture: React.FC = () => {
             type="text"
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            placeholder="輸入待辦事項並按下 Enter..."
+            placeholder="輸入待辦事項 (如: 研讀 $NVDA 財報) 並按 Enter..."
             disabled={isSubmitting}
             className="w-full px-4 py-3 text-lg bg-dark-surface border border-dark-border-default rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-dark-primary disabled:bg-dark-hover disabled:text-dark-muted"
           />
+
+          {/* 智能個股代號識別膠囊 */}
+          {detectedTicker && (
+            <div className="mt-3 flex items-center justify-between p-2.5 bg-blue-950/40 border border-blue-800/50 rounded-lg text-xs animate-fade-in">
+              <span className="text-blue-300">
+                📈 偵測到個股 <b>${detectedTicker}</b>
+              </span>
+              <button
+                type="button"
+                onClick={applyFinanceSuggestion}
+                disabled={hasFinanceTag}
+                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-900/50 disabled:text-blue-300/60 text-white rounded font-medium transition-colors cursor-pointer"
+              >
+                {hasFinanceTag ? '已關聯 #投資研究' : '+ 標註 #投資研究 (2 🍅)'}
+              </button>
+            </div>
+          )}
+
           <div className="mt-4 flex justify-between items-center text-sm text-dark-muted">
             <span>將自動同步至 {adapterType === 'notion' ? 'Notion' : 'Google Tasks'}</span>
             <button

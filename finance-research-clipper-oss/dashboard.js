@@ -50,9 +50,11 @@
   const noteInput = document.getElementById('dashboard-note-input');
 
   // 輸出按鈕
+  const btnAddToScrum = document.getElementById('btn-add-scrum-task');
   const btnCopyMarkdown = document.getElementById('btn-copy-markdown');
   const btnDownloadCsv = document.getElementById('btn-download-csv');
   const btnSendGas = document.getElementById('btn-send-gas');
+  const btnBatchSendGas = document.getElementById('btn-batch-send-gas');
 
   // 設定彈窗
   const btnOpenSettings = document.getElementById('btn-open-settings');
@@ -60,7 +62,32 @@
   const btnCloseSettings = document.getElementById('btn-close-settings');
   const btnSaveSettings = document.getElementById('btn-save-settings');
   const settingGasUrl = document.getElementById('setting-gas-url');
+  const settingGasSecret = document.getElementById('setting-gas-secret');
   const settingSheetsUrl = document.getElementById('setting-sheets-url');
+
+  // AI 研報面板元素
+  const btnGenerateAi = document.getElementById('btn-generate-ai');
+  const btnRefreshAi = document.getElementById('btn-refresh-ai');
+  const btnCopyAiMarkdown = document.getElementById('btn-copy-ai-markdown');
+  const aiBtnSpinner = document.getElementById('ai-btn-spinner');
+  const aiStatusIndicator = document.getElementById('ai-status-indicator');
+  const aiLoadingContainer = document.getElementById('ai-loading-container');
+  const aiIdleState = document.getElementById('ai-idle-state');
+  const aiResultContainer = document.getElementById('ai-result-container');
+  const aiQuickTakeList = document.getElementById('ai-quick-take-list');
+  const aiBullCaseList = document.getElementById('ai-bull-case-list');
+  const aiBearCaseList = document.getElementById('ai-bear-case-list');
+  const aiFinancialHealthText = document.getElementById('ai-financial-health-text');
+  const aiMetaTimestamp = document.getElementById('ai-meta-timestamp');
+  const aiMetaSource = document.getElementById('ai-meta-source');
+  const aiErrorNotice = document.getElementById('ai-error-notice');
+  const aiErrorMessage = document.getElementById('ai-error-message');
+  const btnOpenAiSettings = document.getElementById('btn-open-ai-settings');
+  const settingScrumclockId = document.getElementById('setting-scrumclock-id');
+  const btnTestAiConn = document.getElementById('btn-test-ai-conn');
+  const scrumclockConnStatus = document.getElementById('scrumclock-conn-status');
+
+  let currentAiSummary = null; // 當前標的的 AI 摘要快取
 
   // 吐司通知
   const toastContainer = document.getElementById('toast-container');
@@ -92,21 +119,29 @@
     console.log('[FinanceClipper] 儀表板初始化中 (純本地模式優先)...');
     chrome.storage.local.get([
       'latestStockData', 'stockHistory', 
-      'gasUrl', 'sheetsUrl', 
+      'gasUrl', 'sheetsUrl', 'gasSecretToken',
       'appsScriptUrl', 'userSpreadsheetUrl', 
-      'contextNote'
+      'contextNote', 'scrumclock_ext_id'
     ], (res) => {
       const activeGasUrl = res.gasUrl || res.appsScriptUrl || '';
       const activeSheetsUrl = res.sheetsUrl || res.userSpreadsheetUrl || '';
+      const activeGasSecret = res.gasSecretToken || '';
 
-      if (activeGasUrl) settingGasUrl.value = activeGasUrl;
-      if (activeSheetsUrl) settingSheetsUrl.value = activeSheetsUrl;
+      if (activeGasUrl && settingGasUrl) settingGasUrl.value = activeGasUrl;
+      if (activeGasSecret && settingGasSecret) settingGasSecret.value = activeGasSecret;
+      if (activeSheetsUrl && settingSheetsUrl) settingSheetsUrl.value = activeSheetsUrl;
       if (res.contextNote) noteInput.value = res.contextNote;
+      if (res.scrumclock_ext_id && settingScrumclockId) {
+        settingScrumclockId.value = res.scrumclock_ext_id;
+      }
 
       historyList = res.stockHistory || [];
       console.log(`[FinanceClipper] 本地已載入 ${historyList.length} 檔歷史標的。`);
       renderHistoryList();
       renderSheetTabs();
+
+      // 檢查本機 AI 服務連線狀態
+      checkAiStatus();
 
       if (res.latestStockData) {
         renderStock(res.latestStockData);
@@ -188,6 +223,9 @@
 
     // 更新左側活躍樣式
     highlightActiveHistoryItem(stock.ticker);
+
+    // 5. 載入並渲染 AI 智能研報
+    loadStockAi(stock, false);
   }
 
   // 渲染 Key Stats 網格
@@ -523,7 +561,12 @@
     }
 
     if (note) {
-      md += `### ✍️ 個人投資觀點與研報筆記\n\n${note}\n`;
+      md += `### ✍️ 個人投資觀點與研報筆記\n\n${note}\n\n`;
+    }
+
+    // 🤖 Gemini Nano 智能研報整合輸出
+    if (currentAiSummary && currentAiSummary.rawMarkdown) {
+      md += `----------------------------------------\n\n${currentAiSummary.rawMarkdown}\n\n`;
     }
 
     navigator.clipboard.writeText(md).then(() => {
@@ -565,11 +608,11 @@
     showToast(`📥 [${stock.ticker}] CSV 試算表已開始下載！`);
   }
 
-  // 送出至 Google Sheets (GAS Webhook)
+  // 送出至 Google Sheets (統一 GAS Webhook Envelope 規範)
   function sendToGas() {
     if (!currentStock) return;
-    chrome.storage.local.get(['gasUrl'], (res) => {
-      const gasUrl = res.gasUrl;
+    chrome.storage.local.get(['gasUrl', 'gasSecretToken', 'appsScriptUrl'], (res) => {
+      const gasUrl = res.gasUrl || res.appsScriptUrl;
       if (!gasUrl) {
         showToast('⚠️ 尚未設定 Google Apps Script URL，請先點選右上角齒輪設定！');
         settingsModal.style.display = 'flex';
@@ -580,17 +623,24 @@
       btnSendGas.textContent = '傳送中...';
 
       const payload = {
-        timestamp: new Date().toISOString(),
-        mode: 'stock',
-        ticker: currentStock.ticker,
-        price: currentStock.price,
-        mktcap: currentStock.stats ? currentStock.stats['市值'] || currentStock.stats['Market cap'] : '',
-        pe: currentStock.stats ? currentStock.stats['本益比'] || currentStock.stats['P/E ratio'] : '',
-        analyst_consensus: currentStock.analyst ? currentStock.analyst.consensus : '',
-        target_price_median: currentStock.analyst ? currentStock.analyst.targetMedian : '',
-        target_price_high: currentStock.analyst ? currentStock.analyst.targetHigh : '',
-        target_price_low: currentStock.analyst ? currentStock.analyst.targetLow : '',
-        note: noteInput.value.trim()
+        protocolVersion: 1,
+        action: 'finance_clip',
+        secretToken: res.gasSecretToken || undefined,
+        timestamp: Date.now(),
+        data: {
+          ticker: currentStock.ticker,
+          name: currentStock.name || currentStock.companyName || currentStock.ticker,
+          price: currentStock.price,
+          sentiment: currentStock.sentiment || (currentStock.note ? analyzeClientSentiment(currentStock.note) : '😐 中性'),
+          note: noteInput.value.trim(),
+          pe: currentStock.stats ? (currentStock.stats['本益比'] || currentStock.stats['P/E ratio'] || '') : '',
+          mktcap: currentStock.stats ? (currentStock.stats['市值'] || currentStock.stats['Market cap'] || '') : '',
+          sp500: currentStock.stats ? (currentStock.stats['sp500'] || '') : '',
+          nasdaq: currentStock.stats ? (currentStock.stats['nasdaq'] || '') : '',
+          analystRating: currentStock.analyst ? (currentStock.analyst.consensus || '') : '',
+          analystTargetPrice: currentStock.analyst ? (currentStock.analyst.targetMedian || '') : '',
+          sourceUrl: currentStock.url || `https://www.google.com/finance/quote/${currentStock.ticker}`
+        }
       };
 
       fetch(gasUrl, {
@@ -603,7 +653,7 @@
         btnSendGas.disabled = false;
         btnSendGas.textContent = '☁️ 發送至 Google Sheets (GAS)';
         if (resp.ok) {
-          showToast('🎉 成功同步至 Google Sheets 試算表！');
+          showToast(`🎉 成功同步 [${currentStock.ticker}] 至 Google Sheets！`);
         } else {
           showToast(`⚠️ 傳送失敗，HTTP 狀態碼: ${resp.status}`);
         }
@@ -613,6 +663,326 @@
         showToast(`❌ 連線錯誤: ${err.message}`);
       });
     });
+  }
+
+  // 📦 批次同步全部歷史標的至 Google Sheets
+  function batchSendToGas() {
+    if (!historyList || historyList.length === 0) {
+      showToast('⚠️ 歷史追蹤清單為空，無資料可同步');
+      return;
+    }
+
+    chrome.storage.local.get(['gasUrl', 'gasSecretToken', 'appsScriptUrl'], (res) => {
+      const gasUrl = res.gasUrl || res.appsScriptUrl;
+      if (!gasUrl) {
+        showToast('⚠️ 尚未設定 Google Apps Script URL，請先點選右上角齒輪設定！');
+        settingsModal.style.display = 'flex';
+        return;
+      }
+
+      if (btnBatchSendGas) {
+        btnBatchSendGas.disabled = true;
+        btnBatchSendGas.textContent = `同步中 (${historyList.length} 筆)...`;
+      }
+
+      const items = historyList.map(stock => ({
+        ticker: stock.ticker,
+        name: stock.name || stock.companyName || stock.ticker,
+        price: stock.price,
+        sentiment: stock.sentiment || (stock.note ? analyzeClientSentiment(stock.note) : '😐 中性'),
+        note: stock.note || '',
+        pe: stock.stats ? (stock.stats['本益比'] || stock.stats['P/E ratio'] || '') : '',
+        mktcap: stock.stats ? (stock.stats['市值'] || stock.stats['Market cap'] || '') : '',
+        analystRating: stock.analyst ? (stock.analyst.consensus || '') : '',
+        analystTargetPrice: stock.analyst ? (stock.analyst.targetMedian || '') : '',
+        sourceUrl: stock.url || `https://www.google.com/finance/quote/${stock.ticker}`
+      }));
+
+      const payload = {
+        protocolVersion: 1,
+        action: 'batch_finance_clip',
+        secretToken: res.gasSecretToken || undefined,
+        timestamp: Date.now(),
+        data: {
+          items: items
+        }
+      };
+
+      fetch(gasUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload),
+        mode: 'cors',
+        redirect: 'follow'
+      }).then((resp) => {
+        if (btnBatchSendGas) {
+          btnBatchSendGas.disabled = false;
+          btnBatchSendGas.textContent = '📦 批次同步全部標的';
+        }
+        if (resp.ok) {
+          showToast(`🎉 成功批次匯流 ${items.length} 檔個股至 Google Sheets！`);
+        } else {
+          showToast(`⚠️ 批次同步失敗，HTTP: ${resp.status}`);
+        }
+      }).catch((err) => {
+        if (btnBatchSendGas) {
+          btnBatchSendGas.disabled = false;
+          btnBatchSendGas.textContent = '📦 批次同步全部標的';
+        }
+        showToast(`❌ 批次連線錯誤: ${err.message}`);
+      });
+    });
+  }
+
+  // 執行轉入 ScrumClock 任務
+  async function addStockToScrumTask() {
+    if (!currentStock) {
+      showToast('⚠️ 請先選擇或採集個股標的');
+      return;
+    }
+
+    if (!window.FinanceAIClient || !window.FinanceAIClient.createScrumTask) {
+      showToast('⚠️ 跨插件客戶端模組尚未載入');
+      return;
+    }
+
+    const stock = currentStock;
+    const note = noteInput ? noteInput.value.trim() : '';
+
+    // 格式化結構化 Markdown
+    let md = `### 📌 標的概況：${stock.ticker} (${stock.price})\n\n`;
+    md += `* **採集時間**：${stock.updatedAt || new Date().toLocaleString()}\n`;
+    md += `* **即時價格**：${stock.price}\n\n`;
+
+    const an = stock.analyst || {};
+    md += `### 🎯 分析師評級與目標價\n`;
+    md += `- 共識：${an.consensus || 'N/A'}\n`;
+    md += `- 目標價：最低 ${an.targetLow || 'N/A'} / 中位 ${an.targetMedian || 'N/A'} / 最高 ${an.targetHigh || 'N/A'}\n\n`;
+
+    if (note) {
+      md += `### ✍️ 個人研究觀點\n${note}\n\n`;
+    }
+
+    if (currentAiSummary && currentAiSummary.rawMarkdown) {
+      md += `### ✨ Gemini Nano 智能速讀\n${currentAiSummary.rawMarkdown}\n\n`;
+    }
+
+    const taskTitle = `研讀 $${stock.ticker} 財報與投資估值`;
+    const tags = ['#投資研究', `$${stock.ticker}`];
+
+    if (btnAddToScrum) {
+      btnAddToScrum.disabled = true;
+      btnAddToScrum.textContent = '⏳ 正在轉入任務...';
+    }
+
+    try {
+      const res = await window.FinanceAIClient.createScrumTask({
+        ticker: stock.ticker,
+        title: taskTitle,
+        notes: md,
+        tags: tags,
+        estimatedPomodoros: 2,
+        url: window.location.href
+      });
+
+      if (btnAddToScrum) {
+        btnAddToScrum.disabled = false;
+        btnAddToScrum.textContent = '🎯 加入今日作戰戰役';
+      }
+
+      if (res && res.success) {
+        if (res.duplicate) {
+          showToast(`ℹ️ $${stock.ticker} 今日已在戰役中，已同步更新備忘！`);
+        } else {
+          showToast(`🎯 成功將 $${stock.ticker} 加入 ScrumClock 今日戰役！`);
+        }
+      } else {
+        showToast(`⚠️ 建立任務失敗：${res ? res.error : '未知錯誤'}`);
+      }
+    } catch (err) {
+      if (btnAddToScrum) {
+        btnAddToScrum.disabled = false;
+        btnAddToScrum.textContent = '🎯 加入今日作戰戰役';
+      }
+      showToast(`❌ 發生異常：${err.message}`);
+    }
+  }
+
+  // ===========================================================================
+  // 🤖 Gemini Nano AI 研報交互與狀態管理函式群
+  // ===========================================================================
+
+  // 檢查 AI 服務可用狀態並更新小圓點
+  async function checkAiStatus() {
+    if (!window.FinanceAIClient || !aiStatusIndicator) return;
+    const res = await window.FinanceAIClient.checkAvailability();
+    if (res.success && res.available) {
+      aiStatusIndicator.className = 'ai-status-dot connected';
+      aiStatusIndicator.title = `已連線: ${res.model || 'Gemini Nano'}`;
+    } else {
+      aiStatusIndicator.className = 'ai-status-dot';
+      aiStatusIndicator.title = res.error || 'ScrumClock AI 服務未連線';
+    }
+  }
+
+  // 切換 AI 載入狀態
+  function showAiLoading(isLoading) {
+    if (!aiLoadingContainer || !btnGenerateAi) return;
+    if (isLoading) {
+      aiLoadingContainer.style.display = 'flex';
+      aiIdleState.style.display = 'none';
+      aiResultContainer.style.display = 'none';
+      aiErrorNotice.style.display = 'none';
+      btnGenerateAi.disabled = true;
+      btnGenerateAi.style.opacity = '0.7';
+      if (aiBtnSpinner) aiBtnSpinner.style.display = 'inline';
+    } else {
+      aiLoadingContainer.style.display = 'none';
+      btnGenerateAi.disabled = false;
+      btnGenerateAi.style.opacity = '1';
+      if (aiBtnSpinner) aiBtnSpinner.style.display = 'none';
+    }
+  }
+
+  // 顯示 AI 錯誤或未開啟提醒
+  function showAiError(errorMessage) {
+    showAiLoading(false);
+    if (aiErrorNotice && aiErrorMessage) {
+      aiErrorNotice.style.display = 'block';
+      aiErrorMessage.textContent = errorMessage;
+      aiIdleState.style.display = 'none';
+      aiResultContainer.style.display = 'none';
+    }
+  }
+
+  // 渲染 AI 研報數據
+  function renderAiSummary(summary) {
+    currentAiSummary = summary;
+    if (!summary || !aiResultContainer) return;
+
+    // 1. 三句話速讀
+    aiQuickTakeList.textContent = '';
+    const quickTake = Array.isArray(summary.quickTake) ? summary.quickTake : [];
+    quickTake.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      aiQuickTakeList.appendChild(li);
+    });
+
+    // 2. 多方核心看點
+    aiBullCaseList.textContent = '';
+    const bullCase = Array.isArray(summary.bullCase) ? summary.bullCase : [];
+    bullCase.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      aiBullCaseList.appendChild(li);
+    });
+
+    // 3. 空方核心疑慮
+    aiBearCaseList.textContent = '';
+    const bearCase = Array.isArray(summary.bearCase) ? summary.bearCase : [];
+    bearCase.forEach((item) => {
+      const li = document.createElement('li');
+      li.textContent = item;
+      aiBearCaseList.appendChild(li);
+    });
+
+    // 4. 財務健康評語
+    aiFinancialHealthText.textContent = summary.financialHealth || '無財務健康特別評語。';
+
+    // 5. 元數據
+    if (aiMetaTimestamp) {
+      aiMetaTimestamp.textContent = `生成時間：${summary.generatedAt || new Date().toLocaleTimeString()}`;
+    }
+    if (aiMetaSource && summary.model) {
+      aiMetaSource.textContent = `推論核心：${summary.model}`;
+    }
+
+    // 顯隱控制
+    aiIdleState.style.display = 'none';
+    aiErrorNotice.style.display = 'none';
+    aiResultContainer.style.display = 'flex';
+    if (btnRefreshAi) btnRefreshAi.style.display = 'inline-flex';
+    if (btnCopyAiMarkdown) btnCopyAiMarkdown.style.display = 'inline-flex';
+    if (btnGenerateAi) btnGenerateAi.style.display = 'none';
+  }
+
+  // 載入個股 AI 研報 (先檢查快取，若無則可手動或自動生成)
+  async function loadStockAi(stock, forceRefresh = false) {
+    if (!stock || !stock.ticker) return;
+
+    // 隱藏錯誤提示，切換為檢查中
+    aiErrorNotice.style.display = 'none';
+
+    if (!forceRefresh) {
+      // 1. 嘗試由本機快取讀取
+      const cached = await window.FinanceAIClient?.getCachedSummary(stock.ticker);
+      if (cached) {
+        console.log(`[FinanceClipper] 載入 ${stock.ticker} 當日 AI 快取研報`);
+        renderAiSummary(cached);
+        return;
+      }
+
+      // 若無快取，呈現待觸發狀態
+      currentAiSummary = null;
+      aiIdleState.style.display = 'block';
+      aiResultContainer.style.display = 'none';
+      if (btnRefreshAi) btnRefreshAi.style.display = 'none';
+      if (btnCopyAiMarkdown) btnCopyAiMarkdown.style.display = 'none';
+      if (btnGenerateAi) btnGenerateAi.style.display = 'inline-flex';
+      return;
+    }
+
+    // 2. 使用者點擊「產生 AI 解讀」或「重新分析」
+    showAiLoading(true);
+    showToast(`🤖 正在為 ${stock.ticker} 調用本地 Gemini Nano 分析中...`);
+
+    const result = await window.FinanceAIClient?.requestStockSummary(stock, true);
+    showAiLoading(false);
+
+    if (result && result.success && result.summary) {
+      renderAiSummary(result.summary);
+      showToast('✨ Gemini Nano 研報摘要已生成完畢！');
+    } else {
+      showAiError(result?.error || '無法取得 AI 分析結果，請確認 ScrumClock 是否運行且已啟用 Gemini Nano。');
+      showToast('⚠️ AI 生成未完成，請檢視面板提示。');
+    }
+  }
+
+  // 僅複製 AI 研報 Markdown
+  function copyAiMarkdownOnly() {
+    if (!currentAiSummary || !currentAiSummary.rawMarkdown) {
+      showToast('⚠️ 目前尚未生成 AI 研報摘要');
+      return;
+    }
+    navigator.clipboard.writeText(currentAiSummary.rawMarkdown).then(() => {
+      showToast('📋 AI 研報摘要已複製至剪貼簿！');
+    }).catch(() => {
+      showToast('複製失敗，請手動選取');
+    });
+  }
+
+  // 測試 AI 跨插件連線
+  async function testAiConnection() {
+    const extId = settingScrumclockId.value.trim();
+    if (!extId) {
+      scrumclockConnStatus.textContent = '請先填入 ScrumClock 插件 ID！';
+      scrumclockConnStatus.style.color = 'var(--accent-red)';
+      return;
+    }
+
+    scrumclockConnStatus.textContent = '連線測試中...';
+    scrumclockConnStatus.style.color = 'var(--text-secondary)';
+
+    const res = await window.FinanceAIClient.checkAvailability(extId);
+    if (res.success && res.available) {
+      scrumclockConnStatus.textContent = `✅ 連線成功！偵測到模型：${res.model}`;
+      scrumclockConnStatus.style.color = 'var(--accent-green)';
+      checkAiStatus();
+    } else {
+      scrumclockConnStatus.textContent = `❌ ${res.error || '連線失敗或 Gemini Nano 未就緒'}`;
+      scrumclockConnStatus.style.color = 'var(--accent-red)';
+    }
   }
 
   // 綁定所有事件
@@ -636,6 +1006,8 @@
     btnCopyMarkdown.addEventListener('click', exportMarkdown);
     btnDownloadCsv.addEventListener('click', exportCsv);
     btnSendGas.addEventListener('click', sendToGas);
+    if (btnBatchSendGas) btnBatchSendGas.addEventListener('click', batchSendToGas);
+    if (btnAddToScrum) btnAddToScrum.addEventListener('click', addStockToScrumTask);
 
     // 清空歷史清單
     btnClearHistory.addEventListener('click', () => {
@@ -672,6 +1044,29 @@
       });
     }
 
+    // AI 研報面板按鈕
+    if (btnGenerateAi) {
+      btnGenerateAi.addEventListener('click', () => {
+        if (currentStock) loadStockAi(currentStock, true);
+      });
+    }
+    if (btnRefreshAi) {
+      btnRefreshAi.addEventListener('click', () => {
+        if (currentStock) loadStockAi(currentStock, true);
+      });
+    }
+    if (btnCopyAiMarkdown) {
+      btnCopyAiMarkdown.addEventListener('click', copyAiMarkdownOnly);
+    }
+    if (btnOpenAiSettings) {
+      btnOpenAiSettings.addEventListener('click', () => {
+        settingsModal.style.display = 'flex';
+      });
+    }
+    if (btnTestAiConn) {
+      btnTestAiConn.addEventListener('click', testAiConnection);
+    }
+
     // 設定彈窗控制
     btnOpenSettings.addEventListener('click', () => {
       settingsModal.style.display = 'flex';
@@ -687,17 +1082,26 @@
     });
     btnSaveSettings.addEventListener('click', () => {
       const gasUrl = settingGasUrl.value.trim();
+      const gasSecretToken = settingGasSecret ? settingGasSecret.value.trim() : '';
       const sheetsUrl = settingSheetsUrl.value.trim();
+      const scId = settingScrumclockId ? settingScrumclockId.value.trim() : '';
+
       // 同步雙向儲存，確保 popup.js 與 dashboard.js 都能無縫讀取
       chrome.storage.local.set({ 
         gasUrl, 
+        gasSecretToken,
         sheetsUrl,
         appsScriptUrl: gasUrl,
-        userSpreadsheetUrl: sheetsUrl
-      }, () => {
+        userSpreadsheetUrl: sheetsUrl,
+        scrumclock_ext_id: scId
+      }, async () => {
+        if (window.FinanceAIClient && scId) {
+          await window.FinanceAIClient.setScrumClockId(scId);
+          checkAiStatus();
+        }
         settingsModal.style.display = 'none';
-        console.log('[FinanceClipper] 雲端設定已儲存 (可選)');
-        showToast('✅ 雲端同步設定已儲存！');
+        console.log('[FinanceClipper] 儀表板設定已儲存');
+        showToast('✅ 儀表板與 AI 連線設定已儲存！');
       });
     });
 

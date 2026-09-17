@@ -13,6 +13,8 @@ export interface UserSettings {
   geminiApiKey?: string;
   enableWebhook?: boolean;
   webhookUrl?: string;
+  webhookSecretToken?: string;
+  financeClipperExtensionId?: string;
 }
 
 export interface NorthStarGoal {
@@ -31,6 +33,10 @@ export interface WeeklyMission {
   createdAt?: string; // 新增：建立時間 (格式: YYYY-MM-DD HH:mm)
   completedAt?: string; // 新增：完成時間
   progressPercent?: number; // 新增：進度百分比
+  ticker?: string; // 關聯個股代碼 (例如 NVDA, 2330)
+  tags?: string[]; // 任務標籤 (例如 ['#投資研究', '#美股'])
+  url?: string; // 關聯網址
+  estimatedPomodoros?: number; // 預估番茄鐘數
 }
 
 export interface InboxItem {

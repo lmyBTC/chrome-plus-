@@ -14,6 +14,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { InstallDocs } from './components/InstallDocs';
 import { GeminiManager } from './features/gemini-exporter';
 import { ToolboxHub } from './features/toolbox';
+import { WatchListWidget } from './features/finance-integration';
 
 type AppState = 'briefing' | 'sprint' | 'review' | 'completed';
 type ViewState = 'flow' | 'analytics';
@@ -135,6 +136,11 @@ function App() {
               {currentView === 'bookmarks' && <BookmarksHub />}
               {currentView === 'analytics' && <AnalyticsDashboard />}
               {currentView === 'toolbox' && <ToolboxHub />}
+              {currentView === 'finance' && (
+                <div className="max-w-4xl mx-auto p-6 h-full">
+                  <WatchListWidget />
+                </div>
+              )}
               {currentView === 'gemini' && <GeminiManager />}
               {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
               {currentView === 'docs' && <InstallDocs />}

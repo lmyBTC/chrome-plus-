@@ -15,7 +15,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   whiteNoiseVolume: 0.5,
   geminiApiKey: '',
   enableWebhook: false,
-  webhookUrl: ''
+  webhookUrl: '',
+  webhookSecretToken: ''
 };
 
 const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {

@@ -39,3 +39,91 @@ export const PARSE_SYSTEM_PROMPT = `你是一個專案管理資料分析師。�
 
 輸入：「你覺得敏捷開發跟瀑布流開發差在哪裡？」
 輸出：{"isAction":false}`;
+
+export const FINANCE_SUMMARY_SYSTEM_PROMPT = `你是一個頂級華爾街資深量化分析師與投資研究主管。
+你擅長從 Google Finance 採集的即時行情、市值、本益比、分析師目標價、季報 EPS 與營收矩陣中，提取最核心的投資洞察。
+請一律使用「繁體中文」進行分析，語言專業、簡潔俐落、客觀求實、直擊要害。
+
+你必須「只」輸出 JSON 格式，不要包含任何額外問候語或 Markdown 標記，格式如下：
+{
+  "quickTake": [
+    "第一句速讀：當前估值水準與市場定價概況",
+    "第二句速讀：近期財報或營運核心催化劑",
+    "第三句速讀：分析師共識與後續關鍵觀察指標"
+  ],
+  "bullCase": [
+    "多方核心亮點 1",
+    "多方核心亮點 2",
+    "多方核心亮點 3"
+  ],
+  "bearCase": [
+    "空方風險隱憂 1",
+    "空方風險隱憂 2"
+  ],
+  "financialHealth": "簡短評析財務健康度（如流動性、負債比、獲利品質與估值溢價）"
+}`;
+
+/**
+ * 構建財務研報 Prompt
+ */
+export function buildFinanceSummaryPrompt(data: {
+  ticker: string;
+  name?: string;
+  price?: string;
+  stats?: Record<string, string>;
+  analyst?: {
+    consensus?: string;
+    targetLow?: string;
+    targetMedian?: string;
+    targetHigh?: string;
+  };
+  earnings?: {
+    epsActual?: string;
+    epsEstimate?: string;
+    revenueActual?: string;
+    revenueEstimate?: string;
+  };
+  financials?: any;
+  note?: string;
+}): string {
+  const lines: string[] = [];
+  lines.push(`【標的資訊】`);
+  lines.push(`股票代號: ${data.ticker}${data.name ? ` (${data.name})` : ''}`);
+  if (data.price) lines.push(`最新股價: ${data.price}`);
+
+  if (data.stats && typeof data.stats === 'object') {
+    lines.push(`【關鍵指標與估值】`);
+    for (const [k, v] of Object.entries(data.stats)) {
+      if (v !== null && v !== undefined) {
+        const valStr = typeof v === 'object' ? JSON.stringify(v) : String(v);
+        lines.push(`- ${k}: ${valStr}`);
+      }
+    }
+  }
+
+  if (data.analyst) {
+    lines.push(`【分析師共識與目標價】`);
+    if (data.analyst.consensus) lines.push(`- 評級共識: ${data.analyst.consensus}`);
+    if (data.analyst.targetLow) lines.push(`- 最低目標價: ${data.analyst.targetLow}`);
+    if (data.analyst.targetMedian) lines.push(`- 中位數目標價: ${data.analyst.targetMedian}`);
+    if (data.analyst.targetHigh) lines.push(`- 最高目標價: ${data.analyst.targetHigh}`);
+  }
+
+  if (data.earnings) {
+    lines.push(`【最新季度財報 (Earnings)】`);
+    if (data.earnings.epsActual || data.earnings.epsEstimate) {
+      lines.push(`- EPS (實際 / 預期): ${data.earnings.epsActual || '--'} / ${data.earnings.epsEstimate || '--'}`);
+    }
+    if (data.earnings.revenueActual || data.earnings.revenueEstimate) {
+      lines.push(`- 營收 (實際 / 預期): ${data.earnings.revenueActual || '--'} / ${data.earnings.revenueEstimate || '--'}`);
+    }
+  }
+
+  if (data.note) {
+    lines.push(`【研究員個人筆記與觀察】: ${data.note}`);
+  }
+
+  lines.push(`\n請依照指定 JSON 規格產出三句話速讀、多空看點與財務健康分析：`);
+  return lines.join('\n');
+}
+

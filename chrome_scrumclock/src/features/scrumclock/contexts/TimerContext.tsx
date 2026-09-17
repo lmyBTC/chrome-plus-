@@ -255,7 +255,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       try {
         chrome.runtime.sendMessage({
           type: 'START_FOCUS_MODE',
-          payload: { missionId, duration: durationToUse }
+          payload: { missionId, missionText, duration: durationToUse }
         });
       } catch (err) {
         console.warn('發送訊息失敗 (可能 Context 已失效):', err);
@@ -295,7 +295,14 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       });
       if (chrome.runtime?.sendMessage) {
         try {
-          chrome.runtime.sendMessage({ type: 'START_FOCUS_MODE', payload: { duration: timeLeft / 60 } });
+          chrome.runtime.sendMessage({
+            type: 'START_FOCUS_MODE',
+            payload: {
+              duration: timeLeft / 60,
+              missionId: currentSprint?.missionId,
+              missionText: missionText
+            }
+          });
         } catch (err) {
           console.warn('發送訊息失敗:', err);
         }

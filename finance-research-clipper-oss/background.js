@@ -303,3 +303,89 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
   }
 });
+
+// ==========================================
+// 跨插件協同與外部 API (External Connectable)
+// 提供 ScrumClock 等外部工具讀取 WatchList 與快捷互動
+// ==========================================
+chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+  if (request.type === 'PING') {
+    sendResponse({ success: true, name: 'Finance Research Clipper', version: '1.0.0' });
+    return false;
+  }
+
+  if (request.type === 'GET_WATCHLIST') {
+    chrome.storage.local.get(['stockHistory', 'latestStockData'], (res) => {
+      const history = res.stockHistory || [];
+      const watchlist = history.slice(0, 15).map((item) => ({
+        ticker: item.ticker,
+        name: item.name || item.ticker,
+        price: item.price,
+        change: item.change,
+        changePercent: item.changePercent,
+        currency: item.currency,
+        updatedAt: item.updatedAt,
+        dashboardUrl: chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(item.ticker)}`)
+      }));
+      sendResponse({
+        success: true,
+        watchlist: watchlist,
+        latestStock: res.latestStockData || null,
+        extensionId: chrome.runtime.id,
+        dashboardBaseUrl: chrome.runtime.getURL('dashboard.html')
+      });
+    });
+    return true; // 非同步響應
+  }
+
+  if (request.type === 'OPEN_DASHBOARD') {
+    const ticker = request.ticker ? `?ticker=${encodeURIComponent(request.ticker)}` : '';
+    const dashboardUrl = chrome.runtime.getURL(`dashboard.html${ticker}`);
+    chrome.tabs.create({ url: dashboardUrl });
+    sendResponse({ success: true, url: dashboardUrl });
+    return true;
+  }
+
+  if (request.type === 'CRAWL_STOCK' && request.ticker) {
+    crawlStockByKeyword(request.ticker)
+      .then((result) => sendResponse({ success: true, data: result.data }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  // 接收 ScrumClock 研究番茄鐘啟動廣播 (Phase 3.2)
+  if (request.type === 'FOCUS_STARTED') {
+    const payload = request.payload || {};
+    const ticker = (payload.ticker || '').trim().toUpperCase();
+    console.log('[FinanceClipper] 收到研究番茄鐘啟動廣播:', ticker || payload.missionText);
+
+    chrome.storage.local.set({
+      activeFocusStock: {
+        ticker: ticker || undefined,
+        missionText: payload.missionText || '',
+        startedAt: new Date().toISOString()
+      }
+    });
+
+    // 若有具體標的，背景預熱爬取最新行情
+    if (ticker) {
+      crawlStockByKeyword(ticker)
+        .then((result) => {
+          console.log(`[FinanceClipper] 專注標的 ${ticker} 行情預熱成功:`, result.data?.price);
+          sendResponse({ success: true, ticker: ticker, prefetched: true, price: result.data?.price });
+        })
+        .catch((err) => {
+          console.warn(`[FinanceClipper] 專注標的 ${ticker} 預熱失敗:`, err.message);
+          sendResponse({ success: true, ticker: ticker, prefetched: false, error: err.message });
+        });
+      return true;
+    }
+
+    sendResponse({ success: true, prefetched: false });
+    return false;
+  }
+
+  sendResponse({ success: false, error: 'Unknown request type' });
+  return false;
+});
+

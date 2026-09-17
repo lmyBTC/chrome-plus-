@@ -750,3 +750,324 @@ body {
   padding-left: 8px;
   border-left: 1px solid var(--border-color);
 }
+
+/* =============================================================================
+   🤖 Gemini Nano 智能研報速讀面板 (AI Report Card Styles)
+   ============================================================================= */
+
+.ai-report-card {
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.45) 0%, rgba(15, 23, 42, 0.7) 100%);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 20px -2px rgba(139, 92, 246, 0.15);
+}
+
+.ai-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+.ai-title-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ai-sparkle-icon {
+  font-size: 1.25rem;
+  animation: pulseSparkle 2.5s infinite ease-in-out;
+}
+
+@keyframes pulseSparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.9; }
+  50% { transform: scale(1.18) rotate(12deg); opacity: 1; filter: drop-shadow(0 0 6px rgba(168, 85, 247, 0.8)); }
+}
+
+.ai-title-text {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #f3e8ff;
+  letter-spacing: -0.01em;
+}
+
+.badge-ai {
+  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.ai-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #64748b;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+.ai-status-dot.connected {
+  background-color: #10b981;
+  box-shadow: 0 0 8px #10b981;
+}
+
+.ai-status-dot.error {
+  background-color: #ef4444;
+}
+
+.ai-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-ai-generate {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-ai-generate:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.45);
+}
+
+.btn-ai-refresh, .btn-ai-copy {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-ai-refresh:hover, .btn-ai-copy:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+/* 骨架屏載入動畫 */
+.ai-skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.skeleton-line {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  height: 16px;
+}
+
+.skeleton-title { width: 45%; height: 20px; }
+.skeleton-p { width: 90%; }
+.skeleton-sub { width: 70%; }
+
+.shimmer {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(139, 92, 246, 0.15) 50%, rgba(255, 255, 255, 0.03) 100%);
+  background-size: 200% 100%;
+  animation: shimmerAnim 1.8s infinite;
+}
+
+@keyframes shimmerAnim {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 引導與閒置狀態 */
+.ai-idle-prompt {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(139, 92, 246, 0.3);
+}
+
+.ai-idle-prompt b {
+  color: #c084fc;
+}
+
+/* 研報各分段 */
+.ai-result-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ai-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-subheading {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.ai-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-take-list li {
+  position: relative;
+  padding-left: 24px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: #f1f5f9;
+}
+
+.quick-take-list li::before {
+  content: '▸';
+  position: absolute;
+  left: 6px;
+  color: #a855f7;
+  font-weight: bold;
+}
+
+/* 多空雙欄對比 */
+.ai-bull-bear-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 860px) {
+  .ai-bull-bear-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ai-card-half {
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bull-half {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.bull-subheading {
+  color: #34d399;
+}
+
+.bull-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.86rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.bull-list li::before {
+  content: '+';
+  position: absolute;
+  left: 2px;
+  color: #34d399;
+  font-weight: 700;
+}
+
+.bear-half {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.bear-subheading {
+  color: #f87171;
+}
+
+.bear-list li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 0.86rem;
+  color: #e2e8f0;
+  line-height: 1.5;
+}
+
+.bear-list li::before {
+  content: '-';
+  position: absolute;
+  left: 2px;
+  color: #f87171;
+  font-weight: 700;
+}
+
+/* 財務健康度 */
+.ai-health-box {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: #cbd5e1;
+}
+
+.ai-footer-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* 錯誤與提示區塊 */
+.ai-notice-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+
+.ai-notice-title {
+  color: #fbbf24;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.ai-notice-desc {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-bottom: 10px;
+}
+

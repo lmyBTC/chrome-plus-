@@ -60,5 +60,8 @@
       "js": ["geminiContent.js"],
       "run_at": "document_end"
     }
-  ]
+  ],
+  "externally_connectable": {
+    "ids": ["*"]
+  }
 } 

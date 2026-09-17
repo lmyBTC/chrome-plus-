@@ -11,6 +11,9 @@
 |**任務協議管理 (Task Protocol Management)**|`建立任務`,`開始開發`,`任務拆解`,`狀態更新`,`同步進度`|`.agents/skills/task-protocol/`|
 |**Token 節省器 (RTK Token Saver)**|`節省Token`,`壓縮輸出`,`優化指令`,`使用rtk`,`token優化`,`執行終端`,`指令節省`|`.agents/skills/token-saver/`|
 |**Chrome 插件合規審計 (Chrome Compliance Auditor)**|`安全審查`,`合規檢查`,`manifest審計`,`插件檢查`,`檢查manifest`,`上架檢查`,`原始碼掃描`,`靜態掃描`|`.agents/skills/chrome-auditor/`|
+|**ScrumClock 規格與元件字典 (ScrumClock Core Spec)**|`scrumclock`,`番茄鐘`,`敏捷看板`,`scrumclock開發`,`scrum`,`pomodoro`,`側邊欄番茄鐘`|`.agents/skills/scrumclock-core/`|
+|**FinanceClipper 研報與爬蟲字典 (FinanceClipper Core Spec)**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`,`yahoo finance爬蟲`,`個股剪輯`,`財報分析`|`.agents/skills/finance-clipper-core/`|
+|**VideoSpeedPlus 倍速規格字典 (VideoSpeedPlus Core Spec)**|`video speed`,`影片倍速`,`youtube倍速`,`videospeedplus`,`倍速播放`,`影片控制器`|`.agents/skills/video-speed-core/`|
 <!-- SKILL_TREE_END -->
 
 ## 1. Chrome 插件開發與技術規範
@@ -27,3 +30,11 @@
 
 ## 3. Token 優化與輔助工具
 - **節省器指南**: [`.agents/skills/token-saver/SKILL.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/.agents/skills/token-saver/SKILL.md) (使用 `rtk` 工具包裝指令，降低 Token 消耗)
+
+## 4. 多插件開發邊界與防污染規範 (Hard Rules)
+- **契約參照**: [`0.doc_mg/docs/cross_plugin_contract.md`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/0.doc_mg/docs/cross_plugin_contract.md)
+- **邊界防線**:
+  * **AI 讀取邊界**: 進行某一插件任務時，禁止跨目錄掃描另一插件源碼。通訊協同僅透過黑盒契約規格溝通。
+  * **儲存與依賴完全隔離**: 各插件擁有專屬 `chrome.storage.local`，禁止共用 DB，禁止跨專案 `import/require`。
+  * **優雅降級**: 雙方互為可選 Peer，任一插件未安裝或當機，不得影響自身核心功能。
+

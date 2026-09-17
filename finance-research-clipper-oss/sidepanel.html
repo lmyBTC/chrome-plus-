@@ -72,10 +72,15 @@
         </div>
       </div>
 
-      <!-- 快速複製摘要 Markdown -->
-      <button id="btn-side-copy-summary" class="btn-quick-crawl" style="background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem; padding: 6px 10px;">
-        📋 複製當前摘要 Markdown
-      </button>
+      <!-- 快速操作按鈕群 -->
+      <div style="display: flex; gap: 8px; margin-top: 6px;">
+        <button id="btn-side-copy-summary" class="btn-quick-crawl" style="flex: 1; background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem; padding: 6px 8px;">
+          📋 複製摘要
+        </button>
+        <button id="btn-side-create-task" class="btn-quick-crawl" style="flex: 1; background: linear-gradient(135deg, #4f46e5, #3b82f6); border: none; color: #ffffff; font-size: 0.75rem; padding: 6px 8px; font-weight: 600;" title="一鍵轉入 ScrumClock 今日作戰任務">
+          🎯 轉為研究任務
+        </button>
+      </div>
     </section>
 
     <!-- 歷史捷徑清單 (最多顯示最近 5 筆) -->
@@ -111,6 +116,7 @@
     </button>
   </footer>
 
+  <script src="aiClient.js"></script>
   <script src="sidepanel.js"></script>
 </body>
 </html>

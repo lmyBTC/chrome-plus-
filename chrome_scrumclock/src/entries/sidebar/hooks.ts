@@ -525,6 +525,9 @@ export function useAISession(storageQueue: StorageQueue) {
   };
 }
 
+/**
+ * 統一 Webhook 廣播函式 (支援 GAS 統一路由與離線佇列重試)
+ */
 async function triggerWebhook(event: string, payload: any) {
   try {
     const result = await chrome.storage.local.get('userSettings');
@@ -533,22 +536,117 @@ async function triggerWebhook(event: string, payload: any) {
       return;
     }
 
-    const webhookData = {
-      event,
-      timestamp: new Date().toISOString(),
-      payload
+    // 提煉與標準化任務資料
+    const taskText = payload.text || payload.missionText || payload.title || '專注衝刺';
+    const ticker = (payload.ticker || extractTickerFromText(taskText, payload.tags) || '').toUpperCase();
+    const tags = Array.isArray(payload.tags) ? payload.tags : (payload.tag ? [payload.tag] : []);
+    const pomodoros = Number(payload.completedPomodoros || 1);
+    const estimated = Number(payload.estimatedPomodoros || pomodoros);
+    const durationMin = Number(payload.durationMinutes || (pomodoros * 25));
+
+    // 統一 Envelope 規範 (Protocol v1)
+    const webhookEnvelope = {
+      protocolVersion: 1,
+      action: 'scrum_sync',
+      event: event,
+      secretToken: settings.webhookSecretToken || undefined,
+      timestamp: Date.now(),
+      data: {
+        id: payload.id || `log-${Date.now()}`,
+        text: taskText,
+        ticker: ticker,
+        tags: tags,
+        completedPomodoros: pomodoros,
+        estimatedPomodoros: estimated,
+        durationMinutes: durationMin,
+        status: payload.status || (event.includes('completed') ? 'completed' : 'logged'),
+        notes: payload.notes || '',
+        completedAt: new Date().toLocaleString('zh-TW', { hour12: false })
+      },
+      // 向後相容 n8n / Make / 自訂 Webhook
+      payload: payload
     };
 
+    // 離線狀態直接入列
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      await enqueuePendingWebhook(webhookEnvelope);
+      return;
+    }
+
+    // 發送請求 (使用 text/plain 避免 GAS 預檢請求失敗)
     fetch(settings.webhookUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(webhookData)
-    }).catch(err => {
-      console.warn('Webhook 發送失敗:', err);
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(webhookEnvelope)
+    }).then(async (res) => {
+      if (res.ok) {
+        // 發送成功，非同步排空補送先前離線失敗的封包
+        flushPendingWebhooks(settings.webhookUrl);
+      } else {
+        await enqueuePendingWebhook(webhookEnvelope);
+      }
+    }).catch(async (err) => {
+      console.warn('Webhook 發送失敗，寫入離線暫存佇列:', err);
+      await enqueuePendingWebhook(webhookEnvelope);
     });
   } catch (err) {
-    console.warn('讀取 Webhook 設定失敗:', err);
+    console.warn('讀取 Webhook 設定或發送失敗:', err);
   }
 }
+
+/**
+ * 將失敗或離線請求加入 Storage 暫存佇列
+ */
+async function enqueuePendingWebhook(envelope: any) {
+  try {
+    const res = await chrome.storage.local.get('pendingWebhookQueue');
+    const queue = Array.isArray(res.pendingWebhookQueue) ? res.pendingWebhookQueue : [];
+    queue.push(envelope);
+    // 保持最多 100 筆，避免 Storage 溢出
+    if (queue.length > 100) queue.shift();
+    await chrome.storage.local.set({ pendingWebhookQueue: queue });
+  } catch (e) {
+    console.warn('離線暫存佇列寫入失敗:', e);
+  }
+}
+
+/**
+ * 上線後非同步排空補送暫存佇列
+ */
+async function flushPendingWebhooks(url: string) {
+  try {
+    const res = await chrome.storage.local.get('pendingWebhookQueue');
+    const queue = res.pendingWebhookQueue;
+    if (!Array.isArray(queue) || queue.length === 0) return;
+
+    // 清空 Storage 佇列，避免重複發送
+    await chrome.storage.local.set({ pendingWebhookQueue: [] });
+
+    // 批次補送
+    for (const item of queue) {
+      fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(item)
+      }).catch(err => {
+        console.warn('補送暫存 Webhook 失敗:', err);
+      });
+    }
+  } catch (e) {
+    console.warn('排空暫存佇列失敗:', e);
+  }
+}
+
+function extractTickerFromText(text: string, tags?: string[]): string {
+  if (Array.isArray(tags)) {
+    for (const t of tags) {
+      const clean = t.replace(/^[#$]/, '').trim();
+      if (/^[A-Za-z]{1,5}$/.test(clean) && clean.toUpperCase() !== 'TASK') {
+        return clean.toUpperCase();
+      }
+    }
+  }
+  const match = (text || '').match(/\$([A-Za-z]{1,5})\b/);
+  return match ? match[1].toUpperCase() : '';
+}
+

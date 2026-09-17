@@ -22,6 +22,7 @@
   const statMktcap = document.getElementById('side-stat-mktcap');
   const statPe = document.getElementById('side-stat-pe');
   const btnCopySummary = document.getElementById('btn-side-copy-summary');
+  const btnCreateTask = document.getElementById('btn-side-create-task');
   const recentList = document.getElementById('side-recent-list');
 
   // 左下角工具箱組合元素
@@ -179,6 +180,65 @@
         setTimeout(hideStatus, 2000);
       });
     });
+
+    // 🎯 一鍵轉為 ScrumClock 研究任務 (Phase 3.1)
+    if (btnCreateTask) {
+      btnCreateTask.addEventListener('click', async () => {
+        if (!currentStock) {
+          showStatus('⚠️ 請先爬取或選擇標的', '⚠️', true);
+          setTimeout(hideStatus, 2000);
+          return;
+        }
+
+        if (!window.FinanceAIClient || !window.FinanceAIClient.createScrumTask) {
+          showStatus('⚠️ 客戶端尚未載入', '⚠️', true);
+          setTimeout(hideStatus, 2000);
+          return;
+        }
+
+        const s = currentStock;
+        const an = s.analyst || {};
+        let md = `### 📌 標的概況：${s.ticker} (${s.price})\n\n`;
+        md += `* **採集時間**：${s.updatedAt || new Date().toLocaleString()}\n`;
+        md += `* **即時價格**：${s.price}\n\n`;
+        md += `### 🎯 分析師評級與目標價\n`;
+        md += `- 共識：${an.consensus || 'N/A'}\n`;
+        md += `- 目標價中位數：${an.targetMedian || 'N/A'}\n\n`;
+        if (s.stats) {
+          md += `* 市值: ${s.stats['市值'] || s.stats['Market cap'] || 'N/A'}\n`;
+          md += `* 本益比: ${s.stats['本益比'] || s.stats['P/E ratio'] || 'N/A'}\n\n`;
+        }
+
+        btnCreateTask.disabled = true;
+        showStatus(`🎯 正在轉入任務...`);
+
+        try {
+          const res = await window.FinanceAIClient.createScrumTask({
+            ticker: s.ticker,
+            title: `研讀 $${s.ticker} 財報與投資估值`,
+            notes: md,
+            tags: ['#投資研究', `$${s.ticker}`],
+            estimatedPomodoros: 2
+          });
+
+          btnCreateTask.disabled = false;
+          if (res && res.success) {
+            if (res.duplicate) {
+              showStatus(`ℹ️ $${s.ticker} 今日已在戰役中！`, '✅');
+            } else {
+              showStatus(`✅ 已成功加入今日戰役！`, '🎯');
+            }
+          } else {
+            showStatus(`⚠️ 建立失敗：${res ? res.error : '未知錯誤'}`, '⚠️', true);
+          }
+          setTimeout(hideStatus, 3000);
+        } catch (err) {
+          btnCreateTask.disabled = false;
+          showStatus(`❌ 錯誤：${err.message}`, '❌', true);
+          setTimeout(hideStatus, 3000);
+        }
+      });
+    }
 
     // 左下角按鈕 1：開啟獨立分頁儀表板
     btnOpenDashboard.addEventListener('click', () => {

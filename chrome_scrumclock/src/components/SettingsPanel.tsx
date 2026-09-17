@@ -31,6 +31,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [lastSyncTime, setLastSyncTime] = useState('載入中...');
   const [enableWebhook, setEnableWebhook] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [webhookSecretToken, setWebhookSecretToken] = useState('');
+  const [financeClipperExtensionId, setFinanceClipperExtensionId] = useState('');
 
   // Focus Blocker State
   const [distractionSites, setDistractionSites] = useState('');
@@ -67,6 +69,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
       setEnableWebhook(data.userSettings.enableWebhook || false);
       setWebhookUrl(data.userSettings.webhookUrl || '');
+      setWebhookSecretToken(data.userSettings.webhookSecretToken || '');
+      setFinanceClipperExtensionId(data.userSettings.financeClipperExtensionId || '');
       
       const time = await syncService.getLastSyncTime();
       setLastSyncTime(time);
@@ -154,7 +158,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         geminiApiKey: geminiApiKey.trim(),
         distractionSites: blockSites,
         enableWebhook: enableWebhook,
-        webhookUrl: webhookUrl.trim()
+        webhookUrl: webhookUrl.trim(),
+        webhookSecretToken: webhookSecretToken.trim(),
+        financeClipperExtensionId: financeClipperExtensionId.trim()
       };
 
       const updatedGoal: NorthStarGoal = {
@@ -482,18 +488,50 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                 啟用後，每當建立/完成/刪除每日任務，或更新專案進度時，系統會自動在背景發送 POST 請求至指定的 Webhook 接收端（如 n8n, Make, GAS），實現即時的跨系統數據同步。
               </p>
               {enableWebhook && (
-                <div className="space-y-2">
-                  <label className="block text-xs font-semibold text-dark-muted">Webhook 接收網址 (URL)</label>
-                  <input
-                    type="url"
-                    value={webhookUrl}
-                    onChange={(e) => setWebhookUrl(e.target.value)}
-                    required={enableWebhook}
-                    placeholder="https://your-server.com/webhook"
-                    className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-dark-primary text-sm shadow-sm"
-                  />
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-dark-muted">Webhook 接收網址 (URL / GAS Web App)</label>
+                    <input
+                      type="url"
+                      value={webhookUrl}
+                      onChange={(e) => setWebhookUrl(e.target.value)}
+                      required={enableWebhook}
+                      placeholder="https://script.google.com/macros/s/.../exec"
+                      className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-dark-primary text-sm shadow-sm"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-semibold text-dark-muted">安全權杖 / 金鑰 (Secret Token)</label>
+                      <span className="text-[11px] text-dark-muted">(選填，若 GAS 有設定則需匹配)</span>
+                    </div>
+                    <input
+                      type="password"
+                      value={webhookSecretToken}
+                      onChange={(e) => setWebhookSecretToken(e.target.value)}
+                      placeholder="例如: my_secret_token_123"
+                      className="w-full px-4 py-2 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-dark-primary text-sm font-mono shadow-sm"
+                    />
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Finance Research Clipper 聯動設定 */}
+            <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-xl p-5">
+              <label className="block text-sm font-bold text-emerald-300 mb-1 flex items-center gap-1.5">
+                <span>📈</span> Finance Research Clipper 跨插件連線
+              </label>
+              <p className="text-xs text-emerald-300/80 mb-3 leading-relaxed">
+                填寫 Finance Research Clipper 擴充功能的 Extension ID（於 <code>chrome://extensions</code> 檢視），即可在 New Tab 即時同步自選股監控、一鍵開啟大螢幕儀表板並觸發背景爬蟲。
+              </p>
+              <input
+                type="text"
+                value={financeClipperExtensionId}
+                onChange={(e) => setFinanceClipperExtensionId(e.target.value)}
+                placeholder="例如: abcdefghijklmnopqrstuvwxyz123456"
+                className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-sm shadow-sm"
+              />
             </div>
           </div>
         )}
