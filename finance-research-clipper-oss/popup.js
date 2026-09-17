@@ -33,6 +33,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveSettingsBtn = document.getElementById('save-settings-btn');
   const exportMdBtn = document.getElementById('export-md-btn');
   const exportCsvBtn = document.getElementById('export-csv-btn');
+  const fullScrapeBtn = document.getElementById('full-scrape-btn');
+  const openDashboardBtn = document.getElementById('open-dashboard-btn');
+  const btnGotoDashboard = document.getElementById('btn-goto-dashboard');
+
+  const handleOpenDashboard = () => {
+    chrome.tabs.create({ url: 'dashboard.html' });
+  };
+
+  if (openDashboardBtn) {
+    openDashboardBtn.addEventListener('click', handleOpenDashboard);
+  }
+  if (btnGotoDashboard) {
+    btnGotoDashboard.addEventListener('click', handleOpenDashboard);
+  }
 
   // 0. 載入與設定 Storage 以及檢查右鍵暫存文字
   chrome.storage.local.get(['appsScriptUrl', 'userSpreadsheetUrl', 'contextNote', 'ruleDisclaimer', 'ruleTableizer', 'ruleExtractor'], (result) => {
@@ -260,6 +274,131 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 3. SPA 4合1 動態走訪爬蟲調度
+  async function executeFullStockCrawler() {
+    if (!tab || !tab.id) {
+      updateStatus("未偵測到分頁，請在 Google Finance 標的頁執行", "red");
+      return;
+    }
+
+    if (fullScrapeBtn) {
+      fullScrapeBtn.disabled = true;
+      fullScrapeBtn.innerText = "⏳ 爬取中 (請勿關閉分頁)...";
+    }
+    updateStatus("⚡ 正在注入爬蟲模組並走訪 4 大分頁...", "orange");
+
+    try {
+      // 注入 crawler.js
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['crawler.js']
+      });
+
+      // 執行主調度器
+      const resultsArr = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: async () => {
+          if (!window.FinanceCrawler) {
+            throw new Error("FinanceCrawler 未成功載入");
+          }
+          return await window.FinanceCrawler.runFullStockScraper();
+        }
+      });
+
+      const fullData = resultsArr?.[0]?.result;
+      if (!fullData) {
+        throw new Error("未能取得爬取結果");
+      }
+
+      // 更新股票基本欄位
+      if (fullData.overview) {
+        if (fullData.overview.symbol) {
+          document.getElementById('ticker').value = fullData.overview.symbol;
+        }
+        if (fullData.overview.price) {
+          document.getElementById('price').value = fullData.overview.price;
+        }
+        if (fullData.overview.stats) {
+          capturedKeyStats = { ...capturedKeyStats, ...fullData.overview.stats };
+        }
+      }
+
+      // 合併完整數據
+      capturedStockData = {
+        ticker: document.getElementById('ticker').value || 'UNKNOWN',
+        price: document.getElementById('price').value || 'UNKNOWN',
+        keyStats: capturedKeyStats,
+        analysis: fullData.analysis,
+        earnings: fullData.earnings,
+        financials: fullData.financials
+      };
+
+      // 渲染進階預覽面板
+      const previewEl = document.getElementById('financials-preview-content');
+      let previewHtml = "";
+
+      // 1. 分析師評級與目標價
+      if (fullData.analysis && !fullData.analysis.error) {
+        previewHtml += `<div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">`;
+        previewHtml += `<b>🎯 分析師評級與共識：</b> ${escapeHtml(fullData.analysis.consensus || '未提供')}<br>`;
+        if (fullData.analysis.targetPrice?.median || fullData.analysis.targetPrice?.high) {
+          previewHtml += `<b>🎯 目標價：</b> 中位: ${escapeHtml(fullData.analysis.targetPrice.median || '-')} | 最高: ${escapeHtml(fullData.analysis.targetPrice.high || '-')} | 最低: ${escapeHtml(fullData.analysis.targetPrice.low || '-')}<br>`;
+        }
+        if (fullData.analysis.ratingsSummary) {
+          previewHtml += `<div style="font-size: 10px; color: var(--text-sub); margin-top: 4px; max-height: 60px; overflow-y: auto;">${escapeHtml(fullData.analysis.ratingsSummary.substring(0, 300))}...</div>`;
+        }
+        previewHtml += `</div>`;
+      }
+
+      // 2. Earnings 表現
+      if (fullData.earnings && !fullData.earnings.error) {
+        const lq = fullData.earnings.latestQuarter;
+        if (lq && (lq.epsActual !== 'N/A' || lq.revenueActual !== 'N/A')) {
+          previewHtml += `<div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">`;
+          previewHtml += `<b>📈 財報 EPS (實質 / 預期)：</b> ${escapeHtml(lq.epsActual)} / ${escapeHtml(lq.epsEstimate)}<br>`;
+          previewHtml += `<b>💰 營收 (實質 / 預期)：</b> ${escapeHtml(lq.revenueActual)} / ${escapeHtml(lq.revenueEstimate)}<br>`;
+          previewHtml += `</div>`;
+        }
+      }
+
+      // 3. Financials 報表表格
+      if (fullData.financials?.statements?.length) {
+        previewHtml += `<div style="margin-top: 6px;"><b>📊 財務報表摘要：</b><br>`;
+        previewHtml += `<pre style="font-family: monospace; font-size: 9px; margin-top: 4px; overflow-x: auto; background: #f1f3f4; padding: 6px; border-radius: 4px; color: var(--text-main);">`;
+        fullData.financials.statements.forEach((table) => {
+          table.forEach((row) => {
+            previewHtml += escapeHtml(row.join(' | ')) + '\n';
+          });
+          previewHtml += '\n';
+        });
+        previewHtml += `</pre></div>`;
+      }
+
+      if (!previewHtml) {
+        previewHtml = `<div style="padding: 4px; color: var(--text-sub);">未能抓取到相關的財報數據。</div>`;
+      }
+      previewEl.innerHTML = previewHtml;
+
+      // 自動展開預覽折疊面板供使用者檢視
+      const detailsEl = document.getElementById('financials-preview-details');
+      if (detailsEl) detailsEl.open = true;
+
+      updateStatus("🎉 4 大分頁數據擷取完成！", "green");
+    } catch (err) {
+      console.error("Execute Full Stock Crawler Error:", err);
+      updateStatus(`❌ 爬取失敗: ${err.message}`, "red");
+    } finally {
+      if (fullScrapeBtn) {
+        fullScrapeBtn.disabled = false;
+        fullScrapeBtn.innerHTML = "<span>⚡</span> <span>一鍵完整抓取 (4合1 SPA)</span>";
+      }
+    }
+  }
+
+  if (fullScrapeBtn) {
+    fullScrapeBtn.addEventListener('click', executeFullStockCrawler);
+  }
+
   function renderAISelector(arr) {
     aiSelectorContainer.innerHTML = '';
     if (arr.length === 0) {
@@ -327,6 +466,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (capturedStockData && capturedStockData.financialsTable && capturedStockData.financialsTable !== "N/A") {
         financeExtra += `\n**📊 損益表 (最近四季)**:\n\n${capturedStockData.financialsTable}\n`;
         payload.financials_table = capturedStockData.financialsTable;
+      }
+
+      // 整合分析師評級與目標價
+      if (capturedStockData && capturedStockData.analysis && !capturedStockData.analysis.error) {
+        const ana = capturedStockData.analysis;
+        let analysisExtra = `\n\n### 🎯 分析師共識與目標價\n`;
+        if (ana.consensus) analysisExtra += `- **共識評級**: ${ana.consensus}\n`;
+        if (ana.targetPrice?.median || ana.targetPrice?.high) {
+          analysisExtra += `- **目標價**: 中位數 ${ana.targetPrice.median || '-'} (最高: ${ana.targetPrice.high || '-'}, 最低: ${ana.targetPrice.low || '-'})\n`;
+        }
+        if (ana.ratingsSummary) {
+          analysisExtra += `\n**評級概況**:\n${ana.ratingsSummary.substring(0, 500)}\n`;
+        }
+        financeExtra = analysisExtra + financeExtra;
+
+        payload.analyst_consensus = ana.consensus || "N/A";
+        payload.target_price_median = ana.targetPrice?.median || "N/A";
+        payload.target_price_high = ana.targetPrice?.high || "N/A";
+        payload.target_price_low = ana.targetPrice?.low || "N/A";
+      }
+
+      // 整合 SPA 財報表格
+      if (capturedStockData && capturedStockData.financials?.statements?.length) {
+        let tableMd = "\n**📊 財務報表 (損益表)**:\n\n";
+        capturedStockData.financials.statements.forEach((tbl) => {
+          tbl.forEach((row, idx) => {
+            tableMd += `| ${row.join(' | ')} |\n`;
+            if (idx === 0) tableMd += `| ${row.map(() => '---').join(' | ')} |\n`;
+          });
+          tableMd += "\n";
+        });
+        financeExtra += tableMd;
       }
 
       const cleanNote = RuleEngine.processText(note, activeRules);
@@ -463,9 +634,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const nasdaq = p.nasdaq || "N/A";
       const mktcap = p.mktcap || "N/A";
       const pe = p.pe || "N/A";
+      const consensus = p.analyst_consensus || "N/A";
+      const targetPrice = p.target_price_median || "N/A";
       const cleanNote = (p.note || "").replace(/"/g, '""'); // CSV 內雙引號跳脫
-      let csvContent = `Timestamp,Ticker,Price,Note,S&P500,Nasdaq,MarketCap,PE\n`;
-      csvContent += `"${p.timestamp}","${p.ticker}","${p.price}","${cleanNote}","${sp500}","${nasdaq}","${mktcap}","${pe}"\n`;
+      let csvContent = `Timestamp,Ticker,Price,Consensus,TargetPrice,Note,S&P500,Nasdaq,MarketCap,PE\n`;
+      csvContent += `"${p.timestamp}","${p.ticker}","${p.price}","${consensus}","${targetPrice}","${cleanNote}","${sp500}","${nasdaq}","${mktcap}","${pe}"\n`;
       downloadFile(csvContent, `${p.ticker}_${Date.now()}.csv`, 'text/csv;charset=utf-8');
       updateStatus("✅ CSV 下載成功", "green");
     } catch(err) {
@@ -564,6 +737,19 @@ function scrapeFinanceData(selectors) {
     keyStats: keyStats,
     error: error || (!ticker || !price)
   };
+}
+
+/**
+ * HTML 跳脫輔助函數 (XSS 防護)
+ */
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 /**

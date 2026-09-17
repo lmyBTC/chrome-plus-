@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Research Clipper - 智能投資研報儀表板</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+  <!-- 頂部導航列 -->
+  <header class="navbar">
+    <div class="nav-brand">
+      <span>📈 Finance Clipper</span>
+      <span class="badge">Pro Dashboard</span>
+    </div>
+
+    <!-- 搜尋與分析輸入區 -->
+    <div class="search-container">
+      <div class="search-input-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="dashboard-search-input" class="search-input" placeholder="輸入股票代號或名稱 (如: NVDA, TSLA, 2330)..." autocomplete="off">
+      </div>
+      <button id="btn-dashboard-crawl" class="btn-crawl">
+        <span id="crawl-spinner" style="display: none;">⏳</span>
+        <span>深度採集</span>
+      </button>
+
+      <!-- 快速熱門標籤 -->
+      <div class="quick-pills">
+        <button class="pill" data-symbol="NVDA">NVDA</button>
+        <button class="pill" data-symbol="TSLA">TSLA</button>
+        <button class="pill" data-symbol="AAPL">AAPL</button>
+        <button class="pill" data-symbol="MSFT">MSFT</button>
+        <button class="pill" data-symbol="2330">2330</button>
+      </div>
+    </div>
+
+    <!-- 右側功能捷徑 -->
+    <div class="nav-actions">
+      <button id="btn-open-settings" class="btn-icon" title="設定 Google Apps Script Webhook">⚙️</button>
+    </div>
+  </header>
+
+  <!-- 主體雙欄排版 -->
+  <div class="dashboard-layout">
+
+    <!-- 左側標的歷史庫 -->
+    <aside class="history-sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">歷史追蹤清單</span>
+        <button id="btn-clear-history" class="btn-clear-history">清空清單</button>
+      </div>
+      <div id="history-list-container" class="history-list">
+        <!-- 動態插入歷史標的卡片 -->
+      </div>
+    </aside>
+
+    <!-- 右側儀表板主視圖 -->
+    <main id="main-view-container" class="main-view">
+
+      <!-- 空狀態 (無資料時顯示) -->
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>展開您的深度投資研究</h3>
+        <p>在上方搜尋列輸入股票代號（例如 <b>NVDA</b>）或點擊熱門標籤，系統將自動於後台啟動 4合1 SPA 爬蟲，擷取即時股價、分析師目標價、財報表現與損益表矩陣。</p>
+      </div>
+
+      <!-- 核心儀表板區塊 (有資料時顯示) -->
+      <div id="stock-content-section" style="display: none; display: flex; flex-direction: column; gap: 24px;">
+
+        <!-- 頂部個股 Hero 卡片 -->
+        <section class="hero-card">
+          <div class="hero-header">
+            <div>
+              <div class="ticker-title-group">
+                <h1 id="hero-ticker" class="stock-symbol">---</h1>
+                <span id="hero-market" style="color: var(--text-secondary); font-size: 1rem;"></span>
+              </div>
+              <div id="hero-updated" class="stock-updated">採集時間：---</div>
+            </div>
+            <div class="price-box">
+              <div id="hero-price" class="stock-price">---</div>
+              <div id="hero-market-indices" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;"></div>
+            </div>
+          </div>
+
+          <!-- 關鍵統計數據網格 -->
+          <div id="hero-stats-grid" class="stats-grid">
+            <!-- 動態填充市值、PE、52週高低點等 -->
+          </div>
+        </section>
+
+        <!-- 中段雙欄卡片 -->
+        <div class="grid-two-cols">
+          <!-- 分析師評級與目標價階梯 -->
+          <section class="card">
+            <div class="card-title">
+              <span>🎯 分析師共識與目標價</span>
+              <span id="analyst-badge" class="rating-badge rating-buy">--</span>
+            </div>
+            <div class="target-price-row">
+              <div class="target-item">
+                <div class="target-item-label">最低目標價</div>
+                <div id="target-low" class="target-item-val">--</div>
+              </div>
+              <div class="target-item">
+                <div class="target-item-label">中位數目標價</div>
+                <div id="target-median" class="target-item-val highlight">--</div>
+              </div>
+              <div class="target-item">
+                <div class="target-item-label">最高目標價</div>
+                <div id="target-high" class="target-item-val">--</div>
+              </div>
+            </div>
+            <div id="target-upside-text" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; text-align: center;"></div>
+          </section>
+
+          <!-- 財報表現 (Earnings) -->
+          <section class="card">
+            <div class="card-title">
+              <span>📈 最新季度財報表現</span>
+            </div>
+            <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="stat-box">
+                <div class="stat-label">每股盈餘 (EPS) 實際 / 預期</div>
+                <div id="earnings-eps" class="stat-value">--</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label">季度營收 (Revenue) 實際 / 預期</div>
+                <div id="earnings-revenue" class="stat-value">--</div>
+              </div>
+            </div>
+            <div id="earnings-summary" style="font-size: 0.82rem; color: var(--text-muted); margin-top: 10px;"></div>
+          </section>
+        </div>
+
+        <!-- 損益表矩陣 (Financials) -->
+        <section class="card">
+          <div class="card-title">
+            <span>📑 損益表數據矩陣 (Income Statement)</span>
+          </div>
+          <div id="financials-table-wrap" class="table-responsive">
+            <p style="color: var(--text-muted); font-size: 0.88rem;">暫無損益表數據</p>
+          </div>
+        </section>
+
+        <!-- 研報筆記與輸出中心 -->
+        <section class="action-panel">
+          <div class="card-title" style="margin-bottom: 8px;">
+            <span>✍️ 投資研究筆記與一鍵輸出中心</span>
+          </div>
+          <textarea id="dashboard-note-input" class="note-textarea" placeholder="在此撰寫您的投資觀點、風險提示或核心論述 (支援自動合併)..."></textarea>
+          
+          <div class="action-buttons-group">
+            <button id="btn-copy-markdown" class="btn-action btn-primary">
+              📋 一鍵複製 Markdown
+            </button>
+            <button id="btn-download-csv" class="btn-action btn-secondary">
+              📥 下載 CSV 試算表
+            </button>
+            <button id="btn-send-gas" class="btn-action btn-success">
+              ☁️ 發送至 Google Sheets (GAS)
+            </button>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <!-- 底部 Google Sheets 風格分頁列 (Sheet Tabs Bar) -->
+  <footer class="sheets-tab-bar">
+    <div class="sheet-tabs-controls">
+      <button id="btn-tab-prev" class="sheet-ctrl-btn" title="向左滾動分頁">◀</button>
+      <button id="btn-tab-next" class="sheet-ctrl-btn" title="向右滾動分頁">▶</button>
+      <button id="btn-tab-add" class="sheet-add-btn" title="新增股票分頁 (聚焦搜尋)">➕ 新增標的</button>
+    </div>
+    
+    <div id="sheets-tab-container" class="sheet-tabs-scroll-area">
+      <!-- 動態插入 Sheet Tab: [ 📊 NVDA $128.50 ✕ ] -->
+    </div>
+
+    <div class="sheet-status-info">
+      <span id="sheet-tab-count">0 檔標的分頁</span>
+    </div>
+  </footer>
+
+  <!-- 設定彈窗 (Modal) -->
+  <div id="settings-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; width: 440px; box-shadow: var(--shadow-lg);">
+      <h3 style="margin-bottom: 16px; color: #fff;">⚙️ 雲端同步設定</h3>
+      <div style="margin-bottom: 14px;">
+        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Apps Script Webhook URL</label>
+        <input type="text" id="setting-gas-url" class="search-input" style="padding-left: 12px;" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Google Sheets URL (選填)</label>
+        <input type="text" id="setting-sheets-url" class="search-input" style="padding-left: 12px;" placeholder="https://docs.google.com/spreadsheets/d/...">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button id="btn-close-settings" class="btn-action btn-secondary" style="padding: 6px 14px;">取消</button>
+        <button id="btn-save-settings" class="btn-action btn-primary" style="padding: 6px 14px;">儲存設定</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 吐司提示容器 -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

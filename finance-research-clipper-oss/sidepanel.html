@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Clipper - 側邊欄工具箱</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+
+  <!-- 頂部標題列 -->
+  <header class="panel-header">
+    <div class="panel-title">
+      <span>⚡ Finance Clipper</span>
+      <span class="badge-tag">Quick Panel</span>
+    </div>
+    <div style="font-size: 0.72rem; color: var(--text-muted);">常駐側邊</div>
+  </header>
+
+  <!-- 滾動內容主體 -->
+  <main class="panel-body">
+
+    <!-- 快速輸入卡片 -->
+    <section class="quick-input-card">
+      <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary);">快速深度爬取 (Ticker / 名稱)</div>
+      <div class="input-row">
+        <input type="text" id="side-search-input" class="quick-input" placeholder="代號如 NVDA, 2330..." autocomplete="off">
+        <button id="btn-side-crawl" class="btn-quick-crawl">爬取</button>
+      </div>
+      <!-- 熱門代號快捷膠囊 -->
+      <div class="quick-tags">
+        <span class="quick-tag" data-symbol="NVDA">NVDA</span>
+        <span class="quick-tag" data-symbol="TSLA">TSLA</span>
+        <span class="quick-tag" data-symbol="AAPL">AAPL</span>
+        <span class="quick-tag" data-symbol="MSFT">MSFT</span>
+        <span class="quick-tag" data-symbol="2330">2330</span>
+      </div>
+    </section>
+
+    <!-- 狀態指示方塊 (預設隱藏) -->
+    <div id="side-status-box" class="status-box" style="display: none;">
+      <span id="side-status-icon">⏳</span>
+      <span id="side-status-text">正在初始化...</span>
+    </div>
+
+    <!-- 最新擷取摘要卡片 (預設顯示等待或最新數據) -->
+    <section id="side-summary-card" class="summary-card">
+      <div class="summary-header">
+        <div>
+          <span id="side-summary-ticker" class="summary-ticker">--</span>
+          <div id="side-summary-time" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 2px;">尚未採集數據</div>
+        </div>
+        <div id="side-summary-price" class="summary-price">--</div>
+      </div>
+
+      <div class="summary-stats-row">
+        <div class="summary-stat-item">
+          <div class="summary-stat-label">分析師共識</div>
+          <div id="side-stat-consensus" class="summary-stat-val">--</div>
+        </div>
+        <div class="summary-stat-item">
+          <div class="summary-stat-label">目標價中位數</div>
+          <div id="side-stat-target" class="summary-stat-val">--</div>
+        </div>
+        <div class="summary-stat-item">
+          <div class="summary-stat-label">市值</div>
+          <div id="side-stat-mktcap" class="summary-stat-val">--</div>
+        </div>
+        <div class="summary-stat-item">
+          <div class="summary-stat-label">本益比 (P/E)</div>
+          <div id="side-stat-pe" class="summary-stat-val">--</div>
+        </div>
+      </div>
+
+      <!-- 快速複製摘要 Markdown -->
+      <button id="btn-side-copy-summary" class="btn-quick-crawl" style="background-color: transparent; border: 1px solid var(--border-color); color: var(--text-primary); font-size: 0.75rem; padding: 6px 10px;">
+        📋 複製當前摘要 Markdown
+      </button>
+    </section>
+
+    <!-- 歷史捷徑清單 (最多顯示最近 5 筆) -->
+    <div style="font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-top: 4px;">最近爬取歷史</div>
+    <div id="side-recent-list" style="display: flex; flex-direction: column; gap: 6px;">
+      <!-- 動態插入 -->
+    </div>
+
+  </main>
+
+  <!-- 左下角工具箱快速按鍵組合 (Bottom-Left Quick Toolbox Combo) -->
+  <footer class="panel-footer-toolbox">
+    <div class="toolbox-left-combo">
+      <!-- 核心大按鍵：開啟獨立儀表板 -->
+      <button id="btn-side-open-dashboard" class="btn-launch-dashboard" title="在新分頁中展開完整儀表板">
+        <span>🚀 獨立分頁儀表板</span>
+      </button>
+
+      <!-- 剪貼簿快速貼入並爬取 -->
+      <button id="btn-side-paste-crawl" class="btn-tool-icon" title="讀取剪貼簿文字並自動開始爬取">
+        📋
+      </button>
+
+      <!-- 抓取當前瀏覽的 Google Finance 分頁 -->
+      <button id="btn-side-crawl-active" class="btn-tool-icon" title="一鍵抓取當前瀏覽中的 Google Finance 標的">
+        📌
+      </button>
+    </div>
+
+    <!-- 右側功能：設定與清空 -->
+    <button id="btn-side-settings" class="btn-tool-icon" title="開啟設定">
+      ⚙️
+    </button>
+  </footer>
+
+  <script src="sidepanel.js"></script>
+</body>
+</html>

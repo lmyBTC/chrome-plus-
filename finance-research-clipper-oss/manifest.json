@@ -7,7 +7,9 @@
     "activeTab",
     "scripting",
     "storage",
-    "contextMenus"
+    "contextMenus",
+    "tabs",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://www.google.com/finance/*",
@@ -16,6 +18,9 @@
   ],
   "background": {
     "service_worker": "background.js"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
   },
   "action": {
     "default_popup": "popup.html"

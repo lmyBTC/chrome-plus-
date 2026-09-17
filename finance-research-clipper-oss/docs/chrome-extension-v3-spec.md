@@ -1,142 +1,131 @@
-# **Finance Research Clipper 開發規格與架構說明書**
+# **Finance Research Clipper 開發規格與架構說明書 (MV3)**
 
-本規格書針對「投資研究靈感擷取與自動草稿生成系統」中的**前端擷取端 (Chrome Extension)** 進行詳細的架構設計、技術亮點與未來規劃定義，以確保外掛在 Chrome Extension V3 標準下穩定、安全且高效地執行。
+> **定位**：投資研究靈感擷取與自動草稿生成系統的前端採集器（Chrome Extension V3）。支援 Google Finance Beta 單頁應用 (SPA) 4合1 動態走訪爬取、AI 研究面板問答擷取、圖表截圖壓縮，並無縫同步至雲端 Google Sheets (GAS) 及本地 Markdown/CSV 導出。
 
 ---
 
-## **1. 系統整體架構與數據流 (System Architecture)**
+## **1. 檔案架構與核心模組速查 (File Map)**
 
-本系統定位為「**投資研究靈感擷取與自動草稿生成系統**」的前端採集端，其核心目標是讓研究員/投資人在瀏覽 Google Finance 網頁（特別是 Beta 新版）或使用其「AI 研究面板」時，能夠一鍵擷取行情與對話，寫下想法並無縫同步至雲端試算表。
+專案目錄：[`finance-research-clipper-oss`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss)
 
-### **1.1 數據流向圖 (Data Flow)**
+| 檔案路徑 | 核心職責 | 關鍵函式 / 元素 ID |
+| :--- | :--- | :--- |
+| [`manifest.json`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/manifest.json) | MV3 宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) 與 Host Permissions | `"side_panel": { "default_path": "sidepanel.html" }` |
+| [`dashboard.html`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/dashboard.html)<br>[`dashboard.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/dashboard.js)<br>[`dashboard.css`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/dashboard.css) | **[核心] 獨立分頁儀表板**：全螢幕看板、歷史標的庫、分析師目標價、財報矩陣、損益表與導出矩陣 | `renderStock()`, `exportMarkdown()`, `exportCsv()`, `sendToGas()` |
+| [`sidepanel.html`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/sidepanel.html)<br>[`sidepanel.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/sidepanel.js)<br>[`sidepanel.css`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/sidepanel.css) | **[快捷] Chrome 側邊欄工具箱**：常駐側邊、快捷輸入爬取、左下角工具箱跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl`, `#btn-side-crawl-active` |
+| [`crawler.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/crawler.js) | **[核心爬蟲]** SPA 動態走訪 4 大分頁，語意化文字定位與超時防護 | `window.FinanceCrawler`<br>`runFullStockScraper()`<br>`navigateToTab()` |
+| [`popup.html`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.html)<br>[`popup.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.js) | 擴充介面結構、樣式與折疊面板，提供一鍵前往儀表板捷徑 (頂部徽章與底部主按鈕) | `#open-dashboard-btn`, `#btn-goto-dashboard`, `executeFullStockCrawler()` |
+| [`background.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/background.js) | 背景服務工作線程：後台靜默分頁調度、數據持久化與跨視窗廣播 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
+| [`docs/google-apps-script.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/docs/google-apps-script.md) | 雲端中繼站 GAS 後端接收腳本 (接收 POST, 寫入 Sheets & Drive) | `doPost(e)` |
+
+---
+
+## **2. 系統數據流向與 SPA 走訪架構 (Data Pipeline)**
+
+### **2.1 循序架構圖**
 
 ```mermaid
-graph TD
-    User([使用者]) -->|打開擴充功能 UI| PopupHTML[popup.html]
-    PopupHTML -->|執行切換與渲染| PopupJS[popup.js]
+sequenceDiagram
+    autonumber
+    actor User as 使用者
+    participant Popup as popup.js (UI)
+    participant Crawler as crawler.js (Injected Script)
+    participant Tab as Active Tab (Google Finance SPA)
+    participant GAS as Google Apps Script (Cloud)
+
+    User->>Popup: 點擊「一鍵完整抓取 (4合1 SPA)」
+    Popup->>Tab: chrome.scripting.executeScript 注入 crawler.js
+    Popup->>Crawler: 呼叫 runFullStockScraper()
     
-    subgraph 瀏覽器環境 (Chrome Extension V3)
-        PopupJS -->|chrome.scripting.executeScript| TargetTab{Google Finance Tab}
-        TargetTab -->|執行 scrapeFinanceData| StockScraper[股票/指標擷取]
-        TargetTab -->|執行 scrapeAIDialogue| AIScraper[AI 研究面板擷取]
-        
-        StockScraper -->|回傳行情/大盤/市值/PE| PopupJS
-        AIScraper -->|回傳對話/Markdown 表格化內容| PopupJS
-        
-        PopupJS -->|chrome.tabs.captureVisibleTab| Screenshot[擷取當前圖表 Base64]
+    rect rgb(240, 248, 255)
+        Note over Crawler,Tab: SPA 4 大分頁輪詢與語意採集
+        Crawler->>Tab: navigateToTab('overview') -> scrapeOverview()
+        Crawler->>Tab: navigateToTab('analysis') -> scrapeAnalysis()
+        Crawler->>Tab: navigateToTab('earnings') -> scrapeEarnings()
+        Crawler->>Tab: navigateToTab('financials') -> scrapeFinancials()
     end
 
-    PopupJS -->|POST text/plain| GASWebapp[Google Apps Script Web App]
-    
-    subgraph Google 雲端生態系
-        GASWebapp -->|解析 JSON Payload| GASCore[Code.gs]
-        GASCore -->|分析 note 關鍵字| Sentiment[情緒分析邏輯]
-        GASCore -->|解碼 Base64 並存入資料夾| GDrive[Google Drive 圖片備份]
-        GASCore -->|寫入 12 欄位數據| GSheets[(Google Sheets - Main)]
-        
-        GDrive -->|取得共享 URL| GSheets
-        GSheets -->|回傳 UUID 與成功狀態| GASCore
-    end
-    
-    GASWebapp -->|回傳 success 響應| PopupJS
-    PopupJS -->|更新狀態並顯示試算表連結| User
+    Crawler-->>Popup: 回傳 fullData (4合1 聚合資料結構)
+    Popup->>Popup: 渲染 #financials-preview-content (XSS安全過濾)
+    User->>Popup: 填寫 Note 並點擊「傳送至研究試算表」
+    Popup->>GAS: HTTP POST (text/plain, redirect: follow)
+    GAS-->>Popup: 回傳 200 OK (寫入 Sheets 與 Drive 截圖備份)
 ```
 
-### **1.2 核心元件職責**
-*   **彈出視窗 UI ([popup.html](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/popup.html))**：提供直覺、現代化的操作介面，顯示當前抓取到的股票代號、現價，提供設定按鈕（齒輪）讓使用者自訂與儲存 API URL，並提供 Note 輸入框供記錄投資想法。
-*   **彈出視窗邏輯 ([popup.js](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/popup.js))**：
-    1.  初始化時，利用 `chrome.tabs` 查詢當前活躍的標籤頁。
-    2.  利用 `chrome.scripting.executeScript` 動態注入臨時 Content Script 以擷取數據。
-    3.  實作 Canvas 等比例壓縮圖片（限制寬度為 800px，JPEG 格式，品質 0.6），減少傳輸負載。
-    4.  讀取與儲存 `chrome.storage.local` 中的 Apps Script API URL。
-    5.  將資料打包為 JSON 格式，並以 `text/plain` 傳送至後端 Google Apps Script。
-*   **背景腳本 ([background.js](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/background.js))**：負責管理擴充功能的 Service Worker 狀態，並在事件觸發時進行全域管理。
+---
+
+## **3. 4合1 SPA 爬蟲核心規格 ([`crawler.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/crawler.js))**
+
+### **3.1 分頁採集職責**
+
+1. **Overview (總覽)**：
+   - 提取 `symbol`（股票代號，自 `[data-symbol]`、`h1` 或 URL 正則）。
+   - 提取 `price`（即時股價，自 `[data-last-price]` 或 `.YMlKvd`）。
+   - 語意化掃描 Key Stats：市值 (`Market cap`)、本益比 (`P/E ratio`)、52週高低點、殖利率。
+2. **Analysis (分析師評級)**：
+   - 透過文字共識比對擷取評級：`Strong Buy` / `Buy` / `Hold` / `Underperform` / `Sell`。
+   - 目標價提取：最高 (`high`)、中位數 (`median`)、最低 (`low`)。
+   - 評級摘要區塊截取。
+3. **Earnings (財報表現)**：
+   - 提取最新季度 `epsActual` vs `epsEstimate`、`revenueActual` vs `revenueEstimate`。
+   - 財報表格 (`table`) 矩陣提取。
+4. **Financials (財務報表)**：
+   - 提取損益表 (Income Statement) 表格與指標數據陣列。
+
+### **3.2 韌性定位與防護機制**
+
+- **語意文字定位 (Semantic Anchoring)**：捨棄易隨 Google 前端編譯變動的隨機混淆 Class，優先以標籤內文 (`Market cap`, `Target price`, `EPS`) 作為錨點尋找相鄰兄弟節點。
+- **超時保護 (`waitForCondition`)**：單頁等待最大上限 5 秒，逾時自動降級 (Fallback) 略過該分頁，確保流程不卡死。
+- **孤立世界沙盒 (Isolated World)**：腳本運行於獨立環境，無法存取主頁面 JS 物件，避免 XSS 攻擊與宿主代碼干擾。
 
 ---
 
-## **2. 專案目錄結構 (Project Structure)**
+## **4. 數據傳輸 Payload 結構規範**
 
-在本地端開發目錄中，請保持以下結構：
+向 Google Apps Script 發送的 JSON Payload 欄位定義：
 
-```text
-finance-research-clipper/
-├── manifest.json         # 外掛核心設定檔 (MV3)
-├── popup.html            # 彈出視窗結構與樣式
-├── popup.js              # 彈出視窗主要控制邏輯
-├── background.js         # 背景服務 (Service Worker)
-├── README.md             # 本地開發與安裝說明
-└── docs/
-    ├── chrome-extension-v3-spec.md  # 本說明書
-    ├── google-apps-script.md        # Google Apps Script 雲端中繼站程式碼
-    ├── google-finance-beta-data.md  # 數據抓取測試分析
-    └── ai-output-console.md         # AI 輸出範本日誌
+```typescript
+interface ClipperPayload {
+  timestamp: string;               // ISO 8601 時間字串
+  mode: "stock" | "ai";           // 抓取模式
+  ticker: string;                  // 標的代號 (例如: "NVDA")
+  price: string;                   // 當前股價
+  sp500?: string;                  // 大盤 S&P 500 指數
+  nasdaq?: string;                 // 大盤 Nasdaq 指數
+  mktcap?: string;                 // 市值
+  pe?: string;                     // 本益比
+  analyst_consensus?: string;      // 分析師共識 (NEW: 例如 "Strong Buy")
+  target_price_median?: string;    // 目標價中位數 (NEW: 例如 "$160.00")
+  target_price_high?: string;      // 最高目標價 (NEW)
+  target_price_low?: string;       // 最低目標價 (NEW)
+  financials_table?: string[][];   // 損益表矩陣 (NEW)
+  note: string;                    // 筆記 (自動附加關鍵統計與 Markdown 報表)
+  screenshot?: string;             // Base64 JPEG 圖表截圖 (等比壓縮寬度 800px)
+}
 ```
 
-### **核心程式碼跳轉連結**
-- 權限與宣告宣告設定：[manifest.json](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/manifest.json)
-- 外掛 UI 介面樣式：[popup.html](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/popup.html)
-- 抓取、壓縮與傳輸邏輯：[popup.js](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/popup.js)
-- 雲端 Apps Script 後端部署程式碼：[google-apps-script.md](file:///c:/Users/G1/00.coding workspace/masonyang-blog/tools/finance-research-clipper/docs/google-apps-script.md)
+### **CORS 與請求優化策略**
+- **傳輸格式**：採用 `Content-Type: text/plain;charset=utf-8` 發送，避免引發 OPTIONS 預檢請求 (Preflight)。
+- **跳轉跟隨**：`fetch(url, { method: "POST", mode: "cors", redirect: "follow", body: JSON.stringify(payload) })`，妥善處理 GAS 的 302 重新導向。
 
 ---
 
-## **3. 功能里程碑與未來路線圖 (Milestones & Roadmap)**
+## **5. AI 開發精準導航與常見修改路徑**
 
-### **3.1 已完成功能 (Milestones)**
-*   **MV3 規範與最小權限**：全面採用 Manifest V3 標準，權限落實最小化原則（宣告 `activeTab`, `scripting`, `storage` 等）。
-*   **CORS 跨來源突破**：使用 `text/plain` 傳輸與 `redirect: "follow"` 繞過 GAS 的跨網域與 Preflight 阻擋。
-*   **Google Finance Beta 多重回退擷取**：克服 Beta 版動態 Class 與 `/beta/quote/` 雙路徑解析，精準擷取個股行情。
-*   **AI 研究面板擷取與對話格式化**：一鍵擷取問答內容並自動清理雜訊轉換為標準 Markdown 格式。
-*   **安全性優化**：移除了 API URL 的硬編碼，改用 UI 設定面板並安全儲存於 `chrome.storage.local`。
-*   **效能優化 (截圖壓縮)**：透過前端 Canvas 將截圖等比例縮放（限制寬度 800px，JPEG 格式品質 0.6），有效節省網路頻寬與雲端硬碟容量。
-*   **後端自動化與排版**：GAS 端接收到數據後，自動根據模式（AI / Stock）渲染底色，進行關鍵字情緒分析加粗，並在 Sheets 自動產生 Hyperlink 關聯 Google Drive 截圖。
-
-### **3.2 未來開發路線圖 (Roadmap)**
-*   **遠端選擇器配置機制 (Remote Selector Config)**：
-    *   *目標*：將 DOM 抓取選擇器定義為遠端託管的 JSON 檔案（如 Github Gist），外掛啟動時非同步讀取。
-    *   *效益*：若 Google 更改 Class 結構，只需修改線上 JSON 即可「熱修復」，免除重複打包送審上架。
-*   **部落格生態系雙向同步 (Auto Pulse Publish)**：
-    *   *目標*：開發 `scratch/util_sync_sheets_to_pulse.py`，定期讀取 Sheets 中 `Status = "Pending"` 的投研資料，並透過 `util_pulse_publish.py` 將其發布為部落格 Pulse (市場瞬息) 網頁。
-    *   *效益*：打通「一鍵擷取 -> Sheets 整理 -> 自動發布部落格 Pulse」的極致自動化管線。
-*   **知識庫沉澱機制 (Knowledge Cards)**：
-    *   *目標*：在 UI 中提供「儲存為知識卡片」選項，當勾選時 GAS 後端打上 Tag，部落格腳本抓取並整合至 `tech-data-architecture.md` 長期知識庫。
-*   **鍵盤快捷操作 (UX Enhancements)**：
-    *   *目標*：支援 `Ctrl+Enter` 快速傳送，並支援鍵盤 `Tab` 順暢切換欄位，提升使用效率。
-
----
-
-## **4. 關鍵技術與安全機制 (Technical & Security Highlights)**
-
-### **4.1 CORS 跨域資源共享限制突破**
-在 Extension 中，向外部 Google Apps Script Web App 發送 POST 請求常因跨來源限制被阻擋。本系統透過以下技術解決：
-1.  **Host Permissions**：在 `manifest.json` 中明確宣告 `https://script.google.com/*` 與 `https://script.googleusercontent.com/*`，免除大部分跨來源檢查。
-2.  **`text/plain` 避開 Preflight**：使用 `Content-Type: text/plain;charset=utf-8`。因為 `application/json` 會觸發預檢請求 (OPTIONS)，而 GAS 對 OPTIONS 支援不佳會導致阻擋。採用 `text/plain` 則會被瀏覽器判定為「簡單請求 (Simple Request)」，跳過預檢。
-3.  **`redirect: "follow"` 追蹤重導向**：GAS 寫入資料後會利用 HTTP 302 重導向至臨時 Google 伺服器，此配置確保 Fetch API 正確跟隨取得最後 Response。
-
-### **4.2 孤立世界 (Isolated World) 沙盒注入**
-動態注入的 `scrapeFinanceData` 臨時 Content Script 運行於 Isolated World 沙盒：
-*   它可以讀取與修改當前頁面的 DOM。
-*   但它無法存取網頁本身原有的 JavaScript 變數或全域函數，有效防範惡意網頁利用外掛特權進行跨站腳本攻擊 (XSS)。
-
-### **4.3 高容錯多重回退擷取策略 (Fallback Strategy)**
-Google Finance 的 Class 常因改版而混淆或更新。外掛採用多重防護抓取邏輯：
-*   **Ticker/股價抓取**：優先讀取自定義屬性 `data-ticker-id` / `data-last-price`；失效時自動降級 (Fallback) 透過網址 pathname 正則解析與多個常用顯示股價的 Class（如 `.YMlKvd`, `.fxKb7e`）進行篩選。
-*   **AI 面板對話解析**：遍歷包含使用者問答 (`jsname="Ldp1ib"`) 與 AI 分析 (`jsname="lKYlId"`) 的區塊，進行 Markdown 表格化轉換與清洗。
-
----
-
-## **5. 測試、除錯與常見故障排除 (Troubleshooting & Debugging)**
-
-### **5.1 本地端 Debug 流程**
-1.  開啟 Chrome 並進入 `chrome://extensions/`，開啟右上角「開發人員模式」。
-2.  點擊「載入未封裝項目」，選擇 `tools/finance-research-clipper` 目錄。
-3.  前往 [Google Finance](https://www.google.com/finance/) 股票頁面。
-4.  在大盤或個股頁面上，對外掛圖示點擊**右鍵**，選擇「檢查彈出式視窗 (Inspect Popup)」。這會開啟 Popup 的專屬開發者工具，可在 Console 檢視 log、網路請求與錯誤堆疊。
-
-### **5.2 常見問題對照表 (Troubleshooting)**
-
-| 錯誤現象 | 可能原因 | 排除步驟 |
+| 想修改的功能 / 需求 | 鎖定檔案與位置 | 修改指引 |
 | :--- | :--- | :--- |
-| **網頁數據讀取顯示為「未知價格」** | Google Finance 更新了網頁結構，原有的 HTML 屬性或 Class 已失效。 | 1. 檢查 Google Finance 網頁的 DOM 結構。 2. 必要時修改 `popup.js` 中的 `scrapeFinanceData` 選擇器。 |
-| **出現 TypeError: Failed to fetch** | 1. Apps Script 部署 URL 輸入錯誤。<br>2. 網路連線中斷。<br>3. Apps Script 未給予所有人 (Anyone) 存取權限。 | 1. 點選設定（齒輪），確認輸入的 URL 正確無誤。<br>2. 檢查 GAS 專案的「管理部署作業」，確認「誰可以存取」設定為「所有人 (Anyone)」。 |
-| **外掛按鈕被禁用且顯示橘/紅色提示** | 1. 未填寫 API URL。<br>2. 當前分頁非 `google.com/finance`。 | 1. 點選設定（齒輪）填入合法的 API URL 後儲存。<br>2. 確認網址列包含 `google.com/finance`，非搜尋結果頁。 |
+| **擴充或修正 Google Finance 新分頁/指標** | [`crawler.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/crawler.js) | 在 `runFullStockScraper()` 的 `tabs` 陣列新增分頁項目，實作對應之 `scrapeXxx()` 函式。 |
+| **調整彈出視窗按鈕、預覽排版** | [`popup.html`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.html)<br>[`popup.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.js#L260-L330) | 在 `executeFullStockCrawler()` 調整 `previewHtml` 模板，注意所有文字輸出必須經過 `escapeHtml()`。 |
+| **增加匯出欄位 (Markdown / CSV / GAS)** | [`popup.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.js#L460-L640) | 在 `buildStockPayload()`、`copyMarkdownBtn` 與 `downloadCsvBtn` 事件監聽中同步擴充欄位映射。 |
+| **安全檢查與合規性驗收** | 終端執行 | `npm run audit:manifests` 或 `python 0.doc_mg/tools/audit_manifests.py`。 |
+
+---
+
+## **6. 故障排除速查表 (Troubleshooting)**
+
+| 現象 / 報錯 | 核心原因 | 快速解決路徑 |
+| :--- | :--- | :--- |
+| **`FinanceCrawler 未成功載入`** | `crawler.js` 未被注入或載入超時 | 檢查 [`popup.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.js) 的 `executeScript` 是否有 `files: ['crawler.js']` 且 tabId 有效。 |
+| **分頁數據顯示 N/A 或未更新** | SPA 分頁路由切換後虛擬 DOM 未水合完成 | 檢查 [`crawler.js`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/crawler.js) 的 `navigateToTab()` 等待條件與延遲微調。 |
+| **`TypeError: Failed to fetch`** | GAS 部署網址錯誤或未公開 | 開啟設定面板確認 URL，確認 GAS 部署為「所有人 (Anyone) 具存取權」。 |
+| **擴充按鈕呈橘/紅禁用狀態** | 當前分頁非目標路徑或缺少 API URL | 確認目前分頁為 `google.com/finance` 且設定頁已填寫 GAS Webhook。 |

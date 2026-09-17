@@ -12,8 +12,6 @@ import {
   getExtensionFromUrl
 } from './services/downloader';
 
-const FLICKR_DEMO_URL = 'https://www.flickr.com/photos/yukirasei/albums/72177720323023386/';
-
 export interface ImageScraperProps {
   defaultMode?: 'url' | 'active-tab';
   defaultActiveTabMode?: ActiveTabScrapeMode;
@@ -471,7 +469,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
 
         {!isSidebar && (
           <p className="text-sm text-dark-secondary mb-4">
-            一鍵提取任意網頁或 Flickr 相簿所有高畫質原圖，支援條件篩選、全選預覽與多執行緒平滑下載。
+            一鍵提取任意網頁所有高畫質原圖，支援條件篩選、全選預覽與多執行緒平滑下載。
           </p>
         )}
 
@@ -481,7 +479,7 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 type="text"
-                placeholder="請輸入網頁 URL (例如 https://www.flickr.com/photos/yukirasei/albums/...)"
+                placeholder="請輸入網頁 URL (例如 https://example.com/...)"
                 value={targetUrl}
                 onChange={e => setTargetUrl(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && handleStartScrape()}
@@ -506,41 +504,29 @@ export const ImageScraper: React.FC<ImageScraperProps> = ({
               </button>
             </div>
 
-            {/* 快速範例填入按鈕與 Instagram 貼心提醒 */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2 text-xs text-dark-muted">
-                <span>💡 試試範例：</span>
-                <button
-                  onClick={() => setTargetUrl(FLICKR_DEMO_URL)}
-                  className="text-blue-400 hover:text-blue-300 underline underline-offset-2 transition-colors"
-                >
-                  Flickr 攝影相簿示範
-                </button>
-              </div>
-
-              {targetUrl.toLowerCase().includes('instagram.com') && (
-                <div className="p-3 bg-pink-950/40 border border-pink-800/50 rounded-lg text-xs text-pink-200 flex items-start gap-2.5">
-                  <span className="text-base leading-none">📷</span>
-                  <div className="flex-1">
-                    <strong>Instagram 多圖貼文採集提示：</strong>
-                    <div className="text-pink-300/90 mt-0.5">
-                      Instagram 對外部直接 URL 爬取有嚴格的反爬與登入限制。若要完整採集貼文中的所有多張相片（如 index 1~14），強烈建議您在瀏覽器分頁開啟貼文後，切換為「<strong>抓取當前瀏覽分頁</strong>」並使用「<strong>相簿劇院輪巡</strong>」模式！
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCrawlMode('active-tab');
-                        setActiveTabMode('carousel-traverse');
-                      }}
-                      className="mt-2 px-2.5 py-1 bg-pink-600/30 hover:bg-pink-600/50 text-pink-200 border border-pink-500/40 rounded text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
-                    >
-                      <span>👉</span>
-                      <span>一鍵切換至「當前分頁相簿輪巡」</span>
-                    </button>
+            {/* Instagram 貼心提醒 */}
+            {targetUrl.toLowerCase().includes('instagram.com') && (
+              <div className="p-3 bg-pink-950/40 border border-pink-800/50 rounded-lg text-xs text-pink-200 flex items-start gap-2.5">
+                <span className="text-base leading-none">📷</span>
+                <div className="flex-1">
+                  <strong>Instagram 多圖貼文採集提示：</strong>
+                  <div className="text-pink-300/90 mt-0.5">
+                    Instagram 對外部直接 URL 爬取有嚴格的反爬與登入限制。若要完整採集貼文中的所有多張相片（如 index 1~14），強烈建議您在瀏覽器分頁開啟貼文後，切換為「<strong>抓取當前瀏覽分頁</strong>」並使用「<strong>相簿劇院輪巡</strong>」模式！
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCrawlMode('active-tab');
+                      setActiveTabMode('carousel-traverse');
+                    }}
+                    className="mt-2 px-2.5 py-1 bg-pink-600/30 hover:bg-pink-600/50 text-pink-200 border border-pink-500/40 rounded text-xs transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <span>👉</span>
+                    <span>一鍵切換至「當前分頁相簿輪巡」</span>
+                  </button>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">

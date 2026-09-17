@@ -16,13 +16,63 @@
     }
 
     body {
-      width: 320px;
+      width: 340px;
       margin: 0;
       padding: 16px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-main);
       box-sizing: border-box;
+    }
+
+    .btn-dashboard-badge {
+      width: auto !important;
+      padding: 4px 8px !important;
+      background: #e8f0fe !important;
+      color: var(--primary-color) !important;
+      border: 1px solid var(--primary-color) !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-dashboard-badge:hover {
+      background-color: #d2e3fc !important;
+      color: var(--primary-hover) !important;
+    }
+
+    .btn-dashboard-full {
+      width: 100%;
+      background: linear-gradient(135deg, #1a73e8, #1557b0);
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 1px 3px rgba(26, 115, 232, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .btn-dashboard-full:hover {
+      background: linear-gradient(135deg, #1557b0, #0d47a1);
+      box-shadow: 0 2px 6px rgba(26, 115, 232, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .btn-dashboard-full:active {
+      transform: translateY(0);
     }
 
     .header {
@@ -117,7 +167,10 @@
 <body>
   <div class="header" style="justify-content: space-between;">
     <h1>🚀 投資靈感 Clipper</h1>
-    <button id="settings-btn" style="width: auto; padding: 4px 8px; background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); font-size: 14px;" title="設定">⚙️</button>
+    <div style="display: flex; gap: 6px; align-items: center;">
+      <button id="open-dashboard-btn" class="btn-dashboard-badge" title="在新分頁開啟完整大螢幕儀表板">📊 儀表板</button>
+      <button id="settings-btn" style="width: auto; padding: 4px 8px; background: transparent; color: var(--text-sub); border: 1px solid var(--border-color); font-size: 14px;" title="設定">⚙️</button>
+    </div>
   </div>
 
   <div id="settings-panel" style="display: none; padding: 12px; background: #fff; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 16px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
@@ -182,6 +235,11 @@
           <input type="checkbox" id="check-screenshot"> 📸 附加當前圖表截圖
         </label>
       </div>
+      <div style="margin-top: 8px; border-top: 1px dashed var(--border-color); padding-top: 8px;">
+        <button id="full-scrape-btn" type="button" style="background: linear-gradient(135deg, #1a73e8, #1557b0); font-size: 11px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span>⚡</span> <span>一鍵完整抓取 (4合1 SPA)</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -214,6 +272,14 @@
   <div style="display: flex; gap: 8px; margin-top: 8px;">
     <button id="export-md-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 Markdown 檔案">⬇️ .md</button>
     <button id="export-csv-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 CSV 檔案">⬇️ .csv</button>
+  </div>
+
+  <div style="margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
+    <button id="btn-goto-dashboard" class="btn-dashboard-full" type="button" title="在新分頁開啟完整大螢幕儀表板">
+      <span>📊</span>
+      <span>前往完整研報儀表板</span>
+      <span style="font-size: 11px; opacity: 0.85;">↗</span>
+    </button>
   </div>
 
   <div id="status-bar"></div>
