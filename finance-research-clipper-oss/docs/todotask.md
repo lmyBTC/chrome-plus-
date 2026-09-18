@@ -1,8 +1,8 @@
 > [!NOTE]
 > **任務實施狀態：已落地實作完成 (2026-09-17)**
-> - 實體任務追蹤檔：[task_20260917_finance_research_clipper_spa_tab_crawler.md](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/tasks/task_20260917_finance_research_clipper_spa_tab_crawler.md)
-> - 核心爬蟲模組：[crawler.js](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/crawler.js)
-> - Popup 整合：[popup.html](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.html)、[popup.js](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss/popup.js)
+> - 實體任務追蹤檔：[task_20260917_finance_research_clipper_spa_tab_crawler.md](../../0.doc_mg/tasks/task_20260917_finance_research_clipper_spa_tab_crawler.md)
+> - 核心爬蟲模組：[crawler.js](../crawler.js)
+> - Popup 整合：[popup.html](../popup.html)、[popup.js](../popup.js)
 
 __________________________________________
 

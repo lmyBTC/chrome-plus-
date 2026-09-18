@@ -13,7 +13,7 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 ---
 
 ## 1. 專案技術規格 (Tech Stack & Architecture)
-* **目錄位置**: `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/`
+* **目錄位置**: `./chrome_scrumclock/`
 * **架構風格**: React 18 + TypeScript + Vite + Tailwind CSS + Lucide React
 * **建置指令**:
   * 開發: `npm run dev` (位於 `chrome_scrumclock/`)

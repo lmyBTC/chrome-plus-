@@ -1,7 +1,7 @@
 # 網頁圖片爬取與批量下載器 (Image Scraper) 功能規格說明書
 
 > **文件路徑**: `chrome_scrumclock/docs/image-scraper-spec.md`  
-> **維護指南**: [`src/features/toolbox/tools/image-scraper/功能說明.md`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/tools/image-scraper/功能說明.md)  
+> **維護指南**: [`src/features/toolbox/tools/image-scraper/功能說明.md`](../src/features/toolbox/tools/image-scraper/功能說明.md)  
 > **最後更新**: 2026-09-12 (新增：Instagram 影片與 DASH 串流解析攻克、官方 1080p MP4 直採與擴充套件原生串流下載)
 
 ---
@@ -9,17 +9,17 @@
 ## 1. 模組架構與檔案地圖 (File Map)
 
 - **所在模組**: `chrome_scrumclock` -> `Toolbox` (`src/features/toolbox/`)
-- **入口元件**: [`ImageScraper.tsx`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/tools/image-scraper/ImageScraper.tsx)
+- **入口元件**: [`ImageScraper.tsx`](../src/features/toolbox/tools/image-scraper/ImageScraper.tsx)
 - **核心服務**:
-  - **採集解析引擎**: [`imageExtractor.ts`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/services/imageExtractor.ts)
+  - **採集解析引擎**: [`imageExtractor.ts`](../src/features/toolbox/tools/image-scraper/services/imageExtractor.ts)
     - 支援指定 URL 直接爬取 (Fetch HTML + DOMParser)
     - 支援當前活躍分頁 DOM 採集 (`fast` 快速快照、`deep-scroll` 平滑滾動懶加載、`carousel-traverse` 相簿劇院輪巡)
     - 支援 Flickr CDN 高清規則 (`_m`/`_z` -> `_b` 1024px) 與 Facebook 縮圖去除 (`stp` 清除、高清直連)
-  - **下載與匯出引擎**: [`downloader.ts`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/services/downloader.ts)
+  - **下載與匯出引擎**: [`downloader.ts`](../src/features/toolbox/tools/image-scraper/services/downloader.ts)
     - 支援 File System Access API (`showDirectoryPicker`) 原生資料夾直存模式（一次選取，免重複彈窗確認）
     - 支援 Chrome Downloads API 子目錄歸檔與平滑併發隊列控制 (Concurrency: 3~5)
     - 支援已選 URL 複製至剪貼簿與匯出 `.txt` 清單
-  - **型別定義**: [`types.ts`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/toolbox/types.ts)
+  - **型別定義**: [`types.ts`](../src/features/toolbox/tools/image-scraper/types.ts)
 
 ---
 

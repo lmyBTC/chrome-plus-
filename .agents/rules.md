@@ -17,22 +17,23 @@
 <!-- SKILL_TREE_END -->
 
 ## 1. Chrome 插件開發與技術規範
-- **核心指南**: [`0.doc_mg/dev_standards.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/dev_standards.md) (SSOT 規範，涵蓋 MV3、Shadow DOM 隔離、通訊與儲存 API)
+- **核心指南**: [`0.doc_mg/dev_standards.md`](./0.doc_mg/dev_standards.md) (SSOT 規範，涵蓋 MV3、Shadow DOM 隔離、通訊與儲存 API)
 
-## 2. 任務管理與規範 (Hard Rules)
-- **任務管理指引**: [`0.doc_mg/task_manager.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/task_manager.md)
-- **任務記錄範本**: [`0.doc_mg/task_template_v2.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/task_template_v2.md)
-- **活動任務目錄**: [`0.doc_mg/tasks/`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/tasks/)
-- **底線**:
-  * 建立任務前必檢索既有文件，禁止憑記憶生成任務結構。
-  * 對話前回報必須勾選實體任務文件。
-  * 每階段任務完成或對話結束前，必須對已完成 Phase 執行**狀態收斂 (Dynamic Condensation)**，以節省 Token。
+## 2. 任務管理與規範 (Hard Rules: 3-Gate Protocol)
+- **跨裝置相對路徑守則**: 專案內所有 Markdown 連結、指令與檔案參照，一律嚴禁使用 `file:///c:/Users/...` 等本機硬編碼絕對路徑，全面使用相對路徑以支援換電腦使用。
+- **任務管理指引**: [`0.doc_mg/task_manager.md`](./0.doc_mg/task_manager.md)
+- **任務記錄範本**: [`0.doc_mg/task_template_v2.md`](./0.doc_mg/task_template_v2.md)
+- **活動任務目錄**: [`0.doc_mg/tasks/`](./0.doc_mg/tasks/)
+- **三階段守門底線**:
+  * **Gate 0 (Zero-Tool, Zero-Scan)**: 收到新需求嚴禁立刻掃描專案或建檔。先憑直覺提 100~200 字方向並停步尋求授權。
+  * **Gate 1 (Grounding & Blueprint)**: 獲准後始得精準唯讀掃描目標檔案、建立 `task.md` 並清理註解。嚴禁在此時修改原始碼，停步等待執行授權。
+  * **Gate 2 (Atomic Execution)**: 獲准後始得分段原子執行，單輪一個 Phase，即時打勾物理同步，Phase 完成後執行**狀態收斂 (Dynamic Condensation)** 以節省 Token。
 
 ## 3. Token 優化與輔助工具
-- **節省器指南**: [`.agents/skills/token-saver/SKILL.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/.agents/skills/token-saver/SKILL.md) (使用 `rtk` 工具包裝指令，降低 Token 消耗)
+- **節省器指南**: [`.agents/skills/token-saver/SKILL.md`](./.agents/skills/token-saver/SKILL.md) (使用 `rtk` 工具包裝指令，降低 Token 消耗)
 
 ## 4. 多插件開發邊界與防污染規範 (Hard Rules)
-- **契約參照**: [`0.doc_mg/docs/cross_plugin_contract.md`](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/0.doc_mg/docs/cross_plugin_contract.md)
+- **契約參照**: [`0.doc_mg/docs/cross_plugin_contract.md`](./0.doc_mg/docs/cross_plugin_contract.md)
 - **邊界防線**:
   * **AI 讀取邊界**: 進行某一插件任務時，禁止跨目錄掃描另一插件源碼。通訊協同僅透過黑盒契約規格溝通。
   * **儲存與依賴完全隔離**: 各插件擁有專屬 `chrome.storage.local`，禁止共用 DB，禁止跨專案 `import/require`。

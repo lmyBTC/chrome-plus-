@@ -16,16 +16,16 @@ deadline: "2026-09-17"
 3. **UI 入口整合**：於 ScrumClock 的 `Sidebar.tsx` 加入「📈 財務自選監控」按鈕，並於 `App.tsx` 建立切換視圖；在 `SettingsPanel.tsx` 提供擴充功能 ID 自訂與連線狀態指示燈。
 
 ### 鎖定檔案 (Target Files)
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/manifest.json`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/background.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/types/index.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/finance-integration/types.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/finance-integration/financeClient.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/finance-integration/WatchListWidget.tsx`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/finance-integration/index.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/core/layout/Sidebar.tsx`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/App.tsx`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/components/SettingsPanel.tsx`
+- `./finance-research-clipper-oss/manifest.json`
+- `./finance-research-clipper-oss/background.js`
+- `./chrome_scrumclock/src/types/index.ts`
+- `./chrome_scrumclock/src/features/finance-integration/types.ts`
+- `./chrome_scrumclock/src/features/finance-integration/financeClient.ts`
+- `./chrome_scrumclock/src/features/finance-integration/WatchListWidget.tsx`
+- `./chrome_scrumclock/src/features/finance-integration/index.ts`
+- `./chrome_scrumclock/src/core/layout/Sidebar.tsx`
+- `./chrome_scrumclock/src/App.tsx`
+- `./chrome_scrumclock/src/components/SettingsPanel.tsx`
 
 ## 3. 任務拆解
 

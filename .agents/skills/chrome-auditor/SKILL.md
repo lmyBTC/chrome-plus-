@@ -12,8 +12,8 @@ ssot_dependencies: ["0.doc_mg/dev_standards.md", "0.doc_mg/chrome_agent_optimiza
 
 ## 1. 核心指南引用 (Mandatory Read)
 在執行審查或修改插件代碼前，建議參閱以下 SSOT 文件：
-* [`0.doc_mg/dev_standards.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/dev_standards.md) (MV3、Shadow DOM 樣式隔離與通訊標準)
-* [`0.doc_mg/chrome_agent_optimization.md`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/chrome_agent_optimization.md) (注意事項與 Token 優化指南)
+* [`0.doc_mg/dev_standards.md`](./0.doc_mg/dev_standards.md) (MV3、Shadow DOM 樣式隔離與通訊標準)
+* [`0.doc_mg/chrome_agent_optimization.md`](./0.doc_mg/chrome_agent_optimization.md) (注意事項與 Token 優化指南)
 
 ## 2. 執行工作流 (Auditor Workflow)
 

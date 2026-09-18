@@ -13,7 +13,8 @@ deadline: "YYYY-MM-DD"
 <!-- 說明預計的實作方案與相依架構，填寫完畢後可刪除此說明 -->
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\[plugin]\path\to\target_file`
+<!-- 必須一律使用工作區相對路徑，嚴禁寫入本機絕對路徑 -->
+- `./[plugin]/path/to/target_file`
 
 ## 3. 任務拆解
 
@@ -32,6 +33,6 @@ deadline: "YYYY-MM-DD"
 - [ ] **插件驗證**: 已在 Chrome 中重新載入插件 (或執行 Vite `npm run build` 後載入 `dist/`)，確認各項功能及背景通訊皆正常無報錯。
 
 ## 6. AI 簽到區
-> [ ] 我已閱讀並承諾遵守「task-protocol」技能中的中斷點與狀態收斂規範。
+> [ ] 我已閱讀並承諾遵守「task-protocol」技能中之「三階段守門門禁 (3-Gate Protocol)」與動態狀態收斂規範。
 > **參與對話 ID 紀錄**:
 > - [YYYY-MM-DD] ID: [當前對話 ID] (初始化)

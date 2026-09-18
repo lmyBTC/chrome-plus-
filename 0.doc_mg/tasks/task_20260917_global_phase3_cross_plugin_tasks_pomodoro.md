@@ -23,18 +23,18 @@ deadline: "2026-09-26"
    - 於 ScrumClock `QuickCapture.tsx` 增強語法識別（如輸入 `$NVDA` 自動分類為投資研究）。
 
 ### 鎖定檔案 (Target Files)
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/background.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/types/index.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/scrumclock/components/QuickCapture.tsx`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/scrumclock/contexts/TimerContext.tsx`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/features/finance-integration/types.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/aiClient.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/background.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/dashboard.html`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/dashboard.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/sidepanel.html`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/sidepanel.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/0.doc_mg/docs/cross_plugin_contract.md`
+- `./chrome_scrumclock/src/background.ts`
+- `./chrome_scrumclock/src/types/index.ts`
+- `./chrome_scrumclock/src/features/scrumclock/components/QuickCapture.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/contexts/TimerContext.tsx`
+- `./chrome_scrumclock/src/features/finance-integration/types.ts`
+- `./finance-research-clipper-oss/aiClient.js`
+- `./finance-research-clipper-oss/background.js`
+- `./finance-research-clipper-oss/dashboard.html`
+- `./finance-research-clipper-oss/dashboard.js`
+- `./finance-research-clipper-oss/sidepanel.html`
+- `./finance-research-clipper-oss/sidepanel.js`
+- `./0.doc_mg/docs/cross_plugin_contract.md`
 
 ## 3. 任務拆解
 

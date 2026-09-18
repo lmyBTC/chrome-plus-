@@ -13,7 +13,7 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 ---
 
 ## 1. 專案技術規格 (Tech Stack & Zero-Build Architecture)
-* **目錄位置**: `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/`
+* **目錄位置**: `./finance-research-clipper-oss/`
 * **架構風格**: 純原生 Vanilla JS (ES6+) + CSS3 + HTML5（零構建、無 Webpack/Vite 依賴、即改即測）
 * **擴充功能入口 (Extension Entrypoints)**:
   * `manifest.json`: Manifest V3，宣告 `storage`, `activeTab`, `scripting`, `sidePanel` 與 `externally_connectable`。

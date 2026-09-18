@@ -5,7 +5,7 @@ Scrumclock 是一款專為「頂尖高效工作者 (Hyper-Productive Worker / 10
 本專案貫徹 **「技術極簡、隱私安全、無敏感權限」** 且 **「對開發者最直覺好用」** 的原則，完全在 Client 端安全運行，支援用戶自備 Gemini API 金鑰。
 
 > [!TIP]
-> 📌 **開發者與 AI 快速索引**：欲查詢全專案 8 大功能模組矩陣、核心入口與生命週期、共用 API 與巨石檔案警示，請直接查閱 👉 [**ScrumClock 功能全景與精準架構索引 (README.md)**](file:///c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/README.md)。
+> 📌 **開發者與 AI 快速索引**：欲查詢全專案 8 大功能模組矩陣、核心入口與生命週期、共用 API 與巨石檔案警示，請直接查閱 👉 [**ScrumClock 功能全景與精準架構索引 (SCRUMCLOCK_README.md)**](../SCRUMCLOCK_README.md)。
 
 ---
 

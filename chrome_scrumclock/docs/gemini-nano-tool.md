@@ -34,7 +34,7 @@ graph TD
 由於 Chrome 內建 AI API 仍處於快速演進階段（從最早的早期預覽版命名空間到最新的標準 Draft 規範），ScrumClock 採用了**多重遞補相容性設計**。
 
 ### 2.1 命名空間遞補邏輯
-為了相容於舊版 Canary/Dev 以及新版 Chrome 釋出的 Prompt API，系統在 [ai-helper.ts](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_scrumclock/src/utils/ai-helper.ts) 的 `getAICore()` 中實作了以下順序遞補：
+為了相容於舊版 Canary/Dev 以及新版 Chrome 釋出的 Prompt API，系統在 [ai-helper.ts](../src/utils/ai-helper.ts) 的 `getAICore()` 中實作了以下順序遞補：
 
 ```typescript
 export function getAICore(): any {
@@ -72,7 +72,7 @@ export function getAICore(): any {
 內建 AI 的建立會佔用顯卡的 VRAM 記憶體。為防止記憶體洩漏與效能下降，ScrumClock 遵循以下會話管理規範：
 
 ### 3.1 Session 常駐與銷毀機制
-在 [hooks.ts](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_scrumclock/src/entries/sidebar/hooks.ts) 的 `useAISession` 中，我們宣告了兩個 React `useRef` 常駐會話：
+在 [hooks.ts](../src/entries/sidebar/hooks.ts) 的 `useAISession` 中，我們宣告了兩個 React `useRef` 常駐會話：
 * `aiSessionRef`：負責一般敏捷諮詢與對話。
 * `parseSessionRef`：負責背景語意 JSON 意圖提取。
 
@@ -134,7 +134,7 @@ export function safeExtractJSON(text: string): any {
 由於 React 狀態與 Chrome Storage 寫入是非同步運作，當 AI 連續解析並嘗試修改同一份儲存資料時，可能會引發 **Race Condition (競爭危害)**。
 
 ### 5.1 佇列寫入鎖 (StorageQueue)
-我們在 [hooks.ts](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_scrumclock/src/entries/sidebar/hooks.ts) 中封裝了一個簡單的 `StorageQueue`。所有 AI 解析後對 `chrome.storage.local` 的修改均需進入排隊序列：
+我們在 [hooks.ts](../src/entries/sidebar/hooks.ts) 中封裝了一個簡單的 `StorageQueue`。所有 AI 解析後對 `chrome.storage.local` 的修改均需進入排隊序列：
 ```typescript
 export class StorageQueue {
   private queue: Promise<any> = Promise.resolve();

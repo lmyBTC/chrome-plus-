@@ -353,48 +353,148 @@ function getOrCreateStocksSheet(ss) {
 }
 
 /**
- * 確保 Productivity_Cross_Analysis 交叉分析量化分頁存在且具備動態彙整公式
+ * 試算表開啟時建立專屬選單
  */
-function ensureCrossAnalysisSheet(ss) {
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  ui.createMenu("📊 Chrome Plus 戰情室")
+    .addItem("🔄 重新整理交叉分析模型", "refreshCrossAnalysisSheet")
+    .addItem("📋 初始化所有分頁", "initializeAllSheets")
+    .addToUi();
+}
+
+/**
+ * 手動重新整理交叉分析模型
+ */
+function refreshCrossAnalysisSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  ensureCrossAnalysisSheet(ss, true);
+  SpreadsheetApp.getActiveSpreadsheet().toast("交叉分析模型與動態公式已成功重新整理！", "Chrome Plus", 3);
+}
+
+/**
+ * 手動初始化所有分頁
+ */
+function initializeAllSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  getOrCreateTasksSheet(ss);
+  getOrCreateStocksSheet(ss);
+  ensureCrossAnalysisSheet(ss, true);
+  SpreadsheetApp.getActiveSpreadsheet().toast("所有分頁初始化完成！", "Chrome Plus", 3);
+}
+
+/**
+ * 確保 Productivity_Cross_Analysis 交叉分析量化分頁存在且具備動態彙整公式
+ * @param {GoogleAppsScript.Spreadsheet.Spreadsheet} ss 試算表物件
+ * @param {boolean} forceRefresh 是否強制刷新表頭與公式
+ */
+function ensureCrossAnalysisSheet(ss, forceRefresh = false) {
   let sheet = ss.getSheetByName(SHEET_ANALYSIS);
+  const exists = !!sheet;
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_ANALYSIS);
-    const headers = [
-      "標的代碼", "研報次數", "投入番茄鐘總數", "總專注時長(小時)",
-      "最新股價", "目標價", "潛在空間 (%)", "分析師評級", "研究效益比評估"
-    ];
-    sheet.appendRow(headers);
-    const headerRange = sheet.getRange(1, 1, 1, headers.length);
-    headerRange.setBackground("#8430ce")
-               .setFontColor("#ffffff")
-               .setFontWeight("bold")
-               .setHorizontalAlignment("center");
-    sheet.setFrozenRows(1);
-    sheet.setColumnWidth(1, 100);
-    sheet.setColumnWidth(4, 140);
-    sheet.setColumnWidth(7, 130);
-    sheet.setColumnWidth(9, 180);
-
-    // 注入動態陣列公式
-    // A2: 自動列出在 Tasks_Log 或 Stocks_Research 出現的不重複標的
-    sheet.getRange("A2").setFormula(`=IFERROR(UNIQUE(FILTER(${SHEET_STOCKS}!C2:C, ${SHEET_STOCKS}!C2:C<>"")), "暫無研究標的")`);
-    // B2: 研報次數
-    sheet.getRange("B2").setFormula(`=IF(A2="","", COUNTIF(${SHEET_STOCKS}!C:C, A2))`);
-    // C2: 投入番茄鐘總數
-    sheet.getRange("C2").setFormula(`=IF(A2="","", SUMIF(${SHEET_TASKS}!D:D, A2, ${SHEET_TASKS}!F:F))`);
-    // D2: 總專注時長(小時)
-    sheet.getRange("D2").setFormula(`=IF(A2="","", ROUND(C2 * 25 / 60, 1))`);
-    // E2: 最新股價 (自 Stocks_Research 查找最新記錄)
-    sheet.getRange("E2").setFormula(`=IF(A2="","", IFERROR(XLOOKUP(A2, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!E:E, "", 0, -1), "N/A"))`);
-    // F2: 目標價
-    sheet.getRange("F2").setFormula(`=IF(A2="","", IFERROR(XLOOKUP(A2, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!G:G, "", 0, -1), "N/A"))`);
-    // G2: 潛在空間 %
-    sheet.getRange("G2").setFormula(`=IF(OR(E2="", F2="", NOT(ISNUMBER(E2)), NOT(ISNUMBER(F2))), "N/A", TEXT((F2-E2)/E2, "+0.0%;-0.0%"))`);
-    // H2: 分析師評級
-    sheet.getRange("H2").setFormula(`=IF(A2="","", IFERROR(XLOOKUP(A2, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!F:F, "", 0, -1), "Hold"))`);
-    // I2: 效益評估
-    sheet.getRange("I2").setFormula(`=IF(A2="","", IF(C2>=6, "🔥 深度核心配置", IF(C2>=2, "⭐ 重點關注研究", "🌱 初步靈感追蹤")))`);
+  } else if (!forceRefresh) {
+    return sheet;
   }
+
+  // 清除舊公式與格式（若為 forceRefresh）
+  if (forceRefresh) {
+    sheet.clear();
+  }
+
+  // 設定分頁標籤色彩 (紫色)
+  sheet.setTabColor("#8430ce");
+
+  // 1. 主要報表表頭 (A1:I1)
+  const headers = [
+    "標的代碼", "研報次數", "投入番茄鐘總數", "總專注時長(小時)",
+    "最新股價", "目標價", "潛在空間 (%)", "分析師評級", "研究效益評估"
+  ];
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  headerRange.setValues([headers])
+             .setBackground("#8430ce")
+             .setFontColor("#ffffff")
+             .setFontWeight("bold")
+             .setHorizontalAlignment("center")
+             .setVerticalAlignment("middle");
+
+  sheet.setFrozenRows(1);
+  sheet.setColumnWidth(1, 110); // 標的代碼
+  sheet.setColumnWidth(2, 100); // 研報次數
+  sheet.setColumnWidth(3, 140); // 投入番茄鐘總數
+  sheet.setColumnWidth(4, 150); // 總專注時長(小時)
+  sheet.setColumnWidth(5, 110); // 最新股價
+  sheet.setColumnWidth(6, 110); // 目標價
+  sheet.setColumnWidth(7, 130); // 潛在空間 (%)
+  sheet.setColumnWidth(8, 120); // 分析師評級
+  sheet.setColumnWidth(9, 210); // 研究效益評估
+
+  // 2. 注入動態陣列公式 (全面採用 ARRAYFORMULA 與 MAP 自動展延，無需手動下拉)
+  
+  // A2: 自動列出在 Stocks_Research 或 Tasks_Log 出現之不重複標的代碼（過濾空白並排序）
+  sheet.getRange("A2").setFormula(
+    `=IFERROR(SORT(UNIQUE(FILTER({IFERROR(${SHEET_STOCKS}!C2:C, ""); IFERROR(${SHEET_TASKS}!D2:D, "")}, {IFERROR(${SHEET_STOCKS}!C2:C, ""); IFERROR(${SHEET_TASKS}!D2:D, "")}<>""))), "暫無標的")`
+  );
+
+  // B2: 研報筆數 (COUNTIF 陣列)
+  sheet.getRange("B2").setFormula(
+    `=ARRAYFORMULA(IF(A2:A="","", COUNTIF(${SHEET_STOCKS}!C:C, A2:A)))`
+  );
+
+  // C2: 投入番茄鐘總數 (SUMIF 陣列)
+  sheet.getRange("C2").setFormula(
+    `=ARRAYFORMULA(IF(A2:A="","", SUMIF(${SHEET_TASKS}!D:D, A2:A, ${SHEET_TASKS}!F:F)))`
+  );
+
+  // D2: 總專注時長(小時) (換算番茄鐘為小時，保留 1 位小數)
+  sheet.getRange("D2").setFormula(
+    `=ARRAYFORMULA(IF(A2:A="","", ROUND(C2:C * 25 / 60, 1)))`
+  );
+
+  // E2: 最新股價 (MAP + XLOOKUP，由下而上反向查詢最新一筆)
+  sheet.getRange("E2").setFormula(
+    `=MAP(A2:INDEX(A2:A, MAX(2, COUNTA(A2:A))), LAMBDA(t, IF(t="","", IFERROR(XLOOKUP(t, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!E:E, "N/A", 0, -1), "N/A"))))`
+  );
+
+  // F2: 目標價 (MAP + XLOOKUP，反向查詢最新一筆)
+  sheet.getRange("F2").setFormula(
+    `=MAP(A2:INDEX(A2:A, MAX(2, COUNTA(A2:A))), LAMBDA(t, IF(t="","", IFERROR(XLOOKUP(t, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!G:G, "N/A", 0, -1), "N/A"))))`
+  );
+
+  // G2: 潛在空間 % (MAP 判斷是否為數值並計算回報空間)
+  sheet.getRange("G2").setFormula(
+    `=MAP(E2:INDEX(E2:E, MAX(2, COUNTA(A2:A))), F2:INDEX(F2:F, MAX(2, COUNTA(A2:A))), LAMBDA(p, tp, IF(OR(p="", tp="", NOT(ISNUMBER(p)), NOT(ISNUMBER(tp))), "N/A", TEXT((tp-p)/p, "+0.0%;-0.0%"))))`
+  );
+
+  // H2: 分析師評級 (MAP + XLOOKUP 最新評級)
+  sheet.getRange("H2").setFormula(
+    `=MAP(A2:INDEX(A2:A, MAX(2, COUNTA(A2:A))), LAMBDA(t, IF(t="","", IFERROR(XLOOKUP(t, ${SHEET_STOCKS}!C:C, ${SHEET_STOCKS}!F:F, "中立", 0, -1), "中立"))))`
+  );
+
+  // I2: 研究效益評估 (依番茄鐘投入等級劃分)
+  sheet.getRange("I2").setFormula(
+    `=MAP(C2:INDEX(C2:C, MAX(2, COUNTA(A2:A))), LAMBDA(pomo, IF(pomo="","", IF(pomo>=6, "🔥 深度核心配置 (≥6🍅)", IF(pomo>=2, "⭐ 重點關注 (2-5🍅)", "🌱 初步靈感 (1🍅)")))))`
+  );
+
+  // 3. 側邊戰情看板：Top 5 專注投入個股 (K1:M7)
+  const kpiHeaders = ["排名", "深度研究標的", "累計專注時長(小時)"];
+  const kpiHeaderRange = sheet.getRange("K1:M1");
+  kpiHeaderRange.setValues([kpiHeaders])
+                .setBackground("#4c1d95")
+                .setFontColor("#ffffff")
+                .setFontWeight("bold")
+                .setHorizontalAlignment("center");
+
+  sheet.setColumnWidth(11, 70);
+  sheet.setColumnWidth(12, 130);
+  sheet.setColumnWidth(13, 160);
+
+  // K2 注入動態 QUERY 聚合排行榜
+  sheet.getRange("K2").setFormula(
+    `=IFERROR(QUERY(A2:D, "SELECT 'Top ' || ROW_NUMBER(), A, D WHERE A IS NOT NULL AND A != '暫無標的' ORDER BY D DESC LIMIT 5 LABEL 'Top ' || ROW_NUMBER() ''", 0), {"1", "尚無資料", "-"})`
+  );
+
+  return sheet;
 }
 
 /**

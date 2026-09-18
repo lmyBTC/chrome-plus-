@@ -13,7 +13,7 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md"]
 ---
 
 ## 1. 專案技術規格 (Tech Stack & Architecture)
-* **目錄位置**: `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_video speed plus/`
+* **目錄位置**: `./chrome_video speed plus/`
 * **架構風格**: 純原生 Vanilla JS + Shadow DOM 實體隔離（零依賴、無構建打包）
 * **擴充功能入口 (Extension Entrypoints)**:
   * `manifest.json`: Manifest V3，宣告 `storage`, `activeTab`, `scripting`，並配置全域 `<all_urls>` content script。

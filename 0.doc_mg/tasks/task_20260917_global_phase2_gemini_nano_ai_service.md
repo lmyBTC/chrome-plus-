@@ -21,14 +21,14 @@ deadline: "2026-09-24"
    - 於 `dashboard.js` 整合：股票採集完成後自動或手動觸發 AI 分析，並將結果持久化至 `chrome.storage.local`。
 
 ### 鎖定檔案 (Target Files)
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/public/manifest.json`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/background.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/utils/ai-helper.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/chrome_scrumclock/src/utils/ai-prompts.ts`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/aiClient.js`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/dashboard.html`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/dashboard.css`
-- `c:/Users/烈日千陽/vide-coding-workspace/chrome-plus/finance-research-clipper-oss/dashboard.js`
+- `./chrome_scrumclock/public/manifest.json`
+- `./chrome_scrumclock/src/background.ts`
+- `./chrome_scrumclock/src/utils/ai-helper.ts`
+- `./chrome_scrumclock/src/utils/ai-prompts.ts`
+- `./finance-research-clipper-oss/aiClient.js`
+- `./finance-research-clipper-oss/dashboard.html`
+- `./finance-research-clipper-oss/dashboard.css`
+- `./finance-research-clipper-oss/dashboard.js`
 
 ## 3. 任務拆解
 

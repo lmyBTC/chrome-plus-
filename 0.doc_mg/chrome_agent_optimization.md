@@ -6,7 +6,7 @@
 
 ## 1. Chrome 插件開發共同注意事項 (MV3 核心規範)
 
-在進行插件開發（如 [`chrome_scrumclock`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_scrumclock)、[`chrome_video speed plus`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_video%20speed%20plus)、[`finance-research-clipper-oss`](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/finance-research-clipper-oss)）時，必須遵守以下 Manifest V3 規範：
+在進行插件開發（如 [`chrome_scrumclock`](../chrome_scrumclock)、[`chrome_video speed plus`](../chrome_video%20speed%20plus)、[`finance-research-clipper-oss`](../finance-research-clipper-oss)）時，必須遵守以下 Manifest V3 規範：
 
 ### 1.1. Service Worker 生命週期與狀態儲存
 * **非持續性背景腳本 (Non-persistent Background)**：MV3 中的 Background 以 Service Worker 運作，這意味著它在閒置時會自動休眠，並在事件觸發時重啟。
@@ -52,7 +52,7 @@ LLM Agent 在執行開發與除錯時，可以採用以下幾點技術來減少 
 ### 2.2. 終端機 Verbose 輸出的過濾與壓縮 (RTK 包裝)
 * **減少無用日誌**：執行 `npm run build`、`tsc` 或 `eslint` 時，終端機會產生大量非結構化、重複的日誌與警告資訊，浪費 Token。
 * **技巧**：
-  * 優先使用 [RTK Token Saver](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/.agents/skills/token-saver/SKILL.md) 工具（即執行 `rtk <command>`），自動在 Rust/Go 底層過濾重複的日誌，只提取關鍵錯誤與編譯結果。
+  * 優先使用 [RTK Token Saver](../.agents/skills/token-saver/SKILL.md) 工具（即執行 `rtk <command>`），自動在 Rust/Go 底層過濾重複的日誌，只提取關鍵錯誤與編譯結果。
   * 對於測試報告，使用過濾參數（如 `jest --silent` 或 `eslint --quiet`）以避免輸出大量無關通過的測試細節。
 
 ### 2.3. 自動化審計工具的整合 (Static Compliance Check)
