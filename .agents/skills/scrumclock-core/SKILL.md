@@ -19,9 +19,11 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
   * 開發: `npm run dev` (位於 `chrome_scrumclock/`)
   * 打包: `npm run build` (產出至 `chrome_scrumclock/dist/`)
 * **擴充功能入口 (Extension Entrypoints)**:
-  * `src/background.ts`: Service Worker，負責倒數計時器 Alarms、Offscreen 音效、跨插件通訊接收。
-  * `entries/sidepanel/`: 瀏覽器側邊欄視圖 (Chrome SidePanel API)。
-  * `entries/newtab/`: 新分頁儀表板視圖。
+  * `src/background.ts`: Service Worker 入口 (96 行)，負責事件路由。非同步業務模組化分流至：
+    - `src/background/alarmHandlers.ts`: 倒數計時器 Alarms 與通知管理。
+    - `src/background/externalService.ts`: 跨插件通訊接收與 Offscreen Document 音效協調。
+  * `src/entries/sidebar/`: 瀏覽器側邊欄視圖 (Chrome SidePanel API)。`hooks.ts` 為 Barrel 門面，子 Hooks 位於 `src/entries/sidebar/hooks/`。
+  * `src/entries/newtab/`: 新分頁儀表板視圖。
   * `public/manifest.json`: Manifest V3 配置，含 `alarms`, `storage`, `sidePanel`, `offscreen` 權限。
 
 ---
@@ -32,12 +34,26 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `Sidebar.tsx`: 主側邊欄導航，包含番茄鐘、任務列表、看板、儀表板與財務整合分頁切換。
 - `Header.tsx`: 頂部狀態列，顯示今日專注時長與全域控制。
 
-### 業務組件 (`src/components/`)
-- `Timer.tsx`: 核心番茄鐘/倒數計時組件，支援工作、短休、長休與即時音效。
-- `TaskList.tsx`: 條列式任務清單，支援快速新增、勾選完成、估計番茄鐘數標記。
-- `TaskBoard.tsx` / `Kanban/`: 敏捷看板 (To Do / In Progress / Done / Archive) 拖曳視圖。
-- `SettingsPanel.tsx`: 系統設定面板，包含時長設定、聲音偏好、外部整合開關與 API Key。
-- `Statistics.tsx`: 生產力圖表，顯示每日/每週專注趨勢。
+### 番茄鐘衝刺元件 (`src/features/scrumclock/components/`)
+- `SprintPomodoro.tsx`: 核心番茄鐘衝刺計時面板 (412 行)。
+- `sprint/SprintBattleItem.tsx`: 單一作戰任務項目視圖與狀態控制。
+- `sprint/SprintMarkdownImporter.tsx`: Markdown 格式任務解析與批次匯入視圖。
+- `sprint/SprintResultModal.tsx`: 衝刺結束成果回顧彈窗。
+- `DailyMissionBriefing.tsx`: 每日作戰目標簡報面板。
+- `EndOfDayReview.tsx`: 每日結算回顧面板。
+- `QuickCapture.tsx`: 閃電捕捉靈感與待辦。
+
+### 圖片擷取策略模組 (`src/features/toolbox/tools/image-scraper/services/`)
+- `imageExtractor.ts`: 圖片萃取主調度門面 (287 行)。
+- `instagramExtractor.ts`: Instagram 動態與多圖特定解析策略。
+- `carouselExtractor.ts`: 通用輪播圖多圖提取策略。
+- `extractorUtils.ts`: 通用 DOM 屬性與正則工具函式。
+- `downloader.ts`: 批次 ZIP 下載打包服務。
+
+### 側邊欄 Hooks 子模組 (`src/entries/sidebar/hooks/`)
+- `useAISession.ts`: AI 側邊欄會話與 Prompt 互動管理。
+- `useTimerSync.ts`: 全域番茄鐘即時狀態雙向同步。
+- `useContextMenuSync.ts`: Chrome 右鍵選單快顯事件同步。
 
 ### 跨插件整合模組 (`src/features/finance-integration/`)
 - `WatchListWidget.tsx`: 嵌入 New Tab 與側邊欄的即時自選股小工具。

@@ -14,10 +14,10 @@
 
 | 功能模組 | 核心職責 | 門面出口 (`index.ts`) | 專屬型別 (`types.ts`) | 核心視圖元件 (`components/`) | 服務與邏輯層 (`services/` / `utils/`) | 測試/除錯工具 (`dev-tools/`) | 對應規格文件 (`docs/`) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. ScrumClock (番茄鐘)** | 敏捷衝刺計時、每日作戰規劃、結算回顧、閃電捕捉 | [`features/scrumclock/index.ts`](src/features/scrumclock/index.ts) | [`types.ts`](src/features/scrumclock/types.ts) | - `DailyMissionBriefing.tsx`<br>- `SprintPomodoro.tsx`<br>- `EndOfDayReview.tsx`<br>- `QuickCapture.tsx` | `contexts/TimerContext.tsx` (全域計時狀態與事件發布) | - | [`productivity-workflow-guide.md`](docs/productivity-workflow-guide.md)<br>[`workflow-flowchart.md`](docs/workflow-flowchart.md) |
+| **1. ScrumClock (番茄鐘)** | 敏捷衝刺計時、每日作戰規劃、結算回顧、閃電捕捉 | [`features/scrumclock/index.ts`](src/features/scrumclock/index.ts) | [`types.ts`](src/features/scrumclock/types.ts) | - `DailyMissionBriefing.tsx`<br>- `SprintPomodoro.tsx`<br>  ↳ `sprint/SprintBattleItem.tsx`<br>  ↳ `sprint/SprintMarkdownImporter.tsx`<br>  ↳ `sprint/SprintResultModal.tsx`<br>- `EndOfDayReview.tsx`<br>- `QuickCapture.tsx` | `contexts/TimerContext.tsx` (全域計時狀態與事件發布) | - | [`productivity-workflow-guide.md`](docs/productivity-workflow-guide.md)<br>[`workflow-flowchart.md`](docs/workflow-flowchart.md) |
 | **2. AI Sidebar (AI 對話助理)** | 側邊欄即時對話、網頁內容上下文分析、剪貼簿文字處理、本地 AI 整合 | [`features/ai-sidebar/index.ts`](src/features/ai-sidebar/index.ts) | [`types.ts`](src/features/ai-sidebar/types.ts) | `AISidebar.tsx` (側邊欄對話互動面板) | - `src/utils/ai-helper.ts`<br>- `src/utils/ai-prompts.ts`<br>- `src/utils/ai-schemas.ts` | [`dev-tools/README.md`](src/features/ai-sidebar/dev-tools/README.md)<br>(對應測試腳本 `tests/prompt-eval.ts`) | [`gemini-nano-tool.md`](docs/gemini-nano-tool.md)<br>[`ai-feature-update-guide.md`](docs/ai-feature-update-guide.md) |
 | **3. Toolbox (工具箱中樞)** | 擴充工具箱總入口，整合圖片批次擷取器 (Image Scraper) | [`features/toolbox/index.ts`](src/features/toolbox/index.ts) | [`types.ts`](src/features/toolbox/types.ts) | `ToolboxHub.tsx` (工具箱選單中樞視圖) | - | - | - |
-| ↳ **Sub: Image Scraper** | 網頁圖片批次擷取、IG 動態解析、高畫質升級、多格式篩選、ZIP 批次下載 | [`tools/image-scraper/index.ts`](src/features/toolbox/tools/image-scraper/index.ts) | [`types.ts`](src/features/toolbox/tools/image-scraper/types.ts) | `ImageScraper.tsx` (主互動介面、篩選列、預覽燈箱) | - `services/imageExtractor.ts`<br>- `services/downloader.ts` | [`dev-tools/`](src/features/toolbox/tools/image-scraper/dev-tools/) (包含 IG 探測腳本與離線樣本) | [`image-scraper-spec.md`](docs/image-scraper-spec.md)<br>[`功能說明.md`](src/features/toolbox/tools/image-scraper/功能說明.md) |
+| ↳ **Sub: Image Scraper** | 網頁圖片批次擷取、IG 動態解析、高畫質升級、多格式篩選、ZIP 批次下載 | [`tools/image-scraper/index.ts`](src/features/toolbox/tools/image-scraper/index.ts) | [`types.ts`](src/features/toolbox/tools/image-scraper/types.ts) | `ImageScraper.tsx` (主互動介面、篩選列、預覽燈箱) | 策略模式架構：<br>- `services/imageExtractor.ts` (主調度門面)<br>- `services/instagramExtractor.ts` (IG 策略)<br>- `services/carouselExtractor.ts` (輪播策略)<br>- `services/extractorUtils.ts` (通用解析工具)<br>- `services/downloader.ts` (ZIP 下載) | [`dev-tools/`](src/features/toolbox/tools/image-scraper/dev-tools/) (包含 IG 探測腳本與離線樣本) | [`image-scraper-spec.md`](docs/image-scraper-spec.md)<br>[`功能說明.md`](src/features/toolbox/tools/image-scraper/功能說明.md) |
 | **4. Project Mgmt (專案管理)** | 每週專案核心戰役、待辦收件匣 (Inbox)、歷史衝刺日誌看板 | [`features/project-management/index.ts`](src/features/project-management/index.ts) | [`types.ts`](src/features/project-management/types.ts) | `ProjectManagementDemo.tsx` (任務池與甘特進度清單) | `src/core/api/sync.ts` (雙向雲端同步引擎) | - | [`user-story-spec.md`](docs/user-story-spec.md) |
 | **5. Analytics (數據分析)** | 每日專注時長統計、每週生產力柱狀圖 (Chart.js)、完成任務總結報表 | [`features/analytics/index.ts`](src/features/analytics/index.ts) | [`types.ts`](src/features/analytics/types.ts) | `AnalyticsDashboard.tsx` (圖表與報告面板) | - | - | - |
 | **6. Bookmarks (辦公室傳送門)** | 常用辦公服務傳送門（Google Tasks, Notion, Jira, GitHub）書籤與導航 | [`features/bookmarks/index.ts`](src/features/bookmarks/index.ts) | [`types.ts`](src/features/bookmarks/types.ts) | `BookmarksHub.tsx` (自訂圖示與快速開啟面板) | - | - | - |
@@ -30,10 +30,10 @@
 
 | 入口檔案 | 類型 / 職責 | 關鍵依賴與通訊機制 | 備註 |
 | :--- | :--- | :--- | :--- |
-| [`src/background.ts`](src/background.ts) | **Background Service Worker** | `chrome.alarms`, `chrome.notifications`, `chrome.commands`, `chrome.contextMenus` | 背景常駐事件處理中心、番茄鐘定時器喚醒、右鍵選單 |
+| [`src/background.ts`](src/background.ts) | **Background Service Worker** | `chrome.alarms`, `chrome.notifications`, `chrome.commands`, `chrome.contextMenus` | 背景常駐事件路由中心 (96 行)。業務邏輯分流至：<br>- [`src/background/alarmHandlers.ts`](src/background/alarmHandlers.ts) (定時鬧鐘)<br>- [`src/background/externalService.ts`](src/background/externalService.ts) (外部通訊與 Offscreen 音效) |
 | [`src/content.ts`](src/content.ts) | **全域 Content Script** | 注入於 `<all_urls>` | 網頁端快捷鍵攔截、輔助 DOM 操作 |
 | [`src/geminiContent.ts`](src/geminiContent.ts) | **Gemini 專屬 Content Script** | 注入於 `https://gemini.google.com/*`，Shadow DOM 封裝 | 自動監聽對話變更、浮動按鈕、一鍵同步至 Extension Storage |
-| [`src/entries/sidebar/`](src/entries/sidebar/) | **Side Panel (側邊欄)** | `main.tsx`, `hooks.ts`, `index.html` | 側邊欄完整工作區視圖，包含計時器、AI、工具箱、任務操作 |
+| [`src/entries/sidebar/`](src/entries/sidebar/) | **Side Panel (側邊欄)** | `main.tsx`, `hooks.ts`, `index.html` | 側邊欄完整工作區視圖。`hooks.ts` 為門面 (8 行)，子 Hooks 位於 [`src/entries/sidebar/hooks/`](src/entries/sidebar/hooks/)：<br>- `useAISession.ts` (AI 對話 session)<br>- `useTimerSync.ts` (計時器同步)<br>- `useContextMenuSync.ts` (右鍵選單同步) |
 | [`src/entries/newtab/`](src/entries/newtab/) | **New Tab (新分頁)** | `main.tsx`, `index.html` | 新分頁主儀表板，整合每日作戰簡報與全景工作台 |
 | [`src/entries/popup/`](src/entries/popup/) | **Popup (快顯小窗)** | `main.tsx`, `index.html` | 點擊瀏覽器工具列圖示彈出之快速面板 |
 | [`src/entries/options/`](src/entries/options/) | **Options (設定頁面)** | `main.tsx`, `index.html` | 整合 `SettingsPanel.tsx`，配置 API Key、同步網址與偏好 |
@@ -60,13 +60,17 @@
 
 - 🔴 [`src/features/toolbox/tools/image-scraper/ImageScraper.tsx`](src/features/toolbox/tools/image-scraper/ImageScraper.tsx) (~1,008 行) - 圖片下載主互動視圖
 - 🔴 [`src/features/project-management/components/ProjectManagementDemo.tsx`](src/features/project-management/components/ProjectManagementDemo.tsx) (~778 行) - 任務管理清單視圖
-- 🔴 [`src/features/scrumclock/components/SprintPomodoro.tsx`](src/features/scrumclock/components/SprintPomodoro.tsx) (~711 行) - 番茄鐘衝刺計時面板
 - 🔴 [`src/features/scrumclock/components/DailyMissionBriefing.tsx`](src/features/scrumclock/components/DailyMissionBriefing.tsx) (~649 行) - 每日作戰目標簡報面板
-- 🔴 [`src/features/toolbox/tools/image-scraper/services/imageExtractor.ts`](src/features/toolbox/tools/image-scraper/services/imageExtractor.ts) (~640 行) - 圖片抓取與注入腳本
 - 🔴 [`src/entries/sidebar/main.tsx`](src/entries/sidebar/main.tsx) (~658 行) - 側邊欄全域主互動控制器
 - 🔴 [`src/geminiContent.ts`](src/geminiContent.ts) (~569 行) - Gemini 網頁注入 Content Script
 - 🔴 [`src/components/InstallDocs.tsx`](src/components/InstallDocs.tsx) (~558 行) - 系統安裝說明文檔元件
-- 🔴 [`src/entries/sidebar/hooks.ts`](src/entries/sidebar/hooks.ts) (~543 行) - 側邊欄狀態同步 Hooks
+
+#### 🟢 模組化瘦身成功紀錄 (已自巨石清單除名)
+- 🟢 [`src/features/toolbox/tools/image-scraper/services/imageExtractor.ts`](src/features/toolbox/tools/image-scraper/services/imageExtractor.ts) (1,939 行 ➔ 287 行) - 策略模式重構完成，平台解析已分流
+- 🟢 [`src/features/scrumclock/components/SprintPomodoro.tsx`](src/features/scrumclock/components/SprintPomodoro.tsx) (758 行 ➔ 412 行) - 任務項目、Markdown 匯入與結算彈窗已解耦至 `components/sprint/`
+- 🟢 [`src/entries/sidebar/hooks.ts`](src/entries/sidebar/hooks.ts) (653 行 ➔ 8 行) - 抽離為 `useAISession`、`useTimerSync`、`useContextMenuSync`
+- 🟢 [`src/background.ts`](src/background.ts) (467 行 ➔ 96 行) - 拆分為 `alarmHandlers.ts` 與 `externalService.ts`
+
 
 ---
 

@@ -19,9 +19,14 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
   * `manifest.json`: Manifest V3，宣告 `storage`, `activeTab`, `scripting`, `sidePanel` 與 `externally_connectable`。
   * `background.js`: Service Worker，處理 `onMessageExternal`（跨插件資料服務 API）與擴充功能生命週期。
   * `crawler.js`: Content Script，注入至各財經網站擷取結構化財務數據。
-  * `popup.html` / `popup.js`: 點擊插件圖示的輕量彈出視窗，快速查看目前個股與一鍵採集。
+  * `popup.html` / `popup.js`: 點擊插件圖示的輕量彈出視窗主控（模式切換、選項渲染）。
+    * `popup-scraper.js`: 彈窗專屬 DOM 爬取模組（解析 Google Finance 與 AI 對話頁面）。
+    * `popup-export.js`: 彈窗文字規則引擎（RuleEngine）、圖片壓縮與 MD/CSV 匯出下載。
   * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄，提供即時個股摘要與快速筆記。
-  * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板，支援多頁籤、研報篩選、AI 解讀與資料匯出。
+  * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板主控，支援多頁籤、Gemini Nano AI 研報推論連動。
+    * `dashboard-render.js`: 儀表板視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、Sheet Tabs 分頁列與吐司）。
+    * `dashboard-actions.js`: 動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、GAS 同步、CSV/MD 下載與 ScrumClock 任務建立）。
+  * `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）。
 
 ---
 

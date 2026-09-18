@@ -32,6 +32,11 @@ deadline: "2026-09-25"
 
 ### Phase 4: Background Service Worker 職責分流 (ROI: 中) 狀態：`[已完成]`
 
+### Phase 5: SSOT 文件回寫閉環 (SCRUMCLOCK_README & 專家技能) 狀態：`[已完成]`
+- [x] 更新 [`chrome_scrumclock/SCRUMCLOCK_README.md`](../../chrome_scrumclock/SCRUMCLOCK_README.md)：更新 8 大模組速查、生命週期索引與巨石檔案熱區清單（移除非巨石檔，登錄新模組）。
+- [x] 更新 [`scrumclock-core/SKILL.md`](../../.agents/skills/scrumclock-core/SKILL.md)：更新架構規格、加入拆分後的子元件字典與 Hooks/Services 索引。
+- [x] 執行 Manifest 合規與健康度驗證，確認無依賴死角。
+
 ## 4. 影響評估
 - **擴充功能權限與相容性**：本次為純內部代碼重構，不更動 `manifest.json`，對 Chrome Extension API 與通訊協議無破壞性影響。
 - **打包體積**：透過 ESM 模組化拆分，Vite Tree-shaking 效率更佳，打包產物體積不變或微幅優化。
@@ -48,3 +53,5 @@ deadline: "2026-09-25"
 > [x] 我已閱讀並承諾遵守「task-protocol」技能中之「三階段守門門禁 (3-Gate Protocol)」與動態狀態收斂規範。
 > **參與對話 ID 紀錄**:
 > - 2026-09-18 ID: e73611de-daa9-4b5e-94cd-c82fc1743aad (Gate 1~Gate 2 全階段執行完成)
+> - 2026-09-18 ID: e0ba34d4-c830-4adb-87b3-dfbf4ee980ec (Phase 5 SSOT 文件回寫閉環完成)
+

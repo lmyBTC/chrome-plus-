@@ -1,41 +1,41 @@
-# 多插件開發區：技術索引 (.agents/rules.md)
+# Chrome Plus 多插件開發區：執行指針 (.agents/rules.md)
 
 > [!IMPORTANT]
-> **導航協議**: 本檔為 SSOT 索引。執行任務前必須讀取對應指南。
+> **SSOT 執行索引**：本文件為此工作區所有任務執行、Token 優化與架構指針之頂層索引。細部規則已全面下沉至各專屬技能。
 
-## 0. 專家技能索引 (Skill Tree)
+---
+
+## 0. 專家技能導航 (Skill Navigation)
 <!-- SKILL_TREE_START -->
-|技能名稱|觸發關鍵字 (Triggers)|技能路徑|
+|技能名稱|觸發關鍵字 (Triggers)|指針連結|
 |:---|:---|:---|
-|**網頁開發與技術規範 (Web Dev & Tech Standards)**|`插件開發`,`chrome開發`,`注入腳本`,`樣式隔離`,`shadow-dom`,`訊息傳遞`,`background-worker`,`manifest修改`,`MV3規範`,`popup開發`|`.agents/skills/dev-standards/`|
-|**任務協議管理 (Task Protocol Management)**|`建立任務`,`開始開發`,`任務拆解`,`狀態更新`,`同步進度`|`.agents/skills/task-protocol/`|
-|**Token 節省器 (RTK Token Saver)**|`節省Token`,`壓縮輸出`,`優化指令`,`使用rtk`,`token優化`,`執行終端`,`指令節省`|`.agents/skills/token-saver/`|
-|**Chrome 插件合規審計 (Chrome Compliance Auditor)**|`安全審查`,`合規檢查`,`manifest審計`,`插件檢查`,`檢查manifest`,`上架檢查`,`原始碼掃描`,`靜態掃描`|`.agents/skills/chrome-auditor/`|
-|**ScrumClock 規格與元件字典 (ScrumClock Core Spec)**|`scrumclock`,`番茄鐘`,`敏捷看板`,`scrumclock開發`,`scrum`,`pomodoro`,`側邊欄番茄鐘`|`.agents/skills/scrumclock-core/`|
-|**FinanceClipper 研報與爬蟲字典 (FinanceClipper Core Spec)**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`,`yahoo finance爬蟲`,`個股剪輯`,`財報分析`|`.agents/skills/finance-clipper-core/`|
-|**VideoSpeedPlus 倍速規格字典 (VideoSpeedPlus Core Spec)**|`video speed`,`影片倍速`,`youtube倍速`,`videospeedplus`,`倍速播放`,`影片控制器`|`.agents/skills/video-speed-core/`|
+|**網頁開發與技術規範**|`插件開發`,`MV3規範`,`樣式隔離`,`shadow-dom`,`CSP/XSS`|[dev-standards](./.agents/skills/dev-standards/SKILL.md)|
+|**任務協議管理**|`建立任務`,`開始開發`,`任務拆解`,`動態收斂`,`3-Gate`|[task-protocol](./.agents/skills/task-protocol/SKILL.md)|
+|**Token 節省器**|`節省Token`,`rtk指令`,`局部讀取`,`精準寫入`,`會話重置`|[token-saver](./.agents/skills/token-saver/SKILL.md)|
+|**Chrome 插件合規審計**|`安全審查`,`合規檢查`,`manifest審計`,`上架檢查`|[chrome-auditor](./.agents/skills/chrome-auditor/SKILL.md)|
+|**ScrumClock 規格字典**|`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|[scrumclock-core](./.agents/skills/scrumclock-core/SKILL.md)|
+|**FinanceClipper 研報字典**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`|[finance-clipper-core](./.agents/skills/finance-clipper-core/SKILL.md)|
+|**VideoSpeedPlus 倍速字典**|`video speed`,`影片倍速`,`youtube倍速`,`videospeedplus`|[video-speed-core](./.agents/skills/video-speed-core/SKILL.md)|
 <!-- SKILL_TREE_END -->
 
-## 1. Chrome 插件開發與技術規範
-- **核心指南**: [`0.doc_mg/dev_standards.md`](./0.doc_mg/dev_standards.md) (SSOT 規範，涵蓋 MV3、Shadow DOM 隔離、通訊與儲存 API)
+---
 
-## 2. 任務管理與規範 (Hard Rules: 3-Gate Protocol)
-- **跨裝置相對路徑守則**: 專案內所有 Markdown 連結、指令與檔案參照，一律嚴禁使用 `file:///c:/Users/...` 等本機硬編碼絕對路徑，全面使用相對路徑以支援換電腦使用。
-- **任務管理指引**: [`0.doc_mg/task_manager.md`](./0.doc_mg/task_manager.md)
-- **任務記錄範本**: [`0.doc_mg/task_template_v2.md`](./0.doc_mg/task_template_v2.md)
-- **活動任務目錄**: [`0.doc_mg/tasks/`](./0.doc_mg/tasks/)
-- **三階段守門底線**:
-  * **Gate 0 (Zero-Tool, Zero-Scan)**: 收到新需求嚴禁立刻掃描專案或建檔。先憑直覺提 100~200 字方向並停步尋求授權。
-  * **Gate 1 (Grounding & Blueprint)**: 獲准後始得精準唯讀掃描目標檔案、建立 `task.md` 並清理註解。嚴禁在此時修改原始碼，停步等待執行授權。
-  * **Gate 2 (Atomic Execution)**: 獲准後始得分段原子執行，單輪一個 Phase，即時打勾物理同步，Phase 完成後執行**狀態收斂 (Dynamic Condensation)** 以節省 Token。
+## 1. 守門門禁與任務協議 (Gate Protocol)
+- **3-Gate 門禁守則**：**Gate 0** 零工具直覺方向確認（禁掃描）➔ **Gate 1** 窄化勘查、產出 [`task.md`](./0.doc_mg/tasks/) 並輸出會話接力指令（禁改碼）➔ **Gate 2** 分段原子執行與動態收斂（物理打勾）。
+- **SSOT 閉環義務**：凡涉模組變更或分拆，結案前必須回寫插件專屬 SSOT 文檔與對應技能字典。
+- *完整流程詳見*：[`task-protocol/SKILL.md`](./.agents/skills/task-protocol/SKILL.md) 及 [`0.doc_mg/task_manager.md`](./0.doc_mg/task_manager.md)。
 
-## 3. Token 優化與輔助工具
-- **節省器指南**: [`.agents/skills/token-saver/SKILL.md`](./.agents/skills/token-saver/SKILL.md) (使用 `rtk` 工具包裝指令，降低 Token 消耗)
+---
 
-## 4. 多插件開發邊界與防污染規範 (Hard Rules)
-- **契約參照**: [`0.doc_mg/docs/cross_plugin_contract.md`](./0.doc_mg/docs/cross_plugin_contract.md)
-- **邊界防線**:
-  * **AI 讀取邊界**: 進行某一插件任務時，禁止跨目錄掃描另一插件源碼。通訊協同僅透過黑盒契約規格溝通。
-  * **儲存與依賴完全隔離**: 各插件擁有專屬 `chrome.storage.local`，禁止共用 DB，禁止跨專案 `import/require`。
-  * **優雅降級**: 雙方互為可選 Peer，任一插件未安裝或當機，不得影響自身核心功能。
+## 2. Token 優化與開發工程 (Efficiency & Token Saving)
+- **局部讀寫**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file` + `replace_file_content` 單點替換。
+- **終端壓縮**：終端高輸出指令優先包裝 `rtk`（如 `rtk git diff`, `rtk rg`）。
+- **會話重置**：Gate 1 完成後建議開新視窗傳入接力令，釋放 70%~90% 上下文負擔。
+- *完整規範詳見*：[`token-saver/SKILL.md`](./.agents/skills/token-saver/SKILL.md)。
 
+---
+
+## 3. 多插件隔離與邊界防禦 (Multi-Extension Isolation)
+- **視野隔離**：開發單一插件時嚴禁跨目錄讀取或檢索其他插件源碼。
+- **黑盒契約**：跨插件協同僅透過純資料通訊契約，存儲與依賴 100% 實體隔離。
+- *完整契約詳見*：[`0.doc_mg/docs/cross_plugin_contract.md`](./0.doc_mg/docs/cross_plugin_contract.md)。

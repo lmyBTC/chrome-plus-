@@ -49,11 +49,16 @@
 | 模組 / 檔案 | 職責說明 | 關鍵元素 / 實作函式 |
 | :--- | :--- | :--- |
 | [`manifest.json`](manifest.json) | MV3 規範宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) | `"side_panel": { "default_path": "sidepanel.html" }` |
-| [`dashboard.html`](dashboard.html)<br>[`dashboard.js`](dashboard.js)<br>[`dashboard.css`](dashboard.css) | **[核心] 獨立分頁儀表板**：歷史清單、個股主看板、目標價階梯、損益表與導出矩陣 | `renderStock()`, `exportMarkdown()`, `exportCsv()`, `sendToGas()` |
+| [`dashboard.html`](dashboard.html)<br>[`dashboard.js`](dashboard.js)<br>[`dashboard.css`](dashboard.css) | **[核心] 獨立分頁儀表板主控**：生命週期、事件調度與 Gemini Nano AI 研報交互 | `init()`, `loadStockAi()`, `bindEvents()` |
+| [`dashboard-render.js`](dashboard-render.js) | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、目標價、損益表與 Sheet Tabs 分頁列構建 | `window.DashboardRender.renderStock()`, `renderSheetTabs()` |
+| [`dashboard-actions.js`](dashboard-actions.js) | **[動作] 動作外發模組**：背景深度採集發起、Markdown/CSV 匯出、GAS 同步與轉入 ScrumClock | `window.DashboardActions.triggerCrawl()`, `exportMarkdown()`, `sendToGas()` |
+| [`aiClient.js`](aiClient.js) | **[AI] 跨插件通訊客戶端**：與 ScrumClock 本地 Gemini Nano API 交互防腐層 | `window.FinanceAIClient.requestStockSummary()` |
 | [`sidepanel.html`](sidepanel.html)<br>[`sidepanel.js`](sidepanel.js)<br>[`sidepanel.css`](sidepanel.css) | **[快捷] Chrome 側邊欄工具箱**：快捷輸入、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
 | [`background.js`](background.js) | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度與 Storage 快取維護 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
 | [`crawler.js`](crawler.js) | SPA 走訪爬蟲模組：語意文字錨點比對與 4 大分頁提取 | `window.FinanceCrawler.runFullStockScraper()` |
-| [`popup.html`](popup.html)<br>[`popup.js`](popup.js) | 工具列彈出視窗：保留快速預覽並提供一鍵前往儀表板之捷徑 (頂部徽章與底部主按鈕) | `#open-dashboard-btn`, `#btn-goto-dashboard` |
+| [`popup.html`](popup.html)<br>[`popup.js`](popup.js) | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染與一鍵前往儀表板 | `#open-dashboard-btn`, `#btn-goto-dashboard` |
+| [`popup-scraper.js`](popup-scraper.js) | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析 | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
+| [`popup-export.js`](popup-export.js) | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |
 
 ---
 
