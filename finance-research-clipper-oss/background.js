@@ -216,6 +216,7 @@ async function crawlStockByKeyword(keyword) {
       financials: {
         table: financials.statements && financials.statements.length > 0 ? financials.statements[0] : []
       },
+      minerMetrics: rawData.minerMetrics || null,
       timestamp: new Date().toISOString(),
       updatedAt: new Date().toLocaleString()
     };
@@ -266,10 +267,36 @@ async function crawlStockByKeyword(keyword) {
  * 4. 訊息監聽器：協調 UI 請求
  */
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (!message || typeof message !== 'object') {
+    return false;
+  }
+
+  // 支援內部快速心跳探測，確保 Service Worker 喚醒與就緒
+  if (message.action === 'PING') {
+    sendResponse({ success: true, status: 'PONG', timestamp: Date.now() });
+    return false;
+  }
+
   if (message.action === 'CRAWL_STOCK') {
-    crawlStockByKeyword(message.keyword)
-      .then((res) => sendResponse(res))
-      .catch((err) => sendResponse({ success: false, error: err.message || '未知錯誤' }));
+    try {
+      crawlStockByKeyword(message.keyword)
+        .then((res) => {
+          try {
+            sendResponse(res);
+          } catch (sendErr) {
+            console.warn('[FinanceClipper:BG] 發送採集成功回應時通道已關閉:', sendErr);
+          }
+        })
+        .catch((err) => {
+          try {
+            sendResponse({ success: false, error: (err && err.message) || String(err) || '未知錯誤' });
+          } catch (sendErr) {
+            console.warn('[FinanceClipper:BG] 發送採集失敗回應時通道已關閉:', sendErr);
+          }
+        });
+    } catch (syncErr) {
+      sendResponse({ success: false, error: syncErr.message || '同步啟動爬蟲失敗' });
+    }
     return true; // 保持異步通道開啟
   }
 
@@ -284,7 +311,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // 否則新建分頁
         chrome.tabs.create({ url: dashboardUrl });
       }
-      sendResponse({ success: true });
+      try {
+        sendResponse({ success: true });
+      } catch (e) {}
     });
     return true;
   }
@@ -293,15 +322,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (chrome.sidePanel && chrome.sidePanel.open) {
       const windowId = sender.tab ? sender.tab.windowId : undefined;
       chrome.sidePanel.open({ windowId }).then(() => {
-        sendResponse({ success: true });
+        try {
+          sendResponse({ success: true });
+        } catch (e) {}
       }).catch((err) => {
-        sendResponse({ success: false, error: err.message });
+        try {
+          sendResponse({ success: false, error: err.message });
+        } catch (e) {}
       });
       return true;
     } else {
       sendResponse({ success: false, error: '當前瀏覽器版本不支援 SidePanel API' });
+      return false;
     }
   }
+
+  return false;
 });
 
 // ==========================================

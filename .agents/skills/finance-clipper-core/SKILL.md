@@ -25,7 +25,7 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
   * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄，提供即時個股摘要與快速筆記。
   * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板主控，支援多頁籤、Gemini Nano AI 研報推論連動。
     * `dashboard-render.js`: 儀表板視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、Sheet Tabs 分頁列與吐司）。
-    * `dashboard-actions.js`: 動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、GAS 同步、CSV/MD 下載與 ScrumClock 任務建立）。
+    * `dashboard-actions.js`: 動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、`sendRuntimeMessageWithRetry` 指數退避重試防禦、GAS 同步、CSV/MD 下載與 ScrumClock 任務建立）。
   * `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）。
 
 ---

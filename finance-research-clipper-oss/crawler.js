@@ -3,6 +3,7 @@
  * 專為 Google Finance Beta 單頁應用 (SPA) 設計之動態走訪爬蟲。
  * 透過語意化選取器 (Semantic Text Matching) 與主動 Tab 點擊切換，
  * 克服混淆 CSS Class，擷取完整個股數據、分析師預期、歷年財報與財務報表。
+ * 同時提供標準化數值清洗 Sanitizer (sanitizeToMinerSchema)，確保輸出符合純數字鐵律。
  */
 
 (function (global) {
@@ -35,6 +36,221 @@
     });
   }
 
+  // ==========================================
+  // 純數字規範與單位換算 Sanitizer 函式群
+  // ==========================================
+
+  /**
+   * 清除字串中的貨幣符號、逗號、空格與單位標籤，轉為純浮點數
+   * @param {string|number} val 
+   * @returns {number} 純浮點數或 0
+   */
+  function cleanNumber(val) {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    if (!val || typeof val !== 'string') return 0;
+    let str = val.trim();
+    let isNegative = false;
+    if (/^\(.*\)$/.test(str) || str.startsWith('-')) {
+      isNegative = true;
+    }
+    const cleaned = str.replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return 0;
+    return isNegative ? -num : num;
+  }
+
+  /**
+   * 市值換算為十億美元 ($B) 純浮點數
+   * @param {string|number} val 
+   * @returns {number} 以 $B 為單位的純浮點數
+   */
+  function cleanMarketCap(val) {
+    if (typeof val === 'number') {
+      if (val > 100000) return parseFloat((val / 1e9).toFixed(3));
+      return val;
+    }
+    if (!val || typeof val !== 'string') return 0;
+    const str = val.trim().toUpperCase();
+    const rawNum = cleanNumber(str);
+    if (str.includes('T')) {
+      return parseFloat((rawNum * 1000).toFixed(3));
+    }
+    if (str.includes('B') || str.includes('十億') || str.includes('10億')) {
+      return parseFloat(rawNum.toFixed(3));
+    }
+    if (str.includes('M') || str.includes('百萬')) {
+      return parseFloat((rawNum / 1000).toFixed(3));
+    }
+    if (str.includes('K') || str.includes('千')) {
+      return parseFloat((rawNum / 1e6).toFixed(3));
+    }
+    if (rawNum > 100000) {
+      return parseFloat((rawNum / 1e9).toFixed(3));
+    }
+    return parseFloat(rawNum.toFixed(3));
+  }
+
+  /**
+   * 52 週高低價範圍字串格式化為 "$最低 - $最高"
+   * @param {string} rangeStr 原始範圍字串
+   * @param {string|number} [low] 最低價 (選填)
+   * @param {string|number} [high] 最高價 (選填)
+   * @returns {string} "$最低 - $最高"
+   */
+  function cleanRange52w(rangeStr, low, high) {
+    let lowNum = 0;
+    let highNum = 0;
+
+    if (rangeStr && typeof rangeStr === 'string') {
+      const parts = rangeStr.split(/[-–—~至到]/).map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        lowNum = cleanNumber(parts[0]);
+        highNum = cleanNumber(parts[1]);
+      }
+    }
+
+    if ((!lowNum || !highNum) && (low !== undefined || high !== undefined)) {
+      if (low !== undefined) lowNum = cleanNumber(low);
+      if (high !== undefined) highNum = cleanNumber(high);
+    }
+
+    if (lowNum > highNum && highNum > 0) {
+      const temp = lowNum;
+      lowNum = highNum;
+      highNum = temp;
+    }
+
+    if (lowNum === 0 && highNum === 0) return '$0.00 - $0.00';
+    return `$${lowNum.toFixed(2)} - $${highNum.toFixed(2)}`;
+  }
+
+  /**
+   * 計算 EPS 驚喜率 ((Actual - Est) / |Est|) * 100
+   * @param {string|number} actual 實際 EPS
+   * @param {string|number} estimate 預估 EPS
+   * @returns {number} 百分比純數字 (保留一位小數)
+   */
+  function calcEpsSurprise(actual, estimate) {
+    const act = cleanNumber(actual);
+    const est = cleanNumber(estimate);
+    if (isNaN(act) || isNaN(est)) return 0;
+    if (est === 0) {
+      return act > 0 ? 100 : (act < 0 ? -100 : 0);
+    }
+    const surprise = ((act - est) / Math.abs(est)) * 100;
+    return parseFloat(surprise.toFixed(1));
+  }
+
+  /**
+   * 清洗成長率或百分比為純數字
+   * @param {string|number} val 
+   * @returns {number}
+   */
+  function cleanPercentage(val) {
+    if (typeof val === 'number') return isNaN(val) ? 0 : val;
+    if (!val || typeof val !== 'string') return 0;
+    return cleanNumber(val);
+  }
+
+  /**
+   * 將原始抓取或彙整資料正規化為符合 AI 礦企規範 (SSOT Schema) 的純數字資料物件
+   * @param {Object} input 原始物件 (支援 crawler rawData 或 stockItem 格式)
+   * @returns {Object} 標準化物件
+   */
+  function sanitizeToMinerSchema(input) {
+    if (!input || typeof input !== 'object') return {};
+
+    // 1. Ticker
+    let ticker = (input.ticker || input.symbol || (input.overview && input.overview.symbol) || '').toUpperCase().trim();
+    if (ticker.includes(':')) {
+      ticker = ticker.split(':').pop();
+    }
+
+    // 2. Price
+    const rawPrice = input.price !== undefined ? input.price : (input.overview && input.overview.price);
+    const price = cleanNumber(rawPrice);
+
+    // 3. Stats 輔助查詢
+    const stats = input.stats || (input.overview && input.overview.stats) || {};
+    const findStat = (pattern) => {
+      for (const key of Object.keys(stats)) {
+        if (pattern.test(key)) return stats[key];
+      }
+      return '';
+    };
+
+    // 4. MarketCap ($B)
+    const rawMktCap = input.marketCap || (input.overview && input.overview.marketCap) || findStat(/Market cap|市值/i);
+    const marketCap = cleanMarketCap(rawMktCap);
+
+    // 5. TargetPrice
+    const rawTarget = input.targetPrice ||
+      (input.analyst && input.analyst.targetMedian) ||
+      (input.analysis && input.analysis.targetPrice && input.analysis.targetPrice.median) ||
+      findStat(/Target price|Price target|目標價/i);
+    const targetPrice = cleanNumber(rawTarget);
+
+    // 6. Beta
+    const rawBeta = input.beta || (input.overview && input.overview.beta) || findStat(/Beta|貝他值/i);
+    const beta = parseFloat(cleanNumber(rawBeta).toFixed(2));
+
+    // 7. 52-week range / low / high
+    const rawRange = input.range52w || (input.overview && input.overview.range52w) || findStat(/52-wk range|52-week range|52 週範圍|52週範圍/i);
+    const rawLow = input.low52 || (input.overview && input.overview.low52) || findStat(/52-wk low|52-week low|52 週最低|52週最低/i);
+    const rawHigh = input.high52 || (input.overview && input.overview.high52) || findStat(/52-wk high|52-week high|52 週最高|52週最高/i);
+    
+    const range52w = cleanRange52w(rawRange, rawLow, rawHigh);
+    const rangeParts = range52w.split('-').map((s) => cleanNumber(s));
+    const low52 = rangeParts[0] || 0;
+    const high52 = rangeParts[1] || 0;
+
+    // 8. EPS Actual & Est
+    const rawEpsAct = input.latestEpsActual !== undefined
+      ? input.latestEpsActual
+      : ((input.earnings && (input.earnings.epsActual || (input.earnings.latestQuarter && input.earnings.latestQuarter.epsActual))) || '');
+    const rawEpsEst = input.latestEpsEst !== undefined
+      ? input.latestEpsEst
+      : ((input.earnings && (input.earnings.epsEstimate || (input.earnings.latestQuarter && input.earnings.latestQuarter.epsEstimate))) || '');
+    const latestEpsActual = cleanNumber(rawEpsAct);
+    const latestEpsEst = cleanNumber(rawEpsEst);
+
+    // 9. EPS Surprise
+    let epsSurprise = 0;
+    const rawSurprise = input.epsSurprise !== undefined
+      ? input.epsSurprise
+      : (input.earnings && (input.earnings.epsSurprise || (input.earnings.latestQuarter && input.earnings.latestQuarter.epsSurprise)));
+    if (rawSurprise !== undefined && rawSurprise !== '' && rawSurprise !== 'N/A') {
+      epsSurprise = cleanPercentage(rawSurprise);
+    } else if (rawEpsAct !== undefined && rawEpsEst !== undefined && (latestEpsActual !== 0 || latestEpsEst !== 0)) {
+      epsSurprise = calcEpsSurprise(latestEpsActual, latestEpsEst);
+    }
+
+    // 10. YoY Revenue Growth
+    const rawYoy = input.yoy !== undefined
+      ? input.yoy
+      : (input.earnings && (input.earnings.yoy || (input.earnings.latestQuarter && input.earnings.latestQuarter.yoy)));
+    const yoy = cleanPercentage(rawYoy);
+
+    return {
+      ticker,
+      price,
+      marketCap,
+      targetPrice,
+      beta,
+      range52w,
+      low52,
+      high52,
+      latestEpsActual,
+      latestEpsEst,
+      epsSurprise,
+      yoy
+    };
+  }
+
+  // ==========================================
+  // DOM 爬蟲核心實作
+  // ==========================================
+
   /**
    * 1. 抓取 Overview 總覽數據
    */
@@ -43,6 +259,12 @@
       tab: 'overview',
       symbol: '',
       price: '',
+      low52: '',
+      high52: '',
+      range52w: '',
+      marketCap: '',
+      beta: '',
+      pe: '',
       stats: {},
       error: false
     };
@@ -74,7 +296,6 @@
         document.querySelector('div[class*="price"], span[class*="price"]')?.innerText?.trim()
       ].filter(Boolean);
 
-      // 挑選符合金額特徵的候選值 ($123.45, NT$123, 123.45 等)
       const validPrice = priceCandidates.find((p) => /[$€£¥NT]?[\d,]+(?:\.\d+)?/.test(p));
       data.price = validPrice || (priceCandidates[0] || 'N/A');
 
@@ -95,6 +316,27 @@
           }
         }
       });
+
+      // 結構化衍生屬性
+      for (const [key, val] of Object.entries(data.stats)) {
+        if (/Market cap|市值/i.test(key)) data.marketCap = val;
+        else if (/P\/E ratio|本益比/i.test(key)) data.pe = val;
+        else if (/Beta|貝他值/i.test(key)) data.beta = val;
+        else if (/52-wk high|52-week high|52 週最高|52週最高/i.test(key)) data.high52 = val;
+        else if (/52-wk low|52-week low|52 週最低|52週最低/i.test(key)) data.low52 = val;
+        else if (/52-wk range|52-week range|52 週範圍|52週範圍/i.test(key)) data.range52w = val;
+      }
+
+      if (data.range52w && (!data.low52 || !data.high52)) {
+        const parts = data.range52w.split(/[-–—~至到]/).map((s) => s.trim()).filter(Boolean);
+        if (parts.length >= 2) {
+          if (!data.low52) data.low52 = parts[0];
+          if (!data.high52) data.high52 = parts[1];
+        }
+      } else if (!data.range52w && (data.low52 || data.high52)) {
+        data.range52w = `${data.low52 || '0'} - ${data.high52 || '0'}`;
+      }
+
     } catch (err) {
       data.error = true;
     }
@@ -109,6 +351,7 @@
     const data = {
       tab: 'analysis',
       targetPrice: { high: '', median: '', low: '', current: '' },
+      targetPriceMedian: '',
       ratingsSummary: '',
       consensus: '',
       error: false
@@ -132,13 +375,21 @@
         }
 
         // 提取高/中/低目標價數字模式 (如 $12.50, 15.00 等)
-        const priceMatches = targetSection.match(/\$[\d,]+(?:\.\d{2})?/g);
-        if (priceMatches && priceMatches.length >= 2) {
+        const priceMatches = targetSection.match(/\$[\d,]+(?:\.\d{1,2})?/g);
+        if (priceMatches && priceMatches.length > 0) {
           data.targetPrice.median = priceMatches[0];
-          data.targetPrice.high = priceMatches[1];
-          if (priceMatches[2]) data.targetPrice.low = priceMatches[2];
+          if (priceMatches.length > 1) data.targetPrice.high = priceMatches[1];
+          if (priceMatches.length > 2) data.targetPrice.low = priceMatches[2];
+        } else {
+          // 若無帶 $ 符號，嘗試匹配數值
+          const numMatch = targetSection.match(/(?:目標價|Target price|Price target)[\s:：]*\$?([\d,]+(?:\.\d+)?)/i);
+          if (numMatch) {
+            data.targetPrice.median = numMatch[1];
+          }
         }
       }
+
+      data.targetPriceMedian = data.targetPrice.median || '';
     } catch (err) {
       data.error = true;
     }
@@ -152,7 +403,15 @@
   function scrapeEarnings() {
     const data = {
       tab: 'earnings',
-      latestQuarter: { period: 'N/A', epsActual: 'N/A', epsEstimate: 'N/A', revenueActual: 'N/A', revenueEstimate: 'N/A' },
+      latestQuarter: {
+        period: 'N/A',
+        epsActual: 'N/A',
+        epsEstimate: 'N/A',
+        revenueActual: 'N/A',
+        revenueEstimate: 'N/A',
+        yoy: 'N/A',
+        epsSurprise: 'N/A'
+      },
       history: [],
       error: false
     };
@@ -173,19 +432,35 @@
 
       // 提取文字標註區塊（EPS / Revenue 實值與預期）
       const statContainers = Array.from(document.querySelectorAll('[role="region"], section, div'))
-        .filter((c) => /EPS|Revenue|Surprise/i.test(c.innerText) && c.innerText.length < 500);
+        .filter((c) => /EPS|Revenue|Surprise|每股盈餘|每股盈余|營收|收益/i.test(c.innerText) && c.innerText.length < 500);
 
       statContainers.forEach((container) => {
         const text = container.innerText;
-        const epsMatch = text.match(/EPS.*?([\d.-]+).*?(?:Est\.?|Estimate).*?([\d.-]+)/i);
+        // 支援中英雙語 EPS 實質與預估 (支援負數)
+        const epsMatch = text.match(/(?:EPS|每股盈餘|每股盈余).*?([+-]?[\d.-]+(?:\s*[A-Z]{3})?).*?(?:Est\.?|Estimate|預估值|預估).*?([+-]?[\d.-]+(?:\s*[A-Z]{3})?)/i);
         if (epsMatch) {
-          data.latestQuarter.epsActual = epsMatch[1];
-          data.latestQuarter.epsEstimate = epsMatch[2];
+          data.latestQuarter.epsActual = epsMatch[1].trim();
+          data.latestQuarter.epsEstimate = epsMatch[2].trim();
         }
-        const revMatch = text.match(/(?:Revenue|營收).*?([\d.-]+[BMK]?).*?(?:Est\.?|Estimate).*?([\d.-]+[BMK]?)/i);
+
+        // 支援中英雙語營收/收益
+        const revMatch = text.match(/(?:Revenue|營收|收益).*?([\d.-]+[BMK]?).*?(?:Est\.?|Estimate|預估值|預估).*?([\d.-]+[BMK]?)/i);
         if (revMatch) {
-          data.latestQuarter.revenueActual = revMatch[1];
-          data.latestQuarter.revenueEstimate = revMatch[2];
+          data.latestQuarter.revenueActual = revMatch[1].trim();
+          data.latestQuarter.revenueEstimate = revMatch[2].trim();
+        }
+
+        // 提取 YoY 年增率
+        const yoyMatch = text.match(/(?:YoY|同比|年增率|年增|成長率|成長).*?([+-]?\d+(?:\.\d+)?)\s*%/i) ||
+                         text.match(/([+-]?\d+(?:\.\d+)?)\s*%.*?(?:YoY|同比|年增)/i);
+        if (yoyMatch && data.latestQuarter.yoy === 'N/A') {
+          data.latestQuarter.yoy = yoyMatch[1].trim() + '%';
+        }
+
+        // 提取驚喜率
+        const surpriseMatch = text.match(/(?:Surprise|驚喜度|驚喜率).*?([+-]?\d+(?:\.\d+)?)\s*%/i);
+        if (surpriseMatch && data.latestQuarter.epsSurprise === 'N/A') {
+          data.latestQuarter.epsSurprise = surpriseMatch[1].trim() + '%';
         }
       });
     } catch (err) {
@@ -264,7 +539,8 @@
       overview: null,
       analysis: null,
       earnings: null,
-      financials: null
+      financials: null,
+      minerMetrics: null
     };
 
     if (typeof onProgress === 'function') onProgress('⚡ 正在萃取行情概覽...');
@@ -290,19 +566,42 @@
       }
     }
 
+    // 自動整合標準化純數字指標
+    try {
+      results.minerMetrics = sanitizeToMinerSchema(results);
+    } catch (e) {
+      results.minerMetrics = null;
+    }
+
     if (typeof onProgress === 'function') onProgress('✅ 數據萃取完成！');
     return results;
   }
 
-  // 導出至全域 (確保 navigateToTab 與 tryNavigateToTab 皆有定義)
-  global.FinanceCrawler = {
+  // 導出至全域 (Universal 支援 window / global / CommonJS)
+  const exportTarget = {
     runFullStockScraper,
     scrapeOverview,
     scrapeAnalysis,
     scrapeEarnings,
     scrapeFinancials,
     navigateToTab: tryNavigateToTab,
-    tryNavigateToTab
+    tryNavigateToTab,
+    cleanNumber,
+    cleanMarketCap,
+    cleanRange52w,
+    calcEpsSurprise,
+    cleanPercentage,
+    sanitizeToMinerSchema
   };
 
-})(typeof window !== 'undefined' ? window : this);
+  if (typeof global !== 'undefined') {
+    global.FinanceCrawler = exportTarget;
+  }
+  if (typeof window !== 'undefined') {
+    window.FinanceCrawler = exportTarget;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = exportTarget;
+  }
+
+})(typeof window !== 'undefined' ? window : (typeof global !== 'undefined' ? global : this));

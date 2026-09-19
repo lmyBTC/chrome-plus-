@@ -127,17 +127,66 @@
     });
   }
 
-  function triggerCrawl(keyword) {
+  function safeSendMessage(message) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+          return reject(new Error('Extension context invalidated'));
+        }
+        chrome.runtime.sendMessage(message, (response) => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            reject(new Error(err.message || String(err)));
+          } else {
+            resolve(response);
+          }
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  async function sendRuntimeMessageWithRetry(message, maxRetries = 2, initialDelay = 350) {
+    let delay = initialDelay;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await safeSendMessage(message);
+      } catch (error) {
+        const msg = error && error.message ? error.message : '';
+        if (msg.includes('Extension context invalidated')) {
+          throw new Error('擴充功能已重新載入，請重新開啟側邊欄');
+        }
+
+        const isMissingEnd = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
+        if (isMissingEnd && attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, delay));
+          delay *= 1.5;
+          continue;
+        }
+
+        if (isMissingEnd) {
+          throw new Error('背景通道未就緒，請重新開啟側邊欄');
+        }
+
+        throw error;
+      }
+    }
+  }
+
+  async function triggerCrawl(keyword) {
     if (!keyword || !keyword.trim()) return;
     const cleanQuery = keyword.trim();
 
     btnCrawl.disabled = true;
     showStatus(`⚡ 背景爬取中 [${cleanQuery}]...`);
 
-    chrome.runtime.sendMessage({
-      action: 'CRAWL_STOCK',
-      keyword: cleanQuery
-    }, (res) => {
+    try {
+      const res = await sendRuntimeMessageWithRetry({
+        action: 'CRAWL_STOCK',
+        keyword: cleanQuery
+      }, 2, 400);
+
       btnCrawl.disabled = false;
       if (res && res.success && res.data) {
         showStatus(`✅ [${res.data.ticker}] 採集成功！`, '✅');
@@ -150,7 +199,11 @@
         showStatus(`❌ 失敗：${res ? res.error : '未知錯誤'}`, '❌', true);
         setTimeout(hideStatus, 4000);
       }
-    });
+    } catch (err) {
+      btnCrawl.disabled = false;
+      showStatus(`❌ 通訊異常：${err.message}`, '❌', true);
+      setTimeout(hideStatus, 5000);
+    }
   }
 
   function bindEvents() {
@@ -242,7 +295,9 @@
 
     // 左下角按鈕 1：開啟獨立分頁儀表板
     btnOpenDashboard.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'OPEN_DASHBOARD' });
+      safeSendMessage({ action: 'OPEN_DASHBOARD' }).catch((err) => {
+        showStatus('開啟儀表板失敗，請重新載入擴充套件', '⚠️', true);
+      });
     });
 
     // 左下角按鈕 2：剪貼簿貼入並爬取
@@ -289,7 +344,9 @@
 
     // 左下角按鈕 4：設定
     btnSettings.addEventListener('click', () => {
-      chrome.runtime.sendMessage({ action: 'OPEN_DASHBOARD' });
+      safeSendMessage({ action: 'OPEN_DASHBOARD' }).catch((err) => {
+        showStatus('開啟設定失敗，請重新載入擴充套件', '⚠️', true);
+      });
     });
 
     // 監聽背景廣播的更新通知

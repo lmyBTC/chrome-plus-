@@ -24,13 +24,69 @@
     return '😐 中性';
   }
 
+  function isContextOrConnectionError(msg) {
+    if (!msg) return false;
+    return msg.includes('Receiving end does not exist') ||
+           msg.includes('Could not establish connection') ||
+           msg.includes('Extension context invalidated');
+  }
+
+  function safeSendMessage(message) {
+    return new Promise((resolve, reject) => {
+      try {
+        if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+          return reject(new Error('Extension context invalidated'));
+        }
+        chrome.runtime.sendMessage(message, (response) => {
+          const err = chrome.runtime.lastError;
+          if (err) {
+            reject(new Error(err.message || String(err)));
+          } else {
+            resolve(response);
+          }
+        });
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  async function sendRuntimeMessageWithRetry(message, maxRetries = 2, initialDelay = 350) {
+    let delay = initialDelay;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await safeSendMessage(message);
+      } catch (error) {
+        const msg = error && error.message ? error.message : '';
+        if (msg.includes('Extension context invalidated')) {
+          throw new Error('擴充功能已重新載入或連線失效，請按 F5 重新整理分頁以恢復連線。');
+        }
+
+        const isMissingEnd = msg.includes('Receiving end does not exist') || msg.includes('Could not establish connection');
+        if (isMissingEnd && attempt < maxRetries) {
+          console.warn(`[FinanceClipper] ⚠️ 背景通道尚未就緒，將於 ${delay}ms 後進行第 ${attempt + 1} 次重試...`);
+          await new Promise((r) => setTimeout(r, delay));
+          delay *= 1.5;
+          continue;
+        }
+
+        if (isMissingEnd) {
+          throw new Error('無法連線至背景服務（擴充功能已重載或背景休眠未喚醒），請按 F5 重新整理分頁後重試。');
+        }
+
+        throw error;
+      }
+    }
+  }
+
   window.DashboardActions = {
     analyzeClientSentiment: analyzeClientSentiment,
+    sendRuntimeMessageWithRetry: sendRuntimeMessageWithRetry,
 
     /**
      * 觸發背景採集
      */
-    triggerCrawl: function (keyword, uiElements, callbacks) {
+    triggerCrawl: async function (keyword, uiElements, callbacks) {
       if (!keyword || !keyword.trim()) {
         console.warn('[FinanceClipper] 請輸入有效的股票代號或名稱！');
         showToast('請輸入有效的股票代號或名稱！');
@@ -43,9 +99,9 @@
       if (uiElements.crawlSpinner) uiElements.crawlSpinner.style.display = 'inline-block';
       showToast(`⚡ 正在背景啟動 4合1 深度採集 [${cleanKeyword}]...`);
 
-      let hasResponded = false;
+      let hasFinished = false;
       const safetyTimer = setTimeout(() => {
-        if (!hasResponded) {
+        if (!hasFinished) {
           console.warn(`[FinanceClipper] ⚠️ 採集請求 [${cleanKeyword}] 等待逾時 (15s)，自動重設按鈕狀態。`);
           if (uiElements.btnCrawl) uiElements.btnCrawl.disabled = false;
           if (uiElements.crawlSpinner) uiElements.crawlSpinner.style.display = 'none';
@@ -54,42 +110,36 @@
       }, 15000);
 
       try {
-        chrome.runtime.sendMessage({
+        const res = await sendRuntimeMessageWithRetry({
           action: 'CRAWL_STOCK',
           keyword: cleanKeyword
-        }, (res) => {
-          hasResponded = true;
-          clearTimeout(safetyTimer);
-          if (uiElements.btnCrawl) uiElements.btnCrawl.disabled = false;
-          if (uiElements.crawlSpinner) uiElements.crawlSpinner.style.display = 'none';
+        }, 2, 400);
 
-          if (chrome.runtime.lastError) {
-            console.error('[FinanceClipper] ❌ 背景通訊錯誤:', chrome.runtime.lastError.message);
-            showToast(`❌ 通訊錯誤：${chrome.runtime.lastError.message}`);
-            return;
-          }
-
-          console.log('[FinanceClipper] 📥 收到採集回應結果:', res);
-
-          if (res && res.success && res.data) {
-            console.log(`[FinanceClipper] ✅ [${res.data.ticker}] 採集成功:`, res.data);
-            showToast(`✅ [${res.data.ticker}] 採集完成！`);
-            if (callbacks && typeof callbacks.onCrawlSuccess === 'function') {
-              callbacks.onCrawlSuccess(res.data);
-            }
-          } else {
-            const errMsg = res ? res.error : '未知錯誤';
-            console.error(`[FinanceClipper] ❌ 採集失敗:`, errMsg);
-            showToast(`❌ 採集失敗：${errMsg}`);
-          }
-        });
-      } catch (e) {
-        hasResponded = true;
+        hasFinished = true;
         clearTimeout(safetyTimer);
         if (uiElements.btnCrawl) uiElements.btnCrawl.disabled = false;
         if (uiElements.crawlSpinner) uiElements.crawlSpinner.style.display = 'none';
-        console.error('[FinanceClipper] 發送訊息異常:', e);
-        showToast(`❌ 發送請求失敗: ${e.message}`);
+
+        console.log('[FinanceClipper] 📥 收到採集回應結果:', res);
+
+        if (res && res.success && res.data) {
+          console.log(`[FinanceClipper] ✅ [${res.data.ticker}] 採集成功:`, res.data);
+          showToast(`✅ [${res.data.ticker}] 採集完成！`);
+          if (callbacks && typeof callbacks.onCrawlSuccess === 'function') {
+            callbacks.onCrawlSuccess(res.data);
+          }
+        } else {
+          const errMsg = res ? res.error : '未知錯誤';
+          console.error(`[FinanceClipper] ❌ 採集失敗:`, errMsg);
+          showToast(`❌ 採集失敗：${errMsg}`);
+        }
+      } catch (err) {
+        hasFinished = true;
+        clearTimeout(safetyTimer);
+        if (uiElements.btnCrawl) uiElements.btnCrawl.disabled = false;
+        if (uiElements.crawlSpinner) uiElements.crawlSpinner.style.display = 'none';
+        console.error('[FinanceClipper] ❌ 發送採集請求異常:', err);
+        showToast(`❌ 通訊異常：${err.message}`);
       }
     },
 
