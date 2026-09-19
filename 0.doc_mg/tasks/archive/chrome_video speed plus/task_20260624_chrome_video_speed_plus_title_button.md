@@ -12,7 +12,7 @@ deadline: "2026-06-24"
 ## 2. 策略與鎖定檔案
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_video speed plus\content.js`
+- `./chrome_video speed plus\content.js`
 
 ## 3. 任務拆解
 

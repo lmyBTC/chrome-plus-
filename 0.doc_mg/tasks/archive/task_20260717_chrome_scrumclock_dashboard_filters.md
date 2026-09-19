@@ -16,7 +16,7 @@ deadline: "2026-07-17"
 3. 新增欄位篩選 UI 控制列（膠囊複選框形式），並在 `<thead>` 與 `<tbody>` 中根據篩選狀態條件渲染。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
 
 ## 3. 任務拆解
 

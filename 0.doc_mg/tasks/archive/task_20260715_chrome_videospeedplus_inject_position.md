@@ -17,8 +17,8 @@ deadline: "2026-07-15"
 - 修改 `popup.js` 中的訊息傳遞，對所有發送訊息添加 `chrome.runtime.lastError` 防禦性捕獲，防止未捕獲錯誤。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_video speed plus\content.js`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_video speed plus\popup.js`
+- `./chrome_video speed plus\content.js`
+- `./chrome_video speed plus\popup.js`
 
 ## 3. 任務拆解
 

@@ -21,11 +21,11 @@ deadline: "2026-07-16"
 - 修改 `src/background.ts` 配置點擊 action 圖示時打開側欄的行為。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\manifest.json` [MODIFY]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\vite.config.ts` [MODIFY]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\background.ts` [MODIFY]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\index.html` [NEW]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\sidebar.ts` [NEW]
+- `./chrome_scrumclock/public/manifest.json` [MODIFY]
+- `./chrome_scrumclock/vite.config.ts` [MODIFY]
+- `./chrome_scrumclock/src/background.ts` [MODIFY]
+- `./chrome_scrumclock/src/entries/sidebar/index.html` [NEW]
+- `./chrome_scrumclock/src/entries/sidebar/sidebar.ts` [NEW]
 
 ## 3. 任務拆解
 

@@ -16,7 +16,7 @@ deadline: "2026-07-17"
 3. 修正 `handleAddToDailyMissions` 中一鍵寫入儀表板的 Storage 結構，使其正確關聯 `weeklyMissions`。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx`
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx`
 
 ## 3. 任務拆解
 

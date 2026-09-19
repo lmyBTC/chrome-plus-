@@ -15,9 +15,9 @@ deadline: "2026-07-15"
 3. 執行 npm run build 及 audit_manifests 驗證。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\manifest.json`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\ai-sidebar\components\AISidebar.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx`
+- `./chrome_scrumclock/public/manifest.json`
+- `./chrome_scrumclock/src/features/ai-sidebar/components/AISidebar.tsx`
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx`
 
 ## 3. 任務拆解
 

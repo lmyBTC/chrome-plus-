@@ -15,8 +15,8 @@ deadline: "2026-07-16"
 - 在 `ProjectManagementDemo.tsx` 元件中調整任務池表格的 `Execution Notes` 欄位樣式，移除非必要的寬度限制或 `truncate`，使用 `whitespace-normal break-all` 確保內容能自動換行並完整呈現。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\SprintPomodoro.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/components/SprintPomodoro.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
 
 ## 3. 任務拆解
 

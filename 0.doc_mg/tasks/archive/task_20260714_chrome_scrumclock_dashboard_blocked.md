@@ -16,8 +16,8 @@ deadline: "2026-07-14"
 2. 在 `background.ts` 的訊息監聽器中接收此消息，並利用特權 Chrome API `chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/newtab/index.html') })` 來安全地開啟儀表板分頁。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\geminiContent.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\background.ts`
+- `./chrome_scrumclock/src/geminiContent.ts`
+- `./chrome_scrumclock/src/background.ts`
 
 ## 3. 任務拆解
 

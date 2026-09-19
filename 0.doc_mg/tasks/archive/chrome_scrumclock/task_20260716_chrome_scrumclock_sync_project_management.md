@@ -12,10 +12,10 @@ deadline: "2026-07-18"
 ## 2. 策略與鎖定檔案
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\types\index.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\core\chrome\storage.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\QuickCapture.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/types/index.ts`
+- `./chrome_scrumclock/src/core/chrome/storage.ts`
+- `./chrome_scrumclock/src/features/scrumclock/components/QuickCapture.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
 
 ## 3. 任務拆解
 

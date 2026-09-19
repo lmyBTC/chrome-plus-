@@ -16,8 +16,8 @@ deadline: "2026-07-15"
 - 更新 UI 的副標題，將其從 "Gemini 1.5 Flash 驅動" 改為 "Gemini Nano 驅動"。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\ai-sidebar\components\AISidebar.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\manifest.json`
+- `./chrome_scrumclock/src/features/ai-sidebar/components/AISidebar.tsx`
+- `./chrome_scrumclock/public/manifest.json`
 
 ## 3. 任務拆解
 

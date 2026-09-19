@@ -15,13 +15,13 @@ deadline: "2026-06-24"
 - 修改 `.agents/rules.md` 與其下三個核心技能的定義，對齊多插件開發的脈絡。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\rules.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\dev-standards\SKILL.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\task-protocol\SKILL.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\token-saver\SKILL.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\task_manager.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\task_template_v2.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\dev_standards.md`
+- `./.agents/rules.md`
+- `./.agents/skills/dev-standards/SKILL.md`
+- `./.agents/skills/task-protocol/SKILL.md`
+- `./.agents/skills/token-saver/SKILL.md`
+- `./0.doc_mg/task_manager.md`
+- `./0.doc_mg/task_template_v2.md`
+- `./0.doc_mg/dev_standards.md`
 
 ## 3. 任務拆解
 
@@ -39,7 +39,7 @@ deadline: "2026-06-24"
 - [x] 任務 3.2: 修改 `.agents/rules.md`，清理非本專案的技能樹（只保留 dev-standards, task-protocol, token-saver），更新技術文件與 SOP 的鏈結路徑。
 
 ### Phase 4: 驗收與清理 狀態：`[已完成]`
-- [x] 任務 4.1: 執行靜態檢查，確認所有路徑正確性與 `file:///` 點擊可用性。
+- [x] 任務 4.1: 執行靜態檢查，確認所有相對路徑正確性與點擊可用性。
 - [x] 任務 4.2: 清理所有產生的測試用檔案，完成簽到。
 
 ## 4. 影響評估

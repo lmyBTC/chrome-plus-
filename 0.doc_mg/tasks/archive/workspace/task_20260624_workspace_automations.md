@@ -15,10 +15,10 @@ deadline: "2026-06-24"
 - 補充 Chrome Web Store 關於 CSP 與 eval 禁令的 SSOT 指引。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\tools\task_cli.py`
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\tools\audit_manifests.py`
-- `c:\Users\G1\00.coding workspace\chrome plus project\package.json`
-- `c:\Users\G1\00.coding workspace\chrome plus project\0.doc_mg\dev_standards.md`
+- `./0.doc_mg/tools/task_cli.py`
+- `./0.doc_mg/tools/audit_manifests.py`
+- `./package.json`
+- `./0.doc_mg/dev_standards.md`
 
 ## 3. 任務拆解
 

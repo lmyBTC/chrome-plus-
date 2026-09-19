@@ -14,17 +14,17 @@ deadline: "2026-07-24"
 ---
 
 ## 2. 策略與鎖定檔案
-1. **Zod 驗證策略**：在專案中安裝 `zod` 套件。建立 `src/utils/ai-schemas.ts` 定義 `AIActionSchema`，嚴格限制 `intentType`（"project" | "daily_mission"）、`actionType`（"create" | "update" | "complete" | "delete"）等欄位及型別。並在 [hooks.ts](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/chrome_scrumclock/src/entries/sidebar/hooks.ts) 的 `safeExtractJSON` 和 actions 執行前進行安全解析（`safeParse`）。
+1. **Zod 驗證策略**：在專案中安裝 `zod` 套件。建立 `src/utils/ai-schemas.ts` 定義 `AIActionSchema`，嚴格限制 `intentType`（"project" | "daily_mission"）、`actionType`（"create" | "update" | "complete" | "delete"）等欄位及型別。並在 [hooks.ts](./chrome_scrumclock/src/entries/sidebar/hooks.ts) 的 `safeExtractJSON` 和 actions 執行前進行安全解析（`safeParse`）。
 2. **自動化測試策略**：在 `chrome_scrumclock/tests/` 中撰寫 Node 測試腳本，利用 mock 的 `parseSession.prompt` 或實際透過遠端偵測 Port（Remote Debugging）連接已運行之 Chrome 執行本地 Nano 推理測試，覆蓋至少 30 種測試語意組合，並比對輸出 JSON 的符合率。
 3. **Webhook 同步策略**：
    - 於設定面板中新增 `webhookUrl` 和 `enableWebhook` 儲存項至 `chrome.storage.local`。
    - 在 `StorageQueue` 後置加入非同步 `fetch` Webhook 發送機制，不阻塞 React UI 運作，並實作簡易的 Error boundary 防呆。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\package.json`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\utils\ai-helper.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\hooks.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\components\SettingsPanel.tsx`
+- `./chrome_scrumclock/package.json`
+- `./chrome_scrumclock/src/utils/ai-helper.ts`
+- `./chrome_scrumclock/src/entries/sidebar/hooks.ts`
+- `./chrome_scrumclock/src/components/SettingsPanel.tsx`
 
 ---
 

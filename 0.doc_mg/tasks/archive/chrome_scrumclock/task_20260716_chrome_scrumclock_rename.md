@@ -16,23 +16,23 @@ deadline: "2026-07-16"
 - 保持資料庫 key 與 DOM ID 不變，以維持相容性。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\manifest.json`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\install.bat`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\core\layout\Sidebar.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\newtab\index.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\options\index.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\popup\index.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\index.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\popup\main.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\background.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\geminiContent.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\components\InstallDocs.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\analytics\components\AnalyticsDashboard.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\ai-sidebar\components\AISidebar.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\blocked.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\core\api\adapters\GoogleTaskAdapter.ts`
+- `./chrome_scrumclock/public/manifest.json`
+- `./chrome_scrumclock/install.bat`
+- `./chrome_scrumclock/src/core/layout/Sidebar.tsx`
+- `./chrome_scrumclock/src/entries/newtab/index.html`
+- `./chrome_scrumclock/src/entries/options/index.html`
+- `./chrome_scrumclock/src/entries/popup/index.html`
+- `./chrome_scrumclock/src/entries/sidebar/index.html`
+- `./chrome_scrumclock/src/entries/popup/main.tsx`
+- `./chrome_scrumclock/src/background.ts`
+- `./chrome_scrumclock/src/geminiContent.ts`
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx`
+- `./chrome_scrumclock/src/components/InstallDocs.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/features/analytics/components/AnalyticsDashboard.tsx`
+- `./chrome_scrumclock/src/features/ai-sidebar/components/AISidebar.tsx`
+- `./chrome_scrumclock/public/blocked.html`
+- `./chrome_scrumclock/src/core/api/adapters/GoogleTaskAdapter.ts`
 
 ## 3. 任務拆解
 

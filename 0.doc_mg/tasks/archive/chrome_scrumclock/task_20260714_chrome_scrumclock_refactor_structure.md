@@ -19,13 +19,13 @@ deadline: "2026-07-15"
 4. **清理與優化 Vite 設定**：更新 `vite.config.ts` 以符合新的多頁面路徑設定。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\vite.config.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\index.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\popup.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\options.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\newtab.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\popup.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\options.ts`
+- `./chrome_scrumclock/vite.config.ts`
+- `./chrome_scrumclock/index.html`
+- `./chrome_scrumclock/popup.html`
+- `./chrome_scrumclock/options.html`
+- `./chrome_scrumclock/src/entries/newtab.tsx`
+- `./chrome_scrumclock/src/entries/popup.ts`
+- `./chrome_scrumclock/src/entries/options.ts`
 
 ## 3. 任務拆解
 

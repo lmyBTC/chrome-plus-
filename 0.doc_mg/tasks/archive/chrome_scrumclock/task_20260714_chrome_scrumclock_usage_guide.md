@@ -15,7 +15,7 @@ deadline: "2026-07-14"
 - 確保切換與顯示完全融入原本的夜晚黑暗模式。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\components\InstallDocs.tsx`
+- `./chrome_scrumclock/src/components/InstallDocs.tsx`
 
 ## 3. 任務拆解
 

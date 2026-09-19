@@ -23,9 +23,9 @@ deadline: "2026-07-17"
    - 在任務池表格中新增進度顯示：在標題下方或獨立區塊，以進度條與百分比精美呈現。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\types\index.ts`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/types/index.ts`
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
 
 ## 3. 任務拆解
 

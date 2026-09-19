@@ -12,12 +12,12 @@ ssot_dependencies: ["0.doc_mg/dev_standards.md"]
 
 ## 1. 核心指南引用 (Mandatory Read)
 開發、重構或除錯前，**必須** 讀取以下 SSOT 文件：
-- [`0.doc_mg/dev_standards.md`](./0.doc_mg/dev_standards.md) (涵蓋 MV3, Shadow DOM, CSP, XSS 等)
+- [`0.doc_mg/dev_standards.md`](../../../0.doc_mg/dev_standards.md) (涵蓋 MV3, Shadow DOM, CSP, XSS 等)
 
 ## 2. 工作流 (Executive Workflow)
 
 ### Step 1: 環境與規格掃描
-- 讀取 [`0.doc_mg/dev_standards.md`](./0.doc_mg/dev_standards.md)。
+- 讀取 [`0.doc_mg/dev_standards.md`](../../../0.doc_mg/dev_standards.md)。
 - 確認為**編譯型** (`chrome_scrumclock`) 或**原生零建置型**，並定位入口檔案。
 
 ### Step 2: 安全性與隔離設計

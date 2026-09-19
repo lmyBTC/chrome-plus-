@@ -15,9 +15,9 @@ deadline: "2026-06-30"
 - 優化 `SKILL.md` 的結構，移除模糊詞彙，加強關鍵字觸發（triggers）定義，並加入對應的防錯機制。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\dev-standards\SKILL.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\task-protocol\SKILL.md`
-- `c:\Users\G1\00.coding workspace\chrome plus project\.agents\skills\token-saver\SKILL.md`
+- `./.agents/skills/dev-standards/SKILL.md`
+- `./.agents/skills/task-protocol/SKILL.md`
+- `./.agents/skills/token-saver/SKILL.md`
 
 ## 3. 任務拆解
 

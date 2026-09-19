@@ -21,9 +21,9 @@ deadline: "2026-07-16"
 - 更新 Manifest 加入 `contextMenus` 權限。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\public\manifest.json` [MODIFY]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\background.ts` [MODIFY]
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx` [MODIFY]
+- `./chrome_scrumclock/public/manifest.json` [MODIFY]
+- `./chrome_scrumclock/src/background.ts` [MODIFY]
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx` [MODIFY]
 
 ## 3. 任務拆解
 

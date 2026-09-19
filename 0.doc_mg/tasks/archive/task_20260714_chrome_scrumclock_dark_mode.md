@@ -13,7 +13,7 @@ deadline: "2026-07-14"
 使用全域 CSS 覆寫機制（在 `src/index.css`），針對 TailwindCSS 的背景色（如 `bg-white`、`bg-gray-50`）以及邊框色 and 文字色進行深色覆寫。此做法無需修改大量 React 元件，能保持程式碼極簡並降低出錯率。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\index.css`
+- `./chrome_scrumclock/src/index.css`
 
 ## 3. 任務拆解
 

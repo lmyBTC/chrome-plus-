@@ -17,7 +17,7 @@ deadline: "2026-07-14"
 - 透過強制推送 `git push --force origin main` 替換遠端倉庫。
 
 ### 鎖定檔案 (Target Files)
-- [NEW] `c:\Users\G1\00.coding workspace\chrome plus project\.gitignore`
+- [NEW] `./.gitignore`
 
 ## 3. 任務拆解
 

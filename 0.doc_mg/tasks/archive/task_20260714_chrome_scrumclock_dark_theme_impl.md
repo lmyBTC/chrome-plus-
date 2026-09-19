@@ -19,18 +19,18 @@ deadline: "2026-07-14"
    - 在所有組件重構完成後，逐步清除 `src/index.css` 中針對全域 `.bg-white`、`.border-gray-*`、`.text-gray-*` 的 `!important` 規則，僅保留全域基礎控制（如 body 背景、自定義輸入框樣式、以及 canvas 圖表反色濾鏡）。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\tailwind.config.js`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\index.css`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\App.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\components\SettingsPanel.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\DailyMissionBriefing.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\SprintPomodoro.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\EndOfDayReview.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\scrumclock\components\QuickCapture.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\project-management\components\ProjectManagementDemo.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\ai-sidebar\components\AISidebar.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\analytics\components\AnalyticsDashboard.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\features\bookmarks\components\BookmarksHub.tsx`
+- `./chrome_scrumclock/tailwind.config.js`
+- `./chrome_scrumclock/src/index.css`
+- `./chrome_scrumclock/src/App.tsx`
+- `./chrome_scrumclock/src/components/SettingsPanel.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/components/DailyMissionBriefing.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/components/SprintPomodoro.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/components/EndOfDayReview.tsx`
+- `./chrome_scrumclock/src/features/scrumclock/components/QuickCapture.tsx`
+- `./chrome_scrumclock/src/features/project-management/components/ProjectManagementDemo.tsx`
+- `./chrome_scrumclock/src/features/ai-sidebar/components/AISidebar.tsx`
+- `./chrome_scrumclock/src/features/analytics/components/AnalyticsDashboard.tsx`
+- `./chrome_scrumclock/src/features/bookmarks/components/BookmarksHub.tsx`
 
 ## 3. 任務拆解
 

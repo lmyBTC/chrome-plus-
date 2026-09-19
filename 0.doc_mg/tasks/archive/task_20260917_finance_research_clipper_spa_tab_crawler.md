@@ -18,11 +18,11 @@ deadline: "2026-09-20"
 4. **向下相容與數據聚合**：將 4 大分頁爬取的數據整合至既有的 `capturedStockData` 與 `formatToMarkdown` 流程，確保現有的 Google Apps Script Webhook 傳輸與 Markdown/CSV 導出功能不受影響。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss\manifest.json`
-- `c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss\popup.html`
-- `c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss\popup.js`
-- `c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss\crawler.js` (NEW: 模組化爬蟲核心腳本)
-- `c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss\docs\todotask.md`
+- `./finance-research-clipper-oss/manifest.json`
+- `./finance-research-clipper-oss/popup.html`
+- `./finance-research-clipper-oss/popup.js`
+- `./finance-research-clipper-oss/crawler.js` (NEW: 模組化爬蟲核心腳本)
+- `./finance-research-clipper-oss/docs/todotask.md`
 
 ## 3. 任務拆解
 

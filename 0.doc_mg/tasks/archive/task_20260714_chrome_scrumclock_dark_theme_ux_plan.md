@@ -13,7 +13,7 @@ deadline: "2026-07-14"
 規劃一份包含「背景、文字、邊框、品牌/狀態色」的黑暗配色規範，並定義具體的 UI 元件配色映射表，說明如何整合至 Tailwind CSS 設定。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\docs\dark_theme_design_system.md` [NEW]
+- `./chrome_scrumclock/docs/dark_theme_design_system.md` [NEW]
 
 ## 3. 任務拆解
 

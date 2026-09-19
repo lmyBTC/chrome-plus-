@@ -22,10 +22,10 @@ deadline: "2026-07-20"
    - 封裝 AI 生命週期與數據操作至自訂 React Hooks。
 
 ### 鎖定檔案 (Target Files)
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\entries\sidebar\main.tsx`
-- `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\utils\ai-helper.ts`
-- [NEW] `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\utils\markdown.tsx`
-- [NEW] `c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\src\utils\task-parser.ts`
+- `./chrome_scrumclock/src/entries/sidebar/main.tsx`
+- `./chrome_scrumclock/src/utils/ai-helper.ts`
+- [NEW] `./chrome_scrumclock/src/utils/markdown.tsx`
+- [NEW] `./chrome_scrumclock/src/utils/task-parser.ts`
 
 ## 3. 任務拆解
 

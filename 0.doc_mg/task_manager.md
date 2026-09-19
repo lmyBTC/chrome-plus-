@@ -15,9 +15,9 @@
 
 ### 1.2. Gate 1: 物理勘查與建檔 (Grounding & Task Blueprint)
 - **跨環境相對路徑**: 任務文件與所有參考連結一律使用專案相對路徑（如 `./0.doc_mg/...` 或 `./[plugin]/...`），嚴禁寫入本機絕對路徑。
-- **建檔路徑**: 一律存放在 [`0.doc_mg/tasks/`](./0.doc_mg/tasks/) 目錄下。
+- **建檔路徑**: 一律存放在 [`0.doc_mg/tasks/`](./tasks/) 目錄下。
 - **命名規範**: `task_YYYYMMDD_[plugin]_[topic].md`（範例：`task_20260624_chrome_scrumclock_add_timer.md`）。
-- **範本使用**: 必須複製 [`0.doc_mg/task_template_v2.md`](./0.doc_mg/task_template_v2.md) 作為基準，並填入目標、Phase 拆解、驗收標準與 AI 簽到（同時**徹底刪除範本中所有 `<!-- ... -->` 註解說明**）。
+- **範本使用**: 必須複製 [`0.doc_mg/task_template_v2.md`](./task_template_v2.md) 作為基準，並填入目標、Phase 拆解、驗收標準與 AI 簽到（同時**徹底刪除範本中所有 `<!-- ... -->` 註解說明**）。
 - **中斷點**: 輸出 `task.md` 綱要後**強制停步**，**嚴禁在此時修改原始碼**，等待開發者下達「開始執行」或「approved」指令。
 
 ### 1.3. Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Condensation)
