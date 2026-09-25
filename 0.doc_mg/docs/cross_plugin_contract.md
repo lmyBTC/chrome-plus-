@@ -111,6 +111,34 @@
 }
 ```
 
+### 5.3 影片筆記與字幕收集協定 (`COLLECT_NOTE`)
+- **發送端**：VideoSpeedPlus (`content.js` / `popup.js`) 或其他多媒體採集插件
+- **接收端**：ScrumClock Background Worker (`externalService.ts`)
+- **請求格式**：
+```json
+{
+  "protocolVersion": 1,
+  "type": "COLLECT_NOTE",
+  "payload": {
+    "source": "video_speed_plus",
+    "title": "影片標題名稱",
+    "url": "https://www.youtube.com/watch?v=xxxx&t=120s",
+    "currentTime": "02:00",
+    "text": "當前擷取到的字幕逐字稿或重點文字片段...",
+    "tags": ["#影片學習", "#YouTube"],
+    "type": "subtitle"
+  }
+}
+```
+- **響應格式**：
+```json
+{
+  "success": true,
+  "noteId": "note-1726567890123",
+  "message": "已成功收集字幕至 ScrumClock"
+}
+```
+
 ---
 
 ## 5. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)

@@ -38,11 +38,28 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md"]
 ### 主要儲存鍵值 (Storage Keys)
 1. `vsp_default_speed`: `number` (預設播放倍速，如 `1.0`, `1.25`, `1.5`, `2.0`)
 2. `vsp_speed_step`: `number` (快捷鍵每次微調步進值，如 `0.1` 或 `0.25`)
-3. `vsp_shortcuts`: `Record<string, string>` (快捷鍵映射表，如加速、減速、重置為 1.0、隱藏 OSD)
+3. `vsp_shortcuts`: `Record<string, string>` (快捷鍵映射表，如加速、減速、重置為 1.0、隱藏 OSD、收集字幕)
 4. `vsp_site_overrides`: `Record<domain, { speed: number, disabled: boolean }>` (特定網域專屬倍速記憶)
+5. `scrumclockExtensionId`: `string` (選填，快取指定之 ScrumClock Extension ID，供跨插件通訊使用)
 
 ---
 
-## 4. 邊界與隔離防護準則 (Isolation Hard Rules)
-1. **單一插件專注**: 開發 VideoSpeedPlus 時，禁止讀寫 ScrumClock 或 FinanceClipper 之代碼與資料。
-2. **純淨原生約束**: 維持無打包純 JS 結構，避免依賴外部函式庫，確保在各大影音平台毫秒級載入。
+## 4. 跨插件筆記收集協定 (Cross-Plugin COLLECT_NOTE Spec)
+遵循工作區黑盒通訊契約（`0.doc_mg/docs/cross_plugin_contract.md`），對 `chrome_scrumclock` 進行純資料傳遞：
+* **發送機制**: `chrome.runtime.sendMessage(targetExtId, { protocolVersion: 1, type: 'COLLECT_NOTE', payload: {...} })`
+* **防腐層 (Sanitizer)**:
+  - 欄位白名單：`source`, `title`, `url`, `currentTime`, `text`, `tags`, `type`
+  - 嚴格長度限制截斷（標題 <= 200 字，URL <= 500 字，文本 <= 20,000 字），防止惡意載荷或溢位。
+* **字幕與內容萃取優先序**:
+  1. YouTube 逐字稿面板 (`ytd-transcript-segment-renderer`)：依播放秒數自動擷取鄰近上下文。
+  2. 即時畫面字幕 (`.ytp-caption-segment`)：擷取當前播放畫面呈現之文字。
+  3. 標準 HTML5 `<track>` 兜底：讀取 `activeCues` 文本。
+  4. 兜底回退：若無字幕則自動輸出帶有當前播放秒數與時間戳 URL 之精簡影片註記。
+* **快捷鍵規格**: `Alt + S` 或 `Ctrl + Shift + S`（輸入欄位中自動避讓）。
+
+---
+
+## 5. 邊界與隔離防護準則 (Isolation Hard Rules)
+1. **單一插件專注**: 開發 VideoSpeedPlus 時，禁止直接讀寫 ScrumClock 之內部代碼與私有資料庫，所有互動僅限於標準跨插件通訊契約。
+2. **純淨原生約束**: 維持無打包純 JS 結構，避免依賴外部龐大函式庫，確保在各大影音平台毫秒級載入。
+3. **優雅降級**: 當目標插件離線或未安裝時，必須有 6 秒超時保護與非阻塞 Notification 提示，嚴禁阻斷主播放功能。

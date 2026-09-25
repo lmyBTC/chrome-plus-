@@ -158,4 +158,98 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     }
   });
+
+  // 跨插件 ScrumClock 連線與設定快取支援
+  function pingScrumClock(extId, callback) {
+    if (!extId) {
+      if (callback) callback({ success: false, error: '未提供 Extension ID' });
+      return;
+    }
+    try {
+      chrome.runtime.sendMessage(extId, { type: 'AI_PING' }, function(response) {
+        if (chrome.runtime.lastError) {
+          if (callback) callback({ success: false, error: chrome.runtime.lastError.message });
+          return;
+        }
+        if (callback) callback({ success: true, response: response });
+      });
+    } catch (e) {
+      if (callback) callback({ success: false, error: e.message });
+    }
+  }
+
+  // ScrumClock 介面元素與事件綁定
+  const btnCollectScrum = document.getElementById('btnCollectScrum');
+  const scrumExtIdInput = document.getElementById('scrumExtIdInput');
+  const btnSaveScrumId = document.getElementById('btnSaveScrumId');
+  const btnTestScrumConn = document.getElementById('btnTestScrumConn');
+  const scrumStatusMsg = document.getElementById('scrumStatusMsg');
+
+  // 讀取已儲存的 Extension ID
+  chrome.storage.local.get('scrumclockExtensionId', function(res) {
+    if (res && res.scrumclockExtensionId && scrumExtIdInput) {
+      scrumExtIdInput.value = res.scrumclockExtensionId;
+    }
+  });
+
+  // 儲存 Extension ID
+  if (btnSaveScrumId && scrumExtIdInput && scrumStatusMsg) {
+    btnSaveScrumId.addEventListener('click', function() {
+      const id = scrumExtIdInput.value.trim();
+      chrome.storage.local.set({ scrumclockExtensionId: id }, function() {
+        scrumStatusMsg.textContent = id ? '✅ Extension ID 已儲存' : '⚠️ 已清除 Extension ID';
+        setTimeout(() => { scrumStatusMsg.textContent = ''; }, 2500);
+      });
+    });
+  }
+
+  // 測試連線
+  if (btnTestScrumConn && scrumExtIdInput && scrumStatusMsg) {
+    btnTestScrumConn.addEventListener('click', function() {
+      const id = scrumExtIdInput.value.trim();
+      if (!id) {
+        scrumStatusMsg.textContent = '⚠️ 請先輸入 Extension ID';
+        return;
+      }
+      scrumStatusMsg.textContent = '⏳ 測試連線中...';
+      pingScrumClock(id, function(result) {
+        if (result && result.success) {
+          scrumStatusMsg.textContent = '✅ 連線成功！ScrumClock 在線';
+        } else {
+          scrumStatusMsg.textContent = '❌ 連線失敗: ' + (result?.error || '無回應');
+        }
+        setTimeout(() => { scrumStatusMsg.textContent = ''; }, 3500);
+      });
+    });
+  }
+
+  // 一鍵收集當前字幕至 ScrumClock
+  if (btnCollectScrum && scrumStatusMsg) {
+    btnCollectScrum.addEventListener('click', function() {
+      const originalHtml = btnCollectScrum.innerHTML;
+      btnCollectScrum.innerHTML = '<span>⏳ 正在收集...</span>';
+      btnCollectScrum.disabled = true;
+
+      sendMessageToContent({ action: 'collectToScrumClock' }, function(response) {
+        btnCollectScrum.disabled = false;
+        if (response && response.success) {
+          btnCollectScrum.innerHTML = '<span>✅ 收集成功！</span>';
+          scrumStatusMsg.textContent = '已傳送至 ScrumClock 收集箱';
+        } else {
+          btnCollectScrum.innerHTML = '<span>⚠️ 收集失敗</span>';
+          scrumStatusMsg.textContent = response?.error ? `錯誤: ${response.error}` : '請檢查 Extension ID 或影片頁面';
+        }
+        setTimeout(() => {
+          btnCollectScrum.innerHTML = originalHtml;
+          scrumStatusMsg.textContent = '';
+        }, 2500);
+      });
+    });
+  }
+
+  // 暴露全域輔助以供後續 UI 綁定
+  window.__videoSpeedPlus = {
+    sendMessageToContent: sendMessageToContent,
+    pingScrumClock: pingScrumClock
+  };
 }); 

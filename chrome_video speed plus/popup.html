@@ -136,6 +136,104 @@
       justify-content: space-between;
       margin-top: 10px;
     }
+
+    .scrum-section {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      text-align: left;
+    }
+    
+    .section-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .shortcut-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .scrum-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      border: 2px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 13px;
+      font-weight: 600;
+      box-sizing: border-box;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    
+    .scrum-btn:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transform: translateY(-1px);
+    }
+
+    .scrum-btn:active {
+      transform: translateY(0);
+    }
+
+    .scrum-config {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .scrum-input-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .scrum-input {
+      flex: 1;
+      padding: 6px 8px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #1f2937;
+      outline: none;
+    }
+
+    .scrum-sub-btn {
+      background: rgba(255, 255, 255, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: white;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .scrum-sub-btn:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .scrum-status-msg {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.9);
+      margin-top: 4px;
+      min-height: 16px;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -181,6 +279,26 @@
       <div class="loop-actions">
         <button class="loop-btn" id="btnStartLoop">開始循環</button>
         <button class="loop-btn" id="btnStopLoop">停止循環</button>
+      </div>
+    </div>
+
+    <div class="scrum-section">
+      <div class="section-title">
+        <span>📥 ScrumClock 收集器</span>
+        <span class="shortcut-badge">Alt + S</span>
+      </div>
+      
+      <button class="scrum-btn" id="btnCollectScrum">
+        <span>📥 收集當前字幕至 ScrumClock</span>
+      </button>
+
+      <div class="scrum-config">
+        <div class="scrum-input-row">
+          <input type="text" id="scrumExtIdInput" class="scrum-input" placeholder="ScrumClock Extension ID">
+          <button id="btnSaveScrumId" class="scrum-sub-btn">儲存</button>
+          <button id="btnTestScrumConn" class="scrum-sub-btn">測試</button>
+        </div>
+        <div id="scrumStatusMsg" class="scrum-status-msg"></div>
       </div>
     </div>
   </div>

@@ -5,7 +5,8 @@
   "description": "讓 YouTube 影片播放速度提升到 3 倍以上",
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "https://www.youtube.com/*"

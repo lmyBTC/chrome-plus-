@@ -322,6 +322,14 @@ function handleMessage(request, sender, sendResponse) {
         loopEnd: loopEnd
       });
       break;
+
+    case 'extractContent':
+      sendResponse(extractVideoContentForCollector());
+      break;
+
+    case 'collectToScrumClock':
+      sendNoteToScrumClock().then(res => sendResponse(res));
+      return true;
       
     default:
       sendResponse({error: '未知的動作'});
@@ -335,6 +343,25 @@ document.addEventListener('keydown', function(event) {
   // 只在 YouTube 頁面啟用快捷鍵
   if (!window.location.href.includes('youtube.com')) return;
   
+  // 若焦點在輸入框或可編輯區塊中，不觸發快捷鍵，避免干擾使用者輸入留言或搜尋
+  const activeEl = document.activeElement;
+  if (activeEl) {
+    const tagName = activeEl.tagName ? activeEl.tagName.toLowerCase() : '';
+    if (tagName === 'input' || tagName === 'textarea' || activeEl.isContentEditable) {
+      return;
+    }
+  }
+
+  // Alt + S 或 Ctrl + Shift + S：一鍵收集當前時間戳字幕與筆記至 ScrumClock
+  const isAltS = event.altKey && (event.key === 's' || event.key === 'S' || event.code === 'KeyS');
+  const isCtrlShiftS = event.ctrlKey && event.shiftKey && (event.key === 's' || event.key === 'S' || event.code === 'KeyS');
+  if (isAltS || isCtrlShiftS) {
+    event.preventDefault();
+    console.log('[VideoSpeedPlus] 快捷鍵觸發：收集字幕與筆記至 ScrumClock');
+    sendNoteToScrumClock();
+    return;
+  }
+
   // Ctrl + Shift + 數字鍵來設定速度
   if (event.ctrlKey && event.shiftKey) {
     let speed = 1;
@@ -644,7 +671,7 @@ function toggleShadowPanel(btn) {
       left = window.innerWidth - panelWidth - 20;
     }
     
-    const panelHeight = 350;
+    const panelHeight = 440;
     if (top + panelHeight > window.innerHeight + scrollTop) {
       top = rect.top + scrollTop - panelHeight - 8;
     }
@@ -875,6 +902,77 @@ function createShadowControlPanel() {
       color: #ffffff;
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
+
+    .collector-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .collector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    
+    .collector-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .collector-shortcut-badge {
+      font-size: 10px;
+      padding: 2px 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: #94a3b8;
+    }
+    
+    .collector-btn {
+      width: 100%;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      padding: 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+      box-sizing: border-box;
+    }
+    
+    .collector-btn:hover {
+      background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+      transform: translateY(-1px);
+    }
+
+    .collector-btn:active {
+      transform: translateY(0);
+    }
+
+    .collector-btn.loading {
+      opacity: 0.8;
+      cursor: wait;
+    }
+
+    .collector-btn.success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+
+    .collector-btn.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
   `;
   shadowRoot.appendChild(style);
   
@@ -926,6 +1024,16 @@ function createShadowControlPanel() {
         <button class="loop-btn start-loop-btn">開始循環</button>
         <button class="loop-btn stop-loop-btn">停止循環</button>
       </div>
+    </div>
+    
+    <div class="collector-section">
+      <div class="collector-header">
+        <span class="collector-title">📥 ScrumClock 收集器</span>
+        <span class="collector-shortcut-badge">Alt + S</span>
+      </div>
+      <button class="collector-btn send-to-scrum-btn">
+        <span>📥 收集當前字幕至 ScrumClock</span>
+      </button>
     </div>
   `;
   
@@ -1010,6 +1118,46 @@ function bindShadowPanelEvents() {
     showNotification('停止循環');
     updateShadowPanelUI();
   });
+
+  const sendToScrumBtn = shadowRoot.querySelector('.send-to-scrum-btn');
+  if (sendToScrumBtn) {
+    sendToScrumBtn.addEventListener('click', async function() {
+      if (sendToScrumBtn.classList.contains('loading')) return;
+      
+      const originalHtml = sendToScrumBtn.innerHTML;
+      sendToScrumBtn.classList.add('loading');
+      sendToScrumBtn.innerHTML = '<span>⏳ 正在傳送至 ScrumClock...</span>';
+      
+      try {
+        const result = await sendNoteToScrumClock();
+        sendToScrumBtn.classList.remove('loading');
+        
+        if (result && result.success) {
+          sendToScrumBtn.classList.add('success');
+          sendToScrumBtn.innerHTML = '<span>✅ 已收集至 ScrumClock！</span>';
+          setTimeout(() => {
+            sendToScrumBtn.classList.remove('success');
+            sendToScrumBtn.innerHTML = originalHtml;
+          }, 2000);
+        } else {
+          sendToScrumBtn.classList.add('error');
+          sendToScrumBtn.innerHTML = '<span>⚠️ 收集失敗</span>';
+          setTimeout(() => {
+            sendToScrumBtn.classList.remove('error');
+            sendToScrumBtn.innerHTML = originalHtml;
+          }, 2500);
+        }
+      } catch (err) {
+        sendToScrumBtn.classList.remove('loading');
+        sendToScrumBtn.classList.add('error');
+        sendToScrumBtn.innerHTML = '<span>⚠️ 發送異常</span>';
+        setTimeout(() => {
+          sendToScrumBtn.classList.remove('error');
+          sendToScrumBtn.innerHTML = originalHtml;
+        }, 2500);
+      }
+    });
+  }
 }
 
 function updateShadowPanelUI() {
@@ -1055,6 +1203,261 @@ function updateShadowPanelUI() {
       }, 1000);
     }
   }
+}
+
+// ============================================================================
+// 影片字幕與內容萃取模組 (Subtitle & Video Content Extractor)
+// ============================================================================
+
+function formatTimeDisplay(seconds) {
+  if (isNaN(seconds) || seconds < 0) return '00:00';
+  const totalSec = Math.floor(seconds);
+  const hrs = Math.floor(totalSec / 3600);
+  const mins = Math.floor((totalSec % 3600) / 60);
+  const secs = totalSec % 60;
+  const pad = (n) => String(n).padStart(2, '0');
+  return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${pad(mins)}:${pad(secs)}`;
+}
+
+function getVideoMetadata() {
+  let title = '';
+  const titleSelectors = [
+    'ytd-watch-metadata #title h1',
+    'ytd-video-primary-info-renderer h1.title',
+    'h1.ytd-watch-metadata',
+    '#container > h1.title'
+  ];
+  for (const selector of titleSelectors) {
+    const el = document.querySelector(selector);
+    if (el && el.innerText && el.innerText.trim()) {
+      title = el.innerText.trim();
+      break;
+    }
+  }
+  if (!title) {
+    title = (document.title || '').replace(' - YouTube', '').trim() || 'YouTube 影片';
+  }
+
+  const currentTime = videoElement ? videoElement.currentTime : 0;
+  const formattedTime = formatTimeDisplay(currentTime);
+
+  let url = window.location.href;
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('t', `${Math.floor(currentTime)}s`);
+    url = urlObj.toString();
+  } catch (_) {}
+
+  return {
+    title: title,
+    url: url,
+    currentTime: formattedTime,
+    seconds: Math.floor(currentTime)
+  };
+}
+
+// 擷取當前播放畫面上的字幕片段
+function extractCurrentSubtitles() {
+  const segments = document.querySelectorAll('.ytp-caption-segment');
+  if (segments && segments.length > 0) {
+    const textArr = [];
+    segments.forEach(seg => {
+      const t = seg.innerText ? seg.innerText.trim() : '';
+      if (t && !textArr.includes(t)) {
+        textArr.push(t);
+      }
+    });
+    if (textArr.length > 0) {
+      return textArr.join(' ');
+    }
+  }
+
+  // HTML5 標準 <track> 元素兜底
+  if (videoElement && videoElement.textTracks && videoElement.textTracks.length > 0) {
+    for (let i = 0; i < videoElement.textTracks.length; i++) {
+      const track = videoElement.textTracks[i];
+      if (track.mode === 'showing' && track.activeCues && track.activeCues.length > 0) {
+        const cuesText = [];
+        for (let j = 0; j < track.activeCues.length; j++) {
+          if (track.activeCues[j].text) {
+            cuesText.push(track.activeCues[j].text);
+          }
+        }
+        if (cuesText.length > 0) return cuesText.join(' ');
+      }
+    }
+  }
+
+  return '';
+}
+
+// 擷取 YouTube 逐字稿 (Transcript) 面板段落
+function extractTranscriptSnippet(currentSeconds) {
+  const transcriptSegments = document.querySelectorAll('ytd-transcript-segment-renderer');
+  if (!transcriptSegments || transcriptSegments.length === 0) {
+    return null;
+  }
+
+  const items = [];
+  transcriptSegments.forEach(seg => {
+    const timeEl = seg.querySelector('.segment-timestamp, .segment-start-offset');
+    const textEl = seg.querySelector('.segment-text');
+    if (textEl && textEl.innerText) {
+      items.push({
+        timeStr: timeEl ? timeEl.innerText.trim() : '',
+        text: textEl.innerText.trim()
+      });
+    }
+  });
+
+  if (items.length === 0) return null;
+
+  const parseSeconds = (tStr) => {
+    const parts = tStr.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return 0;
+  };
+
+  let closestIndex = 0;
+  let minDiff = Infinity;
+  items.forEach((item, idx) => {
+    const sec = parseSeconds(item.timeStr);
+    const diff = Math.abs(sec - currentSeconds);
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIndex = idx;
+    }
+  });
+
+  const startIdx = Math.max(0, closestIndex - 2);
+  const endIdx = Math.min(items.length, closestIndex + 3);
+  return items.slice(startIdx, endIdx).map(it => `[${it.timeStr}] ${it.text}`).join('\n');
+}
+
+// 綜合萃取函式
+function extractVideoContentForCollector() {
+  const meta = getVideoMetadata();
+  const transcript = extractTranscriptSnippet(meta.seconds);
+  const currentSub = extractCurrentSubtitles();
+
+  let finalText = '';
+  let noteType = 'subtitle';
+
+  if (transcript) {
+    finalText = transcript;
+    noteType = 'transcript';
+  } else if (currentSub) {
+    finalText = currentSub;
+    noteType = 'subtitle';
+  } else {
+    finalText = `影片時間戳記 [${meta.currentTime}]：${meta.title}`;
+    noteType = 'video_timestamp';
+  }
+
+  return {
+    meta: meta,
+    text: finalText,
+    type: noteType
+  };
+}
+
+// ============================================================================
+// 跨插件防腐發送客戶端 (Cross-Plugin Client)
+// ============================================================================
+
+async function getScrumClockExtensionId() {
+  try {
+    const data = await chrome.storage.local.get('scrumclockExtensionId');
+    if (data && data.scrumclockExtensionId && data.scrumclockExtensionId.trim()) {
+      return data.scrumclockExtensionId.trim();
+    }
+  } catch (_) {}
+  return null;
+}
+
+function sanitizeCollectorPayload(rawPayload) {
+  const safeTitle = typeof rawPayload.title === 'string' ? rawPayload.title.trim().slice(0, 200) : 'YouTube 影片筆記';
+  const safeUrl = typeof rawPayload.url === 'string' ? rawPayload.url.slice(0, 500) : '';
+  const safeCurrentTime = typeof rawPayload.currentTime === 'string' ? rawPayload.currentTime.slice(0, 30) : '';
+  const safeText = typeof rawPayload.text === 'string' ? rawPayload.text.trim().slice(0, 20000) : '';
+  const safeType = typeof rawPayload.type === 'string' ? rawPayload.type.slice(0, 30) : 'subtitle';
+
+  return {
+    source: 'video_speed_plus',
+    title: safeTitle,
+    url: safeUrl,
+    currentTime: safeCurrentTime,
+    text: safeText,
+    tags: ['#影片學習', '#YouTube'],
+    type: safeType
+  };
+}
+
+async function sendNoteToScrumClock(customPayload) {
+  const extracted = customPayload || extractVideoContentForCollector();
+  const payload = sanitizeCollectorPayload({
+    title: extracted.meta ? extracted.meta.title : extracted.title,
+    url: extracted.meta ? extracted.meta.url : extracted.url,
+    currentTime: extracted.meta ? extracted.meta.currentTime : extracted.currentTime,
+    text: extracted.text,
+    type: extracted.type
+  });
+
+  const message = {
+    protocolVersion: 1,
+    type: 'COLLECT_NOTE',
+    payload: payload
+  };
+
+  const extId = await getScrumClockExtensionId();
+  if (!extId) {
+    console.warn('[VideoSpeedPlus] 尚未設定 ScrumClock 擴充功能 ID');
+    showNotification('⚠️ 請先在 Speed Plus Popup 設定中填寫 ScrumClock Extension ID');
+    return { success: false, error: 'NO_EXT_ID' };
+  }
+
+  return new Promise((resolve) => {
+    let responded = false;
+    const timer = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        showNotification('⏱️ 連線 ScrumClock 超時，請確認 ScrumClock 已啟動');
+        resolve({ success: false, error: 'TIMEOUT' });
+      }
+    }, 6000);
+
+    try {
+      chrome.runtime.sendMessage(extId, message, (response) => {
+        if (responded) return;
+        clearTimeout(timer);
+        responded = true;
+
+        if (chrome.runtime.lastError) {
+          const errMsg = chrome.runtime.lastError.message || '';
+          console.warn('[VideoSpeedPlus] 傳送至 ScrumClock 失敗:', errMsg);
+          showNotification('⚠️ 無法連線至 ScrumClock，請檢查 Extension ID 或重新載入');
+          resolve({ success: false, error: errMsg });
+          return;
+        }
+
+        if (response && response.success) {
+          showNotification(`📥 已成功收集到 ScrumClock！[${payload.currentTime}]`);
+          resolve({ success: true, noteId: response.noteId });
+        } else {
+          showNotification(`⚠️ 收集失敗: ${response?.error || '未知錯誤'}`);
+          resolve({ success: false, error: response?.error });
+        }
+      });
+    } catch (err) {
+      if (!responded) {
+        clearTimeout(timer);
+        responded = true;
+        showNotification('⚠️ 發送異常，請確認 ScrumClock 是否已啟用');
+        resolve({ success: false, error: err.message });
+      }
+    }
+  });
 }
 
 // 頁面載入完成後初始化

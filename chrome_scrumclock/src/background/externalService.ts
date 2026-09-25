@@ -112,7 +112,101 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
     return true;
   }
 
+  // 4. 影片筆記/字幕收集
+  if (message?.type === 'COLLECT_NOTE') {
+    (async () => {
+      try {
+        const result = await handleCollectNoteExternal(message.payload);
+        sendResponse(result);
+      } catch (err: any) {
+        console.error('[ScrumClock Collector Service] 收集筆記失敗:', err);
+        sendResponse({
+          success: false,
+          error: err?.message || '收集筆記時發生未預期錯誤'
+        });
+      }
+    })();
+    return true;
+  }
+
   return false;
+}
+
+export async function handleCollectNoteExternal(payload: any) {
+  if (!payload || !payload.text) {
+    return { success: false, error: '缺少必要的筆記或字幕內容 (text)' };
+  }
+
+  const rawText = typeof payload.text === 'string' ? payload.text.trim() : '';
+  if (!rawText) {
+    return { success: false, error: '筆記內容不可為空' };
+  }
+
+  const safeTitle = typeof payload.title === 'string' && payload.title.trim()
+    ? payload.title.trim().slice(0, 200)
+    : '影片精選內容';
+  const safeUrl = typeof payload.url === 'string' ? payload.url.slice(0, 500) : '';
+  const safeCurrentTime = typeof payload.currentTime === 'string' ? payload.currentTime.trim().slice(0, 30) : '';
+  const safeSource = typeof payload.source === 'string' ? payload.source.slice(0, 50) : 'video_speed_plus';
+  const safeNoteType = typeof payload.type === 'string' ? payload.type.slice(0, 30) : 'subtitle';
+  const safeText = rawText.slice(0, 20000);
+
+  const defaultTags = ['#影片學習'];
+  const inputTags = Array.isArray(payload.tags)
+    ? payload.tags.filter((t: any) => typeof t === 'string' && t.trim()).map((t: string) => t.trim())
+    : [];
+  const safeTags = Array.from(new Set([...defaultTags, ...inputTags])).slice(0, 10);
+
+  const noteId = 'note-' + Date.now();
+  const noteItem = {
+    id: noteId,
+    title: safeTitle,
+    url: safeUrl,
+    currentTime: safeCurrentTime,
+    text: safeText,
+    source: safeSource,
+    type: safeNoteType,
+    tags: safeTags,
+    createdAt: new Date().toISOString()
+  };
+
+  const formattedPendingText = safeCurrentTime ? `[${safeCurrentTime}] ${safeText}` : safeText;
+  const pendingData = {
+    text: formattedPendingText,
+    title: safeTitle,
+    url: safeUrl,
+    timestamp: Date.now(),
+    source: safeSource
+  };
+
+  const storageData = await chrome.storage.local.get(['capturedNotes']);
+  const capturedNotes: any[] = storageData.capturedNotes || [];
+  capturedNotes.unshift(noteItem);
+  if (capturedNotes.length > 50) {
+    capturedNotes.pop();
+  }
+
+  await chrome.storage.local.set({
+    pendingAnalyzeText: pendingData,
+    capturedNotes: capturedNotes
+  });
+
+  try {
+    const timePrefix = safeCurrentTime ? `[${safeCurrentTime}] ` : '';
+    const snippet = safeText.length > 50 ? `${safeText.slice(0, 50)}...` : safeText;
+    chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icons/icon128.png',
+      title: '📥 已收集影片筆記/字幕',
+      message: `${timePrefix}${snippet}`
+    });
+  } catch (_) {}
+
+  return {
+    success: true,
+    noteId: noteId,
+    message: '已成功收集字幕至 ScrumClock'
+  };
 }
 
 export async function handleCreateTaskExternal(payload: any) {
