@@ -22,7 +22,7 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
   * `src/background.ts`: Service Worker 入口 (96 行)，負責事件路由。非同步業務模組化分流至：
     - `src/background/alarmHandlers.ts`: 倒數計時器 Alarms 與通知管理。
     - `src/background/externalService.ts`: 跨插件通訊接收與 Offscreen Document 音效協調。
-  * `src/entries/sidebar/`: 瀏覽器側邊欄視圖 (Chrome SidePanel API)。`hooks.ts` 為 Barrel 門面，子 Hooks 位於 `src/entries/sidebar/hooks/`。
+  * `src/entries/sidebar/`: 瀏覽器側邊欄視圖 (Chrome SidePanel API)。雙模式架構：預設為「🧰 實用工具箱 (ToolboxHub isSidebar)」，按需切換「🤖 PK+ 助理 (AIAssistantView)」延遲載入 Gemini Nano。`hooks.ts` 為 Barrel 門面，子 Hooks 位於 `src/entries/sidebar/hooks/`。
   * `src/entries/newtab/`: 新分頁儀表板視圖。
   * `public/manifest.json`: Manifest V3 配置，含 `alarms`, `storage`, `sidePanel`, `offscreen` 權限。
 
@@ -43,6 +43,9 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `EndOfDayReview.tsx`: 每日結算回顧面板。
 - `QuickCapture.tsx`: 閃電捕捉靈感與待辦。
 
+### 側邊欄與視圖元件 (`src/entries/sidebar/components/`)
+- `AIAssistantView.tsx`: 獨立封裝之 AI 對話助理視圖，內建 `useAISession`、歷史訊息氣泡、快捷提問與輸入框，僅於使用者切換至助理模式時掛載初始化。
+
 ### 圖片擷取策略模組 (`src/features/toolbox/tools/image-scraper/services/`)
 - `imageExtractor.ts`: 圖片萃取主調度門面 (287 行)。
 - `instagramExtractor.ts`: Instagram 動態與多圖特定解析策略。
@@ -50,10 +53,11 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `extractorUtils.ts`: 通用 DOM 屬性與正則工具函式。
 - `downloader.ts`: 批次 ZIP 下載打包服務。
 
-### 工具箱擴充子模組 (`src/features/toolbox/tools/`)
-- `image-scraper/`: 網頁圖片與 IG 多圖批次抓取器。
-- `activity-monitor/`: 瀏覽行為與網頁敏感權限（鏡頭/麥克風/定位/剪貼簿）實時監控面板。
-- `subtitle-collector/`: 跨插件（VideoSpeedPlus）影音字幕與筆記快照收集面板，支援時間戳跳轉、Markdown 引用與今日戰役轉化。
+### 工具箱中樞與擴充子模組 (`src/features/toolbox/`)
+- `ToolboxHub.tsx`: 工具箱選單中樞視圖，支援 `isSidebar?: boolean` 緊湊模式（縮減 padding、自適應 3-column tabs、傳遞 isSidebar 至子工具）。
+- `tools/image-scraper/`: 網頁圖片與 IG 多圖批次抓取器 (支援 `isSidebar`)。
+- `tools/activity-monitor/`: 瀏覽行為與網頁敏感權限（鏡頭/麥克風/定位/剪貼簿）實時監控面板 (支援 `isSidebar`)。
+- `tools/subtitle-collector/`: 跨插件（VideoSpeedPlus）影音字幕與筆記快照收集面板，支援時間戳跳轉、Markdown 引用與今日戰役轉化 (支援 `isSidebar`)。
 
 ### 側邊欄 Hooks 子模組 (`src/entries/sidebar/hooks/`)
 - `useAISession.ts`: AI 側邊欄會話與 Prompt 互動管理。

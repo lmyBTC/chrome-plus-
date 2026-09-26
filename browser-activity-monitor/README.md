@@ -34,15 +34,15 @@
 
 | 檔案相對路徑 | 類型 / 職責 | 關鍵技術實作 |
 | :--- | :--- | :--- |
-| [`manifest.json`](manifest.json) | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 權限宣告 |
-| [`background.js`](background.js) | **背景服務背景常駐核心 (Service Worker)** | 80% 原生事件監聽、Origin 權限審查、雙層探針注入調度、Port 長連接廣播、IndexedDB 寫入與定時清理 |
-| [`scripts/probe-main.js`](scripts/probe-main.js) | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
-| [`scripts/probe-isolated.js`](scripts/probe-isolated.js) | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
-| [`scripts/storage-db.js`](scripts/storage-db.js) | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、7 天過期清理 |
-| [`sidepanel/sidepanel.html`](sidepanel/sidepanel.html) | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、串流過濾工具列、活動瀑布流容器 |
-| [`sidepanel/sidepanel.css`](sidepanel/sidepanel.css) | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、各類別彩色標籤、流暢微動畫 |
-| [`sidepanel/sidepanel.js`](sidepanel/sidepanel.js) | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、權限渲染、探針啟動控制、日誌篩選與匯出 |
-| [`icons/icon128.png`](icons/icon128.png) | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
+| `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 權限宣告 |
+| `background.js` | **背景服務背景常駐核心 (Service Worker)** | 80% 原生事件監聽、Origin 權限審查、雙層探針注入調度、Port 長連接廣播、IndexedDB 寫入與定時清理 |
+| `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
+| `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
+| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、7 天過期清理 |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、串流過濾工具列、活動瀑布流容器 |
+| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、各類別彩色標籤、流暢微動畫 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、權限渲染、探針啟動控制、日誌篩選與匯出 |
+| `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---
 
@@ -94,10 +94,10 @@
 
 ## 🧰 實用工具箱 (ToolboxHub) 整合說明
 
-本監控器亦提供輕量前端審查視圖，整合至 [`chrome_scrumclock/src/features/toolbox/`](../chrome_scrumclock/src/features/toolbox/ToolboxHub.tsx)：
+本監控器亦提供輕量前端審查視圖，整合至 `chrome_scrumclock/src/features/toolbox/ToolboxHub.tsx`：
 - **工具識別**：`activity-monitor`（「瀏覽行為監控器」分頁）。
 - **零依賴與防禦性降級**：在 ScrumClock 儀表板中提供安全沙盒權限檢測與日誌快照，與本外掛代碼完全解耦。
-- **組件位置**：參見 [`chrome_scrumclock/src/features/toolbox/tools/activity-monitor/`](../chrome_scrumclock/src/features/toolbox/tools/activity-monitor/功能說明.md)。
+- **組件位置**：參見 `chrome_scrumclock/src/features/toolbox/tools/activity-monitor/功能說明.md`。
 
 ---
 

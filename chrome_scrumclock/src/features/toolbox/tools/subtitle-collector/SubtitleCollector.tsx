@@ -1,7 +1,11 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CapturedSubtitleNote, SubtitleFilterType, SubtitleFilterState } from './types';
 
-export const SubtitleCollector: React.FC = () => {
+export interface SubtitleCollectorProps {
+  isSidebar?: boolean;
+}
+
+export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar = false }) => {
   const [notes, setNotes] = useState<CapturedSubtitleNote[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -256,36 +260,38 @@ export const SubtitleCollector: React.FC = () => {
   }, [notes, availableTags]);
 
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div className={`flex flex-col h-full ${isSidebar ? 'space-y-3' : 'space-y-4'}`}>
       {/* 頂部標頭與操作 */}
-      <div className="flex items-center justify-between pb-3 border-b border-dark-border-default">
+      <div className={`flex items-center justify-between pb-2.5 border-b border-dark-border-default ${isSidebar ? 'gap-2' : ''}`}>
         <div>
-          <h2 className="text-lg font-bold text-dark-primary flex items-center space-x-2">
+          <h2 className={`${isSidebar ? 'text-sm' : 'text-lg'} font-bold text-dark-primary flex items-center space-x-1.5`}>
             <span>🎬</span>
-            <span>影片字幕與筆記收集器</span>
+            <span>{isSidebar ? '字幕與筆記收集器' : '影片字幕與筆記收集器'}</span>
           </h2>
-          <p className="text-xs text-dark-muted mt-0.5">
-            自動同步來自 VideoSpeedPlus 跨插件收集的影音精選段落與時間戳筆記
-          </p>
+          {!isSidebar && (
+            <p className="text-xs text-dark-muted mt-0.5">
+              自動同步來自 VideoSpeedPlus 跨插件收集的影音精選段落與時間戳筆記
+            </p>
+          )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5 shrink-0">
           {notes.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="text-xs px-2.5 py-1.5 rounded text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/50 transition-colors"
+              className="text-[11px] px-2 py-1 rounded text-red-400 hover:text-red-300 hover:bg-red-950/40 border border-red-900/50 transition-colors"
               title="清空所有筆記"
             >
-              清空全數
+              清空
             </button>
           )}
           <button
             onClick={loadNotes}
-            className="text-xs px-2.5 py-1.5 rounded bg-dark-card hover:bg-dark-hover text-dark-secondary border border-dark-border-default transition-colors flex items-center space-x-1"
+            className="text-[11px] px-2 py-1 rounded bg-dark-card hover:bg-dark-hover text-dark-secondary border border-dark-border-default transition-colors flex items-center space-x-1"
             title="手動重新整理"
           >
             <span>🔄</span>
-            <span>整理</span>
+            {!isSidebar && <span>整理</span>}
           </button>
         </div>
       </div>
@@ -306,22 +312,22 @@ export const SubtitleCollector: React.FC = () => {
       )}
 
       {/* 統計指標卡片 */}
-      <div className="grid grid-cols-4 gap-2">
-        <div className="bg-dark-card p-2.5 rounded-lg border border-dark-border-default flex flex-col">
+      <div className={`grid ${isSidebar ? 'grid-cols-2 gap-1.5' : 'grid-cols-4 gap-2'}`}>
+        <div className="bg-dark-card p-2 rounded-lg border border-dark-border-default flex flex-col">
           <span className="text-[10px] text-dark-muted font-medium">總收集數</span>
-          <span className="text-lg font-bold text-blue-400 mt-0.5">{stats.total}</span>
+          <span className="text-base font-bold text-blue-400 mt-0.5">{stats.total}</span>
         </div>
-        <div className="bg-dark-card p-2.5 rounded-lg border border-dark-border-default flex flex-col">
+        <div className="bg-dark-card p-2 rounded-lg border border-dark-border-default flex flex-col">
           <span className="text-[10px] text-dark-muted font-medium">字幕段落</span>
-          <span className="text-lg font-bold text-indigo-400 mt-0.5">{stats.subtitles}</span>
+          <span className="text-base font-bold text-indigo-400 mt-0.5">{stats.subtitles}</span>
         </div>
-        <div className="bg-dark-card p-2.5 rounded-lg border border-dark-border-default flex flex-col">
+        <div className="bg-dark-card p-2 rounded-lg border border-dark-border-default flex flex-col">
           <span className="text-[10px] text-dark-muted font-medium">重點筆記</span>
-          <span className="text-lg font-bold text-amber-400 mt-0.5">{stats.notes}</span>
+          <span className="text-base font-bold text-amber-400 mt-0.5">{stats.notes}</span>
         </div>
-        <div className="bg-dark-card p-2.5 rounded-lg border border-dark-border-default flex flex-col">
+        <div className="bg-dark-card p-2 rounded-lg border border-dark-border-default flex flex-col">
           <span className="text-[10px] text-dark-muted font-medium">標籤總數</span>
-          <span className="text-lg font-bold text-emerald-400 mt-0.5">{stats.tagsCount}</span>
+          <span className="text-base font-bold text-emerald-400 mt-0.5">{stats.tagsCount}</span>
         </div>
       </div>
 

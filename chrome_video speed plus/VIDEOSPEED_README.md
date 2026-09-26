@@ -28,12 +28,12 @@
 
 | 檔案路徑 | 類型 / 職責 | 關鍵通訊與技術實作 |
 | :--- | :--- | :--- |
-| [`manifest.json`](manifest.json) | **擴充功能配置宣告** | Manifest V3 規範、宣告 `content_scripts` 注入目標與彈出視窗 |
-| [`content.js`](content.js) | **頁面注入腳本 (Content Script)** | 控制 HTML5 `<video>` 的 `playbackRate`、監聽鍵盤快捷鍵、管理 A-B 循環、Shadow DOM 懸浮控制列、字幕萃取與跨插件防腐發送 |
-| [`popup.html`](popup.html) | **彈出視窗介面 (Popup UI)** | 速度選擇鈕、自訂輸入框、A-B 循環面板、ScrumClock 收集按鈕與 Extension ID 配置面板 |
-| [`popup.js`](popup.js) | **彈出視窗控制器 (Popup Logic)** | 發送訊息給 `content.js`（速度調整、循環開關、A-B 時間戳讀取、收集觸發）、連線測試與 ID 快取 |
-| [`icon.svg`](icon.svg) | **向量圖示資源** | 擴充功能視覺圖示 |
-| [`create_icons.html`](create_icons.html) | **圖示生成輔助工具** | 可於本機開啟繪製並匯出不同解析度的 PNG 圖示 |
+| `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、宣告 `content_scripts` 注入目標與彈出視窗 |
+| `content.js` | **頁面注入腳本 (Content Script)** | 控制 HTML5 `<video>` 的 `playbackRate`、監聽鍵盤快捷鍵、管理 A-B 循環、Shadow DOM 懸浮控制列、字幕萃取與跨插件防腐發送 |
+| `popup.html` | **彈出視窗介面 (Popup UI)** | 速度選擇鈕、自訂輸入框、A-B 循環面板、ScrumClock 收集按鈕與 Extension ID 配置面板 |
+| `popup.js` | **彈出視窗控制器 (Popup Logic)** | 發送訊息給 `content.js`（速度調整、循環開關、A-B 時間戳讀取、收集觸發）、連線測試與 ID 快取 |
+| `icon.svg` | **向量圖示資源** | 擴充功能視覺圖示 |
+| `create_icons.html` | **圖示生成輔助工具** | 可於本機開啟繪製並匯出不同解析度的 PNG 圖示 |
 
 ---
 
@@ -54,7 +54,7 @@
 
 ## 🔌 跨插件協定整合 (Cross-Plugin Integration)
 
-本插件依據 [`0.doc_mg/docs/cross_plugin_contract.md`](../0.doc_mg/docs/cross_plugin_contract.md) 與 `chrome_scrumclock` 進行純資料黑盒通訊：
+本插件依據 `0.doc_mg/docs/cross_plugin_contract.md` 與 `chrome_scrumclock` 進行純資料黑盒通訊：
 - **協定類型**：`COLLECT_NOTE` (protocolVersion: 1)
 - **發送內容**：
   - `source`: `'video_speed_plus'`

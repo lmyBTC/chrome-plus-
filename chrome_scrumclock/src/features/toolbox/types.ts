@@ -3,6 +3,7 @@ export type ToolboxToolId = 'image-scraper' | 'activity-monitor' | 'subtitle-col
 export interface ToolboxToolInfo {
   id: ToolboxToolId;
   name: string;
+  shortName?: string;
   description: string;
   icon: string;
   badge?: string;
