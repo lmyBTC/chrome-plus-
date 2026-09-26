@@ -14,7 +14,24 @@ except AttributeError:
 
 # 基礎路徑定義
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-PLUGINS = ['chrome_scrumclock', 'chrome_video speed plus', 'finance-research-clipper-oss']
+
+def discover_plugins(base_dir):
+    """動態搜尋工作區內含有 manifest.json 的有效插件目錄"""
+    plugins = []
+    ignored_dirs = {'.git', '.agents', '0.doc_mg', 'node_modules', 'dist', 'scratch'}
+    for item in os.listdir(base_dir):
+        if item in ignored_dirs or item.startswith('.'):
+            continue
+        item_path = os.path.join(base_dir, item)
+        if os.path.isdir(item_path):
+            manifest_candidates = [
+                os.path.join(item_path, 'manifest.json'),
+                os.path.join(item_path, 'public', 'manifest.json'),
+                os.path.join(item_path, 'src', 'manifest.json'),
+            ]
+            if any(os.path.exists(m) for m in manifest_candidates):
+                plugins.append(item)
+    return sorted(plugins)
 
 def check_file_exists(base_path, relative_path, plugin_dir=None):
     """檢查指定相對路徑的檔案是否存在"""
@@ -193,6 +210,16 @@ def audit_plugin(plugin):
             if not exists:
                 errors.append(f"content_scripts[{idx}] 中的 CSS 檔案不存在: {css_file}")
 
+    # 6.1 檢查 Side Panel (MV3 原生側邊欄)
+    side_panel = data.get('side_panel', {})
+    default_panel_path = side_panel.get('default_path')
+    if default_panel_path:
+        exists, full_path = check_file_exists(plugin_root_for_files, default_panel_path, plugin_dir)
+        if not exists:
+            errors.append(f"side_panel.default_path 檔案不存在: {default_panel_path}")
+        else:
+            files_to_scan.add(full_path)
+
     # 7. 檢查 CSP (Content Security Policy) 安全合規
     csp = data.get('content_security_policy', {})
     if csp:
@@ -258,10 +285,13 @@ def main():
     print("          Chrome 插件 Manifest V3 審計工具         ")
     print("==================================================")
     
+    plugins = discover_plugins(BASE_DIR)
+    print(f"動態發現 {len(plugins)} 款有效插件: {', '.join(plugins)}\n")
+    
     all_pass = True
     failed_plugins = []
     
-    for plugin in PLUGINS:
+    for plugin in plugins:
         success, issues = audit_plugin(plugin)
         print("-" * 50)
         if not success:

@@ -37,13 +37,24 @@
       text-align: center;
     `;
     
-    overlay.innerHTML = `
-      <div>
-        <h1 style="font-size: 2rem; margin-bottom: 1rem;">🚀 正在衝刺中</h1>
-        <p style="font-size: 1.2rem; margin-bottom: 1rem;">保持專注，完成你的核心戰役！</p>
-        <p style="font-size: 1rem; opacity: 0.8;">衝刺結束後即可正常瀏覽</p>
-      </div>
-    `;
+    const contentBox = document.createElement('div');
+    
+    const title = document.createElement('h1');
+    title.style.cssText = 'font-size: 2rem; margin-bottom: 1rem;';
+    title.textContent = '🚀 正在衝刺中';
+
+    const p1 = document.createElement('p');
+    p1.style.cssText = 'font-size: 1.2rem; margin-bottom: 1rem;';
+    p1.textContent = '保持專注，完成你的核心戰役！';
+
+    const p2 = document.createElement('p');
+    p2.style.cssText = 'font-size: 1rem; opacity: 0.8;';
+    p2.textContent = '衝刺結束後即可正常瀏覽';
+
+    contentBox.appendChild(title);
+    contentBox.appendChild(p1);
+    contentBox.appendChild(p2);
+    overlay.appendChild(contentBox);
     
     document.body.appendChild(overlay);
   }

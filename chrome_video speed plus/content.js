@@ -481,17 +481,30 @@ function tryInjectTitleButton() {
   injectTitleButton(titleEl);
 }
 
+function createSpeedPlusButtonContent(marginRight = '4px') {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', '16');
+  svg.setAttribute('height', '16');
+  svg.style.marginRight = marginRight;
+  svg.style.verticalAlign = 'middle';
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  path.setAttribute('d', 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z');
+  path.setAttribute('fill', 'currentColor');
+  svg.appendChild(path);
+
+  const span = document.createElement('span');
+  span.textContent = 'Speed Plus 🚀';
+  return [svg, span];
+}
+
 function injectTitleButton(titleEl) {
   const btn = document.createElement('button');
   btn.id = 'yt-speed-plus-title-btn';
   btn.setAttribute('title', 'YouTube Speed Plus 控制面板');
   
-  btn.innerHTML = `
-    <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 4px; vertical-align: middle;">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
-    </svg>
-    <span>Speed Plus 🚀</span>
-  `;
+  btn.append(...createSpeedPlusButtonContent('4px'));
+
   
   btn.style.cssText = `
     display: inline-flex;
@@ -580,12 +593,7 @@ function injectLikeButton(targetEl) {
   btn.id = 'yt-speed-plus-like-btn';
   btn.setAttribute('title', 'YouTube Speed Plus 控制面板');
   
-  btn.innerHTML = `
-    <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right: 6px; vertical-align: middle;">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" fill="currentColor"/>
-    </svg>
-    <span>Speed Plus 🚀</span>
-  `;
+  btn.append(...createSpeedPlusButtonContent('6px'));
   
   btn.style.cssText = `
     display: inline-flex;
@@ -978,64 +986,112 @@ function createShadowControlPanel() {
   
   const panel = document.createElement('div');
   panel.className = 'yt-speed-plus-floating-panel';
-  panel.innerHTML = `
-    <div class="panel-header">
-      <h3 class="panel-title">🎬 YouTube Speed Plus</h3>
-      <button class="panel-close-btn">&times;</button>
-    </div>
-    
-    <div class="speed-controls">
-      <button class="speed-btn" data-speed="0.25">0.25x</button>
-      <button class="speed-btn" data-speed="0.5">0.5x</button>
-      <button class="speed-btn" data-speed="0.75">0.75x</button>
-      <button class="speed-btn" data-speed="1">1x</button>
-      <button class="speed-btn" data-speed="1.5">1.5x</button>
-      <button class="speed-btn" data-speed="2">2x</button>
-      <button class="speed-btn" data-speed="3">3x</button>
-    </div>
-    
-    <div class="custom-speed">
-      <input type="number" class="custom-speed-input" min="0.1" max="16" step="0.1" value="3" placeholder="自訂">
-      <button class="custom-speed-btn">設定</button>
-    </div>
-    
-    <div class="status-display">
-      目前速度: 1x
-    </div>
-    
-    <div class="loop-controls">
-      <div class="loop-row">
-        <label>循環次數 (0無限制)</label>
-        <input type="number" class="loop-count-input" min="0" value="0">
-      </div>
-      <div class="loop-row">
-        <label>起點 (秒)</label>
-        <input type="number" class="loop-start-input" min="0" step="1" placeholder="留空從頭">
-      </div>
-      <div class="loop-row">
-        <label>終點 (秒)</label>
-        <input type="number" class="loop-end-input" min="0" step="1" placeholder="留空到尾">
-      </div>
-      <div class="loop-btn-group">
-        <button class="loop-btn cap-start-btn">擷取為起點</button>
-        <button class="loop-btn cap-end-btn">擷取為終點</button>
-      </div>
-      <div class="loop-btn-group">
-        <button class="loop-btn start-loop-btn">開始循環</button>
-        <button class="loop-btn stop-loop-btn">停止循環</button>
-      </div>
-    </div>
-    
-    <div class="collector-section">
-      <div class="collector-header">
-        <span class="collector-title">📥 ScrumClock 收集器</span>
-        <span class="collector-shortcut-badge">Alt + S</span>
-      </div>
-      <button class="collector-btn send-to-scrum-btn">
-        <span>📥 收集當前字幕至 ScrumClock</span>
-      </button>
-    </div>
-  `;
+
+  const header = document.createElement('div');
+  header.className = 'panel-header';
+  const h3 = document.createElement('h3');
+  h3.className = 'panel-title';
+  h3.textContent = '🎬 YouTube Speed Plus';
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'panel-close-btn';
+  closeBtn.textContent = '×';
+  header.append(h3, closeBtn);
+
+  const speedControls = document.createElement('div');
+  speedControls.className = 'speed-controls';
+  ['0.25', '0.5', '0.75', '1', '1.5', '2', '3'].forEach(spd => {
+    const sBtn = document.createElement('button');
+    sBtn.className = 'speed-btn';
+    sBtn.dataset.speed = spd;
+    sBtn.textContent = `${spd}x`;
+    speedControls.appendChild(sBtn);
+  });
+
+  const customSpeed = document.createElement('div');
+  customSpeed.className = 'custom-speed';
+  const customInput = document.createElement('input');
+  customInput.type = 'number';
+  customInput.className = 'custom-speed-input';
+  customInput.min = '0.1';
+  customInput.max = '16';
+  customInput.step = '0.1';
+  customInput.value = '3';
+  customInput.placeholder = '自訂';
+  const customBtn = document.createElement('button');
+  customBtn.className = 'custom-speed-btn';
+  customBtn.textContent = '設定';
+  customSpeed.append(customInput, customBtn);
+
+  const statusDisplay = document.createElement('div');
+  statusDisplay.className = 'status-display';
+  statusDisplay.textContent = '目前速度: 1x';
+
+  const loopControls = document.createElement('div');
+  loopControls.className = 'loop-controls';
+
+  function createLoopRow(labelText, className, min, value, step, placeholder) {
+    const row = document.createElement('div');
+    row.className = 'loop-row';
+    const label = document.createElement('label');
+    label.textContent = labelText;
+    const input = document.createElement('input');
+    input.type = 'number';
+    input.className = className;
+    if (min !== undefined) input.min = min;
+    if (value !== undefined) input.value = value;
+    if (step !== undefined) input.step = step;
+    if (placeholder !== undefined) input.placeholder = placeholder;
+    row.append(label, input);
+    return row;
+  }
+
+  const loopRow1 = createLoopRow('循環次數 (0無限制)', 'loop-count-input', '0', '0');
+  const loopRow2 = createLoopRow('起點 (秒)', 'loop-start-input', '0', undefined, '1', '留空從頭');
+  const loopRow3 = createLoopRow('終點 (秒)', 'loop-end-input', '0', undefined, '1', '留空到尾');
+
+  const loopBtnGroup1 = document.createElement('div');
+  loopBtnGroup1.className = 'loop-btn-group';
+  const capStartBtn = document.createElement('button');
+  capStartBtn.className = 'loop-btn cap-start-btn';
+  capStartBtn.textContent = '擷取為起點';
+  const capEndBtn = document.createElement('button');
+  capEndBtn.className = 'loop-btn cap-end-btn';
+  capEndBtn.textContent = '擷取為終點';
+  loopBtnGroup1.append(capStartBtn, capEndBtn);
+
+  const loopBtnGroup2 = document.createElement('div');
+  loopBtnGroup2.className = 'loop-btn-group';
+  const startLoopBtn = document.createElement('button');
+  startLoopBtn.className = 'loop-btn start-loop-btn';
+  startLoopBtn.textContent = '開始循環';
+  const stopLoopBtn = document.createElement('button');
+  stopLoopBtn.className = 'loop-btn stop-loop-btn';
+  stopLoopBtn.textContent = '停止循環';
+  loopBtnGroup2.append(startLoopBtn, stopLoopBtn);
+
+  loopControls.append(loopRow1, loopRow2, loopRow3, loopBtnGroup1, loopBtnGroup2);
+
+  const collectorSection = document.createElement('div');
+  collectorSection.className = 'collector-section';
+  const collectorHeader = document.createElement('div');
+  collectorHeader.className = 'collector-header';
+  const collectorTitle = document.createElement('span');
+  collectorTitle.className = 'collector-title';
+  collectorTitle.textContent = '📥 ScrumClock 收集器';
+  const collectorBadge = document.createElement('span');
+  collectorBadge.className = 'collector-shortcut-badge';
+  collectorBadge.textContent = 'Alt + S';
+  collectorHeader.append(collectorTitle, collectorBadge);
+
+  const sendToScrumBtn = document.createElement('button');
+  sendToScrumBtn.className = 'collector-btn send-to-scrum-btn';
+  const sendToScrumSpan = document.createElement('span');
+  sendToScrumSpan.textContent = '📥 收集當前字幕至 ScrumClock';
+  sendToScrumBtn.appendChild(sendToScrumSpan);
+
+  collectorSection.append(collectorHeader, sendToScrumBtn);
+
+  panel.append(header, speedControls, customSpeed, statusDisplay, loopControls, collectorSection);
   
   shadowRoot.appendChild(panel);
   
@@ -1121,12 +1177,19 @@ function bindShadowPanelEvents() {
 
   const sendToScrumBtn = shadowRoot.querySelector('.send-to-scrum-btn');
   if (sendToScrumBtn) {
+    const updateBtnText = (btn, text) => {
+      btn.textContent = '';
+      const span = document.createElement('span');
+      span.textContent = text;
+      btn.appendChild(span);
+    };
+
     sendToScrumBtn.addEventListener('click', async function() {
       if (sendToScrumBtn.classList.contains('loading')) return;
       
-      const originalHtml = sendToScrumBtn.innerHTML;
+      const defaultText = '📥 收集當前字幕至 ScrumClock';
       sendToScrumBtn.classList.add('loading');
-      sendToScrumBtn.innerHTML = '<span>⏳ 正在傳送至 ScrumClock...</span>';
+      updateBtnText(sendToScrumBtn, '⏳ 正在傳送至 ScrumClock...');
       
       try {
         const result = await sendNoteToScrumClock();
@@ -1134,26 +1197,26 @@ function bindShadowPanelEvents() {
         
         if (result && result.success) {
           sendToScrumBtn.classList.add('success');
-          sendToScrumBtn.innerHTML = '<span>✅ 已收集至 ScrumClock！</span>';
+          updateBtnText(sendToScrumBtn, '✅ 已收集至 ScrumClock！');
           setTimeout(() => {
             sendToScrumBtn.classList.remove('success');
-            sendToScrumBtn.innerHTML = originalHtml;
+            updateBtnText(sendToScrumBtn, defaultText);
           }, 2000);
         } else {
           sendToScrumBtn.classList.add('error');
-          sendToScrumBtn.innerHTML = '<span>⚠️ 收集失敗</span>';
+          updateBtnText(sendToScrumBtn, '⚠️ 收集失敗');
           setTimeout(() => {
             sendToScrumBtn.classList.remove('error');
-            sendToScrumBtn.innerHTML = originalHtml;
+            updateBtnText(sendToScrumBtn, defaultText);
           }, 2500);
         }
       } catch (err) {
         sendToScrumBtn.classList.remove('loading');
         sendToScrumBtn.classList.add('error');
-        sendToScrumBtn.innerHTML = '<span>⚠️ 發送異常</span>';
+        updateBtnText(sendToScrumBtn, '⚠️ 發送異常');
         setTimeout(() => {
           sendToScrumBtn.classList.remove('error');
-          sendToScrumBtn.innerHTML = originalHtml;
+          updateBtnText(sendToScrumBtn, defaultText);
         }, 2500);
       }
     });

@@ -185,34 +185,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 回填至進階財報與 AI 收益摺疊面板
         const previewEl = document.getElementById('financials-preview-content');
-        let previewHtml = "";
-        
-        if (capturedStockData.earnings && capturedStockData.earnings.period !== "N/A") {
-          previewHtml += `<div style="margin-bottom: 8px;"><b>會計期間：</b> ${capturedStockData.earnings.period}</div>`;
-          previewHtml += `<div style="margin-bottom: 8px;"><b>EPS (實值 / 預期)：</b> ${capturedStockData.earnings.eps}</div>`;
-          previewHtml += `<div style="margin-bottom: 8px;"><b>營收 (實值 / 預期)：</b> ${capturedStockData.earnings.revenue}</div>`;
-          
-          if (capturedStockData.earnings.insights && capturedStockData.earnings.insights.length > 0) {
-            previewHtml += `<div style="margin-bottom: 8px;"><b>💡 財報 AI 資訊一覽：</b><br>`;
-            capturedStockData.earnings.insights.forEach(item => {
-              const formatted = item.replace(/^- \*\*(.*?)\*\*：(.*)$/, '• <b>$1</b>: $2');
-              previewHtml += `<div style="padding-left: 6px; margin-top: 4px; line-height: 1.3;">${formatted}</div>`;
-            });
-            previewHtml += `</div>`;
-          }
-        }
-
-        if (capturedStockData.financialsTable && capturedStockData.financialsTable !== "N/A") {
-          previewHtml += `<div style="margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;">`;
-          previewHtml += `<b>📊 損益表 (最近四季)：</b><br>`;
-          previewHtml += `<pre style="font-family: monospace; font-size: 9px; margin-top: 4px; overflow-x: auto; background: #f1f3f4; padding: 6px; border-radius: 4px; color: var(--text-main);">${capturedStockData.financialsTable}</pre>`;
-          previewHtml += `</div>`;
-        }
-
-        if (!previewHtml) {
-          previewHtml = `<div style="padding: 4px; color: var(--text-sub);">未能抓取到相關的財報數據。</div>`;
-        }
-        previewEl.innerHTML = previewHtml;
+        renderStockPreviewBasic(previewEl, capturedStockData);
 
         updateStatus(overviewData.error ? "部分數據讀取失敗" : "數據與進階財報載入成功！", overviewData.error ? "orange" : "green");
       } catch (err) {
@@ -331,49 +304,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // 渲染進階預覽面板
       const previewEl = document.getElementById('financials-preview-content');
-      let previewHtml = "";
-
-      // 1. 分析師評級與目標價
-      if (fullData.analysis && !fullData.analysis.error) {
-        previewHtml += `<div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">`;
-        previewHtml += `<b>🎯 分析師評級與共識：</b> ${escapeHtml(fullData.analysis.consensus || '未提供')}<br>`;
-        if (fullData.analysis.targetPrice?.median || fullData.analysis.targetPrice?.high) {
-          previewHtml += `<b>🎯 目標價：</b> 中位: ${escapeHtml(fullData.analysis.targetPrice.median || '-')} | 最高: ${escapeHtml(fullData.analysis.targetPrice.high || '-')} | 最低: ${escapeHtml(fullData.analysis.targetPrice.low || '-')}<br>`;
-        }
-        if (fullData.analysis.ratingsSummary) {
-          previewHtml += `<div style="font-size: 10px; color: var(--text-sub); margin-top: 4px; max-height: 60px; overflow-y: auto;">${escapeHtml(fullData.analysis.ratingsSummary.substring(0, 300))}...</div>`;
-        }
-        previewHtml += `</div>`;
-      }
-
-      // 2. Earnings 表現
-      if (fullData.earnings && !fullData.earnings.error) {
-        const lq = fullData.earnings.latestQuarter;
-        if (lq && (lq.epsActual !== 'N/A' || lq.revenueActual !== 'N/A')) {
-          previewHtml += `<div style="margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;">`;
-          previewHtml += `<b>📈 財報 EPS (實質 / 預期)：</b> ${escapeHtml(lq.epsActual)} / ${escapeHtml(lq.epsEstimate)}<br>`;
-          previewHtml += `<b>💰 營收 (實質 / 預期)：</b> ${escapeHtml(lq.revenueActual)} / ${escapeHtml(lq.revenueEstimate)}<br>`;
-          previewHtml += `</div>`;
-        }
-      }
-
-      // 3. Financials 報表表格
-      if (fullData.financials?.statements?.length) {
-        previewHtml += `<div style="margin-top: 6px;"><b>📊 財務報表摘要：</b><br>`;
-        previewHtml += `<pre style="font-family: monospace; font-size: 9px; margin-top: 4px; overflow-x: auto; background: #f1f3f4; padding: 6px; border-radius: 4px; color: var(--text-main);">`;
-        fullData.financials.statements.forEach((table) => {
-          table.forEach((row) => {
-            previewHtml += escapeHtml(row.join(' | ')) + '\n';
-          });
-          previewHtml += '\n';
-        });
-        previewHtml += `</pre></div>`;
-      }
-
-      if (!previewHtml) {
-        previewHtml = `<div style="padding: 4px; color: var(--text-sub);">未能抓取到相關的財報數據。</div>`;
-      }
-      previewEl.innerHTML = previewHtml;
+      renderFullCrawlerPreview(previewEl, fullData);
 
       // 自動展開預覽折疊面板供使用者檢視
       const detailsEl = document.getElementById('financials-preview-details');
@@ -386,8 +317,173 @@ document.addEventListener('DOMContentLoaded', async () => {
     } finally {
       if (fullScrapeBtn) {
         fullScrapeBtn.disabled = false;
-        fullScrapeBtn.innerHTML = "<span>⚡</span> <span>一鍵完整抓取 (4合1 SPA)</span>";
+        fullScrapeBtn.textContent = "";
+        const iconSpan = document.createElement("span");
+        iconSpan.textContent = "⚡";
+        const textSpan = document.createElement("span");
+        textSpan.textContent = " 一鍵完整抓取 (4合1 SPA)";
+        fullScrapeBtn.append(iconSpan, textSpan);
       }
+    }
+  }
+
+  function renderStockPreviewBasic(previewEl, stockData) {
+    previewEl.textContent = "";
+    let hasContent = false;
+
+    if (stockData.earnings && stockData.earnings.period !== "N/A") {
+      hasContent = true;
+      const earningsBlock = document.createElement("div");
+
+      const periodDiv = document.createElement("div");
+      periodDiv.style.marginBottom = "8px";
+      const periodB = document.createElement("b");
+      periodB.textContent = "會計期間：";
+      periodDiv.append(periodB, document.createTextNode(` ${stockData.earnings.period || ""}`));
+      earningsBlock.appendChild(periodDiv);
+
+      const epsDiv = document.createElement("div");
+      epsDiv.style.marginBottom = "8px";
+      const epsB = document.createElement("b");
+      epsB.textContent = "EPS (實值 / 預期)：";
+      epsDiv.append(epsB, document.createTextNode(` ${stockData.earnings.eps || ""}`));
+      earningsBlock.appendChild(epsDiv);
+
+      const revDiv = document.createElement("div");
+      revDiv.style.marginBottom = "8px";
+      const revB = document.createElement("b");
+      revB.textContent = "營收 (實值 / 預期)：";
+      revDiv.append(revB, document.createTextNode(` ${stockData.earnings.revenue || ""}`));
+      earningsBlock.appendChild(revDiv);
+
+      if (stockData.earnings.insights && stockData.earnings.insights.length > 0) {
+        const insightsDiv = document.createElement("div");
+        insightsDiv.style.marginBottom = "8px";
+        const titleB = document.createElement("b");
+        titleB.textContent = "💡 財報 AI 資訊一覽：";
+        insightsDiv.append(titleB, document.createElement("br"));
+
+        stockData.earnings.insights.forEach(item => {
+          const rowDiv = document.createElement("div");
+          rowDiv.style.cssText = "padding-left: 6px; margin-top: 4px; line-height: 1.3;";
+          const match = item.match(/^- \*\*(.*?)\*\*：(.*)$/);
+          if (match) {
+            rowDiv.append(document.createTextNode("• "));
+            const keyB = document.createElement("b");
+            keyB.textContent = match[1];
+            rowDiv.append(keyB, document.createTextNode(`: ${match[2]}`));
+          } else {
+            rowDiv.textContent = item;
+          }
+          insightsDiv.appendChild(rowDiv);
+        });
+        earningsBlock.appendChild(insightsDiv);
+      }
+      previewEl.appendChild(earningsBlock);
+    }
+
+    if (stockData.financialsTable && stockData.financialsTable !== "N/A") {
+      hasContent = true;
+      const finDiv = document.createElement("div");
+      finDiv.style.cssText = "margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 8px;";
+      const titleB = document.createElement("b");
+      titleB.textContent = "📊 損益表 (最近四季)：";
+      const preEl = document.createElement("pre");
+      preEl.style.cssText = "font-family: monospace; font-size: 9px; margin-top: 4px; overflow-x: auto; background: #f1f3f4; padding: 6px; border-radius: 4px; color: var(--text-main);";
+      preEl.textContent = stockData.financialsTable;
+      finDiv.append(titleB, document.createElement("br"), preEl);
+      previewEl.appendChild(finDiv);
+    }
+
+    if (!hasContent) {
+      const emptyDiv = document.createElement("div");
+      emptyDiv.style.cssText = "padding: 4px; color: var(--text-sub);";
+      emptyDiv.textContent = "未能抓取到相關的財報數據。";
+      previewEl.appendChild(emptyDiv);
+    }
+  }
+
+  function renderFullCrawlerPreview(previewEl, fullData) {
+    previewEl.textContent = "";
+    let hasContent = false;
+
+    // 1. 分析師評級與目標價
+    if (fullData.analysis && !fullData.analysis.error) {
+      hasContent = true;
+      const block = document.createElement("div");
+      block.style.cssText = "margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;";
+
+      const consensusB = document.createElement("b");
+      consensusB.textContent = "🎯 分析師評級與共識：";
+      block.append(consensusB, document.createTextNode(` ${fullData.analysis.consensus || '未提供'}`), document.createElement("br"));
+
+      if (fullData.analysis.targetPrice?.median || fullData.analysis.targetPrice?.high) {
+        const tpB = document.createElement("b");
+        tpB.textContent = "🎯 目標價：";
+        const median = fullData.analysis.targetPrice.median || '-';
+        const high = fullData.analysis.targetPrice.high || '-';
+        const low = fullData.analysis.targetPrice.low || '-';
+        block.append(tpB, document.createTextNode(` 中位: ${median} | 最高: ${high} | 最低: ${low}`), document.createElement("br"));
+      }
+
+      if (fullData.analysis.ratingsSummary) {
+        const summaryDiv = document.createElement("div");
+        summaryDiv.style.cssText = "font-size: 10px; color: var(--text-sub); margin-top: 4px; max-height: 60px; overflow-y: auto;";
+        summaryDiv.textContent = `${fullData.analysis.ratingsSummary.substring(0, 300)}...`;
+        block.appendChild(summaryDiv);
+      }
+      previewEl.appendChild(block);
+    }
+
+    // 2. Earnings 表現
+    if (fullData.earnings && !fullData.earnings.error) {
+      const lq = fullData.earnings.latestQuarter;
+      if (lq && (lq.epsActual !== 'N/A' || lq.revenueActual !== 'N/A')) {
+        hasContent = true;
+        const block = document.createElement("div");
+        block.style.cssText = "margin-bottom: 8px; border-bottom: 1px dashed var(--border-color); padding-bottom: 6px;";
+
+        const epsB = document.createElement("b");
+        epsB.textContent = "📈 財報 EPS (實質 / 預期)：";
+        block.append(epsB, document.createTextNode(` ${lq.epsActual} / ${lq.epsEstimate}`), document.createElement("br"));
+
+        const revB = document.createElement("b");
+        revB.textContent = "💰 營收 (實質 / 預期)：";
+        block.append(revB, document.createTextNode(` ${lq.revenueActual} / ${lq.revenueEstimate}`), document.createElement("br"));
+
+        previewEl.appendChild(block);
+      }
+    }
+
+    // 3. Financials 報表表格
+    if (fullData.financials?.statements?.length) {
+      hasContent = true;
+      const block = document.createElement("div");
+      block.style.marginTop = "6px";
+      const titleB = document.createElement("b");
+      titleB.textContent = "📊 財務報表摘要：";
+      block.append(titleB, document.createElement("br"));
+
+      const pre = document.createElement("pre");
+      pre.style.cssText = "font-family: monospace; font-size: 9px; margin-top: 4px; overflow-x: auto; background: #f1f3f4; padding: 6px; border-radius: 4px; color: var(--text-main);";
+
+      let text = "";
+      fullData.financials.statements.forEach((table) => {
+        table.forEach((row) => {
+          text += row.join(' | ') + '\n';
+        });
+        text += '\n';
+      });
+      pre.textContent = text;
+      block.appendChild(pre);
+      previewEl.appendChild(block);
+    }
+
+    if (!hasContent) {
+      const emptyDiv = document.createElement("div");
+      emptyDiv.style.cssText = "padding: 4px; color: var(--text-sub);";
+      emptyDiv.textContent = "未能抓取到相關的財報數據。";
+      previewEl.appendChild(emptyDiv);
     }
   }
 
@@ -396,20 +492,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderAISelector(arr) {
-    aiSelectorContainer.innerHTML = '';
+    aiSelectorContainer.textContent = '';
     if (arr.length === 0) {
-      aiSelectorContainer.innerHTML = '<div style="font-size: 11px; color: var(--text-sub); padding: 8px;">尚未偵測到對話內容...</div>';
+      const emptyDiv = document.createElement('div');
+      emptyDiv.style.fontSize = '11px';
+      emptyDiv.style.color = 'var(--text-sub)';
+      emptyDiv.style.padding = '8px';
+      emptyDiv.textContent = '尚未偵測到對話內容...';
+      aiSelectorContainer.appendChild(emptyDiv);
       return;
     }
     arr.forEach((item, index) => {
       const div = document.createElement('div');
       div.style.cssText = 'display: flex; gap: 8px; padding: 6px; border-bottom: 1px solid #f1f3f4; align-items: flex-start;';
-      div.innerHTML = `
-        <input type="checkbox" class="ai-item-check" data-index="${index}" checked style="margin-top: 2px;">
-        <div style="font-size: 11px; color: var(--text-main); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-          <strong>${item.role === 'user' ? '👤' : '🤖'}</strong> ${item.text.substring(0, 60)}...
-        </div>
-      `;
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'ai-item-check';
+      checkbox.dataset.index = index;
+      checkbox.checked = true;
+      checkbox.style.marginTop = '2px';
+
+      const contentDiv = document.createElement('div');
+      contentDiv.style.cssText = 'font-size: 11px; color: var(--text-main); line-height: 1.4; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;';
+
+      const strong = document.createElement('strong');
+      strong.textContent = item.role === 'user' ? '👤 ' : '🤖 ';
+
+      contentDiv.append(strong, document.createTextNode(`${item.text.substring(0, 60)}...`));
+
+      div.append(checkbox, contentDiv);
       aiSelectorContainer.appendChild(div);
     });
   }
@@ -578,11 +690,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const resData = JSON.parse(responseText);
       
       if (resData.status === "success") {
+        statusEl.textContent = "🎉 同步成功！";
         const sheetUrl = settingsSheetUrl.value.trim();
         if (sheetUrl) {
-          statusEl.innerHTML = `🎉 同步成功！<a href="${sheetUrl}" target="_blank" style="color: var(--primary-color); text-decoration: underline; margin-left: 8px;">開啟試算表</a>`;
-        } else {
-          statusEl.innerHTML = `🎉 同步成功！`;
+          const link = document.createElement('a');
+          link.href = sheetUrl;
+          link.target = "_blank";
+          link.style.color = "var(--primary-color)";
+          link.style.textDecoration = "underline";
+          link.style.marginLeft = "8px";
+          link.textContent = "開啟試算表";
+          statusEl.appendChild(link);
         }
         statusEl.style.color = "var(--success-color)";
         noteEl.value = "";

@@ -225,22 +225,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // 一鍵收集當前字幕至 ScrumClock
   if (btnCollectScrum && scrumStatusMsg) {
+    const updateScrumBtn = (text) => {
+      btnCollectScrum.textContent = '';
+      const span = document.createElement('span');
+      span.textContent = text;
+      btnCollectScrum.appendChild(span);
+    };
+
     btnCollectScrum.addEventListener('click', function() {
-      const originalHtml = btnCollectScrum.innerHTML;
-      btnCollectScrum.innerHTML = '<span>⏳ 正在收集...</span>';
+      const defaultText = '📥 收集當前字幕至 ScrumClock';
+      updateScrumBtn('⏳ 正在收集...');
       btnCollectScrum.disabled = true;
 
       sendMessageToContent({ action: 'collectToScrumClock' }, function(response) {
         btnCollectScrum.disabled = false;
         if (response && response.success) {
-          btnCollectScrum.innerHTML = '<span>✅ 收集成功！</span>';
+          updateScrumBtn('✅ 收集成功！');
           scrumStatusMsg.textContent = '已傳送至 ScrumClock 收集箱';
         } else {
-          btnCollectScrum.innerHTML = '<span>⚠️ 收集失敗</span>';
+          updateScrumBtn('⚠️ 收集失敗');
           scrumStatusMsg.textContent = response?.error ? `錯誤: ${response.error}` : '請檢查 Extension ID 或影片頁面';
         }
         setTimeout(() => {
-          btnCollectScrum.innerHTML = originalHtml;
+          updateScrumBtn(defaultText);
           scrumStatusMsg.textContent = '';
         }, 2500);
       });

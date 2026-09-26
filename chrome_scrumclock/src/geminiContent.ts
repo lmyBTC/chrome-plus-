@@ -36,6 +36,25 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
     }, 1500);
   }
 
+  // 安全消毒 HTML，防止 XSS 攻擊與惡意腳本注入
+  function getSanitizedHtml(el: Element): string {
+    const clone = el.cloneNode(true) as HTMLElement;
+    const dangerousElements = clone.querySelectorAll('script, iframe, object, embed, link, meta, style');
+    dangerousElements.forEach(node => node.remove());
+
+    const allElements = clone.querySelectorAll('*');
+    allElements.forEach(element => {
+      const attrs = Array.from(element.attributes);
+      for (const attr of attrs) {
+        if (attr.name.toLowerCase().startsWith('on') || attr.value.trim().toLowerCase().startsWith('javascript:')) {
+          element.removeAttribute(attr.name);
+        }
+      }
+    });
+
+    return clone.innerHTML.trim();
+  }
+
   // 解析與擷取
   function extractAndSave(silent = false): boolean {
     if (!isExtensionValid()) return false;
@@ -63,7 +82,7 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
     const messages: GeminiMessage[] = [];
     elements.forEach((el) => {
       const isUser = el.classList.contains('query-content') || el.closest('.query-content') !== null;
-      const content = el.innerHTML?.trim() || ''; // 保留 HTML 結構（含排版與圖片）
+      const content = getSanitizedHtml(el); // 經安全消毒後保留排版結構
       
       if (content) {
         messages.push({
@@ -354,43 +373,111 @@ import { GeminiMessage, GeminiConversation, GeminiWidgetState } from './features
     `;
     shadow.appendChild(style);
 
-    // 注入 HTML 結構
+    // 注入 DOM 結構 (以安全原生 DOM API 建立，杜絕 XSS 風險)
     const widgetContainer = document.createElement('div');
     widgetContainer.id = 'scrumclock-widget-container';
-    widgetContainer.innerHTML = `
-      <!-- 懸浮選單 -->
-      <div id="scrumclock-panel" class="panel open">
-        <div class="header">
-          <h4><span>🤖</span> PK+ 助手</h4>
-          <span class="indicator"></span>
-        </div>
-        
-        <div class="status-box">
-          <div id="scrumclock-status-title" class="status-title">未偵測到對話</div>
-          <div class="status-meta">
-            <span id="scrumclock-status-count">0 條訊息</span>
-            <span id="scrumclock-status-time">無同步記錄</span>
-          </div>
-        </div>
-        
-        <div class="menu">
-          <button id="btn-manual" class="btn">📥 立即手動擷取</button>
-          <button id="btn-export" class="btn">📄 快速導出 Markdown</button>
-          <button id="btn-dashboard" class="btn btn-primary">🍅 打開 Power Kit 儀表板</button>
-        </div>
-        
-        <div class="footer">PK+ Helper v1.0.0</div>
-      </div>
-      
-      <!-- FAB 按鈕 -->
-      <div id="scrumclock-fab" class="fab" title="PK+ 快捷選單 (可拖曳)">
-        <svg viewBox="0 0 24 24">
-          <circle cx="12" cy="12" r="10"></circle>
-          <polyline points="12 6 12 12 16 14"></polyline>
-        </svg>
-        <div class="indicator"></div>
-      </div>
-    `;
+
+    // 1. 懸浮面板
+    const panel = document.createElement('div');
+    panel.id = 'scrumclock-panel';
+    panel.className = 'panel open';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'header';
+    const h4 = document.createElement('h4');
+    const robotSpan = document.createElement('span');
+    robotSpan.textContent = '🤖';
+    h4.appendChild(robotSpan);
+    h4.appendChild(document.createTextNode(' PK+ 助手'));
+    const headerIndicator = document.createElement('span');
+    headerIndicator.className = 'indicator';
+    header.appendChild(h4);
+    header.appendChild(headerIndicator);
+
+    // Status Box
+    const statusBox = document.createElement('div');
+    statusBox.className = 'status-box';
+    const statusTitle = document.createElement('div');
+    statusTitle.id = 'scrumclock-status-title';
+    statusTitle.className = 'status-title';
+    statusTitle.textContent = '未偵測到對話';
+
+    const statusMeta = document.createElement('div');
+    statusMeta.className = 'status-meta';
+    const statusCount = document.createElement('span');
+    statusCount.id = 'scrumclock-status-count';
+    statusCount.textContent = '0 條訊息';
+    const statusTime = document.createElement('span');
+    statusTime.id = 'scrumclock-status-time';
+    statusTime.textContent = '無同步記錄';
+    statusMeta.appendChild(statusCount);
+    statusMeta.appendChild(statusTime);
+
+    statusBox.appendChild(statusTitle);
+    statusBox.appendChild(statusMeta);
+
+    // Menu
+    const menu = document.createElement('div');
+    menu.className = 'menu';
+    const btnManual = document.createElement('button');
+    btnManual.id = 'btn-manual';
+    btnManual.className = 'btn';
+    btnManual.textContent = '📥 立即手動擷取';
+
+    const btnExport = document.createElement('button');
+    btnExport.id = 'btn-export';
+    btnExport.className = 'btn';
+    btnExport.textContent = '📄 快速導出 Markdown';
+
+    const btnDashboard = document.createElement('button');
+    btnDashboard.id = 'btn-dashboard';
+    btnDashboard.className = 'btn btn-primary';
+    btnDashboard.textContent = '🍅 打開 Power Kit 儀表板';
+
+    menu.appendChild(btnManual);
+    menu.appendChild(btnExport);
+    menu.appendChild(btnDashboard);
+
+    // Footer
+    const footer = document.createElement('div');
+    footer.className = 'footer';
+    footer.textContent = 'PK+ Helper v1.0.0';
+
+    panel.appendChild(header);
+    panel.appendChild(statusBox);
+    panel.appendChild(menu);
+    panel.appendChild(footer);
+
+    // 2. FAB 按鈕
+    const fab = document.createElement('div');
+    fab.id = 'scrumclock-fab';
+    fab.className = 'fab';
+    fab.title = 'PK+ 快捷選單 (可拖曳)';
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+
+    const circle = document.createElementNS(svgNS, 'circle');
+    circle.setAttribute('cx', '12');
+    circle.setAttribute('cy', '12');
+    circle.setAttribute('r', '10');
+
+    const polyline = document.createElementNS(svgNS, 'polyline');
+    polyline.setAttribute('points', '12 6 12 12 16 14');
+
+    svg.appendChild(circle);
+    svg.appendChild(polyline);
+
+    const fabIndicator = document.createElement('div');
+    fabIndicator.className = 'indicator';
+
+    fab.appendChild(svg);
+    fab.appendChild(fabIndicator);
+
+    widgetContainer.appendChild(panel);
+    widgetContainer.appendChild(fab);
     shadow.appendChild(widgetContainer);
 
     setupWidgetEvents();
