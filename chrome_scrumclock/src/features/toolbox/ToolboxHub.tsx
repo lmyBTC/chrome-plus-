@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ToolboxToolId, ToolboxToolInfo } from './types';
 import { ImageScraper } from './tools/image-scraper';
+import { ActivityMonitor } from './tools/activity-monitor';
+import { SubtitleCollector } from './tools/subtitle-collector';
 
 const AVAILABLE_TOOLS: ToolboxToolInfo[] = [
   {
@@ -9,6 +11,20 @@ const AVAILABLE_TOOLS: ToolboxToolInfo[] = [
     description: '抓取任意網頁（如 Flickr 相簿）或分頁圖片，支援篩選與批量下載',
     icon: '🖼️',
     badge: '熱門'
+  },
+  {
+    id: 'activity-monitor',
+    name: '瀏覽行為監控器',
+    description: '實時審查網頁敏感權限（鏡頭、定位、剪貼簿）與 API 存取風險',
+    icon: '🛡️',
+    badge: '安全'
+  },
+  {
+    id: 'subtitle-collector',
+    name: '影片字幕收集器',
+    description: '檢視並管理跨插件收集的影音字幕與筆記，支援時間戳跳轉與任務轉化',
+    icon: '🎬',
+    badge: '影音'
   }
 ];
 
@@ -69,6 +85,8 @@ export const ToolboxHub: React.FC = () => {
       {/* 主工作區域 */}
       <div className="flex-1 p-8 max-w-7xl w-full mx-auto">
         {activeTool === 'image-scraper' && <ImageScraper />}
+        {activeTool === 'activity-monitor' && <ActivityMonitor />}
+        {activeTool === 'subtitle-collector' && <SubtitleCollector />}
       </div>
     </div>
   );

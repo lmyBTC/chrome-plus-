@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>活動監控面板 - Browser Activity Monitor</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- 頂部標題與狀態列 -->
+    <header class="header">
+      <div class="header-brand">
+        <div class="status-indicator" id="connection-status" title="背景服務連接正常"></div>
+        <h1 class="app-title">Activity Monitor</h1>
+        <span class="badge badge-version">v1.0.0</span>
+      </div>
+      <div class="tab-context">
+        <div class="tab-origin" id="current-origin" title="當前作用中分頁網址">載入中...</div>
+        <div class="tab-id" id="current-tab-id">Tab #--</div>
+      </div>
+    </header>
+
+    <!-- 原生權限審查卡片 (80% 原生層 contentSettings) -->
+    <section class="card permissions-card">
+      <div class="card-header">
+        <h2 class="card-title">網站原生權限審查</h2>
+        <button class="btn btn-icon" id="btn-refresh-permissions" title="重新整理權限">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 4v6h-6"></path>
+            <path d="M1 20v-6h6"></path>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="permissions-grid" id="permissions-container">
+        <div class="permission-item" data-perm="camera">
+          <span class="perm-icon">📷</span>
+          <span class="perm-name">相機</span>
+          <span class="perm-badge badge-pending">查詢中</span>
+        </div>
+        <div class="permission-item" data-perm="microphone">
+          <span class="perm-icon">🎙️</span>
+          <span class="perm-name">麥克風</span>
+          <span class="perm-badge badge-pending">查詢中</span>
+        </div>
+        <div class="permission-item" data-perm="location">
+          <span class="perm-icon">📍</span>
+          <span class="perm-name">定位</span>
+          <span class="perm-badge badge-pending">查詢中</span>
+        </div>
+        <div class="permission-item" data-perm="notifications">
+          <span class="perm-icon">🔔</span>
+          <span class="perm-name">通知</span>
+          <span class="perm-badge badge-pending">查詢中</span>
+        </div>
+        <div class="permission-item" data-perm="clipboard">
+          <span class="perm-icon">📋</span>
+          <span class="perm-name">剪貼簿</span>
+          <span class="perm-badge badge-pending">查詢中</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 隨選動態探針控制區 (20% 深入隨選注入) -->
+    <section class="card inspector-card">
+      <div class="inspector-content">
+        <div class="inspector-info">
+          <h2 class="card-title">深度動態探針 (Deep Inspector)</h2>
+          <p class="card-desc">隨選注入 MAIN 與 ISOLATED 雙層探針，攔截相機、麥克風、定位與剪貼簿即時調用。</p>
+        </div>
+        <button class="btn btn-primary" id="btn-toggle-inspector">
+          <span class="btn-spinner" id="inspector-spinner"></span>
+          <span id="inspector-btn-text">注入深度探針</span>
+        </button>
+      </div>
+      <div class="inspector-status" id="inspector-status-badge">
+        <span class="status-dot"></span>
+        <span id="inspector-status-text">探針未注入 (隨選待命中)</span>
+      </div>
+    </section>
+
+    <!-- 日誌工具列與過濾條件 -->
+    <section class="toolbar">
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">全部 <span class="counter" id="count-all">0</span></button>
+        <button class="filter-btn" data-filter="probe">探針 <span class="counter" id="count-probe">0</span></button>
+        <button class="filter-btn" data-filter="network">網路 <span class="counter" id="count-network">0</span></button>
+        <button class="filter-btn" data-filter="download">下載 <span class="counter" id="count-download">0</span></button>
+      </div>
+      <div class="actions">
+        <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出日誌 JSON">匯出</button>
+        <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空所有日誌">清除</button>
+      </div>
+    </section>
+
+    <!-- 活動串流瀑布流容器 -->
+    <main class="stream-container" id="stream-container">
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">📡</div>
+        <div class="empty-title">暫無監控活動紀錄</div>
+        <div class="empty-desc">請瀏覽網頁或點擊上方「注入深度探針」以開始捕獲即時活動。</div>
+      </div>
+      <div class="stream-list" id="stream-list"></div>
+    </main>
+
+    <!-- 底部資訊列 -->
+    <footer class="footer">
+      <div class="footer-stats">
+        <span id="footer-log-count">已記錄 0 筆事件</span>
+        <label class="auto-scroll-toggle">
+          <input type="checkbox" id="auto-scroll-checkbox" checked>
+          <span>自動滾動</span>
+        </label>
+      </div>
+    </footer>
+  </div>
+
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>

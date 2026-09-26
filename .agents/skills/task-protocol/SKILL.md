@@ -20,9 +20,9 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/task_manager.md"]
 
 ### Gate 1: 脈絡勘查與任務藍圖 (Grounding & Task Blueprint)
 獲得使用者對 Gate 0 方向的明確確認後，始得進入深度勘查與建檔：
-1. **Step -1: 主題檢索**：呼叫 `list_dir` 檢索 [`0.doc_mg/tasks/`](../../../0.doc_mg/tasks/) 及其 `archive/` 目錄，確認有無同主題或既有任務。
+1. **Step -1: 主題檢索**：呼叫 `list_dir` 檢索 `0.doc_mg/tasks/` 及其 `archive/` 目錄，確認有無同主題或既有任務。
 2. **Step 0: 讀取範本/既有文件**：
-   - 若無相關主題：呼叫 `view_file` 讀取 [`0.doc_mg/task_template_v2.md`](../../../0.doc_mg/task_template_v2.md)。
+   - 若無相關主題：呼叫 `view_file` 讀取 `0.doc_mg/task_template_v2.md`。
    - 若有相關主題：讀取該既有任務檔案。
 3. **Step 1: 精準唯讀掃描（探勘硬窄化）**：僅針對目標插件或相依檔案進行最小化上下文探索（嚴禁全盤無效掃描或跨插件污染）。**嚴禁全檔 dump**：單次 `view_file` 嚴格限制 ≤ 30 行介面簽名，實作細節留待 Gate 2；關鍵介面簽名與型別直接沉澱至 `task.md`。
 4. **Step 2: 建立/更新實體文件**：

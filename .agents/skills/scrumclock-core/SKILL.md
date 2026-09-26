@@ -50,6 +50,11 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `extractorUtils.ts`: 通用 DOM 屬性與正則工具函式。
 - `downloader.ts`: 批次 ZIP 下載打包服務。
 
+### 工具箱擴充子模組 (`src/features/toolbox/tools/`)
+- `image-scraper/`: 網頁圖片與 IG 多圖批次抓取器。
+- `activity-monitor/`: 瀏覽行為與網頁敏感權限（鏡頭/麥克風/定位/剪貼簿）實時監控面板。
+- `subtitle-collector/`: 跨插件（VideoSpeedPlus）影音字幕與筆記快照收集面板，支援時間戳跳轉、Markdown 引用與今日戰役轉化。
+
 ### 側邊欄 Hooks 子模組 (`src/entries/sidebar/hooks/`)
 - `useAISession.ts`: AI 側邊欄會話與 Prompt 互動管理。
 - `useTimerSync.ts`: 全域番茄鐘即時狀態雙向同步。
@@ -93,6 +98,7 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
    ```
 3. `scrumclock_settings`: `SettingsConfig` (工作時長、提示音、自動開始下一階段等)
 4. `scrumclock_finance_cache`: 自選股即時快照快取（只讀，來自 FinanceClipper，絕不回寫對端）。
+5. `capturedNotes`: `CapturedSubtitleNote[]` (跨插件影音字幕與時間戳筆記快照，由 VideoSpeedPlus 透過 `COLLECT_NOTE` 注入)。
 
 ---
 

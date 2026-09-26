@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Browser Activity Monitor",
+  "version": "1.0.0",
+  "description": "混合架構瀏覽器活動監控與原生授權審查擴充功能",
+  "permissions": [
+    "tabs",
+    "webRequest",
+    "downloads",
+    "contentSettings",
+    "scripting",
+    "sidePanel",
+    "alarms"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
+  "action": {
+    "default_title": "開啟活動監控面板"
+  },
+  "icons": {
+    "128": "icons/icon128.png"
+  }
+}
