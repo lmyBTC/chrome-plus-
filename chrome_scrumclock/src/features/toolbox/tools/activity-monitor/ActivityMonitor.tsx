@@ -13,7 +13,10 @@ const INITIAL_MOCK_LOGS: ActivityAuditLog[] = [
   {
     id: 'log-1',
     timestamp: new Date(Date.now() - 1000 * 60 * 3).toLocaleTimeString(),
-    source: 'active-tab',
+    source: '網頁分頁',
+    sourceType: 'page',
+    domain: 'meet.google.com',
+    targetUrl: 'https://meet.google.com/abc-defg-hij',
     api: 'navigator.mediaDevices.getUserMedia',
     riskLevel: 'high',
     detail: '請求存取音訊與視訊串流 (video: true, audio: true)'
@@ -21,7 +24,10 @@ const INITIAL_MOCK_LOGS: ActivityAuditLog[] = [
   {
     id: 'log-2',
     timestamp: new Date(Date.now() - 1000 * 60 * 8).toLocaleTimeString(),
-    source: 'active-tab',
+    source: '擴充套件',
+    sourceType: 'extension',
+    domain: 'chrome-extension://ai-assistant',
+    targetUrl: 'chrome-extension://ai-assistant/content.js',
     api: 'navigator.clipboard.readText',
     riskLevel: 'medium',
     detail: '嘗試讀取系統剪貼簿文字內容'
@@ -29,7 +35,10 @@ const INITIAL_MOCK_LOGS: ActivityAuditLog[] = [
   {
     id: 'log-3',
     timestamp: new Date(Date.now() - 1000 * 60 * 15).toLocaleTimeString(),
-    source: 'active-tab',
+    source: '網頁分頁',
+    sourceType: 'page',
+    domain: 'maps.google.com',
+    targetUrl: 'https://maps.google.com/',
     api: 'navigator.geolocation.getCurrentPosition',
     riskLevel: 'high',
     detail: '查詢裝置當前地理位置座標'
@@ -121,20 +130,36 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
     const timestamp = new Date().toLocaleTimeString();
     let newLog: ActivityAuditLog;
 
+    // 解析當前 origin 取得乾淨 domain
+    let activeDomain = currentOrigin;
+    try {
+      if (currentOrigin.startsWith('http')) {
+        activeDomain = new URL(currentOrigin).hostname;
+      }
+    } catch {
+      activeDomain = currentOrigin;
+    }
+
     if (apiType === 'media') {
       newLog = {
         id: `log-${Date.now()}`,
         timestamp,
         source: '模擬測試',
+        sourceType: 'mock',
+        domain: activeDomain || 'mock-env.local',
+        targetUrl: currentUrl || 'https://mock-env.local/video-call',
         api: 'navigator.mediaDevices.getUserMedia',
         riskLevel: 'high',
-        detail: '攔截到音訊/視訊裝置呼叫 (video: true, audio: true)'
+        detail: `攔截到音訊/視訊裝置呼叫 (video: true, audio: true)`
       };
     } else if (apiType === 'clipboard') {
       newLog = {
         id: `log-${Date.now()}`,
         timestamp,
         source: '模擬測試',
+        sourceType: 'mock',
+        domain: activeDomain || 'mock-env.local',
+        targetUrl: currentUrl || 'https://mock-env.local/clipboard',
         api: 'navigator.clipboard.readText',
         riskLevel: 'medium',
         detail: '攔截到系統剪貼簿讀取請求'
@@ -144,6 +169,9 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
         id: `log-${Date.now()}`,
         timestamp,
         source: '模擬測試',
+        sourceType: 'mock',
+        domain: activeDomain || 'mock-env.local',
+        targetUrl: currentUrl || 'https://mock-env.local/geo',
         api: 'navigator.geolocation.getCurrentPosition',
         riskLevel: 'high',
         detail: '攔截到高精度地理座標查詢'
@@ -157,6 +185,76 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
     if (filterLevel === 'all') return true;
     return log.riskLevel === filterLevel;
   });
+
+  const [copiedStatus, setCopiedStatus] = useState<boolean>(false);
+
+  // 匯出結構化 AI 診斷 Markdown 報告
+  const generateAiReport = (): string => {
+    const highRiskCount = logs.filter((l) => l.riskLevel === 'high').length;
+    const mediumRiskCount = logs.filter((l) => l.riskLevel === 'medium').length;
+    const lowRiskCount = logs.filter((l) => l.riskLevel === 'low').length;
+
+    const reportLines = [
+      '# 🛡️ 瀏覽器行為安全監控與 AI 診斷快照報告',
+      '',
+      `> 產出時間：${new Date().toLocaleString()}`,
+      `> 檢測環境：${standaloneConnected ? 'Chrome 擴充套件原生探針 (BAM 雙層架構)' : '前端安全沙盒與模擬器'}`,
+      `> 目標來源 (Origin)：\`${currentOrigin}\``,
+      `> 完整網址 (URL)：\`${currentUrl}\``,
+      '',
+      '## 1. 安全風險摘要統計',
+      `- **總捕獲事件數**：${logs.length} 筆`,
+      `- 🔴 **高風險事件**：${highRiskCount} 筆`,
+      `- 🟡 **中風險事件**：${mediumRiskCount} 筆`,
+      `- 🔵 **一般/低風險事件**：${lowRiskCount} 筆`,
+      '',
+      '## 2. 當前分頁核心敏感權限狀態',
+      '| 權限項目 | 狀態識別 | 說明 |',
+      '| :--- | :--- | :--- |',
+      ...permissions.map((p) => `| ${p.name} | \`${p.status}\` | ${p.description} |`),
+      '',
+      '## 3. 安全行為審計明細清單',
+      logs.length === 0 ? '_（無監控日誌事件）_' : [
+        '| 時間 | 風險等級 | 調用 API | 來源類型 | 來源網域/標的 | 調用細節 |',
+        '| :--- | :---: | :--- | :--- | :--- | :--- |',
+        ...logs.map((l) => {
+          const riskEmoji = l.riskLevel === 'high' ? '🔴 高' : l.riskLevel === 'medium' ? '🟡 中' : '🔵 低';
+          const sourceText = l.sourceType === 'page' ? '網頁分頁' : l.sourceType === 'extension' ? '擴充套件' : l.sourceType === 'mock' ? '模擬測試' : (l.source || '其他');
+          const domainText = l.domain || '-';
+          return `| ${l.timestamp} | ${riskEmoji} | \`${l.api}\` | ${sourceText} | \`${domainText}\` | ${l.detail.replace(/\|/g, '\\|')} |`;
+        })
+      ].join('\n'),
+      '',
+      '## 4. AI 專業審核建議指令 (Prompt)',
+      '```text',
+      '請身為 Chrome 擴充功能與網頁前端資訊安全專家，依據上述捕獲的 API 呼叫日誌、來源網域與權限配置進行分析：',
+      '1. 評估是否有潛在的指紋追蹤、惡意截取剪貼簿、未授權音訊/地理位置監控或擴充功能越權風險。',
+      '2. 針對高/中風險的呼叫來源（網頁與外掛），提供針對性的瀏覽器防護原則與最小權限設定建議。',
+      '```'
+    ];
+
+    return reportLines.join('\n');
+  };
+
+  const copyForAiAnalysis = async () => {
+    try {
+      const report = generateAiReport();
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(report);
+      } else {
+        const textArea = document.createElement('textarea');
+        textArea.value = report;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+      }
+      setCopiedStatus(true);
+      setTimeout(() => setCopiedStatus(false), 2000);
+    } catch (err) {
+      console.error('複製報告失敗:', err);
+    }
+  };
 
   const getStatusBadge = (status: PermissionItem['status']) => {
     switch (status) {
@@ -180,6 +278,44 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
       case 'low':
         return <span className="px-2 py-0.5 text-[11px] font-bold rounded bg-blue-950/80 text-blue-300 border border-blue-800/80">一般</span>;
     }
+  };
+
+  const getSourceBadge = (log: ActivityAuditLog) => {
+    const type = log.sourceType;
+    let icon = '🌐';
+    let label = log.source || '網頁分頁';
+    let badgeClass = 'bg-blue-950/50 text-blue-300 border-blue-800/40';
+
+    if (type === 'extension') {
+      icon = '🧩';
+      label = '擴充功能';
+      badgeClass = 'bg-purple-950/60 text-purple-300 border-purple-800/50';
+    } else if (type === 'mock') {
+      icon = '🧪';
+      label = '模擬測試';
+      badgeClass = 'bg-amber-950/50 text-amber-300 border-amber-800/40';
+    } else if (type === 'internal') {
+      icon = '⚙️';
+      label = '背景服務';
+      badgeClass = 'bg-zinc-800/80 text-zinc-300 border-zinc-700/60';
+    }
+
+    const domainDisplay = log.domain ? (
+      <span className="font-mono text-[10px] opacity-80 ml-1">
+        ({log.domain.replace('chrome-extension://', '')})
+      </span>
+    ) : null;
+
+    return (
+      <span
+        className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${badgeClass} transition-colors max-w-[210px] truncate`}
+        title={`來源類型: ${label}\n網域/識別: ${log.domain || '無'}\n完整標的: ${log.targetUrl || '無'}`}
+      >
+        <span className="mr-1">{icon}</span>
+        <span>{label}</span>
+        {domainDisplay}
+      </span>
+    );
   };
 
   return (
@@ -285,7 +421,7 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
             )}
           </div>
 
-          <div className="flex items-center space-x-2 self-end sm:self-auto">
+          <div className="flex items-center space-x-2 self-end sm:self-auto flex-wrap gap-y-1">
             {/* 風險等級篩選 */}
             <div className="flex items-center bg-dark-card rounded-lg p-0.5 border border-dark-border-subtle text-xs">
               {(['all', 'high', 'medium', 'low'] as const).map((lvl) => (
@@ -302,6 +438,20 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
                 </button>
               ))}
             </div>
+
+            {/* 一鍵複製 AI 診斷報告 */}
+            <button
+              onClick={copyForAiAnalysis}
+              className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-medium border transition-all ${
+                copiedStatus
+                  ? 'bg-emerald-950/60 text-emerald-300 border-emerald-600/70 shadow-sm'
+                  : 'bg-dark-card hover:bg-dark-hover text-dark-primary border-dark-border-subtle hover:border-dark-border active:scale-95'
+              }`}
+              title="一鍵複製 Markdown 格式之完整安全審計日誌與 AI 專業提問詞"
+            >
+              <span>{copiedStatus ? '✅' : '📋'}</span>
+              <span>{copiedStatus ? '已複製 AI 報告' : '複製 AI 報告'}</span>
+            </button>
 
             <button
               onClick={() => setLogs([])}
@@ -352,16 +502,19 @@ export const ActivityMonitor: React.FC<ActivityMonitorProps> = ({ isSidebar = fa
                   <span className="font-mono text-[11px] text-dark-muted shrink-0">
                     [{log.timestamp}]
                   </span>
-                  <div>
-                    <div className="flex items-center space-x-2">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                       <span className="font-mono text-xs font-semibold text-blue-400">
                         {log.api}
                       </span>
-                      <span className="text-[10px] text-dark-muted px-1.5 py-0.5 rounded bg-dark-hover">
-                        {log.source}
-                      </span>
+                      {getSourceBadge(log)}
                     </div>
-                    <p className="text-xs text-dark-secondary mt-0.5">{log.detail}</p>
+                    <p className="text-xs text-dark-secondary">{log.detail}</p>
+                    {log.targetUrl && (
+                      <p className="text-[10px] font-mono text-dark-muted truncate max-w-[280px] sm:max-w-md" title={log.targetUrl}>
+                        標的：{log.targetUrl}
+                      </p>
+                    )}
                   </div>
                 </div>
 

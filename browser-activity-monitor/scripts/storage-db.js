@@ -133,10 +133,10 @@ export class AuditStorageDB {
 
   /**
    * 清除過期日誌 (預設清除超過指定天數的日誌)
-   * @param {number} retentionDays 保存天數 (預設 7 天)
+   * @param {number} retentionDays 保存天數 (預設 3 天)
    * @returns {Promise<number>} 清除筆數
    */
-  async purgeExpiredLogs(retentionDays = 7) {
+  async purgeExpiredLogs(retentionDays = 3) {
     const db = await this.open();
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 

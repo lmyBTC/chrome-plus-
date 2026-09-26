@@ -24,7 +24,7 @@
   - 提供當前分頁 Origin 權限徽章區、隨選探針開關、多色即時瀑布流、分類篩選 (全部/探針/網路/下載)、日誌 JSON 匯出與一鍵清除。
 - 💾 **IndexedDB 本機持久化與排程維護**：
   - 封裝 `AuditStorageDB` 非同步資料庫，支援事務批次寫入與多索引倒序查詢。
-  - 整合 `chrome.alarms`，每日定期自動清理 7 天前過期日誌，防止 Storage 膨脹。
+  - 整合 `chrome.alarms`，每日定期自動清理 3 天前過期日誌，防止 Storage 膨脹。
 - 🛡️ **純原生零打包依賴**：
   - 採用純原生 Vanilla JavaScript (ES Module) + Vanilla CSS，無 Webpack/Vite 複雜建置負擔，輕量高效。
 
@@ -38,7 +38,7 @@
 | `background.js` | **背景服務背景常駐核心 (Service Worker)** | 80% 原生事件監聽、Origin 權限審查、雙層探針注入調度、Port 長連接廣播、IndexedDB 寫入與定時清理 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
-| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、7 天過期清理 |
+| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、3 天過期清理 |
 | `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、串流過濾工具列、活動瀑布流容器 |
 | `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、各類別彩色標籤、流暢微動畫 |
 | `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、權限渲染、探針啟動控制、日誌篩選與匯出 |

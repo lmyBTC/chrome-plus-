@@ -10,6 +10,9 @@ export interface ActivityAuditLog {
   id: string;
   timestamp: string;
   source: string;
+  sourceType?: 'page' | 'extension' | 'internal' | 'mock';
+  domain?: string;
+  targetUrl?: string;
   api: string;
   riskLevel: 'low' | 'medium' | 'high';
   detail: string;

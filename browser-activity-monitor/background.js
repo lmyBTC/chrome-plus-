@@ -30,12 +30,12 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-// 監聽 Alarm 事件：定期清理 7 天前過期日誌
+// 監聽 Alarm 事件：定期清理 3 天前過期日誌
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'DAILY_AUDIT_PURGE') {
       try {
-        await db.purgeExpiredLogs(7);
+        await db.purgeExpiredLogs(3);
       } catch (err) {
         console.warn('[BAM SW] 定期清理過期日誌失敗:', err);
       }
