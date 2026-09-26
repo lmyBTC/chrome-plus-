@@ -8,7 +8,8 @@
 
 | 專案目錄 | 插件名稱 | 核心技術棧 | 核心功能概述 | 專屬手冊 (README) | 專屬 SSOT 技能 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| [`chrome_scrumclock/`](chrome_scrumclock/) | **ScrumClock (Power Kit)** | React 18, TS, Vite, TailwindCSS | 敏捷番茄鐘、每日任務規劃、AI 側邊欄、工具箱、自選股即時小工具 | 👉 [**`SCRUMCLOCK_README.md`**](chrome_scrumclock/SCRUMCLOCK_README.md) | 🧠 [`scrumclock-core`](.agents/skills/scrumclock-core/SKILL.md) |
+| [`chrome_scrumclock/`](chrome_scrumclock/) | **ScrumClock (Power Kit)** | React 18, TS, Vite, TailwindCSS | 敏捷番茄鐘、每日任務規劃、AI 側邊欄、實用工具箱整合（活動監控分頁、研報/字幕採集適配層）、自選股即時小工具 | 👉 [**`SCRUMCLOCK_README.md`**](chrome_scrumclock/SCRUMCLOCK_README.md) | 🧠 [`scrumclock-core`](.agents/skills/scrumclock-core/SKILL.md) |
+| [`browser-activity-monitor/`](browser-activity-monitor/) | **Browser Activity Monitor** | 原生 JS, Manifest V3 (零依賴) | 80% 原生常駐監控（網路流量/下載行為/原生權限審查）、20% 隨選深入探針、Side Panel 即時面板 | 👉 [**`README.md`**](browser-activity-monitor/README.md) | — |
 | [`chrome_video speed plus/`](chrome_video%20speed%20plus/) | **Video Speed Plus** | 原生 JS, Manifest V3, Shadow DOM | 全網 HTML5 影片播放倍速調整 (0.1x~16x)、快捷鍵與 A-B 循環 | 👉 [**`VIDEOSPEED_README.md`**](chrome_video%20speed%20plus/VIDEOSPEED_README.md) | 🧠 [`video-speed-core`](.agents/skills/video-speed-core/SKILL.md) |
 | [`finance-research-clipper-oss/`](finance-research-clipper-oss/) | **Finance Research Clipper** | 原生 JS, Manifest V3 (零依賴) | Google/Yahoo/Goodinfo 多合一深度爬蟲、分析師目標價、財報矩陣、AI 研報採集 | 👉 [**`FINANCE_CLIPPER_README.md`**](finance-research-clipper-oss/FINANCE_CLIPPER_README.md) | 🧠 [`finance-clipper-core`](.agents/skills/finance-clipper-core/SKILL.md) |
 | [`0.doc_mg/`](0.doc_mg/) | **專案管理與契約協定** | Python 3 | MV3 自動審計工具、任務協議管理 (Task Protocol)、跨插件黑盒通訊契約 | 👉 [跨插件通訊契約](0.doc_mg/docs/cross_plugin_contract.md) | 🧠 [`task-protocol`](.agents/skills/task-protocol/SKILL.md) |
