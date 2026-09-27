@@ -536,3 +536,57 @@ export function exportUrlsAsTxt(images: ScrapedImage[], filename = 'image-urls.t
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * 單一媒體下載（自動處理影片/圖片副檔名、本機目錄支援與 Chrome Downloads fallback）
+ */
+export async function downloadSingleMedia(
+  img: ScrapedImage,
+  downloadFolder: string,
+  targetDirHandle: any | null
+): Promise<any | null> {
+  const isVideo = img.mediaType === 'video' || img.format === 'mp4' || img.format === 'webm';
+  let ext = getExtensionFromUrl(img.url, img.format);
+  if (isVideo && ext !== 'mp4' && ext !== 'webm') {
+    ext = 'mp4';
+  }
+
+  const validMediaExts = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'svg', 'avif', 'mp4', 'webm']);
+  let rawName = img.url.split('/').pop()?.split('?')[0] || '';
+  const currentExt = rawName.split('.').pop()?.toLowerCase() || '';
+  if (!rawName || !validMediaExts.has(currentExt)) {
+    rawName = `${isVideo ? 'video' : 'image'}_${img.id}.${ext}`;
+  }
+  const filename = sanitizePathSegment(rawName);
+
+  let targetDir = targetDirHandle;
+  if (!targetDir && isFileSystemAccessSupported()) {
+    try {
+      const picked = await pickDownloadDirectory();
+      if (picked) {
+        targetDir = picked;
+      }
+    } catch {
+      // 使用者取消則向下 fallback
+    }
+  }
+
+  if (targetDir) {
+    let finalDir = targetDir;
+    if (downloadFolder.trim()) {
+      try {
+        const sub = sanitizePathSegment(downloadFolder);
+        finalDir = await targetDir.getDirectoryHandle(sub, { create: true });
+      } catch {
+        finalDir = targetDir;
+      }
+    }
+    const blob = await fetchMediaBlob(img.url);
+    await saveBlobToDirectory(finalDir, filename, blob);
+  } else {
+    const folder = sanitizePathSegment(downloadFolder);
+    await downloadImage(img.url, `PowerKit-Toolbox/${folder}/${filename}`);
+  }
+
+  return targetDir;
+}

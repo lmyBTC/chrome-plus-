@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { CapturedSubtitleNote, SubtitleFilterType, SubtitleFilterState } from './types';
+import { parseSrt, convertSrtToCapturedNotes } from './services/srtParser';
+import { addNoteToTodayBattle, addNoteToInbox, buildJumpUrl } from './services/subtitleConverter';
 
 export interface SubtitleCollectorProps {
   isSidebar?: boolean;
@@ -10,7 +12,11 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [convertedId, setConvertedId] = useState<string | null>(null);
+  const [inboxAddedId, setInboxAddedId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState<boolean>(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 篩選狀態
   const [filters, setFilters] = useState<SubtitleFilterState>({
@@ -63,35 +69,6 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
     }
   }, [loadNotes]);
 
-  // 解析時間戳字串為總秒數 (支援 HH:MM:SS 或 MM:SS 或純秒數)
-  const parseTimeToSeconds = (timeStr?: string): number => {
-    if (!timeStr) return 0;
-    const parts = timeStr.split(':').map((p) => parseInt(p, 10));
-    if (parts.some((num) => isNaN(num))) return 0;
-    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-    if (parts.length === 2) return parts[0] * 60 + parts[1];
-    if (parts.length === 1) return parts[0];
-    return 0;
-  };
-
-  // 建立跳轉時間點 URL (針對 YouTube 附加 &t=Xs)
-  const buildJumpUrl = (url: string, timeStr?: string): string => {
-    if (!url) return '';
-    if (!timeStr) return url;
-    const seconds = parseTimeToSeconds(timeStr);
-    if (seconds <= 0) return url;
-    try {
-      const u = new URL(url);
-      if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
-        u.searchParams.set('t', `${seconds}s`);
-        return u.toString();
-      }
-    } catch {
-      // 若 URL 非標準格式則直接返回
-    }
-    return url;
-  };
-
   // 開啟連結
   const handleOpenUrl = (url: string, timeStr?: string) => {
     const finalUrl = buildJumpUrl(url, timeStr);
@@ -117,64 +94,91 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
     });
   };
 
-  // 轉為今日作戰任務 (對齊 weeklyMissions 與 dailyLogs)
+  // 轉為今日作戰任務 (呼叫轉換服務)
   const handleConvertToMission = async (note: CapturedSubtitleNote) => {
-    try {
-      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
-        showToast('無法存取儲存區', 'error');
-        return;
-      }
-
-      const storageData = await chrome.storage.local.get(['weeklyMissions', 'dailyLogs']);
-      const weeklyMissions: any[] = storageData.weeklyMissions || [];
-      const dailyLogs: Record<string, any> = storageData.dailyLogs || {};
-      const today = new Date().toISOString().split('T')[0];
-      const todayLog = dailyLogs[today] || { coreBattles: [], sprintLogs: [] };
-      const coreBattles: any[] = todayLog.coreBattles || [];
-
-      const jumpUrl = buildJumpUrl(note.url, note.currentTime);
-      const safeTitle = (note.title || '影片學習任務').slice(0, 80);
-      const missionText = `影音精讀: ${safeTitle}`;
-
-      // 檢查是否已有相同文字之任務
-      const existingIndex = weeklyMissions.findIndex((m: any) => m.text === missionText);
-      if (existingIndex > -1) {
-        const existing = weeklyMissions[existingIndex];
-        const appendNote = `\n\n---\n[${note.currentTime || '時戳'}] ${note.text}`;
-        existing.notes = existing.notes ? `${existing.notes}${appendNote}` : appendNote.trim();
-        await chrome.storage.local.set({ weeklyMissions });
-        setConvertedId(note.id);
-        showToast('已同步補充筆記至既有任務！');
-        return;
-      }
-
-      const newMission: any = {
-        id: 'mission-' + Date.now(),
-        text: missionText,
-        isCompleted: false,
-        priority: 'P2',
-        notes: `【來源影片】${safeTitle}\n時間戳: ${note.currentTime || '無'}\n網址: ${jumpUrl}\n\n${note.text}`,
-        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-        progressPercent: 0,
-        tags: Array.from(new Set(['#影片學習', ...(note.tags || [])])),
-        url: jumpUrl,
-        suggestedDuration: 25,
-        estimatedPomodoros: 1
-      };
-
-      const updatedWeekly = [...weeklyMissions, newMission];
-      const updatedCoreBattles = [...coreBattles, { missionId: newMission.id, committedTime: '今日待排定' }];
-      dailyLogs[today] = { ...todayLog, coreBattles: updatedCoreBattles };
-
-      await chrome.storage.local.set({
-        weeklyMissions: updatedWeekly,
-        dailyLogs: dailyLogs
-      });
-
+    const res = await addNoteToTodayBattle(note);
+    if (res.success) {
       setConvertedId(note.id);
-      showToast('🎯 已成功轉為今日戰役任務！');
+      showToast(res.message, 'success');
+      setTimeout(() => setConvertedId(null), 3000);
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
+  // 轉入收件匣
+  const handleAddToInbox = async (note: CapturedSubtitleNote) => {
+    const res = await addNoteToInbox(note);
+    if (res.success) {
+      setInboxAddedId(note.id);
+      showToast(res.message, 'success');
+      setTimeout(() => setInboxAddedId(null), 3000);
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
+  // 處理 SRT 檔案解析與寫入
+  const handleProcessSrtFile = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.srt')) {
+      showToast('僅支援 .srt 格式之字幕檔案', 'error');
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const parsedItems = parseSrt(text);
+
+      if (parsedItems.length === 0) {
+        showToast('未能從檔案中解析出有效 SRT 字幕內容', 'error');
+        return;
+      }
+
+      const importedNotes = convertSrtToCapturedNotes(parsedItems, file.name);
+      const updatedNotes = [...importedNotes, ...notes];
+
+      setNotes(updatedNotes);
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        await chrome.storage.local.set({ capturedNotes: updatedNotes });
+      }
+
+      showToast(`成功匯入 ${importedNotes.length} 條 SRT 字幕！`, 'success');
     } catch {
-      showToast('轉化任務時發生錯誤', 'error');
+      showToast('解析 SRT 檔案時發生錯誤', 'error');
+    }
+  };
+
+  // 檔案選取上傳觸發
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleProcessSrtFile(file);
+    }
+    // 重設 input 值以利重複觸發相同檔名
+    e.target.value = '';
+  };
+
+  // 拖放事件處理
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      handleProcessSrtFile(file);
     }
   };
 
@@ -260,7 +264,32 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
   }, [notes, availableTags]);
 
   return (
-    <div className={`flex flex-col h-full ${isSidebar ? 'space-y-3' : 'space-y-4'}`}>
+    <div
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`relative flex flex-col h-full ${isSidebar ? 'space-y-3' : 'space-y-4'} ${
+        isDragging ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-dark-surface' : ''
+      }`}
+    >
+      {/* 隱藏的 SRT 檔案選取 input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".srt"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
+      {/* 拖放覆蓋提示視覺 */}
+      {isDragging && (
+        <div className="absolute inset-0 z-50 bg-blue-950/80 backdrop-blur-sm border-2 border-dashed border-blue-400 rounded-lg flex flex-col items-center justify-center p-4 text-center pointer-events-none">
+          <div className="text-3xl mb-2 animate-bounce">📄</div>
+          <div className="text-sm font-bold text-blue-200">放開以解析並匯入 SRT 字幕</div>
+          <div className="text-xs text-blue-300/80 mt-1">將自動擷取時間戳並轉化為收集紀錄</div>
+        </div>
+      )}
+
       {/* 頂部標頭與操作 */}
       <div className={`flex items-center justify-between pb-2.5 border-b border-dark-border-default ${isSidebar ? 'gap-2' : ''}`}>
         <div>
@@ -276,6 +305,16 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
         </div>
 
         <div className="flex items-center space-x-1.5 shrink-0">
+          {/* 匯入 SRT 按鈕 */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="text-[11px] px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 transition-colors flex items-center space-x-1"
+            title="從本機匯入 .srt 字幕檔"
+          >
+            <span>📥</span>
+            <span>{isSidebar ? 'SRT' : '匯入 SRT'}</span>
+          </button>
+
           {notes.length > 0 && (
             <button
               onClick={handleClearAll}
@@ -438,11 +477,14 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
             載入收集記錄中...
           </div>
         ) : filteredNotes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 px-4 text-center bg-dark-card/30 rounded-xl border border-dashed border-dark-border-default">
-            <div className="text-3xl mb-2">📥</div>
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="flex flex-col items-center justify-center py-12 px-4 text-center bg-dark-card/30 hover:bg-dark-card/50 transition-colors rounded-xl border border-dashed border-dark-border-default cursor-pointer group"
+          >
+            <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">📥</div>
             <div className="text-sm font-medium text-dark-primary">尚無收集的影片字幕或筆記</div>
             <p className="text-xs text-dark-muted mt-1 max-w-sm">
-              在觀看 YouTube 等影片時，利用 VideoSpeedPlus 插件的快捷鍵或「收集字幕至 ScrumClock」按鈕，精選段落將即時匯入此處！
+              在觀看 YouTube 等影片時利用快捷鍵收集，或<span className="text-indigo-400 font-medium">點擊此處 / 拖放 .srt 檔案</span>直接匯入本地字幕！
             </p>
           </div>
         ) : (
@@ -500,7 +542,7 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
               {/* 卡片底部：標籤與操作動作列 */}
               <div className="flex items-center justify-between pt-1">
                 {/* 標籤群 */}
-                <div className="flex items-center space-x-1 overflow-x-auto max-w-[50%] scrollbar-none">
+                <div className="flex items-center space-x-1 overflow-x-auto max-w-[40%] scrollbar-none">
                   {note.tags &&
                     note.tags.map((tag) => (
                       <span
@@ -513,7 +555,7 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
                 </div>
 
                 {/* 快捷操作按鈕 */}
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5 shrink-0">
                   {/* 一鍵複製 Markdown */}
                   <button
                     onClick={() => handleCopyMarkdown(note)}
@@ -522,6 +564,16 @@ export const SubtitleCollector: React.FC<SubtitleCollectorProps> = ({ isSidebar 
                   >
                     <span>{copiedId === note.id ? '✅' : '📋'}</span>
                     <span>{copiedId === note.id ? '已複製' : 'MD'}</span>
+                  </button>
+
+                  {/* 放入收件匣 */}
+                  <button
+                    onClick={() => handleAddToInbox(note)}
+                    className="px-2 py-1 text-xs rounded bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 border border-purple-500/40 transition-colors flex items-center space-x-1"
+                    title="放入 ScrumClock 收件匣"
+                  >
+                    <span>📥</span>
+                    <span>{inboxAddedId === note.id ? '已放入' : '入收件'}</span>
                   </button>
 
                   {/* 轉化為今日戰役任務 */}

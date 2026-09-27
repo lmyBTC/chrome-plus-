@@ -1,0 +1,48 @@
+import { WeeklyMission, InboxItem, SprintLog } from '../../../../types';
+
+export interface DashboardColumns {
+  taskId: boolean;
+  title: boolean;
+  status: boolean;
+  priority: boolean;
+  notes: boolean;
+  createdAt: boolean;
+}
+
+export type SprintLogWithMission = SprintLog & { missionText: string };
+
+export interface TaskPoolTabProps {
+  weeklyMissions: WeeklyMission[];
+  inProgressIds: string[];
+  visibleColumns: DashboardColumns;
+  setVisibleColumns: React.Dispatch<React.SetStateAction<DashboardColumns>>;
+  newTitle: string;
+  setNewTitle: (val: string) => void;
+  newPriority: 'P1' | 'P2' | 'P3';
+  setNewPriority: (val: 'P1' | 'P2' | 'P3') => void;
+  notesInputs: Record<string, string>;
+  onAddTask: () => Promise<void>;
+  onDeleteTask: (id: string) => Promise<void>;
+  onUpdateStatus: (id: string, statusText: string) => Promise<void>;
+  onUpdatePriority: (id: string, priority: 'P1' | 'P2' | 'P3') => Promise<void>;
+  onNotesChange: (id: string, value: string) => void;
+  onUpdateNotes: (id: string) => Promise<void>;
+}
+
+export interface InboxTabProps {
+  inboxItems: InboxItem[];
+  onConvertInbox: (item: InboxItem) => Promise<void>;
+  onDeleteInbox: (id: string) => Promise<void>;
+}
+
+export interface SprintLogsTabProps {
+  sprintLogs: SprintLogWithMission[];
+}
+
+export interface SyncSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSmartMerge: () => Promise<void>;
+  onFullPull: () => Promise<void>;
+  onPushToSheet: () => Promise<void>;
+}

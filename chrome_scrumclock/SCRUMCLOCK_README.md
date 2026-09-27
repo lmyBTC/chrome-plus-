@@ -14,17 +14,17 @@
 
 | 功能模組 | 核心職責 | 門面出口 (`index.ts`) | 專屬型別 (`types.ts`) | 核心視圖元件 (`components/`) | 服務與邏輯層 (`services/` / `utils/`) | 測試/除錯工具 (`dev-tools/`) | 對應規格文件 (`docs/`) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1. ScrumClock (番茄鐘)** | 敏捷衝刺計時、每日作戰規劃、結算回顧、閃電捕捉 | `src/features/scrumclock/index.ts` | `src/features/scrumclock/types.ts` | - `DailyMissionBriefing.tsx`<br>- `SprintPomodoro.tsx`<br>  ↳ `sprint/SprintBattleItem.tsx`<br>  ↳ `sprint/SprintMarkdownImporter.tsx`<br>  ↳ `sprint/SprintResultModal.tsx`<br>- `EndOfDayReview.tsx`<br>- `QuickCapture.tsx` | `contexts/TimerContext.tsx` (全域計時狀態與事件發布) | - | `docs/productivity-workflow-guide.md`<br>`docs/workflow-flowchart.md` |
+| **1. ScrumClock (番茄鐘)** | 敏捷衝刺計時、每日作戰規劃、結算回顧、閃電捕捉 | `src/features/scrumclock/index.ts` | `src/features/scrumclock/types.ts` | - `DailyMissionBriefing.tsx`<br>  ↳ `briefing/BriefingMissionSelector.tsx`<br>  ↳ `briefing/BriefingCalendarSchedule.tsx`<br>  ↳ `briefing/BriefingSettingsDrawer.tsx`<br>- `SprintPomodoro.tsx`<br>  ↳ `sprint/SprintBattleItem.tsx`<br>  ↳ `sprint/SprintMarkdownImporter.tsx`<br>  ↳ `sprint/SprintResultModal.tsx`<br>- `EndOfDayReview.tsx`<br>- `QuickCapture.tsx` | `contexts/TimerContext.tsx` (全域計時狀態與事件發布) | - | `docs/productivity-workflow-guide.md`<br>`docs/workflow-flowchart.md` |
 | **2. AI Sidebar (AI 對話助理)** | 側邊欄即時對話、網頁內容上下文分析、剪貼簿文字處理、本地 AI 整合（採按需延遲載入 `AIAssistantView`，避免啟動效能損耗） | `src/features/ai-sidebar/index.ts` | `src/features/ai-sidebar/types.ts` | `AIAssistantView.tsx` (側邊欄對話互動面板)<br>`AISidebar.tsx` | - `src/utils/ai-helper.ts`<br>- `src/utils/ai-prompts.ts`<br>- `src/utils/ai-schemas.ts` | `src/features/ai-sidebar/dev-tools/README.md`<br>(對應測試腳本 `tests/prompt-eval.ts`) | `docs/gemini-nano-tool.md`<br>`docs/ai-feature-update-guide.md` |
 | **3. Toolbox (工具箱中樞)** | 擴充工具箱總入口，支援 `isSidebar` 緊湊模式，原生整合圖片擷取、行為監控與影音字幕收集 | `src/features/toolbox/index.ts` | `src/features/toolbox/types.ts` | `ToolboxHub.tsx` (工具箱選單中樞視圖，支援 `isSidebar`) | - | - | - |
-| ↳ **Sub: Image Scraper** | 網頁圖片批次擷取、IG 動態解析、高畫質升級、多格式篩選、ZIP 批次下載 | `src/features/toolbox/tools/image-scraper/index.ts` | `src/features/toolbox/tools/image-scraper/types.ts` | `ImageScraper.tsx` (主互動介面、篩選列、預覽燈箱) | 策略模式架構：<br>- `services/imageExtractor.ts` (主調度門面)<br>- `services/instagramExtractor.ts` (IG 策略)<br>- `services/carouselExtractor.ts` (輪播策略)<br>- `services/extractorUtils.ts` (通用解析工具)<br>- `services/downloader.ts` (ZIP 下載) | `src/features/toolbox/tools/image-scraper/dev-tools/` (包含 IG 探測腳本與離線樣本) | `docs/image-scraper-spec.md`<br>`src/features/toolbox/tools/image-scraper/功能說明.md` |
+| ↳ **Sub: Image Scraper** | 網頁圖片批次擷取、IG 動態解析、高畫質升級、多格式篩選、ZIP 批次下載 | `src/features/toolbox/tools/image-scraper/index.ts` | `src/features/toolbox/tools/image-scraper/types.ts` | `ImageScraper.tsx` (主狀態調度容器)<br>  ↳ `components/ScraperInputBar.tsx`<br>  ↳ `components/ScraperFilterBar.tsx`<br>  ↳ `components/ScraperImageList.tsx`<br>  ↳ `components/ScraperDownloadControls.tsx`<br>  ↳ `components/ScraperPreviewModal.tsx` | 策略模式架構：<br>- `services/imageExtractor.ts` (主調度門面與爬取工作流)<br>- `services/instagramExtractor.ts` (IG 策略)<br>- `services/carouselExtractor.ts` (輪播策略)<br>- `services/extractorUtils.ts` (通用解析工具)<br>- `services/downloader.ts` (ZIP/單檔下載與目錄存取) | `src/features/toolbox/tools/image-scraper/dev-tools/` (包含 IG 探測腳本與離線樣本) | `docs/image-scraper-spec.md`<br>`src/features/toolbox/tools/image-scraper/功能說明.md` |
 | ↳ **Sub: Activity Monitor** | 當前分頁敏感權限（鏡頭/麥克風/定位/剪貼簿）實時審查與安全日誌 | `src/features/toolbox/tools/activity-monitor/index.ts` | `src/features/toolbox/tools/activity-monitor/types.ts` | `ActivityMonitor.tsx` (權限卡片、日誌串流) | - | - | `src/features/toolbox/tools/activity-monitor/功能說明.md` |
-| ↳ **Sub: Subtitle Collector** | 跨插件收集影音字幕與筆記快照，支援時間戳跳轉、Markdown 導出與今日戰役轉化 | `src/features/toolbox/tools/subtitle-collector/index.ts` | `src/features/toolbox/tools/subtitle-collector/types.ts` | `SubtitleCollector.tsx` (搜尋列、標籤過濾、卡片流) | `chrome.storage.local` (`capturedNotes`) 即時同步 | - | `src/features/toolbox/tools/subtitle-collector/功能說明.md` |
-| **4. Project Mgmt (專案管理)** | 每週專案核心戰役、待辦收件匣 (Inbox)、歷史衝刺日誌看板 | `src/features/project-management/index.ts` | `src/features/project-management/types.ts` | `ProjectManagementDemo.tsx` (任務池與甘特進度清單) | `src/core/api/sync.ts` (雙向雲端同步引擎) | - | `docs/user-story-spec.md` |
+| ↳ **Sub: Subtitle Collector** | 跨插件收集影音字幕與筆記快照，支援時間戳跳轉、Markdown 導出、本地 SRT 拖放解析匯入與今日戰役/收件匣任務轉化 | `src/features/toolbox/tools/subtitle-collector/index.ts` | `src/features/toolbox/tools/subtitle-collector/types.ts` | `SubtitleCollector.tsx` (搜尋列、標籤過濾、卡片流、SRT拖放) | - `services/srtParser.ts` (SRT 解析與轉化)<br>- `services/subtitleConverter.ts` (今日戰役與收件匣轉接器)<br>- `chrome.storage.local` (`capturedNotes`) 即時同步 | - | `src/features/toolbox/tools/subtitle-collector/功能說明.md` |
+| **4. Project Mgmt (專案管理)** | 每週專案核心戰役、待辦收件匣 (Inbox)、歷史衝刺日誌看板 | `src/features/project-management/index.ts` | `src/features/project-management/types.ts` | `ProjectManagementDemo.tsx` (主視圖容器)<br>  ↳ `components/tabs/TaskPoolTab.tsx`<br>  ↳ `components/tabs/InboxTab.tsx`<br>  ↳ `components/tabs/SprintLogsTab.tsx`<br>  ↳ `components/modals/SyncSettingsModal.tsx` | - `hooks/useProjectManagement.ts` (狀態與 CRUD Hook)<br>- `src/core/api/sync.ts` (雙向雲端同步引擎) | - | `docs/user-story-spec.md` |
 | **5. Analytics (數據分析)** | 每日專注時長統計、每週生產力柱狀圖 (Chart.js)、完成任務總結報表 | `src/features/analytics/index.ts` | `src/features/analytics/types.ts` | `AnalyticsDashboard.tsx` (圖表與報告面板) | - | - | - |
 | **6. Bookmarks (辦公室傳送門)** | 常用辦公服務傳送門（Google Tasks, Notion, Jira, GitHub）書籤與導航 | `src/features/bookmarks/index.ts` | `src/features/bookmarks/types.ts` | `BookmarksHub.tsx` (自訂圖示與快速開啟面板) | - | - | - |
 | **7. Gemini Exporter (對話匯出)** | Gemini 官方網頁對話自動偵測、Markdown 結構化轉換與本機檔案下載 | `src/features/gemini-exporter/index.ts` | `src/features/gemini-exporter/types.ts` | `GeminiManager.tsx` (對話清單管理面板) | - `utils/exporter.ts` (Markdown 轉換與觸發下載)<br>- **注入腳本**：`src/geminiContent.ts` | - | `docs/gemini-content-spec.md` |
-| **8. Experimental SRT (字幕實驗室)** | 字幕檔案解析、時間軸匹配與實驗性原型視圖 | `src/features/experimental-srt/index.ts` | `types/srt.ts` | `SrtReader.tsx` | `utils/srtParser.ts` | - | - |
+| **8. Experimental SRT (字幕實驗室)** | 字幕檔案解析原型（解析核心已整併至 Subtitle Collector，維持代理相容） | `src/features/experimental-srt/index.ts` | `types/srt.ts` | `SrtReader.tsx` | `utils/srtParser.ts` (已代理轉接至 Subtitle Collector) | - | - |
 
 ---
 
@@ -60,13 +60,13 @@
 
 以下檔案程式碼行數龐大 (>500 行)。**AI 讀取或修改時，切勿全文載入，必須先用 `grep_search` 定位關鍵行號，再搭配 `view_file` (指定 `StartLine`/`EndLine`) 局部讀取**：
 
-- 🔴 `src/features/toolbox/tools/image-scraper/ImageScraper.tsx` (~1,008 行) - 圖片下載主互動視圖
-- 🔴 `src/features/project-management/components/ProjectManagementDemo.tsx` (~778 行) - 任務管理清單視圖
-- 🔴 `src/features/scrumclock/components/DailyMissionBriefing.tsx` (~649 行) - 每日作戰目標簡報面板
 - 🔴 `src/geminiContent.ts` (~569 行) - Gemini 網頁注入 Content Script
 - 🔴 `src/components/InstallDocs.tsx` (~558 行) - 系統安裝說明文檔元件
 
 #### 🟢 模組化瘦身成功紀錄 (已自巨石清單除名)
+- 🟢 `src/features/project-management/components/ProjectManagementDemo.tsx` (826 行 ➔ 156 行) - 解耦抽離任務池、收件匣、衝刺日誌與同步設定視窗至 `components/`，並封裝 `useProjectManagement` Hook
+- 🟢 `src/features/toolbox/tools/image-scraper/ImageScraper.tsx` (1,252 行 ➔ 341 行) - 解耦抽離輸入主控、篩選器、圖片列表、下載控制與預覽燈箱至 `components/`
+- 🟢 `src/features/scrumclock/components/DailyMissionBriefing.tsx` (700 行 ➔ 194 行) - 解耦抽離任務選取器、行事曆提醒與設定抽屜至 `components/briefing/`
 - 🟢 `src/entries/sidebar/main.tsx` (658 行 ➔ 123 行) - 解耦抽離 AIAssistantView 子元件實現按需延遲載入 (Lazy Loading)，並原生嵌入 ToolboxHub isSidebar 自適應模式
 - 🟢 `src/features/toolbox/tools/image-scraper/services/imageExtractor.ts` (1,939 行 ➔ 287 行) - 策略模式重構完成，平台解析已分流
 - 🟢 `src/features/scrumclock/components/SprintPomodoro.tsx` (758 行 ➔ 412 行) - 任務項目、Markdown 匯入與結算彈窗已解耦至 `components/sprint/`

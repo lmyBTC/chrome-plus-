@@ -1,4 +1,4 @@
-import { ScrapedImage } from '../types';
+import { ScrapedImage, ActiveTabScrapeMode, CarouselProgress } from '../types';
 import { ActiveTabScrapeOptions } from './types';
 import {
   detectImageFormat,
@@ -318,4 +318,61 @@ export async function extractFromActiveTab(options?: ActiveTabScrapeOptions): Pr
     tabUrl,
     images: Array.from(imageMap.values())
   };
+}
+
+export interface ScrapeWorkflowParams {
+  crawlMode: 'url' | 'active-tab';
+  targetUrl: string;
+  activeTabMode: ActiveTabScrapeMode;
+  onCarouselProgress?: (progress: CarouselProgress) => void;
+  shouldAbort?: () => boolean;
+}
+
+/**
+ * 整合爬取工作流程（URL 遠端爬取 / Instagram 貼文偵測 / Chrome 分頁原生提取）
+ */
+export async function executeScrapeWorkflow(params: ScrapeWorkflowParams): Promise<{
+  images: ScrapedImage[];
+  title: string;
+}> {
+  if (params.crawlMode === 'url') {
+    if (!params.targetUrl.trim()) {
+      throw new Error('請輸入欲爬取的網頁網址');
+    }
+    const isInstagram = /instagram\.com\/(p|reel|reels)\/([A-Za-z0-9_-]+)/i.test(params.targetUrl);
+
+    if (isInstagram && typeof chrome !== 'undefined' && chrome.tabs?.query) {
+      const cleanTarget = params.targetUrl.split('?')[0].replace(/\/+$/, '');
+      const tabs = await chrome.tabs.query({});
+      const matchedTab = tabs.find(t => t.url && t.url.split('?')[0].replace(/\/+$/, '') === cleanTarget);
+
+      if (matchedTab?.id) {
+        const res = await extractFromActiveTab({
+          targetTabId: matchedTab.id,
+          mode: 'fast',
+          onCarouselProgress: params.onCarouselProgress
+        });
+        return { images: res.images, title: res.tabTitle };
+      }
+
+      try {
+        const res = await fetchAndExtractFromUrl(params.targetUrl);
+        if (res.images.length > 0) return res;
+      } catch (fetchErr) {
+        console.warn('URL fetch 失敗:', fetchErr);
+      }
+      throw new Error('Instagram 影片與貼文受防盜鏈保護。請在瀏覽器分頁中開啟該貼文，並使用「採集當前分頁」即可一鍵抓取！');
+    }
+
+    return await fetchAndExtractFromUrl(params.targetUrl);
+  }
+
+  const res = await extractFromActiveTab({
+    mode: params.activeTabMode,
+    maxTraverseCount: 80,
+    traverseDelayMs: 850,
+    onCarouselProgress: params.onCarouselProgress,
+    shouldAbort: params.shouldAbort
+  });
+  return { images: res.images, title: res.tabTitle || '當前分頁' };
 }

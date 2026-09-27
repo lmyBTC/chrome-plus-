@@ -38,8 +38,10 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `SprintPomodoro.tsx`: 核心番茄鐘衝刺計時面板 (412 行)。
 - `sprint/SprintBattleItem.tsx`: 單一作戰任務項目視圖與狀態控制。
 - `sprint/SprintMarkdownImporter.tsx`: Markdown 格式任務解析與批次匯入視圖。
-- `sprint/SprintResultModal.tsx`: 衝刺結束成果回顧彈窗。
-- `DailyMissionBriefing.tsx`: 每日作戰目標簡報面板。
+- `DailyMissionBriefing.tsx`: 每日作戰目標簡報面板 (194 行)。
+- `briefing/BriefingMissionSelector.tsx`: 每週作戰任務清單展示、手動新增編輯與 AI 智能拆解彈窗。
+- `briefing/BriefingCalendarSchedule.tsx`: Google Calendar / 本地既有時段行程排程整合提醒視圖。
+- `briefing/BriefingSettingsDrawer.tsx`: Google Apps Script URL、Gemini API Key 與分心黑名單配置抽屜。
 - `EndOfDayReview.tsx`: 每日結算回顧面板。
 - `QuickCapture.tsx`: 閃電捕捉靈感與待辦。
 
