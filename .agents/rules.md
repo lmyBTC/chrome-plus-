@@ -23,7 +23,7 @@
 ## 1. 守門門禁與任務協議 (Gate Protocol)
 - **3-Gate 門禁守則**：**Gate 0** 零工具直覺方向確認（禁掃描）➔ **Gate 1** 窄化勘查、產出 `task.md` (`0.doc_mg/tasks/`) 並輸出會話接力指令（禁改碼）➔ **Gate 2** 分段原子執行與動態收斂（物理打勾）。
 - **SSOT 閉環義務**：凡涉模組變更或分拆，結案前必須回寫插件專屬 SSOT 文檔與對應技能字典。
-- *完整流程詳見*：`.agents/skills/task-protocol/SKILL.md` 及 `0.doc_mg/task_manager.md`。
+- *完整流程詳見*：`.agents/skills/task-protocol/SKILL.md` 及 `0.doc_mg/docs/task_manager.md`。
 
 ---
 

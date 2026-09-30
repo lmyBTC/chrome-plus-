@@ -12,7 +12,7 @@
 | `browser-activity-monitor/` | **Browser Activity Monitor** | 原生 JS, Manifest V3 (零依賴) | 80% 原生常駐監控（網路流量/下載行為/原生權限審查）、20% 隨選深入探針、Side Panel 即時面板 | 👉 `browser-activity-monitor/ACTIVITY_MONITOR_README.md` | 🧠 `activity-monitor-core` (`.agents/skills/activity-monitor-core/`) |
 | `chrome_video speed plus/` | **Video Speed Plus** | 原生 JS, Manifest V3, Shadow DOM | 全網 HTML5 影片播放倍速調整 (0.1x~16x)、快捷鍵與 A-B 循環 | 👉 `chrome_video speed plus/VIDEOSPEED_README.md` | 🧠 `video-speed-core` (`.agents/skills/video-speed-core/`) |
 | `finance-research-clipper-oss/` | **Finance Research Clipper** | 原生 JS, Manifest V3 (零依賴) | Google/Yahoo/Goodinfo 多合一深度爬蟲、分析師目標價、財報矩陣、AI 研報採集 | 👉 `finance-research-clipper-oss/FINANCE_CLIPPER_README.md` | 🧠 `finance-clipper-core` (`.agents/skills/finance-clipper-core/`) |
-| `0.doc_mg/` | **專案管理與契約協定** | Python 3 | MV3 自動審計工具、任務協議管理 (Task Protocol)、跨插件黑盒通訊契約 | 👉 跨插件通訊契約 (`0.doc_mg/docs/cross_plugin_contract.md`) | 🧠 `task-protocol` (`.agents/skills/task-protocol/`) |
+| `0.doc_mg/` | **專案管理、技術標準與契約協定** | Python 3 | 規範標準 (`0.doc_mg/docs/`)、任務追蹤 (`0.doc_mg/tasks/`)、MV3 審計工具、跨插件黑盒通訊契約 | 👉 標準規格庫 (`0.doc_mg/docs/`)、跨插件契約 (`0.doc_mg/docs/cross_plugin_contract.md`) | 🧠 `task-protocol` (`.agents/skills/task-protocol/`), `dev-standards` (`.agents/skills/dev-standards/`) |
 
 ---
 

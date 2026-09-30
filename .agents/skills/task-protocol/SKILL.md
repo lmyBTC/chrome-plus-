@@ -3,7 +3,7 @@ name: 任務協議管理 (Task Protocol Management)
 description: 強制執行 `task_template_v2.md` 的初始化、物理同步、狀態收斂與封存管理規範。
 triggers: [建立任務, 開始開發, 任務拆解, 狀態更新, 同步進度, 任務歸檔, 歷史任務, 封存任務, 狀態收斂]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/task_manager.md"]
+ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.md"]
 ---
 
 # 技能指令：任務協議守護者 (v3.0 - 3-Gate Protocol)

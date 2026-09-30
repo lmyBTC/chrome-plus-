@@ -3,7 +3,7 @@ name: Chrome 插件合規審計 (Chrome Compliance Auditor)
 description: 自動審查 Chrome 插件的 Manifest V3 設定與 JS/TS 代碼中的安全漏洞（CSP/XSS），確保符合 Web Store 上架合規。
 triggers: [安全審查, 合規檢查, manifest審計, 插件檢查, 檢查manifest, 上架檢查, 原始碼掃描, 靜態掃描]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/dev_standards.md", "0.doc_mg/chrome_agent_optimization.md"]
+ssot_dependencies: ["0.doc_mg/docs/dev_standards.md", "0.doc_mg/docs/chrome_agent_optimization.md"]
 ---
 
 # 專家技能：Chrome 插件合規審計 (Chrome Compliance Auditor)
@@ -12,8 +12,8 @@ ssot_dependencies: ["0.doc_mg/dev_standards.md", "0.doc_mg/chrome_agent_optimiza
 
 ## 1. 核心指南引用 (Mandatory Read)
 在執行審查或修改插件代碼前，建議參閱以下 SSOT 文件：
-* `0.doc_mg/dev_standards.md` (MV3、Shadow DOM 樣式隔離與通訊標準)
-* `0.doc_mg/chrome_agent_optimization.md` (注意事項與 Token 優化指南)
+* `0.doc_mg/docs/dev_standards.md` (MV3、Shadow DOM 樣式隔離與通訊標準)
+* `0.doc_mg/docs/chrome_agent_optimization.md` (注意事項與 Token 優化指南)
 
 ## 2. 執行工作流 (Auditor Workflow)
 

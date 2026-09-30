@@ -3,7 +3,7 @@ name: 網頁開發與技術規範 (Web Dev & Tech Standards)
 description: 確保所有 Chrome 插件開發符合 Manifest V3 規範、Shadow DOM 樣式隔離、CSP 與 XSS 安全防範。
 triggers: [插件開發, chrome開發, 注入腳本, 樣式隔離, shadow-dom, 訊息傳遞, background-worker, manifest修改, MV3規範, popup開發, CSP合規, XSS防範, 上架合規]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/dev_standards.md"]
+ssot_dependencies: ["0.doc_mg/docs/dev_standards.md"]
 ---
 
 # 技能指令：Chrome 插件開發技術規範專家 (v1.1)
@@ -12,12 +12,12 @@ ssot_dependencies: ["0.doc_mg/dev_standards.md"]
 
 ## 1. 核心指南引用 (Mandatory Read)
 開發、重構或除錯前，**必須** 讀取以下 SSOT 文件：
-- `0.doc_mg/dev_standards.md` (涵蓋 MV3, Shadow DOM, CSP, XSS 等)
+- `0.doc_mg/docs/dev_standards.md` (涵蓋 MV3, Shadow DOM, CSP, XSS 等)
 
 ## 2. 工作流 (Executive Workflow)
 
 ### Step 1: 環境與規格掃描
-- 讀取 `0.doc_mg/dev_standards.md`。
+- 讀取 `0.doc_mg/docs/dev_standards.md`。
 - 確認為**編譯型** (`chrome_scrumclock`) 或**原生零建置型**，並定位入口檔案。
 
 ### Step 2: 安全性與隔離設計
