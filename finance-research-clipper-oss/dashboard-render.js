@@ -144,6 +144,34 @@
     },
 
     /**
+     * 格式化指標數值並將 arrow_upward / arrow_downward 替換為內嵌向量 SVG 圖示
+     */
+    formatStatValue: function (rawVal) {
+      if (rawVal === undefined || rawVal === null) return '--';
+      const strVal = String(rawVal).trim();
+      if (!strVal) return '--';
+
+      const upSvg = '<svg class="stat-trend-icon up" viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-label="上升"><path fill-rule="evenodd" d="M10 17a.75.75 0 01-.75-.75V5.612L5.29 9.77a.75.75 0 01-1.08-1.04l5.25-5.5a.75.75 0 011.08 0l5.25 5.5a.75.75 0 11-1.08 1.04l-3.96-4.158V16.25A.75.75 0 0110 17z" clip-rule="evenodd"/></svg>';
+      const downSvg = '<svg class="stat-trend-icon down" viewBox="0 0 20 20" width="14" height="14" fill="currentColor" aria-label="下降"><path fill-rule="evenodd" d="M10 3a.75.75 0 01.75.75v10.638l3.96-4.158a.75.75 0 111.08 1.04l-5.25 5.5a.75.75 0 01-1.08 0l-5.25-5.5a.75.75 0 111.08-1.04l3.96 4.158V3.75A.75.75 0 0110 3z" clip-rule="evenodd"/></svg>';
+
+      if (strVal === 'arrow_upward') {
+        return `${upSvg} <span>上升</span>`;
+      }
+      if (strVal === 'arrow_downward') {
+        return `${downSvg} <span>下降</span>`;
+      }
+
+      let formatted = window.DashboardRender.escapeHtml(strVal);
+      if (formatted.includes('arrow_upward')) {
+        formatted = formatted.replace(/arrow_upward/g, upSvg);
+      }
+      if (formatted.includes('arrow_downward')) {
+        formatted = formatted.replace(/arrow_downward/g, downSvg);
+      }
+      return formatted;
+    },
+
+    /**
      * 渲染 Key Stats 網格
      */
     renderStatsGrid: function (stats, container) {
@@ -162,7 +190,7 @@
 
         const val = document.createElement('div');
         val.className = 'stat-value';
-        val.textContent = value;
+        val.innerHTML = window.DashboardRender.formatStatValue(value);
 
         box.appendChild(label);
         box.appendChild(val);
@@ -301,28 +329,35 @@
     },
 
     /**
-     * 渲染左側歷史追蹤清單
+     * 渲染左側歷史追蹤清單 (支援依當前族群過濾與歸屬切換)
      */
-    renderHistoryList: function (historyList, currentStock, container, onSelect) {
+    renderHistoryList: function (filteredList, currentStock, container, categories, onSelect, onCategoryChange) {
       if (!container) return;
       container.textContent = '';
 
-      if (!historyList || historyList.length === 0) {
+      if (!filteredList || filteredList.length === 0) {
         const p = document.createElement('p');
         p.style.color = 'var(--text-muted)';
         p.style.fontSize = '0.82rem';
-        p.style.padding = '12px';
-        p.textContent = '尚未有歷史採集紀錄';
+        p.style.padding = '24px 12px';
+        p.style.textAlign = 'center';
+        p.textContent = '此族群尚無歷史標的';
         container.appendChild(p);
         return;
       }
 
-      historyList.forEach((item) => {
+      // 可分配的分類列表（排除全部標的）
+      const assignableCats = (categories || []).filter((c) => c.id !== 'all');
+
+      filteredList.forEach((item) => {
         const card = document.createElement('div');
-        card.className = `history-item ${currentStock && currentStock.ticker === item.ticker ? 'active' : ''}`;
+        const isActive = currentStock && currentStock.ticker === item.ticker;
+        card.className = `history-item ${isActive ? 'active' : ''}`;
         card.dataset.ticker = item.ticker;
 
         const left = document.createElement('div');
+        left.className = 'history-item-left';
+
         const tickerEl = document.createElement('div');
         tickerEl.className = 'history-ticker';
         tickerEl.textContent = item.ticker;
@@ -334,10 +369,40 @@
         left.appendChild(timeEl);
 
         const right = document.createElement('div');
+        right.className = 'history-item-right';
+
         const priceEl = document.createElement('div');
         priceEl.className = 'history-price';
-        priceEl.textContent = item.price;
+        priceEl.textContent = item.price || '--';
         right.appendChild(priceEl);
+
+        // 族群選擇下拉選單
+        if (assignableCats.length > 0) {
+          const select = document.createElement('select');
+          select.className = 'history-category-select';
+          select.title = '移至其他族群';
+
+          assignableCats.forEach((cat) => {
+            const opt = document.createElement('option');
+            opt.value = cat.id;
+            opt.textContent = cat.name;
+            const currentCatId = item.categoryId || 'core';
+            if (currentCatId === cat.id) {
+              opt.selected = true;
+            }
+            select.appendChild(opt);
+          });
+
+          select.addEventListener('click', (e) => e.stopPropagation());
+          select.addEventListener('change', (e) => {
+            e.stopPropagation();
+            const newCatId = e.target.value;
+            if (typeof onCategoryChange === 'function') {
+              onCategoryChange(item.ticker, newCatId);
+            }
+          });
+          right.appendChild(select);
+        }
 
         card.appendChild(left);
         card.appendChild(right);
@@ -351,10 +416,10 @@
     },
 
     /**
-     * 同步高亮選中的標的
+     * 同步高亮選中的標的與族群分頁
      */
-    highlightActiveHistoryItem: function (ticker, historyContainer, sheetContainer) {
-      if (historyContainer) {
+    highlightActiveHistoryItem: function (ticker, historyContainer, activeCategoryId, sheetContainer) {
+      if (historyContainer && ticker) {
         const items = historyContainer.querySelectorAll('.history-item');
         items.forEach((it) => {
           if (it.dataset.ticker === ticker) {
@@ -365,10 +430,10 @@
         });
       }
 
-      if (sheetContainer) {
+      if (sheetContainer && activeCategoryId) {
         const tabs = sheetContainer.querySelectorAll('.sheet-tab');
         tabs.forEach((tab) => {
-          if (tab.dataset.ticker === ticker) {
+          if (tab.dataset.categoryId === activeCategoryId) {
             tab.classList.add('active');
             tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
           } else {
@@ -379,63 +444,186 @@
     },
 
     /**
-     * 渲染底部分頁列 (Google Sheets 風格)
+     * 渲染底部族群分類 Tab 列
      */
-    renderSheetTabs: function (historyList, currentStock, container, countEl, onSelect, onClose) {
+    renderCategoryTabs: function (categories, activeCategoryId, historyList, container, countEl, callbacks) {
       if (!container) return;
       container.textContent = '';
+      const { onSelectCategory, onEditCategory, onDeleteCategory } = callbacks || {};
 
-      if (!historyList || historyList.length === 0) {
-        const emptySpan = document.createElement('span');
-        emptySpan.style.color = 'var(--text-muted)';
-        emptySpan.style.fontSize = '0.75rem';
-        emptySpan.style.padding = '6px 12px';
-        emptySpan.textContent = '尚未暫存任何股票分頁';
-        container.appendChild(emptySpan);
-        if (countEl) countEl.textContent = '0 檔標的分頁';
+      if (!categories || categories.length === 0) {
+        if (countEl) countEl.textContent = '0 個族群';
         return;
       }
 
-      if (countEl) countEl.textContent = `${historyList.length} 檔標的分頁`;
+      const totalStocks = historyList ? historyList.length : 0;
+      if (countEl) {
+        countEl.textContent = `${categories.length} 個族群 / 共 ${totalStocks} 檔`;
+      }
 
-      historyList.forEach((item) => {
+      categories.forEach((cat) => {
         const tab = document.createElement('div');
-        const isActive = currentStock && currentStock.ticker === item.ticker;
-        tab.className = `sheet-tab ${isActive ? 'active' : ''}`;
-        tab.dataset.ticker = item.ticker;
+        const isActive = cat.id === activeCategoryId;
+        tab.className = `sheet-tab category-tab ${isActive ? 'active' : ''}`;
+        tab.dataset.categoryId = cat.id;
+
+        // 計算該族群下的標的數量
+        let count = 0;
+        if (historyList) {
+          if (cat.id === 'all') {
+            count = historyList.length;
+          } else {
+            count = historyList.filter((item) => {
+              const catId = item.categoryId || 'core';
+              return catId === cat.id;
+            }).length;
+          }
+        }
 
         const icon = document.createElement('span');
         icon.className = 'sheet-tab-icon';
-        icon.textContent = '📊';
+        icon.textContent = cat.id === 'all' ? '📊' : '📁';
 
-        const tickerSpan = document.createElement('span');
-        tickerSpan.className = 'sheet-tab-ticker';
-        tickerSpan.textContent = item.ticker;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'sheet-tab-name';
+        nameSpan.textContent = cat.name;
 
-        const priceSpan = document.createElement('span');
-        priceSpan.className = 'sheet-tab-price';
-        priceSpan.textContent = item.price;
-
-        const closeBtn = document.createElement('span');
-        closeBtn.className = 'sheet-tab-close';
-        closeBtn.title = `關閉 ${item.ticker} 分頁`;
-        closeBtn.textContent = '✕';
-        closeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (typeof onClose === 'function') onClose(item.ticker);
-        });
+        const countBadge = document.createElement('span');
+        countBadge.className = 'sheet-tab-badge';
+        countBadge.textContent = String(count);
 
         tab.appendChild(icon);
-        tab.appendChild(tickerSpan);
-        tab.appendChild(priceSpan);
-        tab.appendChild(closeBtn);
+        tab.appendChild(nameSpan);
+        tab.appendChild(countBadge);
+
+        // 非系統族群支援更名與刪除
+        if (!cat.isSystem) {
+          const editBtn = document.createElement('span');
+          editBtn.className = 'sheet-tab-edit-btn';
+          editBtn.title = `重新命名「${cat.name}」`;
+          editBtn.textContent = '✎';
+          editBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            startRename(cat, nameSpan);
+          });
+          tab.appendChild(editBtn);
+
+          nameSpan.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            startRename(cat, nameSpan);
+          });
+
+          const closeBtn = document.createElement('span');
+          closeBtn.className = 'sheet-tab-close';
+          closeBtn.title = `刪除「${cat.name}」族群`;
+          closeBtn.textContent = '✕';
+          closeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof onDeleteCategory === 'function') {
+              onDeleteCategory(cat.id, cat.name);
+            }
+          });
+          tab.appendChild(closeBtn);
+        }
 
         tab.addEventListener('click', () => {
-          if (typeof onSelect === 'function') onSelect(item);
+          if (typeof onSelectCategory === 'function') {
+            onSelectCategory(cat.id);
+          }
         });
 
         container.appendChild(tab);
       });
+
+      function startRename(cat, nameSpan) {
+        const originalName = cat.name;
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'sheet-tab-inline-input';
+        input.value = originalName;
+        nameSpan.replaceWith(input);
+        input.focus();
+        input.select();
+
+        let finished = false;
+        const finish = (save) => {
+          if (finished) return;
+          finished = true;
+          const newName = input.value.trim();
+          if (save && newName && newName !== originalName) {
+            if (typeof onEditCategory === 'function') {
+              onEditCategory(cat.id, newName);
+            }
+          } else {
+            input.replaceWith(nameSpan);
+          }
+        };
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') finish(true);
+          if (e.key === 'Escape') finish(false);
+        });
+        input.addEventListener('blur', () => finish(true));
+      }
+    },
+
+    /**
+     * 渲染頂部主題式分類標籤 (Topic Tags)
+     * @param {Array<string>} tags 標籤字串清單
+     * @param {HTMLElement} container 標籤掛載容器
+     * @param {Object} callbacks { onSelectTag: (tag) => void, onRemoveTag: (tag) => void }
+     */
+    renderTopicTags: function (tags, container, callbacks) {
+      if (!container) return;
+      container.innerHTML = '';
+      const { onSelectTag, onRemoveTag } = callbacks || {};
+
+      (tags || []).forEach((tag) => {
+        const pill = document.createElement('div');
+        pill.className = 'topic-tag-pill';
+        pill.title = `點擊採集或篩選：${tag}`;
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'topic-tag-name';
+        nameSpan.textContent = tag;
+
+        const removeBtn = document.createElement('span');
+        removeBtn.className = 'topic-tag-remove';
+        removeBtn.innerHTML = '&times;';
+        removeBtn.title = `刪除標籤「${tag}」`;
+
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (typeof onRemoveTag === 'function') {
+            onRemoveTag(tag);
+          }
+        });
+
+        pill.addEventListener('click', () => {
+          if (typeof onSelectTag === 'function') {
+            onSelectTag(tag);
+          }
+        });
+
+        pill.appendChild(nameSpan);
+        pill.appendChild(removeBtn);
+        container.appendChild(pill);
+      });
+    },
+
+    /**
+     * 相容性轉發：舊版 renderSheetTabs 調用自動轉向
+     */
+    renderSheetTabs: function (historyList, currentStock, container, countEl, onSelect, onClose) {
+      // 保持向下相容性轉向，若外部仍傳入舊參數則渲染一般 tab
+      if (this.renderCategoryTabs) {
+        const dummyCats = [
+          { id: 'all', name: '全部標的', isSystem: true }
+        ];
+        this.renderCategoryTabs(dummyCats, 'all', historyList, container, countEl, {
+          onSelectCategory: () => {}
+        });
+      }
     }
   };
 })();

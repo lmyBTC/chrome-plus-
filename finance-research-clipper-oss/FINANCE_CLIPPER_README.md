@@ -18,15 +18,16 @@
 
 ### 1. 🖥️ 獨立分頁專業儀表板 (`dashboard.html`) —— 主力分析視圖
 - **寬螢幕現代科技感**：專為深度研報設計的暗色調（Slate/Dark Mode）視覺風格與資訊卡片。
-- **左側歷史追蹤庫**：自動紀錄最近爬取過的標的清單（代號、即時價格、時間戳記），支援隨點隨切換、快速比對。
+- **左側歷史追蹤庫**：自動紀錄最近爬取過的標的清單（代號、即時價格、時間戳記），支援隨點隨切換、快速比對，並與底部族群分類動態連動。
 - **全方位財務矩陣**：
-  - 📊 **個股主看板 (Hero)**：即時股價、S&P 500 / Nasdaq 大盤對比、市值、本益比 (P/E)、殖利率、52 週區間。
+  - 📊 **個股主看板 (Hero)**：即時股價、S&P 500 / Nasdaq 大盤對比、市值、本益比 (P/E)、殖利率、52 週區間。關鍵指標網格採自適應均稱排版（自動平衡卡片消除孤立空隙），並將趨勢向量圖示直接內嵌 SVG，杜絕圖示破圖。
   - 🎯 **分析師共識與目標價階梯**：共識評級徽章 (*Strong Buy* / *Hold*)、最高/中位數/最低目標價視覺化水平儀、潛在上漲空間百分比計算。
   - 📈 **最新季度財報表現 (Earnings)**：EPS 與營收實際值 vs 分析師預期。
   - 📑 **損益表數據矩陣 (Income Statement)**：主動導航至 financials 分頁並結合語意關鍵字白名單，精準呈現個股真實各年/季度營收與獲利變化。
   - 🌐 **市場主題與相關專題 (Market Topics)**：獨立呈現 Overview 總覽頁提取之市場熱門主題、趨勢與相關標的行情矩陣。
-- 📑 **底部 Google Sheets 風格活頁分頁列 (Sheet Tabs Bar)**：畫面底端常駐如 Google Sheets / Excel 的暫存活頁標籤列，每檔爬取或暫存的股票自動生成一個活頁標籤（含 Ticker、最新價格與關閉 `✕` 按鈕），支援平滑左右捲動、秒速點擊切換、隨時新增標的。
-- **研報筆記與輸出中心**：自訂投資論述與觀點，支援**一鍵複製完整 Markdown**、**下載 CSV 試算表**與**同步至 Google Sheets**。
+- 🏷️ **頂部自訂主題式分類標籤 (Topic Tags)**：可由使用者自訂新增、編輯與刪除主題標籤（存儲於 `custom_topic_tags`），點擊即可快速篩選或一鍵採集特定領域標的。
+- ✍️ **頂部研報筆記與輸出中心 (Dropdown Drawer)**：以無干擾的 Modern Glassmorphism 頂部下拉浮動面板整合研報備忘錄與 5 顆輸出操作按鈕（🎯 加入今日作戰戰役轉入 ScrumClock、📋 複製 Markdown、📥 下載 CSV、☁️ 發送至 GAS、📦 批次同步），大幅釋放主內容垂直捲動空間。
+- 📑 **底部族群分類選單列 (Category Tabs Bar)**：畫面底端常駐族群分類標籤列（如全部標的、自選核心、科技半導體等），支援新增族群、切換、雙擊編輯名稱與刪除；切換時左側邊欄即時動態連動，標的支援跨族群拖拉或歸類，提供無衝突雙層導航。
 
 ### 2. ⚡ Chrome 側邊欄快捷工具箱 (`sidepanel.html`) —— 即時輕量採集
 - **常駐瀏覽器右側**：不再因網頁切換或點擊失焦而關閉。
@@ -50,15 +51,15 @@
 | 模組 / 檔案 | 職責說明 | 關鍵元素 / 實作函式 |
 | :--- | :--- | :--- |
 | `manifest.json` | MV3 規範宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) | `"side_panel": { "default_path": "sidepanel.html" }` |
-| `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、事件調度與 Gemini Nano AI 研報交互 | `init()`, `loadStockAi()`, `bindEvents()` |
-| `dashboard-render.js` | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、目標價、損益表、市場主題卡片與 Sheet Tabs 分頁列構建 | `window.DashboardRender.renderStock()`, `renderMarketTopicsTable()`, `renderSheetTabs()` |
+| `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、事件調度、族群分類管理、自訂主題標籤 CRUD、輸出中心下拉面板與 Gemini Nano AI 交互 | `init()`, `setupCategoryEvents()`, `setupTopicTagEvents()`, `loadStockAi()`, `bindEvents()` |
+| `dashboard-render.js` | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、指標均稱網格 (`renderStatsGrid`)、SVG 趨勢向量 (`formatStatValue`)、目標價、損益表、市場主題卡片與族群 Tab 列構建 | `window.DashboardRender.renderStock()`, `renderCategoryTabs()`, `renderTopicTags()`, `formatStatValue()` |
 | `dashboard-actions.js` | **[動作] 動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 指數退避重試防禦）、Markdown/CSV 匯出、GAS 同步與轉入 ScrumClock | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportMarkdown()`, `sendToGas()` |
 | `aiClient.js` | **[AI] 跨插件通訊客戶端**：與 ScrumClock 本地 Gemini Nano API 交互防腐層 | `window.FinanceAIClient.requestStockSummary()` |
 | `sidepanel.html`<br>`sidepanel.js`<br>`sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：快捷輸入（內建安全重試）、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
 | `background.js` | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度、Storage 快取維護，支援 `PING` 心跳與安全異步錯誤捕獲 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
-| `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
+| `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取、Key Stats 純淨提取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
 | `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染與一鍵前往儀表板 | `#open-dashboard-btn`, `#btn-goto-dashboard` |
-| `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析 | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
+| `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
 | `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |
 
 ---

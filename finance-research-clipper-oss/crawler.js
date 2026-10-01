@@ -310,9 +310,19 @@
         const label = labelEl.innerText.trim();
         const parent = labelEl.parentElement;
         if (parent) {
-          const valEl = Array.from(parent.children).find((c) => c !== labelEl && c.innerText.trim().length > 0);
+          const candidates = Array.from(parent.children).filter((c) => c !== labelEl && c.innerText.trim().length > 0);
+          // 優先挑選非純圖示名稱的元素 (排除 arrow_upward, arrow_downward 等 Material Symbols 連字字串)
+          let valEl = candidates.find((c) => 
+            !/^(arrow_upward|arrow_downward|arrow_drop_up|arrow_drop_down|expand_less|expand_more|info|help)$/i.test(c.innerText.trim())
+          ) || candidates[0];
+
           if (valEl && valEl.innerText.trim() && !data.stats[label]) {
-            data.stats[label] = valEl.innerText.trim();
+            let cleanVal = valEl.innerText.trim();
+            // 若含有圖示字串且有具體數值，清理圖示前綴保留純淨數據
+            cleanVal = cleanVal.replace(/^(arrow_upward|arrow_downward|arrow_drop_up|arrow_drop_down)\s*/i, '').trim();
+            if (cleanVal) {
+              data.stats[label] = cleanVal;
+            }
           }
         }
       });

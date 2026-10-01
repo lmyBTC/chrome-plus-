@@ -83,10 +83,12 @@ function scrapeFinanceData(selectors) {
       }
     }
 
-    // 2. 智能標籤掃描 (針對進階數據)
+    // 2. 智能標籤掃描 (針對進階數據，過濾 arrow_upward 等圖示干擾)
     document.querySelectorAll('div').forEach(el => {
       if (el.innerText && el.innerText.includes('\n') && el.children.length >= 2) {
-        const lines = el.innerText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        const lines = el.innerText.split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !/^(arrow_upward|arrow_downward|arrow_drop_up|arrow_drop_down|info|help)$/i.test(s));
         if (lines.length === 2 && lines[1].match(/[0-9]/)) {
           keyStats[lines[0]] = lines[1];
         }
@@ -135,7 +137,9 @@ function scrapeOverviewDOM(doc, selectors) {
 
     doc.querySelectorAll('div').forEach(el => {
       if (el.innerText && el.innerText.includes('\n') && el.children.length >= 2) {
-        const lines = el.innerText.split('\n').map(s => s.trim()).filter(s => s.length > 0);
+        const lines = el.innerText.split('\n')
+          .map(s => s.trim())
+          .filter(s => s.length > 0 && !/^(arrow_upward|arrow_downward|arrow_drop_up|arrow_drop_down|info|help)$/i.test(s));
         if (lines.length === 2 && lines[1].match(/[0-9]/)) {
           keyStats[lines[0]] = lines[1];
         }

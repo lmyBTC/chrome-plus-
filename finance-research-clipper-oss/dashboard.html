@@ -26,19 +26,66 @@
         <span>深度採集</span>
       </button>
 
-      <!-- 快速熱門標籤 -->
-      <div class="quick-pills">
-        <button class="pill" data-symbol="NVDA">NVDA</button>
-        <button class="pill" data-symbol="TSLA">TSLA</button>
-        <button class="pill" data-symbol="AAPL">AAPL</button>
-        <button class="pill" data-symbol="MSFT">MSFT</button>
-        <button class="pill" data-symbol="2330">2330</button>
+      <!-- 自訂主題式分類標籤 (Topic Tags) -->
+      <div class="topic-tags-container" id="topic-tags-container">
+        <div class="topic-tags-list" id="topic-tags-list"></div>
+        <button id="btn-add-topic-tag" class="btn-add-topic-tag" title="新增主題或自選標籤">
+          <span>+</span>
+          <span class="btn-add-tag-text">新增主題</span>
+        </button>
       </div>
     </div>
 
     <!-- 右側功能捷徑 -->
     <div class="nav-actions">
-      <button id="btn-open-settings" class="btn-icon" title="設定 Google Apps Script Webhook">⚙️</button>
+      <!-- ✍️ 研報筆記與一鍵輸出中心下拉浮動面板 -->
+      <div class="export-dropdown-wrapper">
+        <button id="btn-toggle-export-panel" class="btn-export-toggle" title="開啟研報筆記與一鍵輸出中心">
+          <span class="btn-export-icon">✍️</span>
+          <span class="btn-export-text">筆記與輸出</span>
+          <span class="dropdown-arrow">▾</span>
+        </button>
+        <div id="export-dropdown-panel" class="export-dropdown-panel" style="display: none;">
+          <div class="export-panel-header">
+            <div class="export-panel-title">
+              <span class="panel-icon">✍️</span>
+              <span>投資研究筆記與一鍵輸出中心</span>
+            </div>
+            <button id="btn-close-export-panel" class="btn-panel-close" title="關閉面板 (Esc)">✕</button>
+          </div>
+          <div class="export-panel-body">
+            <div class="note-section-title">
+              <span>研報核心備忘錄</span>
+              <span class="note-tip">（將自動附加至 Markdown / GAS 匯出）</span>
+            </div>
+            <textarea id="dashboard-note-input" class="note-textarea" placeholder="在此撰寫您的投資觀點、風險提示或核心論述 (輸入內容將自動暫存)..."></textarea>
+            
+            <div class="export-section-divider">
+              <span>快速輸出與協同操作</span>
+            </div>
+
+            <div class="action-buttons-group">
+              <button id="btn-add-scrum-task" class="btn-action btn-scrum-task" title="將本標的研究筆記一鍵轉入 ScrumClock 今日作戰任務">
+                🎯 加入今日作戰戰役
+              </button>
+              <button id="btn-copy-markdown" class="btn-action btn-primary">
+                📋 一鍵複製 Markdown
+              </button>
+              <button id="btn-download-csv" class="btn-action btn-secondary">
+                📥 下載 CSV 試算表
+              </button>
+              <button id="btn-send-gas" class="btn-action btn-success">
+                ☁️ 發送至 Google Sheets (GAS)
+              </button>
+              <button id="btn-batch-send-gas" class="btn-action btn-secondary" title="將全部歷史追蹤清單批次同步至 Google Sheets">
+                📦 批次同步全部標的
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button id="btn-open-settings" class="btn-icon" title="設定 Google Apps Script Webhook 與 AI 連線">⚙️</button>
     </div>
   </header>
 
@@ -48,7 +95,10 @@
     <!-- 左側標的歷史庫 -->
     <aside class="history-sidebar">
       <div class="sidebar-header">
-        <span class="sidebar-title">歷史追蹤清單</span>
+        <div>
+          <span class="sidebar-title">歷史追蹤清單</span>
+          <span id="sidebar-active-cat-badge" class="sidebar-cat-badge">全部標的</span>
+        </div>
         <button id="btn-clear-history" class="btn-clear-history">清空清單</button>
       </div>
       <div id="history-list-container" class="history-list">
@@ -233,50 +283,24 @@
           </div>
         </section>
 
-        <!-- 研報筆記與輸出中心 -->
-        <section class="action-panel">
-          <div class="card-title" style="margin-bottom: 8px;">
-            <span>✍️ 投資研究筆記與一鍵輸出中心</span>
-          </div>
-          <textarea id="dashboard-note-input" class="note-textarea" placeholder="在此撰寫您的投資觀點、風險提示或核心論述 (支援自動合併)..."></textarea>
-          
-          <div class="action-buttons-group">
-            <button id="btn-add-scrum-task" class="btn-action btn-scrum-task" style="background: linear-gradient(135deg, #4f46e5, #3b82f6); color: #ffffff; border: none; font-weight: 600;" title="將本標的研究筆記一鍵轉入 ScrumClock 今日作戰任務">
-              🎯 加入今日作戰戰役
-            </button>
-            <button id="btn-copy-markdown" class="btn-action btn-primary">
-              📋 一鍵複製 Markdown
-            </button>
-            <button id="btn-download-csv" class="btn-action btn-secondary">
-              📥 下載 CSV 試算表
-            </button>
-            <button id="btn-send-gas" class="btn-action btn-success">
-              ☁️ 發送至 Google Sheets (GAS)
-            </button>
-            <button id="btn-batch-send-gas" class="btn-action btn-secondary" title="將全部歷史追蹤清單批次同步至 Google Sheets">
-              📦 批次同步全部標的
-            </button>
-          </div>
-        </section>
-
       </div>
     </main>
   </div>
 
-  <!-- 底部 Google Sheets 風格分頁列 (Sheet Tabs Bar) -->
+  <!-- 底部族群分類 Tab 列 (Category Tabs Bar) -->
   <footer class="sheets-tab-bar">
     <div class="sheet-tabs-controls">
-      <button id="btn-tab-prev" class="sheet-ctrl-btn" title="向左滾動分頁">◀</button>
-      <button id="btn-tab-next" class="sheet-ctrl-btn" title="向右滾動分頁">▶</button>
-      <button id="btn-tab-add" class="sheet-add-btn" title="新增股票分頁 (聚焦搜尋)">➕ 新增標的</button>
+      <button id="btn-tab-prev" class="sheet-ctrl-btn" title="向左滾動族群">◀</button>
+      <button id="btn-tab-next" class="sheet-ctrl-btn" title="向右滾動族群">▶</button>
+      <button id="btn-tab-add" class="sheet-add-btn" title="新增自訂族群分類">➕ 新增族群</button>
     </div>
     
     <div id="sheets-tab-container" class="sheet-tabs-scroll-area">
-      <!-- 動態插入 Sheet Tab: [ 📊 NVDA $128.50 ✕ ] -->
+      <!-- 動態插入族群 Tab -->
     </div>
 
     <div class="sheet-status-info">
-      <span id="sheet-tab-count">0 檔標的分頁</span>
+      <span id="sheet-tab-count">0 個族群</span>
     </div>
   </footer>
 
