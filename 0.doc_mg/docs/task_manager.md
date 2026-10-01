@@ -30,15 +30,32 @@
   避免冗長歷史步驟塞滿對話 context。
 
 ### 1.4. 封存 (Archiving Protocol)
-- **手動移轉**: 當任務完全結束（`status: "已完成"`）後，將任務檔案移動到對應插件的封存目錄：
-  - `0.doc_mg/tasks/archive/chrome_scrumclock/`
-  - `0.doc_mg/tasks/archive/chrome_video_speed_plus/`
-  - `0.doc_mg/tasks/archive/finance-research-clipper-oss/`
-  - `0.doc_mg/tasks/archive/browser-activity-monitor/`
-- 確保 active 任務區 `0.doc_mg/tasks/` 僅保留進行中任務，維持目錄清爽。
+
+當任務達到結案條件時，應依循標準封存程序將任務檔案自現行目錄移至歸檔目錄，以維持 `0.doc_mg/tasks/` 僅保留進行中任務。
+
+#### 1. 結案檢核條件 (Pre-Archive Checklist)
+在執行歸檔前，任務檔案必須滿足以下條件：
+- [x] 所有 Phase 之原子任務均已完成打勾 `[x]`，並完成動態狀態收斂。
+- [x] 驗收標準中所有項目均已檢驗並打勾 `[x]`。
+- [x] 若涉及架構變更或檔案分拆增刪，已完成 SSOT 文檔（如 `[PLUGIN]_README.md` 或專家技能）閉環回寫。
+- [x] AI 簽到區已記錄參與之對話 ID，並確認狀態為結案。
+- [x] 檔案頂部 Frontmatter 之 `status` 欄位已更新為 `"已完成"`。
+
+#### 2. 標準歸檔目錄結構 (Archive Directories)
+所有已結案任務檔案依所屬插件或性質，必須移動至對應的子目錄中，嚴禁散落於 `archive/` 根目錄：
+- **ScrumClock 插件**：`0.doc_mg/tasks/archive/chrome_scrumclock/`
+- **VideoSpeed 插件**：`0.doc_mg/tasks/archive/chrome_video speed plus/`
+- **研報採集器插件**：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
+- **活動監控插件**：`0.doc_mg/tasks/archive/browser-activity-monitor/`
+- **全域與跨插件架構**：`0.doc_mg/tasks/archive/global/`
+
+#### 3. 封存作業原則
+- **無破壞性安全遷移**：一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的準則。
+- **維持原始內容**：封存過程不得竄改檔案內容、變更時間標記或遺失歷史驗收記錄。
+- **純字串相對路徑**：文檔內部連結與路徑參照一律維持專案純字串相對路徑規範。
 
 ---
 
 ## 2. 工具與自動化展望
 
-雖然目前專案以手動封存與管理為主，但未來可視需求在 `0.doc_mg/tools/` 目錄下建立輕量 Python 腳本（例如 `archive_manager.py`），自動識別 `status: "已完成"` 的任務並將其歸檔至對應插件的封存目錄中。
+專案目前以嚴格的規範與手動封存為主。未來可視需求在 `0.doc_mg/tools/` 目錄下建立輕量 Python 腳本（例如 `archive_manager.py`），自動識別 `status: "已完成"` 的任務並將其驗證後歸檔至對應插件的封存目錄中。

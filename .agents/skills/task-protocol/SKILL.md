@@ -53,7 +53,22 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 - **強制收尾**: 在回報任務完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。
 
 ## 2. 封存協議 (Archiving Protocol)
-- 當任務完全結束（`status: "已完成"`）後，需將檔案移至對應的封存目錄：`0.doc_mg/tasks/archive/[plugin]/`。
+當任務完全滿足結案條件時，必須將檔案自 `0.doc_mg/tasks/` 移動至專屬歸檔目錄，嚴禁散落於根目錄：
+1. **結案前置檢核 (Checklist)**：
+   - 檔案內所有 Phase 已完成實體打勾並動態收斂細節。
+   - 驗收標準清單全數勾選通過。
+   - 若涉及架構變動，已完成 SSOT 文檔（`README.md` 或專家技能）閉環回寫。
+   - AI 簽到區記錄當前對話 ID 並確認結案。
+   - Frontmatter `status: "已完成"`。
+2. **標準歸檔目錄對照**：
+   - `chrome_scrumclock/`：`0.doc_mg/tasks/archive/chrome_scrumclock/`
+   - `chrome_video speed plus/`：`0.doc_mg/tasks/archive/chrome_video speed plus/`
+   - `finance-research-clipper-oss/`：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
+   - `browser-activity-monitor/`：`0.doc_mg/tasks/archive/browser-activity-monitor/`
+   - 全域與跨插件任務：`0.doc_mg/tasks/archive/global/`
+3. **無破壞性封存作業**：
+   - 一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的使用者準則。
+   - 保持歷史內容與純字串相對路徑不變。
 
 ## 3. 驗收防呆
 - [ ] **Gate 0 守門**: 是否在未呼叫任何掃描工具前先取得方向授權？
@@ -65,6 +80,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 - [ ] **SSOT 文檔同步**: 若架構或檔案結構有變，插件專屬 `README.md` 與技能字典是否已物理更新？
 - [ ] **狀態收斂**: 完成之 Phase 是否已執行細節收斂以最大化節省 Token？
 - [ ] **物理同步**: 實體任務檔案是否已同步最新狀態？
+- [ ] **封存規範**: 若任務結案，是否已正確歸檔至對應插件/全域子目錄且未散落於根目錄？
 
 > [!CAUTION]
 > **失敗即停**：若發現物理文件結構損壞或遺漏關鍵區塊，應立即停止開發並修復檔案。禁止在未讀取範本的情況下憑記憶生成任務結構。嚴禁跳過 Gate 0 或 Gate 1 直接改動程式碼。
