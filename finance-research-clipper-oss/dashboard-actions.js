@@ -182,6 +182,18 @@
         md += `\n`;
       }
 
+      // 市場主題與相關專題
+      const topics = stock.marketTopics ? stock.marketTopics.table : null;
+      if (topics && Array.isArray(topics) && topics.length > 0) {
+        md += `### 🌐 市場主題與相關專題 (Market Topics)\n\n`;
+        md += `| ` + topics[0].join(' | ') + ` |\n`;
+        md += `| ` + topics[0].map(() => '---').join(' | ') + ` |\n`;
+        for (let i = 1; i < topics.length; i++) {
+          md += `| ` + topics[i].join(' | ') + ` |\n`;
+        }
+        md += `\n`;
+      }
+
       if (note) {
         md += `### ✍️ 個人投資觀點與研報筆記\n\n${note}\n\n`;
       }

@@ -23,7 +23,8 @@
   - 📊 **個股主看板 (Hero)**：即時股價、S&P 500 / Nasdaq 大盤對比、市值、本益比 (P/E)、殖利率、52 週區間。
   - 🎯 **分析師共識與目標價階梯**：共識評級徽章 (*Strong Buy* / *Hold*)、最高/中位數/最低目標價視覺化水平儀、潛在上漲空間百分比計算。
   - 📈 **最新季度財報表現 (Earnings)**：EPS 與營收實際值 vs 分析師預期。
-  - 📑 **損益表數據矩陣 (Income Statement)**：完整表格呈現各年/季度營收與獲利變化。
+  - 📑 **損益表數據矩陣 (Income Statement)**：主動導航至 financials 分頁並結合語意關鍵字白名單，精準呈現個股真實各年/季度營收與獲利變化。
+  - 🌐 **市場主題與相關專題 (Market Topics)**：獨立呈現 Overview 總覽頁提取之市場熱門主題、趨勢與相關標的行情矩陣。
 - 📑 **底部 Google Sheets 風格活頁分頁列 (Sheet Tabs Bar)**：畫面底端常駐如 Google Sheets / Excel 的暫存活頁標籤列，每檔爬取或暫存的股票自動生成一個活頁標籤（含 Ticker、最新價格與關閉 `✕` 按鈕），支援平滑左右捲動、秒速點擊切換、隨時新增標的。
 - **研報筆記與輸出中心**：自訂投資論述與觀點，支援**一鍵複製完整 Markdown**、**下載 CSV 試算表**與**同步至 Google Sheets**。
 
@@ -50,12 +51,12 @@
 | :--- | :--- | :--- |
 | `manifest.json` | MV3 規範宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) | `"side_panel": { "default_path": "sidepanel.html" }` |
 | `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、事件調度與 Gemini Nano AI 研報交互 | `init()`, `loadStockAi()`, `bindEvents()` |
-| `dashboard-render.js` | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、目標價、損益表與 Sheet Tabs 分頁列構建 | `window.DashboardRender.renderStock()`, `renderSheetTabs()` |
+| `dashboard-render.js` | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、目標價、損益表、市場主題卡片與 Sheet Tabs 分頁列構建 | `window.DashboardRender.renderStock()`, `renderMarketTopicsTable()`, `renderSheetTabs()` |
 | `dashboard-actions.js` | **[動作] 動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 指數退避重試防禦）、Markdown/CSV 匯出、GAS 同步與轉入 ScrumClock | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportMarkdown()`, `sendToGas()` |
 | `aiClient.js` | **[AI] 跨插件通訊客戶端**：與 ScrumClock 本地 Gemini Nano API 交互防腐層 | `window.FinanceAIClient.requestStockSummary()` |
 | `sidepanel.html`<br>`sidepanel.js`<br>`sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：快捷輸入（內建安全重試）、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
 | `background.js` | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度、Storage 快取維護，支援 `PING` 心跳與安全異步錯誤捕獲 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
-| `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對與 4 大分頁提取 | `window.FinanceCrawler.runFullStockScraper()` |
+| `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
 | `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染與一鍵前往儀表板 | `#open-dashboard-btn`, `#btn-goto-dashboard` |
 | `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析 | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
 | `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |

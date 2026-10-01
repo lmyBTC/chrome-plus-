@@ -126,6 +126,12 @@
         window.DashboardRender.renderFinancialsTable(stock.financials ? stock.financials.table : null, elements.financialsTableWrap);
       }
 
+      // 4.1 市場主題與相關專題 (Market Topics)
+      if (elements.marketTopicsTableWrap) {
+        const topicsData = stock.marketTopics ? (stock.marketTopics.tables && stock.marketTopics.tables.length > 0 ? stock.marketTopics.tables : stock.marketTopics.table) : null;
+        window.DashboardRender.renderMarketTopicsTable(topicsData, elements.marketTopicsTableWrap);
+      }
+
       // 5. 更新清單活躍標記
       if (elements.historyListContainer && elements.sheetTabContainer) {
         window.DashboardRender.highlightActiveHistoryItem(stock.ticker, elements.historyListContainer, elements.sheetTabContainer);
@@ -183,7 +189,7 @@
         const p = document.createElement('p');
         p.style.color = 'var(--text-muted)';
         p.style.fontSize = '0.88rem';
-        p.textContent = '未擷取到損益表矩陣數據';
+        p.textContent = '此標的未提供損益表數據';
         container.appendChild(p);
         return;
       }
@@ -216,6 +222,82 @@
       tbl.appendChild(tbody);
 
       container.appendChild(tbl);
+    },
+
+    /**
+     * 渲染市場主題與相關專題表格 (Market Topics)
+     */
+    renderMarketTopicsTable: function (table, container) {
+      if (!container) return;
+      container.textContent = '';
+
+      if (!table || !Array.isArray(table) || table.length === 0) {
+        const p = document.createElement('p');
+        p.style.color = 'var(--text-muted)';
+        p.style.fontSize = '0.88rem';
+        p.textContent = '此標的未提供市場主題數據';
+        container.appendChild(p);
+        return;
+      }
+
+      const buildSingleTable = (rows) => {
+        if (!Array.isArray(rows) || rows.length === 0) return null;
+        const tbl = document.createElement('table');
+        tbl.className = 'data-table';
+        tbl.style.marginBottom = '12px';
+
+        const thead = document.createElement('thead');
+        const headerRow = document.createElement('tr');
+        (rows[0] || []).forEach((col) => {
+          const th = document.createElement('th');
+          th.textContent = col;
+          headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+        tbl.appendChild(thead);
+
+        const tbody = document.createElement('tbody');
+        for (let r = 1; r < rows.length; r++) {
+          const tr = document.createElement('tr');
+          (rows[r] || []).forEach((cell) => {
+            const td = document.createElement('td');
+            td.textContent = cell;
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        }
+        tbl.appendChild(tbody);
+        return tbl;
+      };
+
+      if (Array.isArray(table[0]) && Array.isArray(table[0][0])) {
+        let hasTable = false;
+        table.forEach((tblRows) => {
+          const tbl = buildSingleTable(tblRows);
+          if (tbl) {
+            container.appendChild(tbl);
+            hasTable = true;
+          }
+        });
+        if (!hasTable) {
+          const p = document.createElement('p');
+          p.style.color = 'var(--text-muted)';
+          p.style.fontSize = '0.88rem';
+          p.textContent = '此標的未提供市場主題數據';
+          container.appendChild(p);
+        }
+      } else {
+        const tbl = buildSingleTable(table);
+        if (tbl) {
+          container.appendChild(tbl);
+        } else {
+          const p = document.createElement('p');
+          p.style.color = 'var(--text-muted)';
+          p.style.fontSize = '0.88rem';
+          p.textContent = '此標的未提供市場主題數據';
+          container.appendChild(p);
+        }
+      }
     },
 
     /**

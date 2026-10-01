@@ -471,7 +471,63 @@
   }
 
   /**
-   * 4. 抓取 Financials 分頁數據 (損益表 Income Statement)
+   * 4. 抓取 Overview 分頁中的市場主題、趨勢與相關專題表格 (Market Topics)
+   */
+  function scrapeMarketTopics() {
+    const data = {
+      tab: 'marketTopics',
+      topics: [],
+      error: false
+    };
+
+    try {
+      const tables = document.querySelectorAll('table');
+      if (tables.length > 0) {
+        tables.forEach((tbl) => {
+          const rows = Array.from(tbl.querySelectorAll('tr')).map((tr) =>
+            Array.from(tr.querySelectorAll('th, td')).map((td) => td.innerText.trim())
+          ).filter((row) => row.length > 0);
+
+          if (rows.length === 0) return;
+
+          // 排除具備財報特徵之表格，確保僅萃取市場主題/趨勢
+          if (!isFinancialStatementTable(rows)) {
+            data.topics.push(rows);
+          }
+        });
+      }
+    } catch (err) {
+      data.error = true;
+    }
+
+    return data;
+  }
+
+  // 財報語意關鍵字白名單 (中英文對照)，用以排除市場趨勢、熱門標的等非財報表格
+  const FINANCIAL_STATEMENT_KEYWORDS = [
+    'revenue', 'net income', 'operating income', 'cost of revenue', 'gross profit',
+    'diluted eps', 'eps', 'ebitda', 'cash and cash equivalents', 'total assets',
+    'total liabilities', 'operating cash flow', 'capital expenditure', 'free cash flow',
+    'balance sheet', 'cash flow', 'income statement',
+    '營收', '收益', '營業額', '淨利', '淨收入', '營業利益', '營業收入', '毛利', '毛利率',
+    '稀釋後每股盈餘', '每股盈餘', '資產總額', '負債總額', '現金及約當現金', '營運現金流',
+    '自由現金流', '損益表', '資產負債表', '現金流量表'
+  ];
+
+  /**
+   * 輔助函式：校驗表格列資料是否符合財報語意白名單
+   * @param {Array<Array<string>>} rows 
+   * @returns {boolean}
+   */
+  function isFinancialStatementTable(rows) {
+    if (!rows || rows.length === 0) return false;
+    const combinedText = rows.map((r) => r.join(' ')).join(' ').toLowerCase();
+    return FINANCIAL_STATEMENT_KEYWORDS.some((kw) => combinedText.includes(kw.toLowerCase()));
+  }
+
+  /**
+   * 5. 抓取 Financials 分頁數據 (損益表 Income Statement)
+   * 具備財報關鍵字白名單驗證，嚴格過濾非財報之全域表格
    */
   function scrapeFinancials() {
     const data = {
@@ -487,7 +543,9 @@
           const rows = Array.from(tbl.querySelectorAll('tr')).map((tr) =>
             Array.from(tr.querySelectorAll('th, td')).map((td) => td.innerText.trim())
           ).filter((row) => row.length > 0);
-          if (rows.length > 0) {
+          
+          // 嚴格比對白名單：僅納入真正的財務報表矩陣
+          if (rows.length > 0 && isFinancialStatementTable(rows)) {
             data.statements.push(rows);
           }
         });
@@ -504,7 +562,7 @@
    */
   async function tryNavigateToTab(tabName) {
     const tabPatterns = {
-      financials: /^(財務|財務狀況|Financials)$/i,
+      financials: /^(財務|財務狀況|財務報表|Financials)$/i,
       analysis: /^(分析|分析師評級|Analysis)$/i,
       earnings: /^(收益|財報|Earnings)$/i,
       overview: /^(總覽|Overview)$/i
@@ -531,40 +589,49 @@
   }
 
   /**
-   * 主調度器：單頁優先全面提取 + 輕量輔助探測
+   * 主調度器：多分頁走訪萃取 + 語意校驗與獨立主題提取
    */
   async function runFullStockScraper(onProgress) {
     const results = {
       timestamp: new Date().toISOString(),
       overview: null,
+      marketTopics: null,
       analysis: null,
       earnings: null,
       financials: null,
       minerMetrics: null
     };
 
-    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取行情概覽...');
+    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取行情概覽與市場主題...');
     results.overview = scrapeOverview();
+    results.marketTopics = scrapeMarketTopics();
 
     if (typeof onProgress === 'function') onProgress('⚡ 正在萃取分析師評級與目標價...');
     results.analysis = scrapeAnalysis();
 
-    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取財報與損益表...');
+    if (typeof onProgress === 'function') onProgress('⚡ 正在萃取財報盈餘...');
     results.earnings = scrapeEarnings();
-    results.financials = scrapeFinancials();
 
-    // 若損益表未抓到表格且有財務分頁按鈕，做一次輕量嘗試
-    if ((!results.financials.statements || results.financials.statements.length === 0)) {
-      try {
-        await tryNavigateToTab('financials');
-        const secondaryFin = scrapeFinancials();
-        if (secondaryFin.statements && secondaryFin.statements.length > 0) {
-          results.financials = secondaryFin;
+    // 針對損益表：主動導航至 financials 分頁萃取真實報表
+    if (typeof onProgress === 'function') onProgress('⚡ 正在導航至財務分頁以萃取損益表...');
+    try {
+      await tryNavigateToTab('financials');
+      // 等候財務表格渲染（超時防護 1500ms）
+      await waitForCondition(() => {
+        const tables = document.querySelectorAll('table');
+        for (const tbl of tables) {
+          const rows = Array.from(tbl.querySelectorAll('tr')).map((tr) =>
+            Array.from(tr.querySelectorAll('th, td')).map((td) => td.innerText.trim())
+          ).filter((row) => row.length > 0);
+          if (isFinancialStatementTable(rows)) return true;
         }
-      } catch (e) {
-        // 忽略輕量嘗試錯誤
-      }
+        return false;
+      }, 1500, 200);
+    } catch (e) {
+      // 導航失敗則容錯繼續
     }
+
+    results.financials = scrapeFinancials();
 
     // 自動整合標準化純數字指標
     try {
@@ -581,6 +648,7 @@
   const exportTarget = {
     runFullStockScraper,
     scrapeOverview,
+    scrapeMarketTopics,
     scrapeAnalysis,
     scrapeEarnings,
     scrapeFinancials,

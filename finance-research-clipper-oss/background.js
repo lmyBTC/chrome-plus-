@@ -186,6 +186,7 @@ async function crawlStockByKeyword(keyword) {
     const analysis = rawData.analysis || {};
     const earnings = rawData.earnings || {};
     const financials = rawData.financials || {};
+    const marketTopics = rawData.marketTopics || {};
 
     let resolvedTicker = overview.symbol || cleanQuery;
     // 嚴格校驗：若 ticker 仍為首頁關鍵字，說明未成功進入個股
@@ -193,11 +194,23 @@ async function crawlStockByKeyword(keyword) {
       resolvedTicker = cleanQuery;
     }
 
+    // 損益表與財務報表：萃取主要報表矩陣與完整 statements
+    const financialStatements = Array.isArray(financials.statements) ? financials.statements : [];
+    const primaryFinancialTable = financialStatements.length > 0 ? financialStatements[0] : [];
+
+    // 市場主題與熱門專題：獨立封裝萃取主題清單矩陣
+    const marketTopicTables = Array.isArray(marketTopics.topics) ? marketTopics.topics : [];
+    const primaryMarketTopicTable = marketTopicTables.length > 0 ? marketTopicTables[0] : [];
+
     const stockItem = {
       id: `${resolvedTicker}_${Date.now()}`,
       ticker: resolvedTicker,
+      name: overview.name || resolvedTicker,
       query: cleanQuery,
       price: overview.price || 'N/A',
+      change: overview.change || 'N/A',
+      changePercent: overview.changePercent || 'N/A',
+      currency: overview.currency || 'USD',
       stats: overview.stats || {},
       analyst: {
         consensus: analysis.consensus || 'N/A',
@@ -213,8 +226,13 @@ async function crawlStockByKeyword(keyword) {
         revenueEstimate: (earnings.latestQuarter && earnings.latestQuarter.revenueEstimate) || 'N/A',
         table: earnings.history || []
       },
+      marketTopics: {
+        table: primaryMarketTopicTable,
+        tables: marketTopicTables
+      },
       financials: {
-        table: financials.statements && financials.statements.length > 0 ? financials.statements[0] : []
+        table: primaryFinancialTable,
+        statements: financialStatements
       },
       minerMetrics: rawData.minerMetrics || null,
       timestamp: new Date().toISOString(),

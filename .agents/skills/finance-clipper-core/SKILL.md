@@ -24,7 +24,7 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
     * `popup-export.js`: 彈窗文字規則引擎（RuleEngine）、圖片壓縮與 MD/CSV 匯出下載。
   * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄，提供即時個股摘要與快速筆記。
   * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板主控，支援多頁籤、Gemini Nano AI 研報推論連動。
-    * `dashboard-render.js`: 儀表板視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、Sheet Tabs 分頁列與吐司）。
+    * `dashboard-render.js`: 儀表板視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、市場主題與相關專題、Sheet Tabs 分頁列與吐司）。
     * `dashboard-actions.js`: 動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、`sendRuntimeMessageWithRetry` 指數退避重試防禦、GAS 同步、CSV/MD 下載與 ScrumClock 任務建立）。
   * `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）。
 
@@ -33,25 +33,31 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 ## 2. 資料來源選擇器與爬蟲字典 (Crawler Data Sources SSOT)
 
 ### 支援目標網站與核心解析邏輯 (`crawler.js`)
-1. **Yahoo Finance (美股/台股/全球)**:
+1. **Google Finance (美股/台股/全球 - 核心爬蟲管線)**:
+   - 4合1 SPA 走訪導航：Overview、Analysis、Earnings、Financials。
+   - Overview 總覽頁：萃取基本盤價量、Key Stats、及市場專題表格 `marketTopics`（透過語意排除財報）。
+   - Financials 分頁：主動導航並以語意關鍵字白名單校驗萃取真實 `financials` 損益表矩陣。
+2. **Yahoo Finance (美股/台股/全球)**:
    - 標的名稱/代號: `h1`, `div[data-testid="quote-hdr"]`
    - 即時報價與漲跌: `fin-streamer[data-field="regularMarketPrice"]`, `fin-streamer[data-field="regularMarketChangePercent"]`
    - 估值指標: PE (TTM), Forward PE, Market Cap, Beta, 52 Week Range.
-2. **Finviz (美股量化指標與基本面)**:
+3. **Finviz (美股量化指標與基本面)**:
    - 財務比率矩陣: `table.snapshot-table2` (P/E, P/B, EPS, ROE, Debt/Eq, RSI).
    - 分析師評級與目標價: Target Price, Recommendation.
-3. **Goodinfo / 台灣股市資訊網 (台股法人與營收)**:
+4. **Goodinfo / 台灣股市資訊網 (台股法人與營收)**:
    - 外資/投信買賣超, 月營收年增率 (YoY), 殖利率.
-4. **Investing.com (國際總經與財報日曆)**:
+5. **Investing.com (國際總經與財報日曆)**:
    - 財報發布倒數與每股盈餘預估.
 
 ---
 
 ## 3. UI 模組與視圖架構 (View Modules)
-* **儀表板視圖 (`dashboard.js`)**:
-  - `renderWatchlist()`: 渲染左側/頂部自選股清單、漲跌幅色彩標記。
+* **儀表板視圖 (`dashboard-render.js` & `dashboard.js`)**:
+  - `renderFinancialsTable()`: 渲染損益表數據矩陣，若無財報數據時優雅顯示提示。
+  - `renderMarketTopicsTable()`: 獨立渲染市場熱門主題與相關專題清單矩陣。
+  - `renderWatchlist()` / `renderHistoryList()`: 渲染左側歷史追蹤庫、活躍標籤標記。
   - `renderFinancialMetrics()`: 財務三表與關鍵比率卡片。
-  - `renderAnalystRatings()`: 分析師評等、目標價與目標空間圖表。
+  - `renderAnalystRatings()`: 分析師評等、目標價階梯與潛在上漲空間儀表。
   - `renderAIReportPanel()`: 研報解讀面板（連動本地 AI 或外部代理）。
 * **通訊客戶端 (`aiClient.js`)**:
   - 封裝跨插件請求，內建 `sanitizeFinancePayload()` 白名單防腐層。
@@ -62,10 +68,14 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 所有數據儲存於獨立之 `chrome.storage.local`：
 
 ### 主要儲存鍵值 (Storage Keys)
-1. `fc_watchlist`: `Array<{ ticker: string, name: string, price: number, change: number, market: string, updatedAt: number }>`
-2. `fc_stock_notes`: `Record<ticker, string>`（用戶對個股的手動筆記與研究心法）
-3. `fc_reports`: `Record<ticker, { summary: string, highlights: string[], risks: string[], generatedAt: number }>`
-4. `fc_settings`: 偏好設定（預設市場、貨幣單位、自動抓取間隔等）
+1. `stockHistory`: `Array<StockItem>`，個股完整採集資料快照：
+   - `financials`: `{ table: Array<Array<string>>, statements: Array<Array<Array<string>>> }`（損益表真實數據）
+   - `marketTopics`: `{ table: Array<Array<string>>, tables: Array<Array<Array<string>>> }`（市場主題與專題數據）
+   - `stats`, `analyst`, `earnings`, `price`, `ticker` 等。
+2. `fc_watchlist`: `Array<{ ticker: string, name: string, price: number, change: number, market: string, updatedAt: number }>`
+3. `fc_stock_notes`: `Record<ticker, string>`（用戶對個股的手動筆記與研究心法）
+4. `fc_reports`: `Record<ticker, { summary: string, highlights: string[], risks: string[], generatedAt: number }>`
+5. `fc_settings`: 偏好設定（預設市場、貨幣單位、自動抓取間隔等）
 
 ---
 

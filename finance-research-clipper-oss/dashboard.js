@@ -46,8 +46,9 @@
   const earningsRevenue = document.getElementById('earnings-revenue');
   const earningsSummary = document.getElementById('earnings-summary');
 
-  // 損益表與筆記
+  // 損益表、市場主題與筆記
   const financialsTableWrap = document.getElementById('financials-table-wrap');
+  const marketTopicsTableWrap = document.getElementById('market-topics-table-wrap');
   const noteInput = document.getElementById('dashboard-note-input');
 
   // 輸出按鈕
@@ -106,6 +107,7 @@
     earningsRevenue,
     earningsSummary,
     financialsTableWrap,
+    marketTopicsTableWrap,
     historyListContainer,
     sheetTabContainer
   };
