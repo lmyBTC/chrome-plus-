@@ -1,4 +1,5 @@
 import { AuditStorageDB } from './scripts/storage-db.js';
+import { profiler } from './scripts/resource-profiler.js';
 
 /**
  * Browser Activity Monitor - Background Service Worker (MV3)
@@ -48,6 +49,7 @@ if (chrome.alarms) {
  * @param {Object} payload 廣播的事件物件
  */
 function broadcast(payload) {
+  const startTime = performance.now();
   // 若為活動日誌，非同步持久化至 IndexedDB
   if (payload && payload.type === 'ACTIVITY_LOG' && payload.log) {
     db.insertLog(payload.log).catch((err) => {
@@ -62,6 +64,8 @@ function broadcast(payload) {
       activePorts.delete(port);
     }
   }
+  profiler.recordDuration('訊息廣播 (SW Broadcast)', performance.now() - startTime);
+  profiler.recordQueue('active_ports', activePorts.size);
 }
 
 /**
@@ -73,6 +77,7 @@ async function injectDeepInspector(tabId) {
   if (!tabId || typeof tabId !== 'number') {
     throw new Error('無效的 tabId');
   }
+  const startTime = performance.now();
 
   // 1. 注入 ISOLATED 中繼探針 (具備 chrome.runtime 訪問能力)
   await chrome.scripting.executeScript({
@@ -89,6 +94,7 @@ async function injectDeepInspector(tabId) {
   });
 
   activeInspectorTabs.add(tabId);
+  profiler.recordDuration('動態探針注入 (Deep Injection)', performance.now() - startTime);
   broadcast({
     type: 'INSPECTOR_STATUS_CHANGED',
     tabId,
@@ -131,6 +137,7 @@ async function auditOriginSettings(origin) {
   if (!origin || !origin.startsWith('http')) {
     return { error: '無效或非 HTTP(S) Origin' };
   }
+  const startTime = performance.now();
 
   const permissions = [
     { key: 'camera', api: chrome.contentSettings?.camera },
@@ -157,6 +164,7 @@ async function auditOriginSettings(origin) {
     })
   );
 
+  profiler.recordDuration('原生權限審查 (Native Audit)', performance.now() - startTime);
   return results;
 }
 
@@ -174,6 +182,7 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
         return;
       }
 
+      const startTime = performance.now();
       const event = {
         id: crypto.randomUUID ? crypto.randomUUID() : `bam_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
         category: 'network',
@@ -185,6 +194,7 @@ if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
       };
 
       broadcast({ type: 'ACTIVITY_LOG', log: event });
+      profiler.recordDuration('原生網路監聽 (WebRequest)', performance.now() - startTime);
     },
     { urls: ['<all_urls>'] }
   );
@@ -290,6 +300,22 @@ chrome.runtime.onConnect.addListener((port) => {
             error: err.message
           });
         }
+      }
+
+      // 取得背景服務 Profiler 指標
+      if (msg.type === 'GET_BACKGROUND_PROFILER_METRICS') {
+        port.postMessage({
+          type: 'BACKGROUND_PROFILER_METRICS_RESULT',
+          summary: profiler.getSummary()
+        });
+      }
+
+      // 重置背景服務 Profiler 指標
+      if (msg.type === 'RESET_BACKGROUND_PROFILER') {
+        profiler.reset();
+        port.postMessage({
+          type: 'BACKGROUND_PROFILER_RESET_COMPLETED'
+        });
       }
     });
   }

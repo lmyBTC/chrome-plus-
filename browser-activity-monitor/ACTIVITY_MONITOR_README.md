@@ -22,6 +22,11 @@
 - 📊 **Side Panel 現代監控面板**：
   - 採用 Chrome 原生 Side Panel API，支援點擊 Action 圖示直接開啟側邊欄。
   - 提供當前分頁 Origin 權限徽章區、隨選探針開關、多色即時瀑布流、分類篩選 (全部/探針/網路/下載)、日誌 JSON 匯出與一鍵清除。
+- ⚡ **組件資源監視器與效能診斷 (Resource Profiler)**：
+  - 內建輕量級效能採集核心，以微秒級精度監控 Native Audit、IndexedDB 寫入、Port 廣播與 DOM 渲染開銷。
+  - 即時統計 DOM 節點、JS Heap 記憶體與佇列積壓，自動輸出視覺化耗時排行榜。
+  - 整合「智慧優化建議引擎」，主動診斷潛在卡頓點與長任務，並提供具體改善方針。
+  - 遵循零常駐原則，面板收合時 0% 輪詢開銷。
 - 💾 **IndexedDB 本機持久化與排程維護**：
   - 封裝 `AuditStorageDB` 非同步資料庫，支援事務批次寫入與多索引倒序查詢。
   - 整合 `chrome.alarms`，每日定期自動清理 3 天前過期日誌，防止 Storage 膨脹。
@@ -36,12 +41,13 @@
 | :--- | :--- | :--- |
 | `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 權限宣告 |
 | `background.js` | **背景服務背景常駐核心 (Service Worker)** | 80% 原生事件監聽、Origin 權限審查、雙層探針注入調度、Port 長連接廣播、IndexedDB 寫入與定時清理 |
+| `scripts/resource-profiler.js` | **組件資源監視與效能診斷核心** | 輕量耗時統計 (`ResourceProfiler`)、記憶體/佇列/DOM 診斷、智慧優化建議引擎 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
 | `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、3 天過期清理 |
-| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、串流過濾工具列、活動瀑布流容器 |
-| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、各類別彩色標籤、流暢微動畫 |
-| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、權限渲染、探針啟動控制、日誌篩選與匯出 |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、資源監視面板、串流過濾工具列、活動瀑布流容器 |
+| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、資源四宮格 KPI、效能進度條與診斷卡片 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、資源監視器折疊渲染、探針啟動控制、日誌篩選 |
 | `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---
@@ -89,6 +95,11 @@
    - 在該網頁控制台中執行 `navigator.geolocation.getCurrentPosition(()=>{})` 或複製文字，面板立即彈出高亮紅色的 `PROBE` 事件卡片，並附帶調用參數。
 5. **持久化與清除**：
    - 點擊「清除」按鈕，同步清空畫面與 IndexedDB；重新整理 Side Panel 歷史記錄持久化正常。
+6. **組件資源監視與效能診斷驗證**：
+   - 點擊「組件資源監視器」卡片標題以展開面板，確認 DOM 節點、JS 記憶體、佇列積壓與平均延遲四宮格數據正常顯示。
+   - 檢視「模組耗時排行榜」，確認顯示「原生網路監聽」、「原生權限審查」等模組平均每次毫秒數與呼叫次數。
+   - 檢視「優化診斷建議」，確認在正常狀態下呈現「組件資源狀況良好」，或針對異常項目給出具體優化建議。
+   - 點擊「重置計時統計」按鈕，確認累計計時數據成功清零；再次點擊標題收合面板，確認背景定時器自動停止。
 
 ---
 

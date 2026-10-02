@@ -19,7 +19,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
   * `manifest.json`: Manifest V3，宣告 `sidePanel`, `alarms`, `contentSettings`, `webRequest`, `downloads`, `scripting`, `tabs`。
   * `background.js`: 背景 Service Worker 核心，負責監聽原生 webRequest/downloads/contentSettings、排程清理、管理 Port 長連接廣播、調度動態雙層探針。
   * `sidepanel/`: 採用 Chrome 原生 Side Panel API，包含面板 HTML、深色毛玻璃 CSS 與即時串流控制器 `sidepanel.js`。
-  * `scripts/`: 包含動態注入探針 (`probe-main.js`, `probe-isolated.js`) 與本機資料庫模組 (`storage-db.js`)。
+  * `scripts/`: 包含動態注入探針 (`probe-main.js`, `probe-isolated.js`)、本機資料庫模組 (`storage-db.js`) 以及組件資源監視與效能診斷核心 (`resource-profiler.js`)。
 
 ---
 
@@ -56,7 +56,18 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ---
 
-## 5. 安全與合規底線 (Compliance Rules)
+## 5. 組件資源監視與效能診斷規格 (Resource Profiler & Diagnostic Spec)
+* **核心採集器 (`scripts/resource-profiler.js`)**:
+  - **模組耗時統計**: 提供 `time(label)`、`timeEnd(label)` 與 `measure(label, fn)`，以微秒級精度計算 avg、min、max、calls 與最近 30 次歷史採樣。
+  - **四宮格系統指標**: 實時採集 DOM 節點總量、JS Heap 記憶體粗估 (`performance.memory`)、佇列積壓深度 (`db_batch_queue`, `active_ports`) 與全域平均呼叫延遲。
+  - **智慧優化建議引擎**: 自動對比延遲閾值（如單次呼叫 >16ms / >40ms、高頻調用、DOM 節點 >1000、佇列積壓 >20），自動產出 `warning`、`critical` 或 `good` 級別的可操作優化建議。
+* **零常駐負擔原則**:
+  - 資源監視面板預設為收合狀態，不註冊常駐定時器；僅在使用者手動展開面板時啟動 3 秒輪詢，折疊收合時立即銷毀 Timer，達成 0% 額外常駐開銷。
+
+---
+
+## 6. 安全與合規底線 (Compliance Rules)
 1. **嚴禁 innerHTML 漏洞**: 所有動態渲染之文字節點一律使用 `.textContent` 或安全的 DOM 元素構造，杜絕 XSS。
-2. **CSP 零豁免**: 禁止引入外部 CDN 腳本，禁止 `unsafe-eval` 或 `new Function()`。
+2. **CSP 零豁免**: 禁止引入外部 CDN 腳本，禁止 `unsafe-eval`、`new Function()` 或 HTML 內嵌事件監聽 (`onclick`)。
 3. **隱私最小化**: 僅收集用於本機安全審查之網路與行為元資料，不記錄使用者鍵入之敏感密碼或表單內容。
+

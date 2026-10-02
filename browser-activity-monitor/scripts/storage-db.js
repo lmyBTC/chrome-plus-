@@ -4,6 +4,8 @@
  * 可於 Background Service Worker 與 Side Panel 模組中安全復用。
  */
 
+import { profiler } from './resource-profiler.js';
+
 const DB_NAME = 'BrowserActivityMonitorDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'activity_logs';
@@ -61,14 +63,21 @@ export class AuditStorageDB {
    */
   async insertLog(log) {
     if (!log || !log.id) return;
+    const startTime = performance.now();
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction([STORE_NAME], 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const req = store.put(log);
 
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error);
+      req.onsuccess = () => {
+        profiler.recordDuration('IndexedDB 寫入', performance.now() - startTime);
+        resolve();
+      };
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 寫入 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
     });
   }
 
@@ -79,6 +88,8 @@ export class AuditStorageDB {
    */
   async batchInsert(logs) {
     if (!Array.isArray(logs) || logs.length === 0) return 0;
+    const startTime = performance.now();
+    profiler.recordQueue('db_batch_queue', logs.length);
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction([STORE_NAME], 'readwrite');
@@ -92,9 +103,19 @@ export class AuditStorageDB {
         }
       }
 
-      tx.oncomplete = () => resolve(count);
-      tx.onerror = (e) => reject(e.target.error);
-      tx.onabort = (e) => reject(e.target.error);
+      tx.oncomplete = () => {
+        profiler.recordDuration('IndexedDB 批次寫入', performance.now() - startTime);
+        profiler.recordQueue('db_batch_queue', 0);
+        resolve(count);
+      };
+      tx.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 批次寫入 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
+      tx.onabort = (e) => {
+        profiler.recordDuration('IndexedDB 批次寫入 (中止)', performance.now() - startTime);
+        reject(e.target.error);
+      };
     });
   }
 
@@ -105,6 +126,7 @@ export class AuditStorageDB {
    * @returns {Promise<Array<Object>>}
    */
   async getRecentLogs(limit = 100, category = null) {
+    const startTime = performance.now();
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction([STORE_NAME], 'readonly');
@@ -116,6 +138,7 @@ export class AuditStorageDB {
       request.onsuccess = (e) => {
         const cursor = e.target.result;
         if (!cursor || results.length >= limit) {
+          profiler.recordDuration('IndexedDB 查詢', performance.now() - startTime);
           resolve(results);
           return;
         }
@@ -127,7 +150,10 @@ export class AuditStorageDB {
         cursor.continue();
       };
 
-      request.onerror = (e) => reject(e.target.error);
+      request.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 查詢 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
     });
   }
 
@@ -137,6 +163,7 @@ export class AuditStorageDB {
    * @returns {Promise<number>} 清除筆數
    */
   async purgeExpiredLogs(retentionDays = 3) {
+    const startTime = performance.now();
     const db = await this.open();
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
@@ -151,6 +178,7 @@ export class AuditStorageDB {
       req.onsuccess = (e) => {
         const cursor = e.target.result;
         if (!cursor) {
+          profiler.recordDuration('IndexedDB 清理過期', performance.now() - startTime);
           resolve(purgedCount);
           return;
         }
@@ -159,7 +187,10 @@ export class AuditStorageDB {
         cursor.continue();
       };
 
-      req.onerror = (e) => reject(e.target.error);
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 清理過期 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
     });
   }
 
@@ -168,14 +199,21 @@ export class AuditStorageDB {
    * @returns {Promise<void>}
    */
   async clearAllLogs() {
+    const startTime = performance.now();
     const db = await this.open();
     return new Promise((resolve, reject) => {
       const tx = db.transaction([STORE_NAME], 'readwrite');
       const store = tx.objectStore(STORE_NAME);
       const req = store.clear();
 
-      req.onsuccess = () => resolve();
-      req.onerror = (e) => reject(e.target.error);
+      req.onsuccess = () => {
+        profiler.recordDuration('IndexedDB 清空全部', performance.now() - startTime);
+        resolve();
+      };
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 清空全部 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
     });
   }
 }

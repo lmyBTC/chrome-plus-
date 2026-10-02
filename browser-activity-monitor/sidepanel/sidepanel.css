@@ -591,3 +591,325 @@ body {
   cursor: pointer;
   accent-color: var(--accent-cyan);
 }
+
+/* ==========================================================================
+   組件資源監視器 (Resource Monitor & Profiler Panel) 專屬樣式
+   ========================================================================== */
+
+.resource-monitor-card {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.resource-monitor-header {
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+  padding: 2px 0;
+}
+
+.resource-monitor-header:hover .card-title {
+  color: var(--accent-cyan);
+}
+
+.resource-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collapse-icon {
+  font-size: 10px;
+  color: var(--text-dim);
+  display: inline-block;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.resource-monitor-card.expanded .collapse-icon {
+  transform: rotate(90deg);
+  color: var(--accent-cyan);
+}
+
+.health-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.health-pill::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+}
+
+.health-good {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.health-good::before {
+  background: #10b981;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.6);
+}
+
+.health-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.health-warning::before {
+  background: #f59e0b;
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.6);
+}
+
+.health-critical {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.health-critical::before {
+  background: #ef4444;
+  box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+}
+
+.resource-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-xs {
+  padding: 2px 4px;
+  font-size: 10px;
+  border-radius: 4px;
+}
+
+.resource-monitor-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* KPI 四宮格 */
+.profiler-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.kpi-item {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: var(--radius-sm);
+  padding: 6px 4px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-label {
+  font-size: 10px;
+  color: var(--text-dim);
+}
+
+.kpi-val {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.profiler-section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  border-left: 2px solid var(--accent-cyan);
+  padding-left: 6px;
+}
+
+.profiler-subtext {
+  font-size: 10px;
+  color: var(--text-dim);
+  font-family: ui-monospace, monospace;
+  font-weight: 400;
+}
+
+.profiler-rec-count {
+  font-size: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+/* 模組耗時排行榜 */
+.profiler-modules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 160px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.profiler-empty-hint {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 0;
+  font-style: italic;
+}
+
+.module-stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  padding: 5px 8px;
+  transition: background 0.15s ease;
+}
+
+.module-stat-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.module-stat-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+
+.module-stat-name {
+  color: #e2e8f0;
+  font-family: ui-monospace, monospace;
+  font-weight: 500;
+  max-width: 170px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.module-stat-metrics {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  color: var(--text-muted);
+}
+
+.module-bar-wrap {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.module-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #38bdf8 0%, #6366f1 100%);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.module-bar-fill.bar-warning {
+  background: linear-gradient(90deg, #f59e0b 0%, #ef4444 100%);
+}
+
+.module-bar-fill.bar-critical {
+  background: linear-gradient(90deg, #ef4444 0%, #b91c1c 100%);
+}
+
+/* 診斷建議列表 */
+.profiler-recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 180px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.recommendation-item {
+  border-radius: 6px;
+  padding: 7px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 11px;
+  border-left: 3px solid transparent;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.recommendation-item.rec-good {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.recommendation-item.rec-warning {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.06);
+}
+
+.recommendation-item.rec-critical {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.recommendation-item.rec-info {
+  border-left-color: #38bdf8;
+  background: rgba(56, 189, 248, 0.05);
+}
+
+.rec-title {
+  font-weight: 600;
+  color: #f3f4f6;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.rec-desc {
+  color: var(--text-muted);
+  font-size: 10.5px;
+  line-height: 1.4;
+}
+
+.rec-sugg {
+  margin-top: 2px;
+  padding-top: 3px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+  color: #93c5fd;
+  font-size: 10px;
+  display: flex;
+  gap: 4px;
+}
+
+.rec-sugg::before {
+  content: "💡";
+  font-size: 10px;
+}
+

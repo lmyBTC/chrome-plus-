@@ -80,6 +80,76 @@
       </div>
     </section>
 
+    <!-- 組件資源監視器 (輕量效能與優化診斷面板) -->
+    <section class="card resource-monitor-card" id="resource-monitor-section">
+      <div class="card-header resource-monitor-header" id="btn-toggle-profiler" title="點擊展開/收合資源監視器">
+        <div class="resource-title-group">
+          <span class="collapse-icon" id="profiler-collapse-icon">▶</span>
+          <h2 class="card-title">組件資源監視器</h2>
+          <span class="health-pill health-good" id="profiler-health-badge">良好</span>
+        </div>
+        <div class="resource-header-actions">
+          <button class="btn btn-icon btn-xs" id="btn-refresh-profiler" title="立即刷新資源指標">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+          <button class="btn btn-icon btn-xs" id="btn-reset-profiler" title="重置計時統計">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 折疊內容區 (預設收合) -->
+      <div class="resource-monitor-body" id="profiler-body" style="display: none;">
+        <!-- 核心指標四宮格 -->
+        <div class="profiler-kpi-grid">
+          <div class="kpi-item">
+            <span class="kpi-label">DOM 節點</span>
+            <span class="kpi-val" id="kpi-dom-count">0</span>
+          </div>
+          <div class="kpi-item">
+            <span class="kpi-label">JS 記憶體</span>
+            <span class="kpi-val" id="kpi-memory-val">--</span>
+          </div>
+          <div class="kpi-item">
+            <span class="kpi-label">佇列積壓</span>
+            <span class="kpi-val" id="kpi-queue-count">0</span>
+          </div>
+          <div class="kpi-item">
+            <span class="kpi-label">平均延遲</span>
+            <span class="kpi-val" id="kpi-avg-latency">0.0ms</span>
+          </div>
+        </div>
+
+        <!-- 模組開銷排行榜 -->
+        <div class="profiler-section-title">
+          <span>模組耗時排行榜 (Top Modules)</span>
+          <span class="profiler-subtext" id="profiler-total-time">總計 0.0ms</span>
+        </div>
+        <div class="profiler-modules-list" id="profiler-modules-list">
+          <div class="profiler-empty-hint">尚無效能採集資料</div>
+        </div>
+
+        <!-- 智慧優化建議引擎 -->
+        <div class="profiler-section-title">
+          <span>優化診斷建議 (Optimization Insights)</span>
+          <span class="profiler-rec-count badge" id="profiler-rec-badge">0 項建議</span>
+        </div>
+        <div class="profiler-recommendations-list" id="profiler-recommendations-list">
+          <div class="recommendation-item rec-good">
+            <div class="rec-title">組件運作流暢</div>
+            <div class="rec-desc">目前各模組執行延遲均低於閾值，無顯著效能瓶頸。</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 日誌工具列與過濾條件 -->
     <section class="toolbar">
       <div class="filter-tabs">
