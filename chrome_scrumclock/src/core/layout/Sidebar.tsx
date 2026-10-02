@@ -10,7 +10,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) => {
   const menuItems: { id: ToolView; label: string; icon: string }[] = [
     { id: 'scrumclock', label: '敏捷番茄鐘', icon: '🍅' },
-    { id: 'projects', label: '專案管理 (Demo)', icon: '📋' },
+    { id: 'projects', label: '專案規劃看板', icon: '📋' },
     { id: 'bookmarks', label: '辦公室傳送門', icon: '🚪' },
     { id: 'analytics', label: '數據統計', icon: '📊' },
     { id: 'toolbox', label: '實用工具箱', icon: '🧰' },

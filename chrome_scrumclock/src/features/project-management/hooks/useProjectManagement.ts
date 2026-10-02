@@ -20,6 +20,8 @@ export const useProjectManagement = () => {
   const [newTitle, setNewTitle] = useState('');
   const [newPriority, setNewPriority] = useState<'P1' | 'P2' | 'P3'>('P2');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
+  const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
+  const [subtasks, setSubtasks] = useState<Record<string, string[]>>({});
 
   const [visibleColumns, setVisibleColumns] = useState<DashboardColumns>(() => {
     try {
@@ -223,6 +225,94 @@ export const useProjectManagement = () => {
     }
   };
 
+  const handleAddInboxItem = async (text: string) => {
+    if (!text.trim()) return;
+    try {
+      const inbox = await storage.getInboxItems();
+      const newItem: InboxItem = {
+        id: 'inbox-' + Date.now(),
+        text: text.trim(),
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+        processed: false,
+      };
+      inbox.push(newItem);
+      await storage.saveInboxItems(inbox);
+      await loadData();
+    } catch (e) {
+      console.error('新增收件匣項目失敗:', e);
+    }
+  };
+
+  const handleToggleFocus = async (missionId: string) => {
+    try {
+      const todayLog = await storage.getTodayLog();
+      const isAlreadyIn = todayLog.coreBattles.some((b) => b.missionId === missionId);
+      if (isAlreadyIn) {
+        todayLog.coreBattles = todayLog.coreBattles.filter((b) => b.missionId !== missionId);
+      } else {
+        todayLog.coreBattles.push({
+          missionId,
+          committedTime: '25m',
+        });
+      }
+      await storage.saveTodayLog(todayLog);
+      await loadData();
+    } catch (e) {
+      console.error('切換今日焦點失敗:', e);
+    }
+  };
+
+  const handleBreakdownTask = async (missionId: string) => {
+    setBreakingDownId(missionId);
+    try {
+      const breakdownResult = await sync.breakdownTask(missionId);
+      if (breakdownResult && breakdownResult.length > 0) {
+        setSubtasks((prev) => ({ ...prev, [missionId]: breakdownResult }));
+      } else {
+        alert('AI 拆解失敗或未產生建議，請確認連線設定。');
+      }
+    } catch (e) {
+      console.error('AI 任務拆解失敗:', e);
+      alert('AI 任務拆解失敗');
+    } finally {
+      setBreakingDownId(null);
+    }
+  };
+
+  const handleApplySubtasks = async (missionId: string) => {
+    const tasks = subtasks[missionId];
+    if (!tasks || tasks.length === 0) return;
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const original = missions.find((m) => m.id === missionId);
+      const newMissions: WeeklyMission[] = tasks.map((text, idx) => ({
+        id: `task-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
+        text: text.replace(/^[-*•\d.]+\s*/, ''),
+        isCompleted: false,
+        priority: original?.priority || 'P2',
+        notes: `衍生自母任務: ${original?.text || ''}`,
+        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      }));
+      await storage.saveWeeklyMissions([...missions, ...newMissions]);
+      setSubtasks((prev) => {
+        const next = { ...prev };
+        delete next[missionId];
+        return next;
+      });
+      await loadData();
+    } catch (e) {
+      console.error('匯入子任務失敗:', e);
+    }
+  };
+
+  const handleDismissSubtasks = (missionId: string) => {
+    setSubtasks((prev) => {
+      const next = { ...prev };
+      delete next[missionId];
+      return next;
+    });
+  };
+
   const handleSync = async () => {
     const localMissions = await storage.getWeeklyMissions();
     const hasRealTasks = localMissions.some(
@@ -283,6 +373,8 @@ export const useProjectManagement = () => {
     newPriority,
     setNewPriority,
     notesInputs,
+    breakingDownId,
+    subtasks,
     visibleColumns,
     setVisibleColumns,
     handleAddTask,
@@ -293,6 +385,11 @@ export const useProjectManagement = () => {
     handleUpdateNotes,
     handleConvertInbox,
     handleDeleteInbox,
+    handleAddInboxItem,
+    handleToggleFocus,
+    handleBreakdownTask,
+    handleApplySubtasks,
+    handleDismissSubtasks,
     handleSync,
     doSmartMerge,
     doFullPull,

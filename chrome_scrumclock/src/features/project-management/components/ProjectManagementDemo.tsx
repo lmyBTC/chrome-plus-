@@ -119,12 +119,18 @@ export const ProjectManagementDemo: React.FC = () => {
             newPriority={pm.newPriority}
             setNewPriority={pm.setNewPriority}
             notesInputs={pm.notesInputs}
+            breakingDownId={pm.breakingDownId}
+            subtasks={pm.subtasks}
             onAddTask={pm.handleAddTask}
             onDeleteTask={pm.handleDeleteTask}
             onUpdateStatus={pm.handleUpdateStatus}
             onUpdatePriority={pm.handleUpdatePriority}
             onNotesChange={pm.handleNotesChange}
             onUpdateNotes={pm.handleUpdateNotes}
+            onToggleFocus={pm.handleToggleFocus}
+            onBreakdownTask={pm.handleBreakdownTask}
+            onApplySubtasks={pm.handleApplySubtasks}
+            onDismissSubtasks={pm.handleDismissSubtasks}
           />
         )}
 
@@ -133,6 +139,7 @@ export const ProjectManagementDemo: React.FC = () => {
             inboxItems={pm.inboxItems}
             onConvertInbox={pm.handleConvertInbox}
             onDeleteInbox={pm.handleDeleteInbox}
+            onAddInboxItem={pm.handleAddInboxItem}
           />
         )}
 
@@ -143,12 +150,14 @@ export const ProjectManagementDemo: React.FC = () => {
 
       <div className="mt-8 bg-blue-950/20 border border-blue-900/40 rounded-xl p-6 text-sm text-blue-300">
         <h3 className="font-bold mb-2 flex items-center gap-2">
-          <span>ℹ️</span> 本地與雲端同步機制說明
+          <span>ℹ️</span> 專案規劃看板職責與同步機制說明
         </h3>
         <p className="opacity-90 leading-relaxed text-dark-secondary">
-          專案管理儀表板將 <strong>每週任務池 (Task Pool)</strong> 與番茄鐘完全綁定，您可以自由在此增刪、修改任務、指定優先權與完成狀態，這些修改會立即反映於番茄鐘首頁。
-          當您完成一個番茄鐘並送出成果時，該筆記錄將被自動寫入 <strong>番茄鐘日誌 (Sprint Logs)</strong> 中。
-          若您設定了 Google Sheet / Notion API，在標記任務完成時系統會即時推送備忘成果至雲端，亦可點選右上角按鈕手動同步拉取最新的雲端任務！
+          專案規劃看板為所有待辦項目的 <strong>單一真理源 (Backlog SSOT)</strong>。
+          在此您可以集中整理每週任務池、透過 <strong>「🎯 推入今日」</strong> 派送任務至番茄鐘進行當日 25 分鐘衝刺；
+          針對龐大專案可運用 <strong>「✨ AI 拆解」</strong> 一鍵細化為子任務；
+          零碎想法則存放於 <strong>收件匣 (Inbox)</strong> 隨時轉為任務。
+          所有狀態與衝刺成果會即時記錄於 <strong>番茄鐘日誌 (Sprint Logs)</strong> 並支援 Google Sheets / Notion 雙向雲端同步！
         </p>
       </div>
     </div>

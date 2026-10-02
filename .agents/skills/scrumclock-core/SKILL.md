@@ -31,11 +31,11 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 ## 2. 核心元件字典 (Component Catalog)
 
 ### 核心版面與容器 (`src/core/layout/`)
-- `Sidebar.tsx`: 主側邊欄導航，包含番茄鐘、任務列表、看板、儀表板與財務整合分頁切換。
+- `Sidebar.tsx`: 主側邊欄導航，包含番茄鐘 (執行態)、專案規劃看板 (規劃態)、儀表板與財務整合分頁切換。
 - `Header.tsx`: 頂部狀態列，顯示今日專注時長與全域控制。
 
 ### 番茄鐘衝刺元件 (`src/features/scrumclock/components/`)
-- `SprintPomodoro.tsx`: 核心番茄鐘衝刺計時面板 (412 行)。
+- `SprintPomodoro.tsx`: 核心番茄鐘衝刺計時面板 (412 行)，聚焦於當日焦點戰役 (Focus Battles) 與 25 分鐘衝刺，頂部內建快速導航至專案池挑選任務。
 - `sprint/SprintBattleItem.tsx`: 單一作戰任務項目視圖與狀態控制。
 - `sprint/SprintMarkdownImporter.tsx`: Markdown 格式任務解析與批次匯入視圖。
 - `DailyMissionBriefing.tsx`: 每日作戰目標簡報面板 (194 行)。
@@ -44,6 +44,13 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `briefing/BriefingSettingsDrawer.tsx`: Google Apps Script URL、Gemini API Key 與分心黑名單配置抽屜。
 - `EndOfDayReview.tsx`: 每日結算回顧面板。
 - `QuickCapture.tsx`: 閃電捕捉靈感與待辦。
+
+### 專案規劃看板元件 (`src/features/project-management/components/`)
+- `ProjectManagementDemo.tsx`: 專案規劃看板主視圖容器 (正名完成，整合 Backlog、收件匣、衝刺日誌與雲端設定)。
+- `tabs/TaskPoolTab.tsx`: 每週任務池看板，支援 AI 任務拆解、Google Sheets 雲端同步與「加入今日焦點 (Focus)」一鍵推入衝刺。
+- `tabs/InboxTab.tsx`: 待辦收件匣 (Inbox) 面板，整合快取靈感並支援轉化為每週任務池項目。
+- `tabs/SprintLogsTab.tsx`: 歷史衝刺日誌看板，統一呈現各輪番茄鐘衝刺歷程與成果統計。
+- `modals/SyncSettingsModal.tsx`: Google Sheets 雙向同步設定與狀態檢視視窗。
 
 ### 側邊欄與視圖元件 (`src/entries/sidebar/components/`)
 - `AIAssistantView.tsx`: 獨立封裝之 AI 對話助理視圖，內建 `useAISession`、歷史訊息氣泡、快捷提問與輸入框，僅於使用者切換至助理模式時掛載初始化。

@@ -26,7 +26,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ children, onNavi
     },
     {
       id: 'projects',
-      name: '切換至：專案管理 (Demo)',
+      name: '切換至：專案規劃看板',
       shortcut: ['p'],
       keywords: 'projects pm tasks 專案 任務',
       perform: () => onNavigate('projects'),

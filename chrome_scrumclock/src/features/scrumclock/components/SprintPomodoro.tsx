@@ -9,9 +9,10 @@ import { SprintBattleItem } from './sprint/SprintBattleItem';
 
 interface SprintPomodoroProps {
   onComplete: () => void;
+  onNavigateToProjects?: () => void;
 }
 
-export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) => {
+export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNavigateToProjects }) => {
   const {
     state,
     timeLeft,
@@ -373,11 +374,42 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
         </div>
       )}
 
+      {/* 專案池快速導航提示列：強化執行態邊界，指引使用者至規劃看板 */}
+      {onNavigateToProjects && (
+        <div className="mb-6 bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-dark-surface/60 border border-blue-900/40 rounded-xl px-5 py-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-2 text-sm text-dark-secondary">
+            <span className="text-base">💡</span>
+            <span>番茄鐘聚焦於<strong>當下衝刺與今日焦點</strong>。需整理任務池、拆解子任務或進行每週排程？</span>
+          </div>
+          <button
+            onClick={onNavigateToProjects}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/40 text-blue-300 hover:text-white rounded-lg text-xs font-semibold transition-all shadow-sm shrink-0 ml-4 cursor-pointer"
+          >
+            <span>📋 前往專案池挑選/規劃任務</span>
+            <span className="text-xs">→</span>
+          </button>
+        </div>
+      )}
+
       {/* 任務列表 */}
       <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-6">
         <div className="flex justify-between items-center mb-4 border-b border-dark-border-subtle pb-2">
-          <h2 className="text-xl font-semibold text-dark-primary">今日核心戰役</h2>
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-dark-primary">今日核心戰役</h2>
+            <span className="text-xs text-dark-muted bg-dark-surface px-2.5 py-0.5 rounded-full border border-dark-border-subtle">
+              {coreBattles.length} 個戰役
+            </span>
+          </div>
           <div className="flex space-x-2">
+            {onNavigateToProjects && (
+              <button
+                onClick={onNavigateToProjects}
+                className="px-3 py-1 bg-blue-950/30 hover:bg-blue-900/40 border border-blue-800/40 text-blue-400 rounded-lg text-xs transition-colors font-medium mr-1"
+                title="切換至專案看板進行規劃與任務池管理"
+              >
+                📋 專案看板
+              </button>
+            )}
             {state === 'idle' && (
               <button
                 onClick={handleResetToday}
@@ -402,34 +434,50 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete }) =>
           </div>
         </div>
 
-        <div className="space-y-4">
-          {coreBattles.map((battle, index) => {
-            const mission = getMission(battle.missionId);
-            return (
-              <SprintBattleItem
-                key={battle.missionId}
-                battle={battle}
-                mission={mission}
-                index={index}
-                state={state}
-                isSelected={selectedBattleIds.includes(battle.missionId)}
-                isDragged={draggedIndex === index}
-                isBreakingDown={breakingDownId === battle.missionId}
-                subtasks={subtasks[battle.missionId]}
-                onToggleSelect={() => handleSelectToggle(battle.missionId)}
-                onSaveText={handleSaveText}
-                onSaveNotes={handleSaveNotes}
-                onBreakdown={handleBreakdown}
-                onComplete={() => handleCompleteBattle(battle.missionId)}
-                onStartSprint={() => handleStartSprint(battle.missionId, mission?.suggestedDuration)}
-                onRemove={() => handleRemoveBattle(battle.missionId)}
-                onDragStart={(e) => handleDragStart(e, index)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragEnd={handleDragEnd}
-              />
-            );
-          })}
-        </div>
+        {coreBattles.length === 0 ? (
+          <div className="text-center py-10 border border-dashed border-dark-border-subtle rounded-xl bg-dark-surface/20 my-2">
+            <div className="text-3xl mb-2">🎯</div>
+            <p className="text-dark-primary font-medium mb-1">今日尚未選定核心戰役</p>
+            <p className="text-dark-secondary text-sm mb-4">建議保持 3~5 個焦點任務，進入高專注衝刺狀態！</p>
+            {onNavigateToProjects && (
+              <button
+                onClick={onNavigateToProjects}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition-all shadow-md shadow-blue-950/40 cursor-pointer"
+              >
+                📋 前往專案池挑選戰役
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {coreBattles.map((battle, index) => {
+              const mission = getMission(battle.missionId);
+              return (
+                <SprintBattleItem
+                  key={battle.missionId}
+                  battle={battle}
+                  mission={mission}
+                  index={index}
+                  state={state}
+                  isSelected={selectedBattleIds.includes(battle.missionId)}
+                  isDragged={draggedIndex === index}
+                  isBreakingDown={breakingDownId === battle.missionId}
+                  subtasks={subtasks[battle.missionId]}
+                  onToggleSelect={() => handleSelectToggle(battle.missionId)}
+                  onSaveText={handleSaveText}
+                  onSaveNotes={handleSaveNotes}
+                  onBreakdown={handleBreakdown}
+                  onComplete={() => handleCompleteBattle(battle.missionId)}
+                  onStartSprint={() => handleStartSprint(battle.missionId, mission?.suggestedDuration)}
+                  onRemove={() => handleRemoveBattle(battle.missionId)}
+                  onDragStart={(e) => handleDragStart(e, index)}
+                  onDragOver={(e) => handleDragOver(e, index)}
+                  onDragEnd={handleDragEnd}
+                />
+              );
+            })}
+          </div>
+        )}
 
         {/* 匯入 Markdown 區塊 */}
         {state === 'idle' && (

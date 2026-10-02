@@ -25,7 +25,7 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
         <header className="bg-dark-card shadow-md border-b border-dark-border-subtle px-8 py-4 flex items-center justify-between shadow-slate-950/20">
           <h2 className="text-xl font-semibold text-dark-primary">
             {currentView === 'scrumclock' && '🍅 敏捷番茄鐘'}
-            {currentView === 'projects' && '📋 專案管理 (Demo)'}
+            {currentView === 'projects' && '📋 專案規劃看板'}
             {currentView === 'bookmarks' && '🚪 辦公室傳送門'}
             {currentView === 'analytics' && '📊 數據統計'}
             {currentView === 'settings' && '⚙️ 全域設定'}

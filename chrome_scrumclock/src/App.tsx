@@ -98,7 +98,12 @@ function App() {
   // 番茄鐘專屬的主畫面流
   const renderScrumclockFlow = () => {
     if (currentState === 'briefing') return <DailyMissionBriefing onComplete={handleBriefingComplete} />;
-    if (currentState === 'sprint') return <SprintPomodoro onComplete={handleSprintComplete} />;
+    if (currentState === 'sprint') return (
+      <SprintPomodoro 
+        onComplete={handleSprintComplete} 
+        onNavigateToProjects={() => setCurrentView('projects')} 
+      />
+    );
     if (currentState === 'review') return <EndOfDayReview onComplete={handleReviewComplete} />;
     if (currentState === 'completed') return (
       <div className="max-w-4xl mx-auto p-6">

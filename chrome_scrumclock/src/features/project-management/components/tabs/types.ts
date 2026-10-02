@@ -21,18 +21,25 @@ export interface TaskPoolTabProps {
   newPriority: 'P1' | 'P2' | 'P3';
   setNewPriority: (val: 'P1' | 'P2' | 'P3') => void;
   notesInputs: Record<string, string>;
+  breakingDownId?: string | null;
+  subtasks?: Record<string, string[]>;
   onAddTask: () => Promise<void>;
   onDeleteTask: (id: string) => Promise<void>;
   onUpdateStatus: (id: string, statusText: string) => Promise<void>;
   onUpdatePriority: (id: string, priority: 'P1' | 'P2' | 'P3') => Promise<void>;
   onNotesChange: (id: string, value: string) => void;
   onUpdateNotes: (id: string) => Promise<void>;
+  onToggleFocus: (id: string) => Promise<void>;
+  onBreakdownTask: (id: string) => Promise<void>;
+  onApplySubtasks: (id: string) => Promise<void>;
+  onDismissSubtasks: (id: string) => void;
 }
 
 export interface InboxTabProps {
   inboxItems: InboxItem[];
   onConvertInbox: (item: InboxItem) => Promise<void>;
   onDeleteInbox: (id: string) => Promise<void>;
+  onAddInboxItem: (text: string) => Promise<void>;
 }
 
 export interface SprintLogsTabProps {
