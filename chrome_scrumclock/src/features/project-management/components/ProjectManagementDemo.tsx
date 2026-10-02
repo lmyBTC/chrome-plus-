@@ -131,6 +131,10 @@ export const ProjectManagementDemo: React.FC = () => {
             onBreakdownTask={pm.handleBreakdownTask}
             onApplySubtasks={pm.handleApplySubtasks}
             onDismissSubtasks={pm.handleDismissSubtasks}
+            onUpdateTitle={pm.handleUpdateTitle}
+            onBatchPushToFocus={pm.handleBatchPushToFocus}
+            onBatchUpdateStatus={pm.handleBatchUpdateStatus}
+            onBatchDelete={pm.handleBatchDelete}
           />
         )}
 

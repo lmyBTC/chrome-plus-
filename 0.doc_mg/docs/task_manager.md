@@ -18,11 +18,13 @@
 - **建檔路徑**: 一律存放在 `0.doc_mg/tasks/` 目錄下。
 - **命名規範**: `task_YYYYMMDD_[plugin]_[topic].md`（範例：`task_20260624_chrome_scrumclock_add_timer.md`）。
 - **範本使用**: 必須複製 `0.doc_mg/task_template_v2.md` 作為基準，並填入目標、Phase 拆解、驗收標準與 AI 簽到（同時**徹底刪除範本中所有 `<!-- ... -->` 註解說明**）。
+- **Target SSOTs 前置宣告**: 凡涉及元件、模型或架構變動，必須在建檔時前置列出 L1~L4 回寫清單（L1 專家技能、L2 模組導航、L3 領域規格、L4 任務封存），禁止僅列代碼檔案。
 - **中斷點**: 輸出 `task.md` 綱要後**強制停步**，**嚴禁在此時修改原始碼**，等待開發者下達「開始執行」或「approved」指令。
 
 ### 1.3. Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Condensation)
 - **原子執行**: 每次僅執行一個原子任務，單一回合嚴禁跨越多個 Phase。
 - **物理同步**: 每完成一個原子任務，AI **必須立即**在實體任務檔案中打勾 `[x]`。
+- **四層 SSOT 閉環**: 若任務涉及模組新增、修改或架構變動，結案前必須依 Target SSOTs 宣告逐層完成物理回寫（L1 專家技能、L2 模組導航、L3 領域規格、L4 任務封存）。
 - **狀態收斂 (Dynamic Condensation)**: 當某個 Phase 裡的所有原子任務皆完成，進入下一 Phase 前，AI **必須刪除該 Phase 內已完成的細節**，僅保留：
   ```markdown
   ### Phase X: [階段名稱] 狀態：`[已完成]`
@@ -37,7 +39,11 @@
 在執行歸檔前，任務檔案必須滿足以下條件：
 - [x] 所有 Phase 之原子任務均已完成打勾 `[x]`，並完成動態狀態收斂。
 - [x] 驗收標準中所有項目均已檢驗並打勾 `[x]`。
-- [x] 若涉及架構變更或檔案分拆增刪，已完成 SSOT 文檔（如 `[PLUGIN]_README.md` 或專家技能）閉環回寫。
+- [x] 完成四層 SSOT 閉環回寫：
+  - [x] L1 專家技能：`.agents/skills/[plugin]-core/SKILL.md` (元件字典、模型與隔離)
+  - [x] L2 模組導航：`[PLUGIN]/[PLUGIN]_README.md` (模組速查、架構與進入點)
+  - [x] L3 領域規格：`[PLUGIN]/docs/[feature]-spec.md` (若涉及業務規格已同步回寫)
+  - [x] L4 封存治理：`0.doc_mg/tasks/archive/[plugin]/` (檔案依規範完成移動封存)
 - [x] AI 簽到區已記錄參與之對話 ID，並確認狀態為結案。
 - [x] 檔案頂部 Frontmatter 之 `status` 欄位已更新為 `"已完成"`。
 

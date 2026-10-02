@@ -25,9 +25,10 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
    - 若無相關主題：呼叫 `view_file` 讀取 `0.doc_mg/task_template_v2.md`。
    - 若有相關主題：讀取該既有任務檔案。
 3. **Step 1: 精準唯讀掃描（探勘硬窄化）**：僅針對目標插件或相依檔案進行最小化上下文探索（嚴禁全盤無效掃描或跨插件污染）。**嚴禁全檔 dump**：單次 `view_file` 嚴格限制 ≤ 30 行介面簽名，實作細節留待 Gate 2；關鍵介面簽名與型別直接沉澱至 `task.md`。
-4. **Step 2: 建立/更新實體文件**：
+4. **Step 2: 建立/更新實體文件與 SSOT 衝擊評估**：
    - 建立 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`（`plugin` 填寫插件名稱或 `global`/`agents`）。
    - 填寫目標、鎖定檔案、具體 Phase 與驗收標準。
+   - **SSOT 衝擊評估 (Target SSOTs)**：凡涉及元件新增修改、狀態模型或架構變動，必須在「鎖定 SSOT 回寫清單 (Target SSOTs)」前置宣告四層回寫目標（L1 專家技能、L2 插件導航、L3 業務規格、L4 任務生命週期），嚴禁僅列代碼檔案。
    - 在 AI 簽到區勾選並記錄對話 ID。
    - **[強制] 刪除範本中所有帶有說明性質的 `<!-- ... -->` 註解文字。**
 5. **強制停步與會話接力輸出 (Blueprint Halt & Handover)**：
@@ -49,7 +50,13 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
   ```markdown
   ### Phase X: [標題] 狀態：`[已完成]`
   ```
-- **SSOT 文檔閉環義務**: 若任務涉及模組新增、刪除、拆分或公開介面變更，在結案將 status 改為「已完成」前，**必須先同步回寫該插件之專屬 SSOT 文件** (如 `[PLUGIN]_README.md` 或對應之 `.agents/skills/[plugin]-core/SKILL.md`)。
+- **四層 SSOT 閉環義務 (4-Tier SSOT Closed-Loop - 90/10 分級與瘦身守則)**:
+  - **90% 輕量任務（豁免閉環）**：若屬單純樣式、文字、局部除錯重構，**L1~L3 全面豁免，免讀取免回寫**，直接在 `task.md` 勾選 `[N/A]`，結案僅需執行 L4 任務封存，零額外 Token 損耗。
+  - **10% 重大變更（精準骨架回寫）**：僅當任務涉及「模組元件新增/刪除、Storage 模型變更、跨插件通訊變更」時，在結案前依 Target SSOTs 完成**純骨架（Index）**回寫：
+    - **L1 專家技能**：`.agents/skills/[plugin]-core/SKILL.md` (僅補路徑與職責一句話，嚴禁貼入長篇代碼與易變行數)
+    - **L2 插件導航**：`[PLUGIN]/[PLUGIN]_README.md` (更新模組速查矩陣、入口、架構索引)
+    - **L3 業務規格**：`[PLUGIN]/docs/[feature]-spec.md` (核心業務規則，無則免填)
+    - **L4 封存治理**：移動封存至 `0.doc_mg/tasks/archive/[plugin]/` 歸檔結案。
 - **強制收尾**: 在回報任務完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。
 
 ## 2. 封存協議 (Archiving Protocol)
@@ -57,7 +64,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 1. **結案前置檢核 (Checklist)**：
    - 檔案內所有 Phase 已完成實體打勾並動態收斂細節。
    - 驗收標準清單全數勾選通過。
-   - 若涉及架構變動，已完成 SSOT 文檔（`README.md` 或專家技能）閉環回寫。
+   - 已完成四層 SSOT 閉環回寫（L1 專家技能、L2 插件導航、L3 業務規格、L4 封存歸檔）。
    - AI 簽到區記錄當前對話 ID 並確認結案。
    - Frontmatter `status: "已完成"`。
 2. **標準歸檔目錄對照**：
@@ -74,10 +81,11 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 - [ ] **Gate 0 守門**: 是否在未呼叫任何掃描工具前先取得方向授權？
 - [ ] **Gate 1 探勘硬窄化**: 是否單次讀取 ≤ 30 行介面簽名且未 dump 全文？
 - [ ] **Gate 1 藍圖停步與接力**: 是否建立實體 `task.md`、輸出跨會話接力指令並等待授權？
+- [ ] **Gate 1 SSOT 衝擊宣告**: 是否在 `Target SSOTs` 區塊前置宣告 L1~L4 回寫清單？
 - [ ] **Gate 2 依賴截斷**: 是否純粹以實體 `task.md` 為 SSOT 執行？
 - [ ] **局部讀寫規範**: 超過 100 行檔案是否採用 grep + 區段 view + 精準 replace？
 - [ ] **說明註解清理**: `task.md` 中所有 `<!-- ... -->` 範本提示是否已徹底刪除？
-- [ ] **SSOT 文檔同步**: 若架構或檔案結構有變，插件專屬 `README.md` 與技能字典是否已物理更新？
+- [ ] **四層 SSOT 閉環**: 若架構或檔案結構有變，L1 專家技能、L2 導航 README、L3 業務規格、L4 封存歸檔是否皆已同步完成？
 - [ ] **狀態收斂**: 完成之 Phase 是否已執行細節收斂以最大化節省 Token？
 - [ ] **物理同步**: 實體任務檔案是否已同步最新狀態？
 - [ ] **封存規範**: 若任務結案，是否已正確歸檔至對應插件/全域子目錄且未散落於根目錄？

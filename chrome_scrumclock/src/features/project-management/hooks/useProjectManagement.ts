@@ -30,7 +30,7 @@ export const useProjectManagement = () => {
     } catch (e) {
       console.error('載入欄位顯示設定失敗:', e);
     }
-    return { taskId: true, title: true, status: true, priority: true, notes: true, createdAt: true };
+    return { taskId: false, title: true, status: true, priority: true, notes: true, createdAt: false };
   });
 
   useEffect(() => {
@@ -177,6 +177,22 @@ export const useProjectManagement = () => {
       }
     } catch (e) {
       console.error('儲存備註失敗:', e);
+    }
+  };
+
+  const handleUpdateTitle = async (missionId: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
+    if (!trimmed) return;
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (mission) {
+        mission.text = trimmed;
+        await storage.saveWeeklyMissions(missions);
+      }
+      await loadData();
+    } catch (e) {
+      console.error('更新標題失敗:', e);
     }
   };
 
@@ -357,6 +373,72 @@ export const useProjectManagement = () => {
     );
   };
 
+  const handleBatchPushToFocus = async (missionIds: string[]) => {
+    if (missionIds.length === 0) return;
+    try {
+      const todayLog = await storage.getTodayLog();
+      const existingIds = new Set(todayLog.coreBattles.map((b) => b.missionId));
+      let added = 0;
+      missionIds.forEach((id) => {
+        if (!existingIds.has(id)) {
+          todayLog.coreBattles.push({
+            missionId: id,
+            committedTime: '25m',
+          });
+          existingIds.add(id);
+          added++;
+        }
+      });
+      if (added > 0) {
+        await storage.saveTodayLog(todayLog);
+        await loadData();
+      }
+    } catch (e) {
+      console.error('批次推入今日焦點失敗:', e);
+    }
+  };
+
+  const handleBatchUpdateStatus = async (missionIds: string[], statusText: 'TODO' | 'DONE') => {
+    if (missionIds.length === 0) return;
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const targetIds = new Set(missionIds);
+      let changed = false;
+      missions.forEach((m) => {
+        if (targetIds.has(m.id)) {
+          m.isCompleted = statusText === 'DONE';
+          changed = true;
+        }
+      });
+      if (changed) {
+        await storage.saveWeeklyMissions(missions);
+        await loadData();
+      }
+    } catch (e) {
+      console.error('批次更新任務狀態失敗:', e);
+    }
+  };
+
+  const handleBatchDelete = async (missionIds: string[]) => {
+    if (missionIds.length === 0) return;
+    if (!window.confirm(`確定要刪除選取的 ${missionIds.length} 項任務嗎？這也會將它們從今日焦點中移除。`)) return;
+    try {
+      const targetIds = new Set(missionIds);
+      const missions = await storage.getWeeklyMissions();
+      await storage.saveWeeklyMissions(missions.filter((m) => !targetIds.has(m.id)));
+
+      const todayLog = await storage.getTodayLog();
+      const originalCount = todayLog.coreBattles.length;
+      todayLog.coreBattles = todayLog.coreBattles.filter((b) => !targetIds.has(b.missionId));
+      if (todayLog.coreBattles.length !== originalCount) {
+        await storage.saveTodayLog(todayLog);
+      }
+      await loadData();
+    } catch (e) {
+      console.error('批次刪除任務失敗:', e);
+    }
+  };
+
   return {
     weeklyMissions,
     inboxItems,
@@ -383,6 +465,7 @@ export const useProjectManagement = () => {
     handleUpdatePriority,
     handleNotesChange,
     handleUpdateNotes,
+    handleUpdateTitle,
     handleConvertInbox,
     handleDeleteInbox,
     handleAddInboxItem,
@@ -394,5 +477,8 @@ export const useProjectManagement = () => {
     doSmartMerge,
     doFullPull,
     doPushToSheet,
+    handleBatchPushToFocus,
+    handleBatchUpdateStatus,
+    handleBatchDelete,
   };
 };

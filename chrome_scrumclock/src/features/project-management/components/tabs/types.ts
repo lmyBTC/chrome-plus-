@@ -33,6 +33,12 @@ export interface TaskPoolTabProps {
   onBreakdownTask: (id: string) => Promise<void>;
   onApplySubtasks: (id: string) => Promise<void>;
   onDismissSubtasks: (id: string) => void;
+  onUpdateTitle?: (id: string, title: string) => Promise<void>;
+  selectedTaskId?: string | null;
+  onSelectTask?: (id: string | null) => void;
+  onBatchPushToFocus?: (ids: string[]) => Promise<void>;
+  onBatchUpdateStatus?: (ids: string[], status: 'TODO' | 'DONE') => Promise<void>;
+  onBatchDelete?: (ids: string[]) => Promise<void>;
 }
 
 export interface InboxTabProps {

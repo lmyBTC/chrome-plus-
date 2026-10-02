@@ -16,6 +16,14 @@ deadline: "YYYY-MM-DD"
 <!-- 必須一律使用工作區相對路徑，嚴禁寫入本機絕對路徑 -->
 - `./[plugin]/path/to/target_file`
 
+### 鎖定 SSOT 回寫清單 (Target SSOTs)
+<!-- 90/10 分級原則：若屬單純樣式/文字/Bugfix 等輕量任務，L1~L3 直接勾選 [N/A] 豁免，結案不讀寫任何文檔；僅重大架構變更才需前置宣告 -->
+- [ ] [N/A] 輕量任務豁免 (無元件增刪、無 Storage Schema 改動、無跨插件通訊變更)
+- [ ] L1 專家技能：`./.agents/skills/[plugin]-core/SKILL.md` (僅骨架：元件字典、Storage Schema)
+- [ ] L2 插件導航：`./[plugin]/[PLUGIN]_README.md` (模組速查矩陣、入口索引)
+- [ ] L3 業務規格：`./[plugin]/docs/[feature]-spec.md` (業務規格，無則免填)
+- [ ] L4 任務生命週期：`0.doc_mg/tasks/archive/[plugin]/` (結案後移動封存歸檔，必選)
+
 ## 3. 任務拆解
 
 ### Phase 1: [階段名稱] 狀態：`[待辦]`
@@ -30,7 +38,10 @@ deadline: "YYYY-MM-DD"
 - [ ] **核心規範**: 已確認修改符合 Chrome Extension Manifest V3 規範（包括背景服務 worker 非持續性、訊息傳遞安全）。
 - [ ] **除錯清理**: 已確認移除或註解所有測試用的 `console.log()` 與除錯程式碼。
 - [ ] **檔案編碼**: 確認所有修改與新增的檔案皆以 UTF-8 (無 BOM) 編碼保存。
-- [ ] **SSOT 文件同步**: 若架構、模組清單、檔案分拆或接口有變動，已同步回寫並更新該插件專屬 SSOT 文件 (如 [PLUGIN]_README.md / docs/spec.md)。
+- [ ] **SSOT 閉環（二選一）**:
+  - [ ] [N/A] 輕量任務豁免（無結構變動，L1~L3 免比對免回寫）
+  - [ ] 重大架構同步完成（已精準回寫 Target SSOTs 骨架，未貼入冗餘代碼）
+- [ ] **L4 任務封存歸檔**: 任務完成後已依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`。
 - [ ] **插件驗證**: 已在 Chrome 中重新載入插件 (或執行 Vite `npm run build` 後載入 `dist/`)，確認各項功能及背景通訊皆正常無報錯。
 
 ## 6. AI 簽到區與會話接力
