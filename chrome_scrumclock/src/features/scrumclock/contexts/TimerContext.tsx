@@ -204,9 +204,37 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
             // 計時結束
             const nextState = 'logging';
             setState(nextState);
-            chrome.storage.local.set({ 
-              activeTimer: { state: nextState, sprint: currentSprint, timeLeft: 0 } 
-            });
+            
+            // 自動累加關聯任務已消耗番茄數
+            if (currentSprint?.missionId) {
+              const missionId = currentSprint.missionId;
+              chrome.storage.local.get(['activeTimer'], (data: any) => {
+                if (!data.activeTimer?.spentPomodoroRecorded) {
+                  storage.incrementSpentPomodoro(missionId);
+                  chrome.storage.local.set({ 
+                    activeTimer: { 
+                      state: nextState, 
+                      sprint: currentSprint, 
+                      timeLeft: 0,
+                      spentPomodoroRecorded: true 
+                    } 
+                  });
+                } else {
+                  chrome.storage.local.set({ 
+                    activeTimer: { 
+                      state: nextState, 
+                      sprint: currentSprint, 
+                      timeLeft: 0,
+                      spentPomodoroRecorded: true 
+                    } 
+                  });
+                }
+              });
+            } else {
+              chrome.storage.local.set({ 
+                activeTimer: { state: nextState, sprint: currentSprint, timeLeft: 0 } 
+              });
+            }
             return 0;
           }
           return prev - 1;
@@ -246,7 +274,8 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
         state: 'running',
         endTime: calculatedEndTime,
         sprint: sprint,
-        missionText: missionText
+        missionText: missionText,
+        spentPomodoroRecorded: false
       }
     });
 

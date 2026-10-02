@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
-import { WeeklyMission, InboxItem } from '../../../types';
+import { googleTasksSync } from '../../../shared/google/googleTasksSync';
+import { googleCalendarService } from '../../../shared/google/googleCalendarService';
+import { WeeklyMission, InboxItem, GTDStatus } from '../../../types';
 import { DashboardColumns, SprintLogWithMission } from '../components/tabs/types';
 
 declare const chrome: any;
@@ -84,8 +86,9 @@ export const useProjectManagement = () => {
     }
   };
 
-  const handleAddTask = async () => {
-    if (!newTitle.trim()) {
+  const handleAddTask = async (customTitle?: string, initialStatus?: GTDStatus) => {
+    const title = customTitle || newTitle;
+    if (!title.trim()) {
       alert('請輸入任務名稱');
       return;
     }
@@ -93,14 +96,19 @@ export const useProjectManagement = () => {
       const missions = await storage.getWeeklyMissions();
       const newMission: WeeklyMission = {
         id: 'task-' + Date.now() + '-' + Math.random().toString(36).substring(2, 5),
-        text: newTitle.trim(),
+        text: title.trim(),
         isCompleted: false,
+        status: initialStatus || 'next-action',
         priority: newPriority,
+        estimatedPomodoros: 1,
+        spentPomodoros: 0,
         createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
       };
       missions.push(newMission);
       await storage.saveWeeklyMissions(missions);
-      setNewTitle('');
+      if (!customTitle) {
+        setNewTitle('');
+      }
       await loadData();
     } catch (e) {
       console.error('新增任務失敗:', e);
@@ -125,25 +133,138 @@ export const useProjectManagement = () => {
     }
   };
 
+  const [isGoogleSyncing, setIsGoogleSyncing] = useState(false);
+
+  const handleSyncGoogleTasks = async () => {
+    setIsGoogleSyncing(true);
+    try {
+      const result = await googleTasksSync.pullAndMergeTasks();
+      if (result.success) {
+        setSyncFeedback({
+          type: 'success',
+          text: `Google Tasks 同步成功，共連動 ${result.syncedCount} 個任務`,
+        });
+      } else {
+        setSyncFeedback({
+          type: 'error',
+          text: result.errors?.[0] || 'Google Tasks 同步失敗',
+        });
+      }
+      await loadData();
+    } catch (e: any) {
+      setSyncFeedback({
+        type: 'error',
+        text: e?.message || 'Google Tasks 連動失敗 (請確認授權)',
+      });
+    } finally {
+      setIsGoogleSyncing(false);
+      setTimeout(() => setSyncFeedback(null), 3500);
+    }
+  };
+
+  const [isSchedulingCalendar, setIsSchedulingCalendar] = useState(false);
+
+  const handleScheduleTimebox = async (
+    missionId: string,
+    startTime: string | number | Date,
+    durationMinutes = 25
+  ): Promise<boolean> => {
+    setIsSchedulingCalendar(true);
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) throw new Error('找不到指定任務');
+
+      const event = await googleCalendarService.createTimeboxEvent(
+        mission.text,
+        startTime,
+        durationMinutes,
+        {
+          description: mission.notes || `ScrumClock 時間箱預約 (${durationMinutes} 分鐘)`,
+        }
+      );
+
+      mission.workspaceSync = {
+        ...mission.workspaceSync,
+        googleCalendarEventId: event.id,
+        syncStatus: 'synced',
+        lastSyncedAt: Date.now(),
+      };
+
+      await storage.saveWeeklyMissions(missions);
+      await loadData();
+
+      setSyncFeedback({
+        type: 'success',
+        text: `已排定 Google Calendar 時間箱：${mission.text} (${durationMinutes} 分鐘)`,
+      });
+      return true;
+    } catch (e: any) {
+      setSyncFeedback({
+        type: 'error',
+        text: e?.message || '排定 Google Calendar 時間箱失敗',
+      });
+      return false;
+    } finally {
+      setIsSchedulingCalendar(false);
+      setTimeout(() => setSyncFeedback(null), 3500);
+    }
+  };
+
   const handleUpdateStatus = async (missionId: string, statusText: string) => {
     try {
-      if (statusText === 'DONE') {
-        const missions = await storage.getWeeklyMissions();
-        const mission = missions.find((m) => m.id === missionId);
-        const notes = window.prompt('請輸入執行備註 (Execution Notes)，這將同步至您的 Sheet 中：', mission?.notes || '');
-        if (notes === null) return;
-        await sync.completeTaskWithNotes(missionId, notes || '');
+      const isDone = statusText === 'DONE' || statusText === 'done';
+      const isInProgress = statusText === 'IN_PROGRESS' || statusText === 'in-progress';
+      const isInbox = statusText === 'inbox';
+      const isSomeday = statusText === 'someday';
+
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) return;
+
+      if (isDone) {
+        mission.isCompleted = true;
+        mission.status = 'done';
+        mission.completedAt = new Date().toISOString();
+        await storage.saveWeeklyMissions(missions);
+        sync.completeTaskWithNotes(missionId, mission.notes || '').catch(() => {});
       } else {
-        const missions = await storage.getWeeklyMissions();
-        const mission = missions.find((m) => m.id === missionId);
-        if (mission) {
-          mission.isCompleted = false;
-          await storage.saveWeeklyMissions(missions);
+        mission.isCompleted = false;
+        if (isInbox) mission.status = 'inbox';
+        else if (isInProgress) mission.status = 'in-progress';
+        else if (isSomeday) mission.status = 'someday';
+        else mission.status = 'next-action';
+        await storage.saveWeeklyMissions(missions);
+
+        const todayLog = await storage.getTodayLog();
+        const alreadyInCore = todayLog.coreBattles.some((b) => b.missionId === missionId);
+        if (isInProgress && !alreadyInCore) {
+          todayLog.coreBattles.push({ missionId, committedTime: '' });
+          await storage.saveTodayLog(todayLog);
+        } else if (!isInProgress && alreadyInCore) {
+          todayLog.coreBattles = todayLog.coreBattles.filter((b) => b.missionId !== missionId);
+          await storage.saveTodayLog(todayLog);
         }
       }
+      // 背景非同步推播至 Google Tasks (若已設定授權)
+      googleTasksSync.pushTaskStatusToGoogle(missionId).catch(() => {});
       await loadData();
     } catch (e) {
       console.error('更新任務狀態失敗:', e);
+    }
+  };
+
+  const handleUpdatePomodoroEstimate = async (missionId: string, estimate: number) => {
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (mission) {
+        mission.estimatedPomodoros = estimate;
+        await storage.saveWeeklyMissions(missions);
+        await loadData();
+      }
+    } catch (e) {
+      console.error('更新預估番茄鐘失敗:', e);
     }
   };
 
@@ -412,6 +533,10 @@ export const useProjectManagement = () => {
       });
       if (changed) {
         await storage.saveWeeklyMissions(missions);
+        // 背景推播選取任務狀態至 Google Tasks
+        targetIds.forEach((id) => {
+          googleTasksSync.pushTaskStatusToGoogle(id).catch(() => {});
+        });
         await loadData();
       }
     } catch (e) {
@@ -446,6 +571,9 @@ export const useProjectManagement = () => {
     inProgressIds,
     isLoading,
     isSyncing,
+    isGoogleSyncing,
+    isSchedulingCalendar,
+    handleScheduleTimebox,
     syncModal,
     setSyncModal,
     syncFeedback,
@@ -462,6 +590,7 @@ export const useProjectManagement = () => {
     handleAddTask,
     handleDeleteTask,
     handleUpdateStatus,
+    handleUpdatePomodoroEstimate,
     handleUpdatePriority,
     handleNotesChange,
     handleUpdateNotes,
@@ -474,6 +603,7 @@ export const useProjectManagement = () => {
     handleApplySubtasks,
     handleDismissSubtasks,
     handleSync,
+    handleSyncGoogleTasks,
     doSmartMerge,
     doFullPull,
     doPushToSheet,

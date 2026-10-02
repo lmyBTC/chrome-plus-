@@ -6,6 +6,10 @@
  * 3. 跨頁面通訊與狀態廣播 (Side Panel、Dashboard 與 Popup)。
  */
 
+importScripts('aiClient.js');
+
+const OUTBOX_ALARM_NAME = 'outboxQueueRetry';
+
 // 1. 安裝與更新時的初始化
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
@@ -18,7 +22,30 @@ chrome.runtime.onInstalled.addListener(() => {
   if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
     chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false }).catch(() => {});
   }
+
+  // 註冊 Outbox 佇列重試鬧鐘
+  if (chrome.alarms) {
+    chrome.alarms.create(OUTBOX_ALARM_NAME, { periodInMinutes: 0.5 });
+  }
 });
+
+// 監聽重試鬧鐘
+if (chrome.alarms) {
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === OUTBOX_ALARM_NAME && self.FinanceAIClient?.retryPendingOutbox) {
+      self.FinanceAIClient.retryPendingOutbox().catch(() => {});
+    }
+  });
+}
+
+// 監聽切換分頁時的補償重試
+if (chrome.tabs?.onActivated) {
+  chrome.tabs.onActivated.addListener(() => {
+    if (self.FinanceAIClient?.retryPendingOutbox) {
+      self.FinanceAIClient.retryPendingOutbox().catch(() => {});
+    }
+  });
+}
 
 // 2. 右鍵選單點擊事件
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -426,16 +453,16 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
       crawlStockByKeyword(ticker)
         .then((result) => {
           console.log(`[FinanceClipper] 專注標的 ${ticker} 行情預熱成功:`, result.data?.price);
-          sendResponse({ success: true, ticker: ticker, prefetched: true, price: result.data?.price });
+          sendResponse({ success: true, ack: true, ticker: ticker, prefetched: true, price: result.data?.price });
         })
         .catch((err) => {
           console.warn(`[FinanceClipper] 專注標的 ${ticker} 預熱失敗:`, err.message);
-          sendResponse({ success: true, ticker: ticker, prefetched: false, error: err.message });
+          sendResponse({ success: true, ack: true, ticker: ticker, prefetched: false, error: err.message });
         });
       return true;
     }
 
-    sendResponse({ success: true, prefetched: false });
+    sendResponse({ success: true, ack: true, prefetched: false });
     return false;
   }
 

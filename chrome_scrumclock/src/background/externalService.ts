@@ -1,6 +1,9 @@
-import { getAICore, checkAiCapabilities, executeNanoInference, parseFinanceSummary } from '../utils/ai-helper';
+import { executeNanoInference, parseFinanceSummary } from '../utils/ai-helper';
 import { buildFinanceSummaryPrompt, FINANCE_SUMMARY_SYSTEM_PROMPT } from '../utils/ai-prompts';
 import { getUserSettings } from './alarmHandlers';
+import { sendDirectMessage } from '../shared/messaging/outboxQueue';
+
+export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
 
 /**
  * 儲存 Gemini 對話資料
@@ -37,28 +40,16 @@ export async function saveGeminiConversation(conversation: any) {
  * 跨插件外部通訊處理器 (externally_connectable)
  */
 export function handleExternalMessage(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
-  console.log('[ScrumClock AI Service] 收到外部插件請求:', message?.type, '來自:', sender.id);
+  console.log('[ScrumClock External Service] 收到外部插件請求:', message?.type, '來自:', sender.id);
 
-  // 1. 連線與能力探測
-  if (message?.type === 'AI_PING' || message?.type === 'AI_CAPABILITIES') {
-    (async () => {
-      try {
-        const aiCore = getAICore();
-        const available = await checkAiCapabilities(aiCore);
-        sendResponse({
-          success: true,
-          available,
-          model: 'Gemini Nano (On-Device Built-in AI)'
-        });
-      } catch (err: any) {
-        sendResponse({
-          success: false,
-          available: false,
-          error: err?.message || 'AI 狀態檢測異常'
-        });
-      }
-    })();
-    return true;
+  // 0. 輕量存活確認 (可選 Ping / Ack，極簡同步回覆，零非同步負擔)
+  if (message?.type === 'PING' || message?.type === 'PING_HUB' || message?.type === 'AI_PING') {
+    sendResponse({
+      success: true,
+      ack: true,
+      available: true
+    });
+    return false;
   }
 
   // 2. 財務研報智能摘要生成
@@ -204,6 +195,7 @@ export async function handleCollectNoteExternal(payload: any) {
 
   return {
     success: true,
+    ack: true,
     noteId: noteId,
     message: '已成功收集字幕至 ScrumClock'
   };
@@ -224,8 +216,26 @@ export async function handleCreateTaskExternal(payload: any) {
     ? Math.min(Math.round(payload.estimatedPomodoros), 20)
     : 2;
 
+  // v2.3 GTD Context 規範校驗 (@Focus | @Meeting | @Review | @Waiting-For | @Blocked)
+  const validGTDContexts = ['@Focus', '@Meeting', '@Review', '@Waiting-For', '@Blocked'];
+  const safeGTDContext = (typeof payload.gtdContext === 'string' && validGTDContexts.includes(payload.gtdContext))
+    ? payload.gtdContext
+    : '@Focus';
+
+  // 優先級 P1 / P2 / P3
+  const validPriorities = ['P1', 'P2', 'P3'];
+  const safePriority = (typeof payload.priority === 'string' && validPriorities.includes(payload.priority))
+    ? payload.priority
+    : 'P1';
+
+  // 來源插件標籤
+  const safeSourcePlugin = typeof payload.sourcePlugin === 'string' && payload.sourcePlugin.trim()
+    ? payload.sourcePlugin.trim().slice(0, 50)
+    : (safeTicker ? 'FINANCE_CLIPPER' : 'EXTERNAL');
+
   const defaultTags = ['#投資研究'];
   if (safeTicker) defaultTags.push(`$${safeTicker}`);
+  if (safeGTDContext) defaultTags.push(safeGTDContext);
   const inputTags = Array.isArray(payload.tags)
     ? payload.tags.filter((t: any) => typeof t === 'string' && t.trim()).map((t: string) => t.trim())
     : [];
@@ -246,10 +256,15 @@ export async function handleCreateTaskExternal(payload: any) {
   });
 
   if (existingBattleMission) {
+    let hasChanges = false;
     if (safeNotes && (!existingBattleMission.notes || !existingBattleMission.notes.includes(safeNotes.slice(0, 100)))) {
       existingBattleMission.notes = existingBattleMission.notes
         ? `${existingBattleMission.notes}\n\n---\n\n${safeNotes}`
         : safeNotes;
+      hasChanges = true;
+    }
+
+    if (hasChanges) {
       await chrome.storage.local.set({ weeklyMissions });
     }
 
@@ -264,6 +279,7 @@ export async function handleCreateTaskExternal(payload: any) {
 
     return {
       success: true,
+      ack: true,
       taskId: existingBattleMission.id,
       duplicate: true,
       message: '今日戰役已包含此標的研究任務'
@@ -274,7 +290,9 @@ export async function handleCreateTaskExternal(payload: any) {
     id: 'mission-' + Date.now(),
     text: safeTitle,
     isCompleted: false,
-    priority: 'P1',
+    priority: safePriority,
+    gtdContext: safeGTDContext,
+    sourcePlugin: safeSourcePlugin,
     notes: safeNotes,
     createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     progressPercent: 0,
@@ -299,12 +317,13 @@ export async function handleCreateTaskExternal(payload: any) {
       type: 'basic',
       iconUrl: 'icons/icon128.png',
       title: '🎯 已加入今日作戰戰役',
-      message: `成功將「${safeTitle}」加入 ScrumClock 今日戰役 (${safePomodoros} 顆番茄鐘)！`
+      message: `成功將「${safeTitle}」加入 ScrumClock 今日戰役 (${safePomodoros} 顆番茄鐘，${safeGTDContext})！`
     });
   } catch (_) {}
 
   return {
     success: true,
+    ack: true,
     taskId: newMission.id,
     duplicate: false
   };
@@ -335,15 +354,15 @@ export async function broadcastFocusToFinanceClipper(payload?: any) {
     }
 
     const settings = await getUserSettings();
-    const extId = settings.financeClipperExtensionId;
+    const extId = settings.financeClipperExtensionId || DEFAULT_FINANCE_CLIPPER_ID;
     if (!extId) {
       return;
     }
 
-    chrome.runtime.sendMessage(
+    await sendDirectMessage(
       extId,
       {
-        protocolVersion: 1,
+        protocolVersion: 2,
         type: 'FOCUS_STARTED',
         payload: {
           ticker: ticker || undefined,
@@ -351,10 +370,8 @@ export async function broadcastFocusToFinanceClipper(payload?: any) {
           tags: tags
         }
       },
-      () => {
-        if (chrome.runtime.lastError) {
-          return;
-        }
+      {
+        timeoutMs: 4000
       }
     );
   } catch (err) {

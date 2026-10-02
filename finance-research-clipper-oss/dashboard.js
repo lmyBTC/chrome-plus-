@@ -542,23 +542,19 @@
   }
 
   async function testAiConnection() {
-    const extId = settingScrumclockId.value.trim();
-    if (!extId) {
-      scrumclockConnStatus.textContent = '請先填入 ScrumClock 插件 ID！';
-      scrumclockConnStatus.style.color = 'var(--accent-red)';
-      return;
-    }
+    const extId = (settingScrumclockId ? settingScrumclockId.value.trim() : '') || 'ahiihabnbjeoeneahcgbdcofncjoclcp';
 
-    scrumclockConnStatus.textContent = '連線測試中...';
+    scrumclockConnStatus.textContent = '連線測試中 (PING_HUB)...';
     scrumclockConnStatus.style.color = 'var(--text-secondary)';
 
     const res = await window.FinanceAIClient.checkAvailability(extId);
-    if (res.success && res.available) {
-      scrumclockConnStatus.textContent = `✅ 連線成功！偵測到模型：${res.model}`;
+    if (res.success) {
+      const capText = res.capabilities && res.capabilities.length ? `[${res.capabilities.join(', ')}]` : '';
+      scrumclockConnStatus.textContent = `✅ 連線成功！中樞：${res.hub || 'ScrumClock'} ${capText} - ${res.model}`;
       scrumclockConnStatus.style.color = 'var(--accent-green)';
       checkAiStatus();
     } else {
-      scrumclockConnStatus.textContent = `❌ ${res.error || '連線失敗或 Gemini Nano 未就緒'}`;
+      scrumclockConnStatus.textContent = `❌ ${res.error || '連線失敗或中樞未回應'}`;
       scrumclockConnStatus.style.color = 'var(--accent-red)';
     }
   }
@@ -582,8 +578,8 @@
       if (activeGasSecret && settingGasSecret) settingGasSecret.value = activeGasSecret;
       if (activeSheetsUrl && settingSheetsUrl) settingSheetsUrl.value = activeSheetsUrl;
       if (res.contextNote && noteInput) noteInput.value = res.contextNote;
-      if (res.scrumclock_ext_id && settingScrumclockId) {
-        settingScrumclockId.value = res.scrumclock_ext_id;
+      if (settingScrumclockId) {
+        settingScrumclockId.value = res.scrumclock_ext_id || 'ahiihabnbjeoeneahcgbdcofncjoclcp';
       }
 
       // 載入族群列表與目前選中族群

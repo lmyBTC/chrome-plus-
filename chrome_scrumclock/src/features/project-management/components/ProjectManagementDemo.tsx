@@ -3,12 +3,14 @@ import { TaskPoolTab } from './tabs/TaskPoolTab';
 import { InboxTab } from './tabs/InboxTab';
 import { SprintLogsTab } from './tabs/SprintLogsTab';
 import { SyncSettingsModal } from './modals/SyncSettingsModal';
+import { StandupModal } from './modals/StandupModal';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 
 type Tab = 'taskPool' | 'inbox' | 'sprintLogs';
 
 export const ProjectManagementDemo: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('taskPool');
+  const [isStandupOpen, setIsStandupOpen] = useState(false);
   const pm = useProjectManagement();
 
   return (
@@ -19,6 +21,14 @@ export const ProjectManagementDemo: React.FC = () => {
         onSmartMerge={pm.doSmartMerge}
         onFullPull={pm.doFullPull}
         onPushToSheet={pm.doPushToSheet}
+      />
+
+      <StandupModal
+        isOpen={isStandupOpen}
+        onClose={() => setIsStandupOpen(false)}
+        weeklyMissions={pm.weeklyMissions}
+        inProgressIds={pm.inProgressIds}
+        sprintLogs={pm.sprintLogs}
       />
 
       {pm.syncFeedback && (
@@ -47,6 +57,28 @@ export const ProjectManagementDemo: React.FC = () => {
 
         <div className="flex items-center gap-3">
           <button
+            onClick={pm.handleSyncGoogleTasks}
+            disabled={pm.isGoogleSyncing}
+            className={`px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md ${
+              pm.isGoogleSyncing
+                ? 'bg-dark-surface border-dark-border-subtle text-dark-muted cursor-not-allowed'
+                : 'bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400'
+            }`}
+            title="雙向同步 Google Tasks"
+          >
+            {pm.isGoogleSyncing ? (
+              <>
+                <span className="animate-spin block h-4 w-4 border-2 border-dark-muted border-t-transparent rounded-full"></span>
+                <span>Tasks 同步中...</span>
+              </>
+            ) : (
+              <>
+                <span>📋</span>
+                <span>同步 Google Tasks</span>
+              </>
+            )}
+          </button>
+          <button
             onClick={pm.handleSync}
             disabled={pm.isSyncing}
             className={`px-5 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md ${
@@ -66,6 +98,14 @@ export const ProjectManagementDemo: React.FC = () => {
                 <span>同步試算表任務</span>
               </>
             )}
+          </button>
+          <button
+            onClick={() => setIsStandupOpen(true)}
+            className="px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md bg-purple-600/10 hover:bg-purple-600/20 border-purple-500/30 hover:border-purple-500/50 text-purple-300"
+            title="每日站會 Copilot (Markdown / 富文本導出)"
+          >
+            <span>📢</span>
+            <span>站會 Copilot</span>
           </button>
           <div className="text-xs px-3.5 py-2 bg-indigo-950/40 text-indigo-400 rounded-full font-semibold border border-indigo-900/40 flex items-center gap-1.5 shadow-md">
             <span>✨</span>
@@ -135,6 +175,11 @@ export const ProjectManagementDemo: React.FC = () => {
             onBatchPushToFocus={pm.handleBatchPushToFocus}
             onBatchUpdateStatus={pm.handleBatchUpdateStatus}
             onBatchDelete={pm.handleBatchDelete}
+            onSyncGoogleTasks={pm.handleSyncGoogleTasks}
+            isGoogleSyncing={pm.isGoogleSyncing}
+            onScheduleTimebox={pm.handleScheduleTimebox}
+            isSchedulingCalendar={pm.isSchedulingCalendar}
+            onUpdatePomodoroEstimate={pm.handleUpdatePomodoroEstimate}
           />
         )}
 

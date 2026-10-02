@@ -1794,6 +1794,8 @@ function extractVideoContentForCollector() {
 // 跨插件防腐發送客戶端 (Cross-Plugin Client)
 // ============================================================================
 
+const DEFAULT_SCRUMCLOCK_ID = 'ahiihabnbjeoeneahcgbdcofncjoclcp';
+
 async function getScrumClockExtensionId() {
   try {
     const data = await chrome.storage.local.get('scrumclockExtensionId');
@@ -1801,7 +1803,7 @@ async function getScrumClockExtensionId() {
       return data.scrumclockExtensionId.trim();
     }
   } catch (_) {}
-  return null;
+  return DEFAULT_SCRUMCLOCK_ID;
 }
 
 function sanitizeCollectorPayload(rawPayload) {

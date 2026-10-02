@@ -4,6 +4,7 @@ import { ITaskAdapter } from './ITaskAdapter';
 import { GoogleTaskAdapter } from './adapters/GoogleTaskAdapter';
 import { NotionTaskAdapter } from './adapters/NotionTaskAdapter';
 import { offlineQueue } from './offlineQueue';
+import { googleCalendarService } from '../../shared/google/googleCalendarService';
 
 const googleAdapter = new GoogleTaskAdapter();
 const notionAdapter = new NotionTaskAdapter();
@@ -66,10 +67,27 @@ export const sync = {
     return success;
   },
   async pushToCalendar(title: string, startTime: number, endTime: number, description?: string): Promise<boolean> {
-    const adapter = await getAdapter();
-    return adapter.pushToCalendar(title, startTime, endTime, description);
+    try {
+      await googleCalendarService.recordPomodoroEvent(title, startTime, endTime, description);
+      return true;
+    } catch (gErr) {
+      const adapter = await getAdapter();
+      return adapter.pushToCalendar(title, startTime, endTime, description);
+    }
   },
   async pullTodayCalendarEvents(): Promise<CalendarEvent[]> {
+    try {
+      const gEvents = await googleCalendarService.getTodayEvents();
+      if (gEvents && gEvents.length > 0) {
+        return gEvents.map((e) => ({
+          title: e.summary,
+          startTime: new Date(e.start.dateTime).getTime(),
+          endTime: new Date(e.end.dateTime).getTime(),
+        }));
+      }
+    } catch {
+      // fallback to adapter
+    }
     const adapter = await getAdapter();
     return adapter.pullTodayCalendarEvents();
   },
@@ -86,12 +104,21 @@ export const sync = {
     return success;
   },
   async createBusyEvent(title: string, durationMinutes: number): Promise<string | null> {
-    const adapter = await getAdapter();
-    return adapter.createBusyEvent(title, durationMinutes);
+    try {
+      const event = await googleCalendarService.createTimeboxEvent(title, Date.now(), durationMinutes);
+      return event.id || null;
+    } catch {
+      const adapter = await getAdapter();
+      return adapter.createBusyEvent(title, durationMinutes);
+    }
   },
   async deleteBusyEvent(eventId: string): Promise<void> {
-    const adapter = await getAdapter();
-    return adapter.deleteBusyEvent(eventId);
+    try {
+      await googleCalendarService.deleteEvent(eventId);
+    } catch {
+      const adapter = await getAdapter();
+      await adapter.deleteBusyEvent(eventId);
+    }
   },
   async quickCaptureTask(title: string, notes?: string): Promise<void> {
     const adapter = await getAdapter();

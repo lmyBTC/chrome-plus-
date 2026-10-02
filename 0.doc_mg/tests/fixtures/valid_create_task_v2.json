@@ -1,0 +1,24 @@
+{
+  "protocolVersion": 2,
+  "type": "CREATE_TASK",
+  "payload": {
+    "id": "task-v2-1727856000000",
+    "ticker": "NVDA",
+    "title": "深入研究 NVDA 財報與 Blackwell 晶片架構",
+    "notes": "# 投資研報：NVDA 估值與成長動能分析\n- 毛利率維持 75% 高水準\n- 資料中心業務持續強勁",
+    "tags": ["#投資研究", "#美股", "$NVDA", "@Focus"],
+    "estimatedPomodoros": 3,
+    "url": "https://www.google.com/finance/quote/NVDA:NASDAQ",
+    "gtdContext": "@Focus",
+    "priority": "P1",
+    "sourcePlugin": "FINANCE_CLIPPER",
+    "workspaceSync": {
+      "googleTaskId": "gtask-12345",
+      "googleCalendarEventId": "gevent-67890",
+      "googleSheetRowId": "sheet-row-42",
+      "lastSyncedAt": 1727856000000,
+      "syncStatus": "synced"
+    },
+    "createdAt": 1727856000000
+  }
+}

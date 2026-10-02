@@ -159,16 +159,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // 跨插件 ScrumClock 連線與設定快取支援
+  const DEFAULT_SCRUMCLOCK_ID = 'ahiihabnbjeoeneahcgbdcofncjoclcp';
+
+  // 跨插件 ScrumClock 連線與設定快取支援 (PING_HUB / Discovery Bus)
   function pingScrumClock(extId, callback) {
-    if (!extId) {
-      if (callback) callback({ success: false, error: '未提供 Extension ID' });
-      return;
-    }
+    const targetId = (extId && extId.trim()) || DEFAULT_SCRUMCLOCK_ID;
     try {
-      chrome.runtime.sendMessage(extId, { type: 'AI_PING' }, function(response) {
+      chrome.runtime.sendMessage(targetId, { type: 'PING_HUB', clientPlugin: 'VIDEO_SPEED_PLUS', version: '2.3' }, function(response) {
         if (chrome.runtime.lastError) {
-          if (callback) callback({ success: false, error: chrome.runtime.lastError.message });
+          // 降級嘗試 legacy AI_PING
+          chrome.runtime.sendMessage(targetId, { type: 'AI_PING' }, function(legacyRes) {
+            if (chrome.runtime.lastError) {
+              if (callback) callback({ success: false, error: chrome.runtime.lastError.message });
+              return;
+            }
+            if (callback) callback({ success: true, response: legacyRes });
+          });
           return;
         }
         if (callback) callback({ success: true, response: response });
@@ -185,19 +191,21 @@ document.addEventListener('DOMContentLoaded', function() {
   const btnTestScrumConn = document.getElementById('btnTestScrumConn');
   const scrumStatusMsg = document.getElementById('scrumStatusMsg');
 
-  // 讀取已儲存的 Extension ID
+  // 讀取已儲存的 Extension ID (預設為固定靜態 ID，零配置)
   chrome.storage.local.get('scrumclockExtensionId', function(res) {
-    if (res && res.scrumclockExtensionId && scrumExtIdInput) {
-      scrumExtIdInput.value = res.scrumclockExtensionId;
+    if (scrumExtIdInput) {
+      scrumExtIdInput.value = (res && res.scrumclockExtensionId && res.scrumclockExtensionId.trim())
+        ? res.scrumclockExtensionId.trim()
+        : DEFAULT_SCRUMCLOCK_ID;
     }
   });
 
   // 儲存 Extension ID
   if (btnSaveScrumId && scrumExtIdInput && scrumStatusMsg) {
     btnSaveScrumId.addEventListener('click', function() {
-      const id = scrumExtIdInput.value.trim();
+      const id = scrumExtIdInput.value.trim() || DEFAULT_SCRUMCLOCK_ID;
       chrome.storage.local.set({ scrumclockExtensionId: id }, function() {
-        scrumStatusMsg.textContent = id ? '✅ Extension ID 已儲存' : '⚠️ 已清除 Extension ID';
+        scrumStatusMsg.textContent = '✅ Extension ID 已儲存 (預設自動握手)';
         setTimeout(() => { scrumStatusMsg.textContent = ''; }, 2500);
       });
     });
@@ -206,19 +214,16 @@ document.addEventListener('DOMContentLoaded', function() {
   // 測試連線
   if (btnTestScrumConn && scrumExtIdInput && scrumStatusMsg) {
     btnTestScrumConn.addEventListener('click', function() {
-      const id = scrumExtIdInput.value.trim();
-      if (!id) {
-        scrumStatusMsg.textContent = '⚠️ 請先輸入 Extension ID';
-        return;
-      }
-      scrumStatusMsg.textContent = '⏳ 測試連線中...';
+      const id = scrumExtIdInput.value.trim() || DEFAULT_SCRUMCLOCK_ID;
+      scrumStatusMsg.textContent = '⏳ 測試握手連線中 (PING_HUB)...';
       pingScrumClock(id, function(result) {
         if (result && result.success) {
-          scrumStatusMsg.textContent = '✅ 連線成功！ScrumClock 在線';
+          const caps = result.response?.capabilities ? `[${result.response.capabilities.join(', ')}]` : '';
+          scrumStatusMsg.textContent = `✅ 連線成功！ScrumClock 在線 ${caps}`;
         } else {
           scrumStatusMsg.textContent = '❌ 連線失敗: ' + (result?.error || '無回應');
         }
-        setTimeout(() => { scrumStatusMsg.textContent = ''; }, 3500);
+        setTimeout(() => { scrumStatusMsg.textContent = ''; }, 4000);
       });
     });
   }

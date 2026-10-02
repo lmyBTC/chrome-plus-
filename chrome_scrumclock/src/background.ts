@@ -11,9 +11,83 @@ import {
   saveGeminiConversation
 } from './background/externalService';
 import { monitorService } from './features/activity-monitor/services/monitorService';
-
+import { WeeklyMission, InboxItem } from './types';
 // 初始化活動監控服務
 monitorService.initialize();
+
+/**
+ * 極簡 GTD 快捷捕捉：秒級寫入 Inbox 並發送系統通知
+ */
+export async function captureToInbox(rawText: string, url?: string, sourceTitle?: string): Promise<string> {
+  const settings = await getUserSettings();
+  if (settings.enableGtdCapture === false) {
+    if (typeof chrome.notifications !== 'undefined') {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '⚠️ GTD 快捷捕捉已停用',
+        message: '可在 ScrumClock 設定頁面中重新啟用 GTD 快捷捕捉功能。'
+      });
+    }
+    return '';
+  }
+
+  const safeText = (rawText || sourceTitle || '未命名捕捉靈感').trim();
+  const title = safeText.length > 80 ? safeText.slice(0, 80) + '...' : safeText;
+  const notes = safeText.length > 80 ? safeText : '';
+  const missionId = 'mission-' + Date.now();
+  const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 16);
+
+  const newMission: WeeklyMission = {
+    id: missionId,
+    text: title,
+    isCompleted: false,
+    status: 'inbox',
+    url: url || undefined,
+    notes: notes || undefined,
+    priority: 'P2',
+    gtdContext: '@Focus',
+    estimatedPomodoros: 1,
+    spentPomodoros: 0,
+    sourcePlugin: 'OMNI_CAPTURE',
+    createdAt: timestamp
+  };
+
+  const newInboxItem: InboxItem = {
+    id: missionId,
+    text: title,
+    contextUrl: url,
+    createdAt: timestamp,
+    processed: false
+  };
+
+  try {
+    const storageData = await chrome.storage.local.get(['weeklyMissions', 'inboxItems']);
+    const weeklyMissions: WeeklyMission[] = storageData.weeklyMissions || [];
+    const inboxItems: InboxItem[] = storageData.inboxItems || [];
+
+    weeklyMissions.unshift(newMission);
+    inboxItems.unshift(newInboxItem);
+
+    await chrome.storage.local.set({
+      weeklyMissions,
+      inboxItems
+    });
+
+    if (typeof chrome.notifications !== 'undefined') {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '📥 已快速捕捉至 GTD Inbox',
+        message: title
+      });
+    }
+  } catch (error) {
+    console.error('[OmniCapture] 寫入 Inbox 失敗:', error);
+  }
+
+  return missionId;
+}
 
 // 初始化
 chrome.runtime.onInstalled.addListener(async () => {
@@ -28,6 +102,12 @@ chrome.runtime.onInstalled.addListener(async () => {
   
   // 建立右鍵選單
   if (typeof chrome.contextMenus !== 'undefined') {
+    chrome.contextMenus.create({
+      id: 'gtd_capture_inbox',
+      title: '📥 快速捕捉至 GTD Inbox (Alt+Q)',
+      contexts: ['selection', 'page', 'link']
+    });
+
     chrome.contextMenus.create({
       id: 'analyze_tasks',
       title: '🤖 傳送至 Power Kit 助理分析',
@@ -48,6 +128,12 @@ chrome.runtime.onInstalled.addListener(async () => {
 // 監聽右鍵選單點擊
 if (typeof chrome.contextMenus !== 'undefined') {
   chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === 'gtd_capture_inbox') {
+      const textToCapture = info.selectionText || info.linkUrl || tab?.title || '';
+      captureToInbox(textToCapture, info.linkUrl || tab?.url, tab?.title);
+      return;
+    }
+
     if (info.menuItemId === 'analyze_tasks' && tab?.id) {
       const pendingData = {
         text: info.selectionText || "",
@@ -66,8 +152,8 @@ if (typeof chrome.contextMenus !== 'undefined') {
   });
 }
 
-// 監聽快捷鍵 (Quick Capture)
-chrome.commands.onCommand.addListener((command: string) => {
+// 監聽快捷鍵 (Quick Capture / Omni-Capture)
+chrome.commands.onCommand.addListener(async (command: string) => {
   if (command === 'quick_capture') {
     chrome.windows.create({
       url: chrome.runtime.getURL('index.html?quick=true'),
@@ -75,6 +161,30 @@ chrome.commands.onCommand.addListener((command: string) => {
       width: 600,
       height: 400
     });
+  } else if (command === 'gtd_omni_capture') {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab && tab.id) {
+        let selectedText = '';
+        if (tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('edge://') && !tab.url.startsWith('chrome-extension://')) {
+          try {
+            const results = await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => window.getSelection()?.toString() || ''
+            });
+            if (results && results[0] && typeof results[0].result === 'string') {
+              selectedText = results[0].result.trim();
+            }
+          } catch (_) {
+            // 受權限限制分頁直接退回使用 tab.title
+          }
+        }
+        const textToCapture = selectedText || tab.title || '快捷捕捉任務';
+        await captureToInbox(textToCapture, tab.url, tab.title);
+      }
+    } catch (err) {
+      console.error('[OmniCapture] 執行快捷捕捉錯誤:', err);
+    }
   }
 });
 

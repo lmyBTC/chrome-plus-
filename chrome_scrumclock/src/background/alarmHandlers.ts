@@ -78,10 +78,43 @@ export function showSprintFinishedNotification() {
   });
 }
 
+export async function handleSprintFinished() {
+  showSprintFinishedNotification();
+
+  try {
+    const data = await chrome.storage.local.get(['activeTimer', 'weeklyMissions']);
+    if (data.activeTimer?.sprint?.missionId && !data.activeTimer.spentPomodoroRecorded) {
+      const missionId = data.activeTimer.sprint.missionId;
+      const missions = data.weeklyMissions || [];
+      const updatedMissions = missions.map((m: any) => {
+        if (m.id === missionId) {
+          return {
+            ...m,
+            spentPomodoros: (m.spentPomodoros || 0) + 1
+          };
+        }
+        return m;
+      });
+
+      const updatedTimer = {
+        ...data.activeTimer,
+        spentPomodoroRecorded: true
+      };
+
+      await chrome.storage.local.set({
+        weeklyMissions: updatedMissions,
+        activeTimer: updatedTimer
+      });
+    }
+  } catch (err) {
+    console.error('自動累加番茄鐘工時失敗:', err);
+  }
+}
+
 export function handleAlarm(alarm: chrome.alarms.Alarm) {
   if (alarm.name === 'dailyReview') {
     showReviewNotification();
   } else if (alarm.name === 'sprintFinished') {
-    showSprintFinishedNotification();
+    handleSprintFinished();
   }
 }

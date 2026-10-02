@@ -46,10 +46,12 @@ export function convertToWeeklyMission(note: CapturedSubtitleNote): WeeklyMissio
     text: `影音精讀: ${safeTitle}`,
     isCompleted: false,
     priority: 'P2',
+    gtdContext: '@Focus',
+    sourcePlugin: 'VIDEO_SPEED_PLUS',
     notes: `【來源影片】${safeTitle}\n時間戳: ${note.currentTime || '無'}\n網址: ${jumpUrl}\n\n${note.text}`,
     createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
     progressPercent: 0,
-    tags: Array.from(new Set(['#影片學習', ...(note.tags || [])])),
+    tags: Array.from(new Set(['#影片學習', '@Focus', ...(note.tags || [])])),
     url: jumpUrl,
     suggestedDuration: 25,
     estimatedPomodoros: 1

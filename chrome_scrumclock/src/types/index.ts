@@ -15,6 +15,9 @@ export interface UserSettings {
   webhookUrl?: string;
   webhookSecretToken?: string;
   financeClipperExtensionId?: string;
+  enableGtdCapture?: boolean; // GTD 全域快捷捕捉開關 (Alt+Q / 右鍵)
+  enableWipLimit?: boolean; // 看板 In Progress 在製品限制開關
+  maxWipLimit?: number; // In Progress WIP 卡片上限 (預設 3)
 }
 
 export interface NorthStarGoal {
@@ -22,10 +25,14 @@ export interface NorthStarGoal {
   text: string;
 }
 
+export type GTDStatus = 'inbox' | 'next-action' | 'in-progress' | 'done' | 'someday';
+
 export interface WeeklyMission {
   id: string;
   text: string;
   isCompleted: boolean;
+  status?: GTDStatus; // GTD 狀態流轉（inbox / next-action / in-progress / done / someday）
+  spentPomodoros?: number; // 已消耗番茄鐘數
   aiTip?: string;
   suggestedDuration?: number; // in minutes
   priority?: 'P1' | 'P2' | 'P3'; // 新增：優先級 P1/P2/P3
@@ -37,6 +44,15 @@ export interface WeeklyMission {
   tags?: string[]; // 任務標籤 (例如 ['#投資研究', '#美股'])
   url?: string; // 關聯網址
   estimatedPomodoros?: number; // 預估番茄鐘數
+  gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked'; // GTD 情境分類
+  workspaceSync?: {
+    googleTaskId?: string;
+    googleCalendarEventId?: string;
+    googleSheetRowId?: string;
+    lastSyncedAt?: number;
+    syncStatus?: 'synced' | 'pending' | 'failed' | 'idle';
+  };
+  sourcePlugin?: string; // 來源插件識別 (如 FINANCE_CLIPPER, VIDEO_SPEED_PLUS 等)
 }
 
 export interface InboxItem {

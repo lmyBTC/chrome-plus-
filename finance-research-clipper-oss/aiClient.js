@@ -8,7 +8,12 @@
   'use strict';
 
   const STORAGE_KEY_SC_ID = 'scrumclock_ext_id';
+  const DEFAULT_SCRUMCLOCK_ID = 'ahiihabnbjeoeneahcgbdcofncjoclcp'; // 固定公開金鑰之 ScrumClock Extension ID
   const CACHE_PREFIX = 'ai_summary_';
+  const STORAGE_KEY_OUTBOX = 'outbox_queue';
+  const STORAGE_KEY_DEAD_LETTER = 'dead_letter_queue';
+  const DEFAULT_MAX_RETRIES = 5;
+  const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
   // 取得今天的 YYYY-MM-DD 字串作為快取基準
   function getTodayString() {
@@ -81,7 +86,7 @@
    * 🛡️ 任務資料防腐層 (Task Sanitizer)
    */
   function sanitizeTaskPayload(raw) {
-    if (!raw || typeof raw !== 'object') return { title: '未命名投資研究任務' };
+    if (!raw || typeof raw !== 'object') return { protocolVersion: 2, title: '未命名投資研究任務' };
 
     const safeTicker = raw.ticker ? String(raw.ticker).trim().toUpperCase().slice(0, 20) : undefined;
     const safeTitle = raw.title ? String(raw.title).trim().slice(0, 200) : (safeTicker ? `${safeTicker} 投資研報深度分析` : '未命名投資研究任務');
@@ -91,18 +96,48 @@
       ? Math.min(Math.round(raw.estimatedPomodoros), 20)
       : 2;
 
+    const validGTDContexts = ['@Focus', '@Meeting', '@Review', '@Waiting-For', '@Blocked'];
+    const safeGTDContext = (typeof raw.gtdContext === 'string' && validGTDContexts.includes(raw.gtdContext))
+      ? raw.gtdContext
+      : '@Focus';
+
+    const validPriorities = ['P1', 'P2', 'P3'];
+    const safePriority = (typeof raw.priority === 'string' && validPriorities.includes(raw.priority))
+      ? raw.priority
+      : 'P1';
+
+    const safeSourcePlugin = typeof raw.sourcePlugin === 'string' && raw.sourcePlugin.trim()
+      ? raw.sourcePlugin.trim().slice(0, 50)
+      : 'FINANCE_CLIPPER';
+
+    let safeWorkspaceSync = undefined;
+    if (raw.workspaceSync && typeof raw.workspaceSync === 'object') {
+      safeWorkspaceSync = {
+        googleTaskId: typeof raw.workspaceSync.googleTaskId === 'string' ? raw.workspaceSync.googleTaskId.slice(0, 100) : undefined,
+        googleCalendarEventId: typeof raw.workspaceSync.googleCalendarEventId === 'string' ? raw.workspaceSync.googleCalendarEventId.slice(0, 100) : undefined,
+        googleSheetRowId: typeof raw.workspaceSync.googleSheetRowId === 'string' ? raw.workspaceSync.googleSheetRowId.slice(0, 100) : undefined,
+        lastSyncedAt: typeof raw.workspaceSync.lastSyncedAt === 'number' ? raw.workspaceSync.lastSyncedAt : Date.now(),
+        syncStatus: ['synced', 'pending', 'failed', 'idle'].includes(raw.workspaceSync.syncStatus) ? raw.workspaceSync.syncStatus : 'idle'
+      };
+    }
+
     const safeTags = Array.isArray(raw.tags)
       ? raw.tags.filter((t) => typeof t === 'string' && t.trim()).map((t) => t.trim().slice(0, 30)).slice(0, 10)
       : ['#投資研究'];
 
     return {
-      protocolVersion: 1,
+      protocolVersion: 2,
       ticker: safeTicker,
       title: safeTitle,
       notes: safeNotes,
       tags: safeTags,
       estimatedPomodoros: safePomodoros,
-      url: safeUrl
+      url: safeUrl,
+      gtdContext: safeGTDContext,
+      priority: safePriority,
+      sourcePlugin: safeSourcePlugin,
+      workspaceSync: safeWorkspaceSync,
+      createdAt: typeof raw.createdAt === 'number' ? raw.createdAt : Date.now()
     };
   }
 
@@ -110,14 +145,17 @@
     /**
      * 取得 ScrumClock Extension ID (自 chrome.storage.local)
      */
+    /**
+     * 取得 ScrumClock Extension ID (自 chrome.storage.local，若未設定則自動回退至固定 DEFAULT_SCRUMCLOCK_ID)
+     */
     async getScrumClockId() {
       return new Promise((resolve) => {
         if (typeof chrome === 'undefined' || !chrome.storage?.local) {
-          resolve('');
+          resolve(DEFAULT_SCRUMCLOCK_ID);
           return;
         }
         chrome.storage.local.get([STORAGE_KEY_SC_ID], (res) => {
-          resolve(res?.[STORAGE_KEY_SC_ID] || '');
+          resolve((res?.[STORAGE_KEY_SC_ID] && res[STORAGE_KEY_SC_ID].trim()) || DEFAULT_SCRUMCLOCK_ID);
         });
       });
     },
@@ -140,9 +178,9 @@
     },
 
     /**
-     * 檢查 ScrumClock AI 服務可用狀態 (Ping)
+     * 檢查 ScrumClock AI 服務可用狀態 (透過 PING_HUB 進行 Discovery Bus 自動握手)
      * @param {string} [targetId] 可選傳入目標 Extension ID
-     * @returns {Promise<{ success: boolean, available: boolean, model?: string, error?: string }>}
+     * @returns {Promise<{ success: boolean, available: boolean, model?: string, hub?: string, capabilities?: string[], error?: string }>}
      */
     async checkAvailability(targetId) {
       const extId = targetId || (await this.getScrumClockId());
@@ -150,7 +188,7 @@
         return {
           success: false,
           available: false,
-          error: '尚未配置 ScrumClock 插件 ID。請在設定中填入 ScrumClock (Power Kit) 的 Extension ID。'
+          error: '尚未配置 ScrumClock 插件 ID。'
         };
       }
 
@@ -172,7 +210,8 @@
             });
           }, 4000);
 
-          chrome.runtime.sendMessage(extId, { type: 'AI_PING' }, (response) => {
+          // 優先嘗試 PING_HUB 握手總線
+          chrome.runtime.sendMessage(extId, { type: 'PING_HUB', clientPlugin: 'FINANCE_CLIPPER', version: '2.3' }, (response) => {
             clearTimeout(timeoutId);
             if (chrome.runtime.lastError) {
               resolve({
@@ -187,15 +226,19 @@
               resolve({
                 success: false,
                 available: false,
-                error: response?.error || 'ScrumClock 未就緒或 Gemini Nano 尚未開啟'
+                error: response?.error || 'ScrumClock 未就緒或連線被拒'
               });
               return;
             }
 
+            // 握手成功
+            const isAvailable = response.aiAvailable !== undefined ? !!response.aiAvailable : !!response.available;
             resolve({
               success: true,
-              available: !!response.available,
-              model: response.model || 'Gemini Nano (On-Device Built-in AI)'
+              available: isAvailable,
+              hub: response.hub || 'ScrumClock',
+              capabilities: response.capabilities || ['AI_SUMMARY', 'CREATE_TASK'],
+              model: isAvailable ? 'Gemini Nano (On-Device Built-in AI)' : 'ScrumClock (中樞在線，AI 待喚醒)'
             });
           });
         } catch (err) {
@@ -358,52 +401,244 @@
         };
       }
 
+      const cleanPayload = sanitizeTaskPayload(taskData);
+
       return new Promise((resolve) => {
-        try {
-          const timeoutId = setTimeout(() => {
+        let hasResolved = false;
+        const timeoutId = setTimeout(async () => {
+          if (!hasResolved) {
+            hasResolved = true;
+            const errorMsg = '建立任務請求超時 (6 秒)，中樞可能處於休眠狀態';
+            await this.enqueueOutboxTask(cleanPayload, extId, errorMsg);
             resolve({
               success: false,
-              error: '建立任務請求超時 (6 秒)，請確認 ScrumClock 是否已啟用。'
+              ack: false,
+              queued: true,
+              error: errorMsg,
+              message: '連線逾時，任務已安全存入 Outbox 佇列，將於中樞喚醒時自動重試。'
             });
-          }, 6000);
+          }
+        }, 6000);
 
-          const cleanPayload = sanitizeTaskPayload(taskData);
-
+        try {
           chrome.runtime.sendMessage(
             extId,
             {
-              protocolVersion: 1,
+              protocolVersion: 2,
               type: 'CREATE_TASK',
               payload: cleanPayload
             },
-            (response) => {
+            async (response) => {
+              if (hasResolved) return;
+              hasResolved = true;
               clearTimeout(timeoutId);
+
               if (chrome.runtime.lastError) {
+                const errorMsg = `連線 ScrumClock 失敗: ${chrome.runtime.lastError.message}`;
+                await this.enqueueOutboxTask(cleanPayload, extId, errorMsg);
                 resolve({
                   success: false,
-                  error: `連線 ScrumClock 失敗: ${chrome.runtime.lastError.message}`
+                  ack: false,
+                  queued: true,
+                  error: errorMsg,
+                  message: '連線失敗，任務已安全存入 Outbox 佇列，將於連線恢復後自動補發。'
                 });
                 return;
               }
 
-              if (!response) {
+              if (!response || (!response.success && !response.ack)) {
+                const errorMsg = response?.error || 'ScrumClock 未返回有效確認 (ACK)';
+                await this.enqueueOutboxTask(cleanPayload, extId, errorMsg);
                 resolve({
                   success: false,
-                  error: 'ScrumClock 未返回有效響應'
+                  ack: false,
+                  queued: true,
+                  error: errorMsg,
+                  message: '中樞未確認收悉，任務已轉入 Outbox 佇列保護。'
                 });
                 return;
               }
 
-              resolve(response);
+              resolve({
+                ...response,
+                ack: true
+              });
             }
           );
         } catch (err) {
-          resolve({
-            success: false,
-            error: err?.message || '發送建立任務請求時發生異常'
-          });
+          if (!hasResolved) {
+            hasResolved = true;
+            clearTimeout(timeoutId);
+            const errorMsg = err?.message || '發送建立任務請求時發生異常';
+            this.enqueueOutboxTask(cleanPayload, extId, errorMsg).then(() => {
+              resolve({
+                success: false,
+                ack: false,
+                queued: true,
+                error: errorMsg,
+                message: '發送異常，任務已寫入 Outbox 佇列。'
+              });
+            });
+          }
         }
       });
+    },
+
+    /**
+     * 寫入本地 Outbox 佇列
+     */
+    async enqueueOutboxTask(taskData, targetExtensionId, errorMsg) {
+      if (typeof chrome === 'undefined' || !chrome.storage?.local) return null;
+      return new Promise((resolve) => {
+        chrome.storage.local.get([STORAGE_KEY_OUTBOX], (res) => {
+          const queue = Array.isArray(res?.[STORAGE_KEY_OUTBOX]) ? res[STORAGE_KEY_OUTBOX] : [];
+          const item = {
+            id: `outbox-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            targetExtensionId: targetExtensionId || DEFAULT_SCRUMCLOCK_ID,
+            type: 'CREATE_TASK',
+            payload: taskData,
+            protocolVersion: 2,
+            retryCount: 0,
+            maxRetries: DEFAULT_MAX_RETRIES,
+            createdAt: Date.now(),
+            lastAttemptAt: Date.now(),
+            lastError: errorMsg || '加入離線佇列',
+            ttlMs: DEFAULT_TTL_MS
+          };
+          queue.push(item);
+          chrome.storage.local.set({ [STORAGE_KEY_OUTBOX]: queue }, () => {
+            console.log(`[FinanceAIClient] 任務已加入 Outbox 佇列 [${item.id}]`);
+            resolve(item);
+          });
+        });
+      });
+    },
+
+    /**
+     * 讀取 Outbox 佇列
+     */
+    async getOutboxQueue() {
+      if (typeof chrome === 'undefined' || !chrome.storage?.local) return [];
+      return new Promise((resolve) => {
+        chrome.storage.local.get([STORAGE_KEY_OUTBOX], (res) => {
+          resolve(Array.isArray(res?.[STORAGE_KEY_OUTBOX]) ? res[STORAGE_KEY_OUTBOX] : []);
+        });
+      });
+    },
+
+    /**
+     * 讀取死信佇列
+     */
+    async getDeadLetterQueue() {
+      if (typeof chrome === 'undefined' || !chrome.storage?.local) return [];
+      return new Promise((resolve) => {
+        chrome.storage.local.get([STORAGE_KEY_DEAD_LETTER], (res) => {
+          resolve(Array.isArray(res?.[STORAGE_KEY_DEAD_LETTER]) ? res[STORAGE_KEY_DEAD_LETTER] : []);
+        });
+      });
+    },
+
+    /**
+     * 轉入死信佇列並發送通知
+     */
+    async moveToDeadLetter(item, reason) {
+      if (typeof chrome === 'undefined' || !chrome.storage?.local) return;
+      const deadLetters = await this.getDeadLetterQueue();
+      deadLetters.unshift({
+        id: `dl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        originalMessage: item,
+        failedAt: Date.now(),
+        reason: reason,
+        retryCount: item.retryCount
+      });
+      if (deadLetters.length > 50) deadLetters.pop();
+
+      await new Promise((resolve) => {
+        chrome.storage.local.set({ [STORAGE_KEY_DEAD_LETTER]: deadLetters }, resolve);
+      });
+
+      if (chrome.notifications?.create) {
+        chrome.notifications.create({
+          type: 'basic',
+          iconUrl: 'icons/icon128.png',
+          title: '⚠️ 投資研報轉任務重試逾時 (Dead-Letter)',
+          message: `任務「${item.payload?.title || '未命名'}」經重試仍無法送達中樞，已存入死信佇列。`
+        });
+      }
+    },
+
+    /**
+     * 執行 Outbox 佇列重試輪詢 (由 Alarms 或 tabs.onActivated 觸發)
+     */
+    async retryPendingOutbox() {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+        return { processed: 0, succeeded: 0, failed: 0 };
+      }
+
+      const queue = await this.getOutboxQueue();
+      if (queue.length === 0) return { processed: 0, succeeded: 0, failed: 0 };
+
+      console.log(`[FinanceAIClient] 觸發 Outbox 重試，當前待發筆數: ${queue.length}`);
+      const remaining = [];
+      const now = Date.now();
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const item of queue) {
+        if (now - item.createdAt > item.ttlMs) {
+          await this.moveToDeadLetter(item, 'TTL 存活時間逾期');
+          continue;
+        }
+
+        if (item.retryCount >= item.maxRetries) {
+          await this.moveToDeadLetter(item, `超過最大重試次數 (${item.maxRetries} 次)`);
+          continue;
+        }
+
+        const extId = item.targetExtensionId || DEFAULT_SCRUMCLOCK_ID;
+        try {
+          const res = await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => reject(new Error('逾時')), 5000);
+            chrome.runtime.sendMessage(
+              extId,
+              {
+                protocolVersion: 2,
+                type: item.type,
+                payload: item.payload,
+                messageId: item.id,
+                retryAttempt: item.retryCount + 1
+              },
+              (response) => {
+                clearTimeout(timer);
+                if (chrome.runtime.lastError) {
+                  reject(new Error(chrome.runtime.lastError.message));
+                  return;
+                }
+                if (response && (response.success || response.ack)) {
+                  resolve(response);
+                } else {
+                  reject(new Error(response?.error || '無效確認'));
+                }
+              }
+            );
+          });
+
+          console.log(`[FinanceAIClient] Outbox 任務成功送達並獲取 ACK: ${item.id}`, res);
+          succeeded++;
+        } catch (err) {
+          failed++;
+          item.retryCount++;
+          item.lastAttemptAt = now;
+          item.lastError = err?.message || '重試失敗';
+          remaining.push(item);
+        }
+      }
+
+      await new Promise((resolve) => {
+        chrome.storage.local.set({ [STORAGE_KEY_OUTBOX]: remaining }, resolve);
+      });
+
+      return { processed: queue.length, succeeded, failed };
     },
 
     /**
@@ -522,6 +757,9 @@
   if (typeof window !== 'undefined') {
     window.FinanceAIClient = FinanceAIClient;
   }
+  if (typeof self !== 'undefined') {
+    self.FinanceAIClient = FinanceAIClient;
+  }
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
       FinanceAIClient,
@@ -529,4 +767,4 @@
       sanitizeTaskPayload
     };
   }
-})(typeof window !== 'undefined' ? window : this);
+})(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : this));

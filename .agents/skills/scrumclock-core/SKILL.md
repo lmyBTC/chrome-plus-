@@ -47,13 +47,23 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `EndOfDayReview.tsx`: 每日結算回顧面板。
 - `QuickCapture.tsx`: 閃電捕捉靈感與待辦。
 
-### 專案規劃看板元件 (`src/features/project-management/components/`)
-- `ProjectManagementDemo.tsx`: 專案規劃看板主視圖容器 (Backlog、收件匣、衝刺日誌、同步設定)。
-- `tabs/TaskPoolTab.tsx`: 每週任務池看板，支援 AI 拆解、Sheets 同步與推入焦點。
+### 專案規劃看板元件 (`src/features/project-management/components/` & `src/dashboard/components/`)
+- `ProjectManagementDemo.tsx`: 專案規劃看板主視圖容器 (Backlog、收件匣、衝刺日誌、同步設定、站會 Copilot)。
+- `BoardView.tsx` (`src/dashboard/components/BoardView.tsx`): 極簡 GTD 敏捷看板，實作 4 核心欄位（Inbox, Next Actions, In Progress, Done）+ 可折疊 Someday 抽屜、原生 HTML5 拖拉流轉、一鍵 Inbox Zero 與 In Progress WIP 在製品上限警示。
+- `TaskCard.tsx` (`src/dashboard/components/TaskCard.tsx`): 敏捷任務卡片，支援雙擊行內編輯、🍅 番茄工時即時指標（已消耗/預估）、GTD 一鍵流轉按鈕與優先級標籤。
+- `tabs/TaskPoolTab.tsx`: 每週任務池看板，支援看板/表格雙視圖切換、AI 拆解、Sheets 同步、Google Tasks 雙向同步、Calendar 時間箱排定與批次推入焦點。
 - `tabs/TaskDetailDrawer.tsx`: 任務詳情抽屜，支援備忘、子任務、狀態優先級切換。
 - `tabs/InboxTab.tsx`: 待辦收件匣，快取靈感與轉化為每週任務。
 - `tabs/SprintLogsTab.tsx`: 歷史衝刺日誌看板，番茄鐘衝刺歷程與統計。
 - `modals/SyncSettingsModal.tsx`: Google Sheets 雙向同步設定。
+- `modals/StandupModal.tsx` (亦實作於 `src/dashboard/components/StandupModal.tsx`): 站會 Copilot 產生器，彙總 Done/Focus/Blockers，支援一鍵複製 Markdown 與 HTML 富文本。
+
+### Google 原生生態整合模組 (`src/shared/google/`)
+- `googleAuthClient.ts`: 封裝 `chrome.identity.getAuthToken`，管理 OAuth2 存取 Token、自動快取與失效續約。
+- `googleTasksService.ts`: 封裝 Google Tasks REST API，提供清單讀取、任務建立、狀態更新 (`completed`)。
+- `googleTasksSync.ts`: Google Tasks 雙向同步引擎，支援智慧合併、雙向推播與衝突解決。
+- `googleCalendarService.ts`: Google Calendar REST API 服務，支援時間箱預約排程與番茄鐘專注實績自動回填。
+- `googleTypes.ts`: Google 整合資料模型、授權狀態與同步參數型別定義。
 
 ### 側邊欄與視圖元件 (`src/entries/sidebar/components/`)
 - `AIAssistantView.tsx`: 獨立 AI 對話助理視圖，按需延遲載入。
@@ -119,9 +129,36 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
      timestamp: number;
    }
    ```
-3. `scrumclock_settings`: `SettingsConfig` (工作時長、提示音、自動開始下一階段等)
-4. `scrumclock_finance_cache`: 自選股即時快照快取（只讀，來自 FinanceClipper，絕不回寫對端）。
-5. `capturedNotes`: `CapturedSubtitleNote[]` (跨插件影音字幕與時間戳筆記快照，由 VideoSpeedPlus 透過 `COLLECT_NOTE` 注入)。
+3. `weeklyMissions`: `WeeklyMission[]` (核心任務池與看板資料源)
+   ```typescript
+   export type GTDStatus = 'inbox' | 'next-action' | 'in-progress' | 'done' | 'someday';
+   export interface WeeklyMission {
+     id: string;
+     text: string;
+     isCompleted: boolean;
+     status?: GTDStatus;
+     spentPomodoros?: number; // 番茄鐘計時完成時自動累加回填
+     estimatedPomodoros?: number;
+     priority?: 'P1' | 'P2' | 'P3';
+     gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked';
+     notes?: string;
+     url?: string;
+     createdAt?: string;
+   }
+   ```
+4. `userSettings`: `UserSettings` (全域設定與本地 Feature Flags)
+   ```typescript
+   export interface UserSettings {
+     pomodoroDuration: number;
+     breakDuration: number;
+     enableGtdCapture?: boolean; // Alt+Q / 右鍵快捷捕捉開關 (預設 true)
+     enableWipLimit?: boolean;   // 看板 In Progress WIP 限制開關 (預設 true)
+     maxWipLimit?: number;       // 看板 WIP 卡片數量上限 (預設 3)
+     // ... 其他同步與專注名單設定
+   }
+   ```
+5. `scrumclock_finance_cache`: 自選股即時快照快取（只讀，來自 FinanceClipper，絕不回寫對端）。
+6. `capturedNotes`: `CapturedSubtitleNote[]` (跨插件影音字幕與時間戳筆記快照，由 VideoSpeedPlus 透過 `COLLECT_NOTE` 注入)。
 
 ### 活動監控本機資料庫 (IndexedDB)
 * **資料庫名稱**: `BrowserActivityMonitorDB` (版本 1)
@@ -132,7 +169,34 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 
 ---
 
-## 4. 邊界與隔離防護準則 (Isolation Hard Rules)
+## 4. 跨插件通訊中樞與 UniversalTaskPayload v2.3 規格
+ScrumClock 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`)，負責接收與協調各 Spoke 子插件的通訊：
+- **原生直連分發 (Direct Messaging)**：拔除 PING_HUB 握手總線與 Outbox 背景輪詢佇列，回歸 Chrome Extension 原生 `chrome.runtime.sendMessage` 直連架構，無常駐 Alarms，完全釋放 Service Worker 休眠生命週期。
+- **任務契約 (`UniversalTaskPayload` v2.3)**：
+  ```typescript
+  export type GTDContext = '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked';
+  export interface UniversalTaskPayload {
+    protocolVersion?: 2;
+    id?: string;
+    title: string;
+    ticker?: string;
+    notes?: string;
+    tags?: string[];
+    estimatedPomodoros?: number;
+    url?: string;
+    gtdContext?: GTDContext;
+    priority?: 'P1' | 'P2' | 'P3';
+    sourcePlugin?: string;
+    createdAt?: number;
+  }
+  ```
+- **極簡發送與回執**：
+  - 模組位置：`src/shared/messaging/outboxQueue.ts`（導出 `sendDirectMessage`）、`src/background/externalService.ts`。
+  - 跨模組資料交換採前端即時錯誤反饋，不積壓離線死信。
+
+---
+
+## 5. 邊界與隔離防護準則 (Isolation Hard Rules)
 1. **禁止跨目錄讀取**: 開發 ScrumClock 時，禁止讀取 `finance-research-clipper-oss` 內部 UI 或爬蟲代碼。
 2. **通訊採黑盒模式**: 如需更新財務功能，僅參照 `0.doc_mg/docs/cross_plugin_contract.md` 介面協定。
 3. **安全優雅降級**: 若 FinanceClipper 未安裝，`WatchListWidget` 自動顯示離線或佔位提示，保證番茄鐘核心流程 100% 正常。

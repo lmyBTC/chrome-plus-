@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA0pum2Di1ppFwodzbH+vsBP/Sl6sr+ix6lwExXd3a1xjU9rnuI+C9A8udSXXsoQ0GZadLmTOsOgwR9bYm/YKpDYgC2MZXQUEtAQqCwgwxpZUJmGz6TZZ7+9kttpVKUjqhUwlAtUPt/5z8OcP9akoPcu7SggIRDmBnaB4gn4ZHD/Q3tdQT6wRw/sDJZuAoUvq4r+L4mHZtS3ZdTXDspqMDLJ4PqW7LHxaiakln22a3cckRtQ7V0GpXE2Ej+wnE2tCVrgUtFhE+e3+DfzOLjJHHj1TiDWRU9qIqMoinLnL9B+8uSmYrnITza6U7k7s1ABf12hqZFEuU+rskTc0OB34IBwIDAQAB",
   "name": "Finance Research Clipper",
   "version": "1.0.0",
   "description": "一鍵擷取 Google Finance 股票數據與個人筆記，自動同步至 Google Sheets。",
@@ -9,7 +10,9 @@
     "storage",
     "contextMenus",
     "tabs",
-    "sidePanel"
+    "sidePanel",
+    "alarms",
+    "notifications"
   ],
   "host_permissions": [
     "https://www.google.com/finance/*",

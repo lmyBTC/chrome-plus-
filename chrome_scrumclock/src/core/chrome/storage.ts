@@ -16,7 +16,10 @@ const DEFAULT_SETTINGS: UserSettings = {
   geminiApiKey: '',
   enableWebhook: false,
   webhookUrl: '',
-  webhookSecretToken: ''
+  webhookSecretToken: '',
+  enableGtdCapture: true,
+  enableWipLimit: true,
+  maxWipLimit: 3
 };
 
 const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {
@@ -25,9 +28,25 @@ const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {
 };
 
 const DEFAULT_WEEKLY_MISSIONS: WeeklyMission[] = [
-  { id: 'mission-1', text: '完成產品規格書', isCompleted: false },
-  { id: 'mission-2', text: '學習 React Hooks', isCompleted: false }
+  { id: 'mission-1', text: '完成產品規格書', isCompleted: false, status: 'next-action', estimatedPomodoros: 2, spentPomodoros: 0 },
+  { id: 'mission-2', text: '學習 React Hooks', isCompleted: false, status: 'next-action', estimatedPomodoros: 1, spentPomodoros: 0 }
 ];
+
+export function normalizeWeeklyMission(m: WeeklyMission): WeeklyMission {
+  const status = m.status || (m.isCompleted ? 'done' : 'next-action');
+  const spentPomodoros = typeof m.spentPomodoros === 'number' ? m.spentPomodoros : 0;
+  const estimatedPomodoros = typeof m.estimatedPomodoros === 'number' && m.estimatedPomodoros > 0
+    ? m.estimatedPomodoros
+    : (m.suggestedDuration ? Math.max(1, Math.round(m.suggestedDuration / 25)) : 1);
+
+  return {
+    ...m,
+    status,
+    spentPomodoros,
+    estimatedPomodoros,
+    isCompleted: status === 'done' || !!m.isCompleted
+  };
+}
 
 export const storage = {
   // 獲取所有資料
@@ -40,10 +59,13 @@ export const storage = {
       'inboxItems'
     ]);
 
+    const rawMissions = result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS;
+    const normalizedMissions = Array.isArray(rawMissions) ? rawMissions.map(normalizeWeeklyMission) : [];
+
     return {
       userSettings: result.userSettings || DEFAULT_SETTINGS,
       northStarGoal: result.northStarGoal || DEFAULT_NORTH_STAR_GOAL,
-      weeklyMissions: result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS,
+      weeklyMissions: normalizedMissions,
       dailyLogs: result.dailyLogs || {},
       inboxItems: result.inboxItems || []
     };
@@ -85,7 +107,8 @@ export const storage = {
   // 獲取週任務
   async getWeeklyMissions(): Promise<WeeklyMission[]> {
     const result = await chrome.storage.local.get('weeklyMissions');
-    return result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS;
+    const rawMissions = result.weeklyMissions || DEFAULT_WEEKLY_MISSIONS;
+    return Array.isArray(rawMissions) ? rawMissions.map(normalizeWeeklyMission) : [];
   },
 
   // 儲存週任務
@@ -156,5 +179,27 @@ export const storage = {
   // 儲存收件匣內容
   async saveInboxItems(items: InboxItem[]): Promise<void> {
     await chrome.storage.local.set({ inboxItems: items });
+  },
+
+  // 累加任務的已消耗番茄鐘數 (原子累加並觸發 Storage Change)
+  async incrementSpentPomodoro(missionId: string): Promise<number | null> {
+    const missions = await this.getWeeklyMissions();
+    let updatedSpent: number | null = null;
+    const updatedMissions = missions.map((m) => {
+      if (m.id === missionId) {
+        const nextSpent = (m.spentPomodoros || 0) + 1;
+        updatedSpent = nextSpent;
+        return {
+          ...m,
+          spentPomodoros: nextSpent,
+        };
+      }
+      return m;
+    });
+
+    if (updatedSpent !== null) {
+      await this.saveWeeklyMissions(updatedMissions);
+    }
+    return updatedSpent;
   }
 }; 

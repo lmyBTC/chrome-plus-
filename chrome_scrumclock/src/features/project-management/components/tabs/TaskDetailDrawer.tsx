@@ -19,6 +19,8 @@ export interface TaskDetailDrawerProps {
   subtasks?: string[];
   onApplySubtasks: (id: string) => Promise<void>;
   onDismissSubtasks: (id: string) => void;
+  onScheduleTimebox?: (taskId: string, startTime: string | number | Date, durationMinutes: number) => Promise<boolean>;
+  isSchedulingCalendar?: boolean;
 }
 
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
@@ -39,8 +41,18 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   subtasks,
   onApplySubtasks,
   onDismissSubtasks,
+  onScheduleTimebox,
+  isSchedulingCalendar,
 }) => {
   const [localTitle, setLocalTitle] = useState('');
+  const [timeboxDate, setTimeboxDate] = useState<string>(() => {
+    const d = new Date();
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
+    // 轉換為 local datetime-local format: YYYY-MM-DDTHH:mm
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+  const [timeboxDuration, setTimeboxDuration] = useState<number>(25);
   const [copiedId, setCopiedId] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -88,7 +100,16 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     }
   };
 
-  const statusText = task.isCompleted ? 'DONE' : isFocused ? 'IN_PROGRESS' : 'TODO';
+  const currentGtdStatus =
+    task.isCompleted || task.status === 'done'
+      ? 'done'
+      : task.status === 'in-progress' || isFocused
+      ? 'in-progress'
+      : task.status === 'inbox'
+      ? 'inbox'
+      : task.status === 'someday'
+      ? 'someday'
+      : 'next-action';
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
@@ -180,25 +201,29 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
               {/* 狀態切換 */}
               <div>
                 <span className="block text-[11px] font-semibold text-dark-muted uppercase mb-2">
-                  任務狀態 (Status)
+                  任務狀態 (GTD Status)
                 </span>
                 <div className="flex items-center gap-2">
                   <select
-                    value={statusText}
+                    value={currentGtdStatus}
                     onChange={(e) => onUpdateStatus(task.id, e.target.value)}
                     className={`w-full px-3 py-1.5 rounded-lg text-xs font-bold tracking-wide border cursor-pointer outline-none transition-all ${
-                      statusText === 'DONE'
-                        ? 'bg-green-950/40 text-green-400 border-green-800/40'
-                        : statusText === 'TODO'
-                        ? 'bg-dark-card text-dark-secondary border-dark-border-default'
-                        : 'bg-blue-950/40 text-blue-400 border-blue-900/40'
+                      currentGtdStatus === 'done'
+                        ? 'bg-emerald-950/40 text-emerald-400 border-emerald-800/40'
+                        : currentGtdStatus === 'in-progress'
+                        ? 'bg-indigo-950/40 text-indigo-400 border-indigo-900/40'
+                        : currentGtdStatus === 'inbox'
+                        ? 'bg-purple-950/40 text-purple-400 border-purple-900/40'
+                        : currentGtdStatus === 'someday'
+                        ? 'bg-amber-950/40 text-amber-400 border-amber-900/40'
+                        : 'bg-dark-card text-blue-400 border-blue-900/40'
                     }`}
                   >
-                    <option value="TODO">TODO (待辦)</option>
-                    <option value="IN_PROGRESS" disabled>
-                      IN_PROGRESS (焦點進行中)
-                    </option>
-                    <option value="DONE">DONE (已完成)</option>
+                    <option value="inbox">📥 Inbox (收件匣)</option>
+                    <option value="next-action">⚡ Next Action (下一步)</option>
+                    <option value="in-progress">🚀 In Progress (焦點中)</option>
+                    <option value="done">✅ Done (已完成)</option>
+                    <option value="someday">💡 Someday (日後也許)</option>
                   </select>
                 </div>
               </div>
@@ -264,6 +289,87 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 placeholder="記錄執行細節、驗收條件、阻礙或參考連結..."
                 className="w-full px-3.5 py-2.5 bg-dark-surface border border-dark-border-default/80 rounded-xl text-sm text-dark-primary placeholder:text-dark-muted outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all leading-relaxed"
               />
+            </div>
+
+            {/* Google Calendar 時間箱排程 (Timeboxing) */}
+            <div className="p-4 rounded-xl bg-amber-950/20 border border-amber-900/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span>📅</span>
+                  <span>Google Calendar 時間箱預約</span>
+                </span>
+                {task.workspaceSync?.googleCalendarEventId && (
+                  <span className="text-[10px] bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                    <span>✓ 已排程</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 gap-2.5">
+                <div>
+                  <label className="block text-[11px] text-amber-200/80 mb-1">預約開始時間：</label>
+                  <input
+                    type="datetime-local"
+                    value={timeboxDate}
+                    onChange={(e) => setTimeboxDate(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-dark-surface border border-dark-border-default/80 rounded-lg text-xs text-dark-primary outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] text-amber-200/80 mb-1">預計專注長度：</label>
+                  <div className="flex items-center gap-2">
+                    {[25, 50, 90].map((dur) => (
+                      <button
+                        key={dur}
+                        type="button"
+                        onClick={() => setTimeboxDuration(dur)}
+                        className={`flex-1 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                          timeboxDuration === dur
+                            ? 'bg-amber-600/30 border-amber-500/60 text-amber-200'
+                            : 'bg-dark-card/60 border-dark-border-subtle text-dark-muted hover:text-dark-secondary'
+                        }`}
+                      >
+                        {dur} 分鐘
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-1 flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      if (onScheduleTimebox && timeboxDate) {
+                        await onScheduleTimebox(task.id, timeboxDate, timeboxDuration);
+                      }
+                    }}
+                    disabled={isSchedulingCalendar || !onScheduleTimebox}
+                    className="flex-1 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded-lg text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isSchedulingCalendar ? (
+                      <>
+                        <span className="animate-spin block h-3 w-3 border-2 border-white border-t-transparent rounded-full" />
+                        <span>排程建立中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>📅</span>
+                        <span>{task.workspaceSync?.googleCalendarEventId ? '重新排程時間箱' : '排入 Google Calendar'}</span>
+                      </>
+                    )}
+                  </button>
+
+                  <a
+                    href="https://calendar.google.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-2.5 py-2 bg-dark-card hover:bg-dark-surface border border-dark-border-default/70 text-dark-secondary hover:text-dark-primary rounded-lg text-xs font-semibold transition-colors flex items-center gap-1"
+                    title="開啟 Google Calendar 檢視"
+                  >
+                    <span>↗</span>
+                  </a>
+                </div>
+              </div>
             </div>
 
             {/* AI 拆解建議區塊 */}

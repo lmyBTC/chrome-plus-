@@ -1,6 +1,6 @@
 # 🌐 Chrome Plus Workspace (Chrome 插件多專案工作區)
 
-本工作區採用 Monorepo 結構管理多款現代化 Chrome 瀏覽器擴充功能（Manifest V3）。為大幅**降低 AI 輔助開發時的 Token 消耗**並**提高程式碼定位準確度**，本文件提供整個工作區與各專案之快速索引地圖。
+本工作區採用 Monorepo 結構管理多款現代化 Chrome 瀏覽器擴充功能（Manifest V3）。為大幅**降低 AI 輔助開發時的 Token 消耗**並**提高程式碼定位準確度**，本文件提供整個工作區與各專案之快速索引地圖。如需完整的終端使用者操作與全域快捷鍵指南，請參見 `使用說明.md`。
 
 ---
 
@@ -8,7 +8,7 @@
 
 | 專案目錄 | 插件名稱 | 核心技術棧 | 核心功能概述 | 專屬手冊 (README) | 專屬 SSOT 技能 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `chrome_scrumclock/` | **ScrumClock (Power Kit)** | React 18, TS, Vite, TailwindCSS | 敏捷番茄鐘、每日任務規劃、AI 側邊欄、實用工具箱整合（活動監控分頁、研報/字幕採集適配層）、自選股即時小工具 | 👉 `chrome_scrumclock/SCRUMCLOCK_README.md` | 🧠 `scrumclock-core` (`.agents/skills/scrumclock-core/`) |
+| `chrome_scrumclock/` | **ScrumClock (Power Kit)** | React 18, TS, Vite, TailwindCSS | 敏捷番茄鐘、極簡 GTD 全域捕捉 (`Alt+Q`/右鍵)、敏捷看板流轉 (Inbox/Next/WIP 限制)、番茄工時自動回填、AI 側邊欄與工具箱 | 👉 `chrome_scrumclock/SCRUMCLOCK_README.md` | 🧠 `scrumclock-core` (`.agents/skills/scrumclock-core/`) |
 | `browser-activity-monitor/` | **Browser Activity Monitor** | 原生 JS, Manifest V3 (零依賴) | 80% 原生常駐監控（網路流量/下載行為/原生權限審查）、20% 隨選深入探針、Side Panel 即時面板 | 👉 `browser-activity-monitor/ACTIVITY_MONITOR_README.md` | 🧠 `activity-monitor-core` (`.agents/skills/activity-monitor-core/`) |
 | `chrome_video speed plus/` | **Video Speed Plus** | 原生 JS, Manifest V3, Shadow DOM | 全網 HTML5 影片播放倍速調整 (0.1x~16x)、快捷鍵與 A-B 循環 | 👉 `chrome_video speed plus/VIDEOSPEED_README.md` | 🧠 `video-speed-core` (`.agents/skills/video-speed-core/`) |
 | `finance-research-clipper-oss/` | **Finance Research Clipper** | 原生 JS, Manifest V3 (零依賴) | Google/Yahoo/Goodinfo 多合一深度爬蟲、分析師目標價、財報矩陣、AI 研報採集 | 👉 `finance-research-clipper-oss/FINANCE_CLIPPER_README.md` | 🧠 `finance-clipper-core` (`.agents/skills/finance-clipper-core/`) |

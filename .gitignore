@@ -36,3 +36,8 @@ Thumbs.db
 
 # Temporary agents scratch
 .agents/**/scratch/
+
+# Extension Private Keys
+0.doc_mg/keys/*.pem
+*.pem
+

@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxb+768z7cHZtPK+3ZNMuggtGUC6U1xKshlAzhDlm0c+9uMVHMr/UgEjU9HeZqS0nGMYKgxE1GtkazNIcMhXoZXVKO7gNf1NB1MsNCExmeA1bN1Bo2akkH7Gweteh9t87qBxGFt4SEjZGNwshcjArSLJa5QADlHdkElIlTVy23m36K4NziUVuYw79LP35KTr3tl+4+IHYWvgP9ZEd3KbCIdJeSXcho8T6qo2xCYOAL7kd/xlfljesYRHUzNLi4YwWX8A6PIuDw1RvId4400JqNyTG5OqZ7jZPaBHimjmIEgFu4j99yYRzjrlXR+NsJ8tupFu+n5+LpxLDphfalKeOlwIDAQAB",
   "name": "YouTube Speed Plus",
   "version": "1.0",
   "description": "讓 YouTube 影片播放速度提升到 3 倍以上",
@@ -21,5 +22,8 @@
       "js": ["content.js"],
       "run_at": "document_end"
     }
-  ]
+  ],
+  "externally_connectable": {
+    "ids": ["*"]
+  }
 } 

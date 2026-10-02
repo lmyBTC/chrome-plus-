@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TaskPoolTabProps } from './types';
 import { TaskDetailDrawer } from './TaskDetailDrawer';
+import { BoardView } from '../../../../dashboard/components/BoardView';
 
 export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
   weeklyMissions,
@@ -30,7 +31,27 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
   onBatchPushToFocus,
   onBatchUpdateStatus,
   onBatchDelete,
+  onSyncGoogleTasks,
+  isGoogleSyncing,
+  onScheduleTimebox,
+  isSchedulingCalendar,
+  onUpdatePomodoroEstimate,
 }) => {
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
+    try {
+      return (localStorage.getItem('scrumclock_taskpool_view') as 'kanban' | 'table') || 'kanban';
+    } catch {
+      return 'kanban';
+    }
+  });
+
+  const handleSetViewMode = (mode: 'kanban' | 'table') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('scrumclock_taskpool_view', mode);
+    } catch {}
+  };
+
   const [internalSelectedId, setInternalSelectedId] = useState<string | null>(null);
   const currentSelectedId = selectedTaskId !== undefined ? selectedTaskId : internalSelectedId;
   const handleSelectRow = (id: string) => {
@@ -209,8 +230,50 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           </button>
         </div>
 
-        {/* 右側：欄位設定與說明開關 */}
+        {/* 右側：視圖切換、欄位設定與說明開關 */}
         <div className="flex items-center gap-2 shrink-0">
+          {/* 看板 / 表格 切換 */}
+          <div className="flex items-center bg-dark-card border border-dark-border-default/70 rounded-lg p-0.5">
+            <button
+              onClick={() => handleSetViewMode('kanban')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                viewMode === 'kanban'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-dark-secondary hover:text-dark-primary'
+              }`}
+              title="切換至 GTD 敏捷看板檢視"
+            >
+              <span>📊</span>
+              <span>看板</span>
+            </button>
+            <button
+              onClick={() => handleSetViewMode('table')}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-dark-secondary hover:text-dark-primary'
+              }`}
+              title="切換至清單表格檢視"
+            >
+              <span>📋</span>
+              <span>表格</span>
+            </button>
+          </div>
+
+          {onSyncGoogleTasks && (
+            <button
+              onClick={onSyncGoogleTasks}
+              disabled={isGoogleSyncing}
+              className={`px-2.5 py-1.5 bg-dark-card hover:bg-dark-hover border border-dark-border-default/60 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
+                isGoogleSyncing ? 'text-dark-muted opacity-60' : 'text-emerald-400 hover:text-emerald-300'
+              }`}
+              title="與 Google Tasks 進行雙向同步"
+            >
+              <span>{isGoogleSyncing ? '⏳' : '📋'}</span>
+              <span>{isGoogleSyncing ? '同步中...' : 'Google Tasks'}</span>
+            </button>
+          )}
+
           {!showBanner && (
             <button
               onClick={handleShowBanner}
@@ -265,14 +328,31 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         </div>
       </div>
 
-      {weeklyMissions.length === 0 ? (
-        <div className="text-center py-12 text-dark-muted">
-          <span className="text-4xl block mb-2">🗂️</span>
-          目前任務池中沒有任何任務，請在上方新增或同步試算表。
-        </div>
+      {viewMode === 'kanban' ? (
+        <BoardView
+          weeklyMissions={weeklyMissions}
+          inProgressIds={inProgressIds}
+          onAddTask={async (title, status) => {
+            setNewTitle(title);
+            await onAddTask();
+          }}
+          onUpdateStatus={onUpdateStatus as any}
+          onDeleteTask={onDeleteTask}
+          onToggleFocus={onToggleFocus}
+          onSelectTask={(id) => (id ? handleSelectRow(id) : handleCloseDrawer())}
+          onUpdateTitle={onUpdateTitle}
+          onUpdatePomodoroEstimate={onUpdatePomodoroEstimate}
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-dark-border-subtle">
-          <table className="w-full text-left text-sm text-dark-secondary table-auto">
+        <>
+          {weeklyMissions.length === 0 ? (
+            <div className="text-center py-12 text-dark-muted">
+              <span className="text-4xl block mb-2">🗂️</span>
+              目前任務池中沒有任何任務，請在上方新增或同步試算表。
+            </div>
+          ) : (
+            <div className="overflow-x-auto rounded-xl border border-dark-border-subtle">
+              <table className="w-full text-left text-sm text-dark-secondary table-auto">
             <thead className="bg-dark-surface text-dark-primary border-b border-dark-border-subtle text-xs uppercase font-semibold">
               <tr>
                 <th className="px-3 py-3 w-[44px] text-center">
@@ -379,6 +459,24 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
                                     />
                                   </div>
                                 </div>
+                              )}
+                              {row.workspaceSync?.googleTaskId && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-950/40 text-blue-400 border border-blue-800/40 select-none"
+                                  title={`已連動 Google Tasks (狀態: ${row.workspaceSync.syncStatus || 'synced'})`}
+                                >
+                                  <span>📋</span>
+                                  <span>Google</span>
+                                </span>
+                              )}
+                              {row.workspaceSync?.googleCalendarEventId && (
+                                <span
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-950/40 text-amber-400 border border-amber-800/40 select-none"
+                                  title="已排定 Google Calendar 時間箱"
+                                >
+                                  <span>📅</span>
+                                  <span>時間箱</span>
+                                </span>
                               )}
                             </div>
                           </td>
@@ -679,6 +777,8 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           </button>
         </div>
       )}
+        </>
+      )}
 
       {/* 右側滑出式任務詳情抽屜 */}
       <TaskDetailDrawer
@@ -705,6 +805,8 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         subtasks={selectedTask && subtasks ? subtasks[selectedTask.id] : undefined}
         onApplySubtasks={onApplySubtasks}
         onDismissSubtasks={onDismissSubtasks}
+        onScheduleTimebox={onScheduleTimebox}
+        isSchedulingCalendar={isSchedulingCalendar}
       />
     </div>
   );

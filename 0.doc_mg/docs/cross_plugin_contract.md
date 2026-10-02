@@ -1,6 +1,6 @@
 # Chrome 多插件工作區：跨插件通訊解耦與防禦性架構規範 (Cross-Plugin Decoupling & Defensive Contract)
 
-> **核心願景**：各 Chrome 擴充功能保持「100% 獨立編譯、獨立發布、自治運行」。跨插件合作僅透過純資料通訊協議 (Pure Data Contract)，任一插件的單獨重構、新增欄位或版本不一致，絕不牽連其他插件的正常運作。
+> **核心願景**：各 Chrome 擴充功能保持「100% 獨立編譯、獨立發布、自治運行」。跨插件合作僅透過原生直連純資料通訊協議 (Pure Data Contract)，任一插件的單獨重構、新增欄位或版本不一致，絕不牽連其他插件的正常運作。
 
 ---
 
@@ -18,11 +18,11 @@
 
 ## 2. 寬容讀者模式 (Tolerant Reader Pattern)
 
-當你在任一擴充功能內部進行快速迭代（例如新增 `__$%^&*` 測試欄位、重構 state 或增加私有標記）：
+當你在任一擴充功能內部進行快速迭代（例如新增測試欄位、重構 state 或增加私有標記）：
 
 1. **發送端：資料防腐層 (Anticorruption Sanitizer)**
-   - 在 `aiClient.js` 發送跨插件訊息前，透過 `sanitizeFinancePayload()` 進行**白名單過濾**。
-   - 只允許乾淨的規格欄位（`ticker`, `name`, `price`, `stats`, `analyst`, `earnings`, `note`）往外傳遞。
+   - 在發送跨插件訊息前，透過白名單過濾進行資料消毒。
+   - 只允許乾淨的規格欄位往外傳遞。
    - 所有自訂內部屬性（如 `__custom_state`、循環引用、DOM 物件）會在防腐層被直接剔除，絕不會污染跨插件協議。
 
 2. **接收端：未知欄位自動忽略 (Ignore Unknown Fields)**
@@ -31,69 +31,92 @@
 
 3. **型別強制安全降級 (Defensive Fallback)**
    - 接收端對陣列與字串強制驗證（`Array.isArray(x) ? x : []`，`typeof s === 'string' ? s : String(s)`）。
-   - 即使回傳空物件 `{}` 或惡意無效資料，UI 端只會顯示預設兜底文案，絕不中斷前端流程。
+   - 即使回傳空物件 `{}` 或無效資料，UI 端只會顯示預設兜底文案，絕不中斷前端流程。
 
 ---
 
-## 3. 協議版本標記 (Protocol Versioning)
+## 3. 靜態金鑰與擴充功能 ID 恆定對照表 (Static Extension Keys)
 
-所有跨插件請求與回傳 Payload 均包含 `protocolVersion`（目前為 `v1`）：
+為徹底消除開發與測試期「手動複製貼上 Extension ID」的使用者痛點，所有插件皆在 `manifest.json` 中配置固定公開金鑰（2048-bit RSA SPKI Public Key），使本地 Unpacked 與發布環境的 Extension ID 恆定不變：
+
+| 插件代號 (Plugin) | 專案目錄 | 恆定 Extension ID | 角色定位 |
+| :--- | :--- | :--- | :--- |
+| **ScrumClock** | `chrome_scrumclock/` | `ahiihabnbjeoeneahcgbdcofncjoclcp` | 核心宿主與能力中樞 (Hub) |
+| **FinanceClipper** | `finance-research-clipper-oss/` | `imnnkgiglcbjknfbkdfocdhoookkipji` | 財務投研採集子插件 (Spoke) |
+| **VideoSpeedPlus** | `chrome_video speed plus/` | `dhdnogmjajghbdcgdccicpkfljmcoieg` | 影片倍速與字幕採集子插件 (Spoke) |
+| **ActivityMonitor** | `browser-activity-monitor/` | `kjnoegggihncdaimlgfccccogghjapgn` | 瀏覽器行為監控子插件 (Spoke) |
+
+*金鑰定義檔集中管理於 `0.doc_mg/keys/manifest_keys.json`。*
+
+---
+
+## 4. 協議版本標記 (Protocol Versioning)
+
+所有跨插件請求與回傳 Payload 均包含 `protocolVersion`（目前為 `2`）：
 ```json
 {
-  "protocolVersion": 1,
-  "type": "AI_GENERATE_FINANCE_SUMMARY",
+  "protocolVersion": 2,
+  "type": "CREATE_TASK",
   "payload": { ... }
 }
 ```
 - **向後相容**：若未來新增欄位，舊版插件自動忽視新欄位。
-- **重大破壞性變更 (Breaking Change)**：若協議結構發生翻天覆地改變，升級為 `protocolVersion: 2`，接收端可透過版本號判斷並提供降級處理，不造成版本撞車。
+- **重大破壞性變更 (Breaking Change)**：若協議結構發生重大改變，升級版本號，接收端可透過版本號判斷並提供降級處理，不造成版本撞車。
 
 ---
 
-## 4. 故障保險絲 (Circuit Breaker & Timeout)
+## 5. 故障保險絲 (Circuit Breaker & Timeout)
 
-- **通訊超時保險絲**：跨插件調用設定 35 秒絕對超時限制（任務建立則設為 6 秒）。若對端無回應或當機，立即 `resolve` 失敗狀態，釋放等待鎖定。
-- **本地獨立快取**：AI 生成之研報儲存於自身插件的 `chrome.storage.local`，不依賴對端儲存空間。
+- **通訊超時保險絲**：跨插件直連調用設定 5~6 秒超時限制。若對端未啟動或無回應，發送端立即捕捉錯誤並優雅反饋使用者（例如提示對端尚未啟動），不阻斷主線 UI 操作。
+- **零背景輪詢 (Zero Outbox / Zero Alarms)**：全面廢除背景輪詢佇列與死信重試。發送失敗直接交由前端即時處置，徹底杜絕 Service Worker 被週期性喚醒或造成電力耗損。
 
 ---
 
-## 5. Phase 3 擴充協議規格 (Tasks & Focus Pomodoro Loop)
+## 6. 業務擴充協議規格 (Tasks & Focus Pomodoro Loop)
 
-### 5.1 研報轉任務協定 (`CREATE_TASK`)
-- **發送端**：FinanceClipper (`aiClient.js`)
-- **接收端**：ScrumClock Background Worker (`background.ts`)
+### 6.1 通用任務協定 (`CREATE_TASK` / `UniversalTaskPayload` v2.3)
+- **發送端**：FinanceClipper (`aiClient.js`) 或其他 Spoke 子插件
+- **接收端**：ScrumClock Background Worker (`background.ts` / `externalService.ts`)
 - **請求格式**：
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "type": "CREATE_TASK",
   "payload": {
+    "id": "task-v2-1727856000000",
     "ticker": "NVDA",
     "title": "深入研究 NVDA 財報與估值",
     "notes": "# 投資研報：NVDA ...",
-    "tags": ["#投資研究", "#美股"],
+    "tags": ["#投資研究", "#美股", "$NVDA", "@Focus"],
     "estimatedPomodoros": 2,
-    "url": "https://www.google.com/finance/quote/NVDA:NASDAQ"
+    "url": "https://www.google.com/finance/quote/NVDA:NASDAQ",
+    "gtdContext": "@Focus",
+    "priority": "P1",
+    "sourcePlugin": "FINANCE_CLIPPER",
+    "createdAt": 1727856000000
   }
 }
 ```
+- **欄位規範**：
+  - `gtdContext`（選填）：枚舉值，限 `@Focus`、`@Meeting`、`@Review`、`@Waiting-For`、`@Blocked`（預設 `@Focus`）。
+  - `priority`（選填）：枚舉值，限 `P1`、`P2`、`P3`（預設 `P1`）。
+  - `sourcePlugin`（選填）：來源插件標識字串（如 `FINANCE_CLIPPER`, `VIDEO_SPEED_PLUS`）。
 - **響應格式**：
 ```json
 {
   "success": true,
-  "taskId": "mission-1726567890123",
-  "duplicate": false,
-  "error": ""
+  "ack": true,
+  "taskId": "mission-1726567890123"
 }
 ```
 
-### 5.2 研究番茄鐘專注廣播協定 (`FOCUS_STARTED`)
+### 6.2 研究番茄鐘專注廣播協定 (`FOCUS_STARTED`)
 - **發送端**：ScrumClock Background Worker (`background.ts`)
 - **接收端**：FinanceClipper Background Worker (`background.js`)
 - **廣播格式**：
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "type": "FOCUS_STARTED",
   "payload": {
     "ticker": "NVDA",
@@ -106,18 +129,19 @@
 ```json
 {
   "success": true,
+  "ack": true,
   "ticker": "NVDA",
   "prefetched": true
 }
 ```
 
-### 5.3 影片筆記與字幕收集協定 (`COLLECT_NOTE`)
+### 6.3 影片筆記與字幕收集協定 (`COLLECT_NOTE`)
 - **發送端**：VideoSpeedPlus (`content.js` / `popup.js`) 或其他多媒體採集插件
 - **接收端**：ScrumClock Background Worker (`externalService.ts`)
 - **請求格式**：
 ```json
 {
-  "protocolVersion": 1,
+  "protocolVersion": 2,
   "type": "COLLECT_NOTE",
   "payload": {
     "source": "video_speed_plus",
@@ -134,6 +158,7 @@
 ```json
 {
   "success": true,
+  "ack": true,
   "noteId": "note-1726567890123",
   "message": "已成功收集字幕至 ScrumClock"
 }
@@ -141,7 +166,7 @@
 
 ---
 
-## 6. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)
+## 7. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)
 
 為徹底落實「分開開發、互不干擾、避免資料與上下文污染」：
 1. **單一插件專注原則**：
@@ -154,11 +179,11 @@
 
 ---
 
-## 7. 0.doc_mg 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
+## 8. 0.doc_mg 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
 
 工作區於 `0.doc_mg/tools/` 提供無外部依賴之 Python 自動化管線工具：
 
-### 7.1 合約與快照 JSON Schema 校驗器 (`validate_contract.py`)
+### 8.1 合約與快照 JSON Schema 校驗器 (`validate_contract.py`)
 - **檔案路徑**：`0.doc_mg/tools/validate_contract.py`
 - **使用指令**：
   ```bash
@@ -172,7 +197,7 @@
   python 0.doc_mg/tools/validate_contract.py snapshot.json --strict
   ```
 
-### 7.2 投研快照多格式匯出轉譯器 (`export_converter.py`)
+### 8.2 投研快照多格式匯出轉譯器 (`export_converter.py`)
 - **檔案路徑**：`0.doc_mg/tools/export_converter.py`
 - **功能**：
   1. **Obsidian Markdown**：自動解析快照生成相容 YAML Frontmatter、Dataview 與完整估值/獲利分析表格之筆記。
@@ -189,13 +214,13 @@
   python 0.doc_mg/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
   ```
 
-### 7.3 自動化回歸測試
+### 8.3 自動化回歸測試
 - **檔案路徑**：`0.doc_mg/tests/run_tests.py`
 - **執行指令**：`python 0.doc_mg/tests/run_tests.py`
 
 ---
 
-## 8. 常見開發疑問解答 (FAQ)
+## 9. 常見開發疑問解答 (FAQ)
 
 ### Q: 我在 Finance 功能裡新增奇怪的變數或功能，會不會把 ScrumClock 弄壞？
 **不會**。因為 Finance 的變數只存在於 FinanceClipper 的執行上下文中（Content Script、Dashboard 頁面），與 ScrumClock 完全隔離。只有透過 `aiClient.js` 發出的請求會到達 ScrumClock，而發送前會被「防腐層 (Sanitizer)」嚴格過濾。

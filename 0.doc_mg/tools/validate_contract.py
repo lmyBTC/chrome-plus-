@@ -139,7 +139,11 @@ class ContractValidator:
 
     @classmethod
     def _validate_create_task(cls, payload: Dict[str, Any], errors: List[ValidationError], strict: bool):
-        allowed_keys = {"ticker", "title", "notes", "tags", "estimatedPomodoros", "url", "protocolVersion"}
+        allowed_keys = {
+            "id", "ticker", "title", "notes", "tags", "estimatedPomodoros",
+            "url", "protocolVersion", "gtdContext", "priority",
+            "workspaceSync", "sourcePlugin", "createdAt"
+        }
         if strict:
             cls._check_extra_keys(payload, allowed_keys, errors, "payload")
 
@@ -159,6 +163,37 @@ class ContractValidator:
                 for idx, t in enumerate(payload["tags"]):
                     if not isinstance(t, str):
                         errors.append(ValidationError(f"payload.tags[{idx}]", "tag 標籤項目必須為字串"))
+
+        # v2.3 GTD Context 規範校驗
+        if "gtdContext" in payload and payload["gtdContext"] is not None:
+            valid_gtd = {"@Focus", "@Meeting", "@Review", "@Waiting-For", "@Blocked"}
+            if payload["gtdContext"] not in valid_gtd:
+                errors.append(ValidationError("payload.gtdContext", f"gtdContext 必須為 {valid_gtd} 其中之一，收到: {payload['gtdContext']}"))
+
+        # v2.3 Priority 規範校驗
+        if "priority" in payload and payload["priority"] is not None:
+            valid_p = {"P1", "P2", "P3"}
+            if payload["priority"] not in valid_p:
+                errors.append(ValidationError("payload.priority", f"priority 必須為 {valid_p} 其中之一，收到: {payload['priority']}"))
+
+        # v2.3 來源插件校驗
+        if "sourcePlugin" in payload and payload["sourcePlugin"] is not None:
+            if not isinstance(payload["sourcePlugin"], str) or not payload["sourcePlugin"].strip():
+                errors.append(ValidationError("payload.sourcePlugin", "sourcePlugin 應為非空字串"))
+
+        # v2.3 Google Workspace 同步結構校驗
+        if "workspaceSync" in payload and payload["workspaceSync"] is not None:
+            if not isinstance(payload["workspaceSync"], dict):
+                errors.append(ValidationError("payload.workspaceSync", "workspaceSync 必須為物件 (dict)"))
+            else:
+                ws = payload["workspaceSync"]
+                if "syncStatus" in ws and ws["syncStatus"] is not None:
+                    valid_status = {"synced", "pending", "failed", "idle"}
+                    if ws["syncStatus"] not in valid_status:
+                        errors.append(ValidationError("payload.workspaceSync.syncStatus", f"syncStatus 應為 {valid_status} 之一"))
+                if "lastSyncedAt" in ws and ws["lastSyncedAt"] is not None:
+                    if not isinstance(ws["lastSyncedAt"], (int, float)):
+                        errors.append(ValidationError("payload.workspaceSync.lastSyncedAt", "lastSyncedAt 應為時間戳數值"))
 
     @classmethod
     def _validate_focus_started(cls, payload: Dict[str, Any], errors: List[ValidationError], strict: bool):

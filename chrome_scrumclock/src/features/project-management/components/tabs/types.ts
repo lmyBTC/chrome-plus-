@@ -39,6 +39,11 @@ export interface TaskPoolTabProps {
   onBatchPushToFocus?: (ids: string[]) => Promise<void>;
   onBatchUpdateStatus?: (ids: string[], status: 'TODO' | 'DONE') => Promise<void>;
   onBatchDelete?: (ids: string[]) => Promise<void>;
+  onSyncGoogleTasks?: () => Promise<void>;
+  isGoogleSyncing?: boolean;
+  onScheduleTimebox?: (taskId: string, startTime: string | number | Date, durationMinutes: number) => Promise<boolean>;
+  isSchedulingCalendar?: boolean;
+  onUpdatePomodoroEstimate?: (id: string, estimate: number) => Promise<void>;
 }
 
 export interface InboxTabProps {

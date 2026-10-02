@@ -79,11 +79,19 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 
 ---
 
-## 5. 跨插件對外接口規範 (Externally Connectable API)
-FinanceClipper 作為資料提供者，在 `background.js` 中監聽 `onMessageExternal`：
-* **`GET_WATCHLIST`**: 回傳純自選股清單快照（只讀），無副作用。
-* **`GET_STOCK_SUMMARY`**: 傳入 `{ ticker: string }`，回傳個股精簡財務指標。
-* **安全性**: 僅回應 `externally_connectable` 中白名單授權的 Extension ID。
+## 5. 跨插件通訊與協作規格 (Cross-Plugin Bus & Outbox)
+FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`) 透過純資料協議通訊：
+1. **自動握手 (PING_HUB)**：`aiClient.js` 初始化時發送 `PING_HUB` 自動探測 ScrumClock 是否在線與能力清單，無需手動填寫 Extension ID。
+2. **UniversalTaskPayload v2.3 研報轉任務 (`CREATE_TASK`)**：
+   - 透過 `sanitizeTaskPayload()` 防腐層過濾白名單。
+   - 支援 `gtdContext` (`@Focus` 等)、`priority` (`P1` 等)、`sourcePlugin: 'FINANCE_CLIPPER'` 與 `workspaceSync` 同步結構。
+3. **Outbox 防丟單機制 (`outbox_queue`)**：
+   - 當發送 `CREATE_TASK` 遭遇 ScrumClock Service Worker 休眠或連線逾時（6 秒）時，自動寫入本地 `chrome.storage.local` 之 `outbox_queue`。
+   - 透過 `chrome.alarms` 定期（每 30 秒）與 `chrome.tabs.onActivated` 進行重試，直至收到對端 ACK。超過最大重試次數 (5 次) 轉入 `dead_letter_queue` 並彈出通知。
+4. **外部接口 (`onMessageExternal`)**：
+   - **`GET_WATCHLIST`**: 回傳純自選股清單快照（只讀），無副作用。
+   - **`GET_STOCK_SUMMARY`**: 傳入 `{ ticker: string }`，回傳個股精簡財務指標。
+   - **`FOCUS_STARTED`**: 接收 ScrumClock 開始番茄鐘專注廣播，自動進行標的研報預載。
 
 ---
 

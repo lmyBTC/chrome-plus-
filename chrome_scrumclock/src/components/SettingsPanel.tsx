@@ -24,6 +24,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [northStarGoal, setNorthStarGoal] = useState('');
   const [weeklyMissions, setWeeklyMissions] = useState('');
 
+  // Agile & GTD Feature Flags
+  const [enableGtdCapture, setEnableGtdCapture] = useState(true);
+  const [enableWipLimit, setEnableWipLimit] = useState(true);
+  const [maxWipLimit, setMaxWipLimit] = useState(3);
+
   // AI & Sync States
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
@@ -56,6 +61,11 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       setBreakDuration(data.userSettings.breakDuration || 5);
       setEndOfDayReviewTime(data.userSettings.endOfDayReviewTime || '21:00');
       
+      // Agile & GTD Flags
+      setEnableGtdCapture(data.userSettings.enableGtdCapture !== false);
+      setEnableWipLimit(data.userSettings.enableWipLimit !== false);
+      setMaxWipLimit(typeof data.userSettings.maxWipLimit === 'number' ? data.userSettings.maxWipLimit : 3);
+
       // Goals & Missions
       setNorthStarGoal(data.northStarGoal.text || '');
       setWeeklyMissions(data.weeklyMissions.map((m: WeeklyMission) => m.text).join('\n'));
@@ -160,7 +170,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         enableWebhook: enableWebhook,
         webhookUrl: webhookUrl.trim(),
         webhookSecretToken: webhookSecretToken.trim(),
-        financeClipperExtensionId: financeClipperExtensionId.trim()
+        financeClipperExtensionId: financeClipperExtensionId.trim(),
+        enableGtdCapture: enableGtdCapture,
+        enableWipLimit: enableWipLimit,
+        maxWipLimit: Number(maxWipLimit) || 3
       };
 
       const updatedGoal: NorthStarGoal = {
@@ -320,6 +333,70 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                   onChange={(e) => setBreakDuration(Number(e.target.value))}
                   className="w-full px-4 py-2 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
                 />
+              </div>
+            </div>
+
+            {/* ScrumClock 敏捷與 GTD 模組控制 */}
+            <div className="bg-dark-surface/70 border border-dark-border-default rounded-xl p-4.5 space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-dark-border-subtle">
+                <span className="text-sm font-bold text-dark-primary flex items-center gap-1.5">
+                  <span>⚡</span> ScrumClock 敏捷與 GTD 模組控制
+                </span>
+                <span className="text-[11px] text-dark-muted font-mono">本地 Feature Flags</span>
+              </div>
+
+              {/* GTD 快捷捕捉開關 */}
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <label className="text-sm font-semibold text-dark-primary block">📥 GTD 全域快速捕捉 (Alt+Q / 右鍵)</label>
+                  <p className="text-xs text-dark-muted mt-0.5">
+                    啟用後，可隨時按下快捷鍵 Alt+Q 或在任何網頁點擊右鍵選單，秒級捕捉文字或網頁標題至 Inbox。
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={enableGtdCapture}
+                    onChange={(e) => setEnableGtdCapture(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-dark-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
+
+              {/* WIP 限制開關與上限設定 */}
+              <div className="flex items-start justify-between gap-4 pt-3 border-t border-dark-border-subtle/50">
+                <div className="flex-1">
+                  <label className="text-sm font-semibold text-dark-primary block">🛡️ 看板在製品限制 (WIP Limit)</label>
+                  <p className="text-xs text-dark-muted mt-0.5">
+                    對敏捷看板「進行中 (In Progress)」欄位卡片數量進行上限保護，防止多工分心。
+                  </p>
+                  {enableWipLimit && (
+                    <div className="mt-2.5 flex items-center gap-2 text-xs text-dark-secondary">
+                      <span>上限卡片數量：</span>
+                      <select
+                        value={maxWipLimit}
+                        onChange={(e) => setMaxWipLimit(Number(e.target.value))}
+                        className="px-2.5 py-1 bg-dark-card border border-dark-border-default rounded-lg text-xs text-dark-primary outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                      >
+                        {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
+                          <option key={num} value={num}>
+                            {num} 個任務
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={enableWipLimit}
+                    onChange={(e) => setEnableWipLimit(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-dark-card peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
               </div>
             </div>
 

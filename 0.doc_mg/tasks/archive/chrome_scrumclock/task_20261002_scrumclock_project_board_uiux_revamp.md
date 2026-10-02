@@ -1,9 +1,11 @@
 ---
 title: "專案規劃看板 UI/UX 現代化重構 (Linear 風格輕量清單與詳情抽屜)"
 plugin: "chrome_scrumclock"
-status: "進行中"
+status: "已完成"
 created: "2026-10-02"
+completed: "2026-10-02"
 deadline: "2026-10-05"
+archived_path: "0.doc_mg/tasks/archive/chrome_scrumclock/task_20261002_scrumclock_project_board_uiux_revamp.md"
 ---
 
 ## 1. 目標
@@ -31,7 +33,7 @@ deadline: "2026-10-05"
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 - [x] L2 插件導航索引：`./chrome_scrumclock/SCRUMCLOCK_README.md`
 - [x] L1 專家技能字典：`./.agents/skills/scrumclock-core/SKILL.md` (登錄 TaskDetailDrawer 元件字典)
-- [ ] L4 任務生命週期：`0.doc_mg/tasks/archive/chrome_scrumclock/` (封存歸檔)
+- [x] L4 任務生命週期：`0.doc_mg/tasks/archive/chrome_scrumclock/` (封存歸檔)
 
 ## 3. 任務拆解
 
@@ -69,12 +71,12 @@ deadline: "2026-10-05"
     - [x] 執行 TypeScript 型別檢查與 Vite 專案建置 (`npm run build`)。
     - [x] 檢查暗色主題對比度與流暢度，確認無主控台錯誤。
 
-### Phase 5: SSOT 閉環補全與多層規範同步 狀態：`[進行中]`
+### Phase 5: SSOT 閉環補全與多層規範同步 狀態：`[已完成]`
 - [x] 任務 5.1: 補全 Agent 專家技能字典
     - [x] 於 `.agents/skills/scrumclock-core/SKILL.md` 登錄 `TaskDetailDrawer.tsx`。
-- [ ] 任務 5.2: 補全驗收清單並執行任務封存
-    - [ ] 將驗收標準更新為多維度 SSOT 檢核。
-    - [ ] 依封存協議將任務移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
+- [x] 任務 5.2: 補全驗收清單並執行任務封存
+    - [x] 將驗收標準更新為多維度 SSOT 檢核。
+    - [x] 依封存協議將任務移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
 
 ## 4. 影響評估
 - **架構影響**：純前端 UI/UX 呈現層與互動狀態優化，底層 LocalStorage 與 Google Sheets 同步資料結構（WeeklyMission 模型）完全保持相容。
@@ -87,7 +89,7 @@ deadline: "2026-10-05"
 - [x] **檔案編碼**: 確認所有修改與新增的檔案皆以 UTF-8 (無 BOM) 編碼保存。
 - [x] **L2 插件導航同步**: 已同步更新 `chrome_scrumclock/SCRUMCLOCK_README.md`。
 - [x] **L1 專家技能同步**: 已同步更新 `.agents/skills/scrumclock-core/SKILL.md`。
-- [ ] **L4 任務封存**: 任務完成後已移至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
+- [x] **L4 任務封存**: 任務完成後已移至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
 - [x] **插件驗證**: 已在 Chrome 中重新載入插件 (或執行 Vite `npm run build` 後載入 `dist/`)，確認各項功能及背景通訊皆正常無報錯。
 
 ## 6. AI 簽到區與會話接力
@@ -99,6 +101,8 @@ deadline: "2026-10-05"
 > - 2026-10-02 ID: f8dfac90-a331-4bb9-a3ca-2dcc272197e9 (Phase 3 完成：右側滑出式任務詳情抽屜與快捷互動串接)
 > - 2026-10-02 ID: f7f540f9-d87c-45f7-800e-882daf84369a (Phase 4 完成：批次操作懸浮列、建置驗證與全案驗收結案)
 > - 2026-10-02 ID: cef632a2-75fa-4f40-87df-28a3ae9182c9 (Phase 5 啟動：SSOT 閉環補全與流程反思)
+> - 2026-10-02 ID: ecc1e7ef-8c5b-40f7-b326-35c29ac9fa1d (Phase 5 完成：SSOT 閉環檢驗、Vite 打包通過與任務最終封存歸檔)
 >
 > **跨會話接力指令 (Session Handover)**:
-> 正在執行 Phase 5 SSOT 補全。完成後將正式封存。
+> 本任務所有 Phase (Phase 1 ~ Phase 5) 與多層 SSOT 閉環已全部圓滿完成並封存至 archive。專案所有任務已結清。
+
