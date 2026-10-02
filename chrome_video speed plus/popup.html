@@ -234,6 +234,197 @@
       min-height: 16px;
       text-align: center;
     }
+
+    .bookmark-section {
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      text-align: left;
+    }
+    
+    .bookmark-btn-group {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    
+    .bookmark-btn {
+      flex: 1;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 7px 10px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    
+    .bookmark-btn:hover {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      transform: translateY(-1px);
+    }
+
+    .bookmark-sub-actions {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    
+    .bookmark-sub-btn {
+      flex: 1;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 6px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+    
+    .bookmark-sub-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .bookmark-input-panel {
+      display: none;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .bookmark-input-panel.active {
+      display: block;
+    }
+
+    .bookmark-note-input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 7px 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.95);
+      color: #1f2937;
+      outline: none;
+      margin-bottom: 8px;
+    }
+
+    .bookmark-input-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .bookmark-list-container {
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      padding: 8px 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bookmark-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 6px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bookmark-clear-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      font-size: 10px;
+      padding: 0;
+      text-decoration: underline;
+    }
+
+    .bookmark-clear-btn:hover {
+      color: #f87171;
+    }
+
+    .bookmark-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 4px 8px;
+      margin-bottom: 5px;
+      font-size: 11px;
+      transition: background 0.2s;
+    }
+
+    .bookmark-item:hover {
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    .bookmark-item-content {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .bookmark-time-badge {
+      background: rgba(99, 102, 241, 0.5);
+      border: 1px solid rgba(129, 140, 248, 0.6);
+      color: #e0e7ff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .bookmark-time-badge:hover {
+      background: rgba(99, 102, 241, 0.8);
+    }
+
+    .bookmark-note-text {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #f3f4f6;
+    }
+
+    .bookmark-del-btn {
+      background: transparent;
+      border: none;
+      color: rgba(255, 255, 255, 0.4);
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      padding: 0 4px;
+    }
+
+    .bookmark-del-btn:hover {
+      color: #f87171;
+    }
+
+    .bookmark-empty-msg {
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.5);
+      text-align: center;
+      padding: 10px 0;
+    }
   </style>
 </head>
 <body>
@@ -300,6 +491,46 @@
         </div>
         <div id="scrumStatusMsg" class="scrum-status-msg"></div>
       </div>
+    </div>
+
+    <div class="bookmark-section">
+      <div class="section-title">
+        <span>⏱️ 法說會/影音筆記打點</span>
+        <span class="shortcut-badge">Alt + B</span>
+      </div>
+
+      <div class="bookmark-btn-group">
+        <button class="bookmark-btn" id="btnToggleBookmarkInput">
+          <span>⏱️ 打點記錄秒數</span>
+        </button>
+      </div>
+
+      <div id="bookmarkInputPanel" class="bookmark-input-panel">
+        <div style="font-size: 11px; margin-bottom: 6px; color: #cbd5e1;">
+          當前時間戳：<span id="popupCurrentTimeTag" style="font-weight: bold; color: #a5b4fc;">00:00</span>
+        </div>
+        <input type="text" id="popupBookmarkNote" class="bookmark-note-input" placeholder="輸入此時間戳重點 (Enter 儲存)">
+        <div class="bookmark-input-actions">
+          <button id="btnSavePopupBookmark" class="scrum-sub-btn">儲存</button>
+          <button id="btnCancelPopupBookmark" class="scrum-sub-btn">取消</button>
+        </div>
+      </div>
+
+      <div class="bookmark-sub-actions">
+        <button class="bookmark-sub-btn" id="btnExportMarkdown">📋 複製 MD</button>
+        <button class="bookmark-sub-btn" id="btnDownloadMarkdown">💾 下載 .md</button>
+      </div>
+
+      <div class="bookmark-list-container">
+        <div class="bookmark-list-header">
+          <span>本片已記錄重點 (<span id="bookmarkCount">0</span>)</span>
+          <button id="btnClearBookmarks" class="bookmark-clear-btn">清空本片</button>
+        </div>
+        <div id="bookmarkList">
+          <div class="bookmark-empty-msg">尚無記錄，點擊上方按鈕或按 Alt + B</div>
+        </div>
+      </div>
+      <div id="bookmarkStatusMsg" class="scrum-status-msg"></div>
     </div>
   </div>
   

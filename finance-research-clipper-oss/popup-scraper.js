@@ -328,3 +328,78 @@ function scrapeFinancialsDOM(doc) {
   }
   return markdownTable;
 }
+
+/**
+ * 從 Analysis 頁面 DOM 解析分析師評級與目標價
+ * @param {Document} doc DOM 物件
+ * @param {number|string} [currentPrice] 當前現價 (選填，用於計算 Upside)
+ * @returns {Object} { consensus, targetPrice, targetPriceStats, ratingsSummary, error }
+ */
+function scrapeAnalysisDOM(doc, currentPrice) {
+  const data = {
+    consensus: '',
+    targetPrice: { high: '', median: '', low: '', current: '' },
+    targetPriceStats: null,
+    ratingsSummary: '',
+    error: false
+  };
+
+  try {
+    const textBlocks = Array.from(doc.querySelectorAll('div, section, article'))
+      .map((el) => el.innerText?.trim() || '')
+      .filter((t) => t.length > 0);
+
+    const targetSection = textBlocks.find((t) => /Target price|Price target|Analyst rating|Consensus|Buy|Hold|Sell|目標價|分析師評級|分析師|評級|買進|持有|賣出/i.test(t));
+    if (targetSection) {
+      data.ratingsSummary = targetSection.slice(0, 1500);
+
+      const consensusMatch = targetSection.match(/(Strong Buy|Moderate Buy|Buy|Hold|Underperform|Sell|Strong Sell|強力買進|買進|加碼|持有|減碼|賣出)/i);
+      if (consensusMatch) {
+        data.consensus = consensusMatch[0];
+      }
+
+      const priceMatches = targetSection.match(/\$[\d,]+(?:\.\d{1,2})?/g);
+      if (priceMatches && priceMatches.length > 0) {
+        data.targetPrice.median = priceMatches[0];
+        if (priceMatches.length > 1) data.targetPrice.high = priceMatches[1];
+        if (priceMatches.length > 2) data.targetPrice.low = priceMatches[2];
+      } else {
+        const numMatch = targetSection.match(/(?:目標價|Target price|Price target)[\s:：]*\$?([\d,]+(?:\.\d+)?)/i);
+        if (numMatch) {
+          data.targetPrice.median = numMatch[1];
+        }
+      }
+    }
+
+    if (typeof calculateTargetPriceStats === 'function') {
+      data.targetPriceStats = calculateTargetPriceStats(data.targetPrice, currentPrice);
+    }
+  } catch (err) {
+    console.error("Analysis DOM Scraper Error:", err);
+    data.error = true;
+  }
+
+  return data;
+}
+
+if (typeof window !== 'undefined') {
+  window.DOM_SELECTORS = DOM_SELECTORS;
+  window.scrapeAIDialogue = scrapeAIDialogue;
+  window.scrapeFinanceData = scrapeFinanceData;
+  window.scrapeOverviewDOM = scrapeOverviewDOM;
+  window.scrapeEarningsDOM = scrapeEarningsDOM;
+  window.scrapeFinancialsDOM = scrapeFinancialsDOM;
+  window.scrapeAnalysisDOM = scrapeAnalysisDOM;
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = {
+    DOM_SELECTORS,
+    scrapeAIDialogue,
+    scrapeFinanceData,
+    scrapeOverviewDOM,
+    scrapeEarningsDOM,
+    scrapeFinancialsDOM,
+    scrapeAnalysisDOM
+  };
+}

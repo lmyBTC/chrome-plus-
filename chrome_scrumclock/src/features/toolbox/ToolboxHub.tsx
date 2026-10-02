@@ -3,6 +3,7 @@ import { ToolboxToolId, ToolboxToolInfo } from './types';
 import { ImageScraper } from './tools/image-scraper';
 import { ActivityMonitor } from './tools/activity-monitor';
 import { SubtitleCollector } from './tools/subtitle-collector';
+import { WatchListWidget } from '../finance-integration';
 
 const AVAILABLE_TOOLS: ToolboxToolInfo[] = [
   {
@@ -28,6 +29,14 @@ const AVAILABLE_TOOLS: ToolboxToolInfo[] = [
     description: '檢視並管理跨插件收集的影音字幕與筆記，支援時間戳跳轉與任務轉化',
     icon: '🎬',
     badge: '影音'
+  },
+  {
+    id: 'finance-research',
+    name: '投研自選看板',
+    shortName: '投研看板',
+    description: '載入 Clipper 快照與華爾街目標價偏離程度，聯動深度研究番茄鐘',
+    icon: '📈',
+    badge: '投研'
   }
 ];
 
@@ -71,7 +80,7 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
         )}
 
         {/* 工具分類切換 Tabs */}
-        <div className={`mt-2.5 ${isSidebar ? 'grid grid-cols-3 gap-1.5' : 'flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin'}`}>
+        <div className={`mt-2.5 ${isSidebar ? 'grid grid-cols-4 gap-1' : 'flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin'}`}>
           {AVAILABLE_TOOLS.map((tool) => {
             const isActive = activeTool === tool.id;
             return (
@@ -79,9 +88,9 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
                 key={tool.id}
                 onClick={() => setActiveTool(tool.id)}
                 title={tool.name}
-                className={`flex items-center justify-center space-x-1.5 rounded-lg font-medium transition-all ${
+                className={`flex items-center justify-center space-x-1 rounded-lg font-medium transition-all ${
                   isSidebar
-                    ? 'px-2 py-1.5 text-xs'
+                    ? 'px-1.5 py-1.5 text-[11px]'
                     : 'px-4 py-2 text-sm'
                 } ${
                   isActive
@@ -107,10 +116,11 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
       </div>
 
       {/* 主工作區域 */}
-      <div className={`flex-1 ${isSidebar ? 'p-3 w-full' : 'p-8 max-w-7xl w-full mx-auto'}`}>
+      <div className={`flex-1 ${isSidebar ? 'p-2 w-full' : 'p-8 max-w-7xl w-full mx-auto'}`}>
         {activeTool === 'image-scraper' && <ImageScraper isSidebar={isSidebar} />}
         {activeTool === 'activity-monitor' && <ActivityMonitor isSidebar={isSidebar} />}
         {activeTool === 'subtitle-collector' && <SubtitleCollector isSidebar={isSidebar} />}
+        {activeTool === 'finance-research' && <WatchListWidget isSidebar={isSidebar} />}
       </div>
     </div>
   );

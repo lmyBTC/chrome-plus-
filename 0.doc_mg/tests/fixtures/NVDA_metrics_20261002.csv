@@ -1,0 +1,2 @@
+﻿timestamp,ticker,name,price,target_median,target_mean,target_high,target_low,target_upside_pct,target_std_dev,target_cv,beta,range52w,low52,high52,latest_eps_actual,latest_eps_est,eps_surprise_pct,yoy_pct,pe,market_cap,analyst_consensus,url,note
+2026-10-02 12:00:00,NVDA,NVIDIA Corporation,125.5,150.0,148.5,175.0,110.0,19.52,14.2,0.0956,1.68,45.00 - 140.00,45.0,140.0,0.68,0.64,6.25,122.0,65.4,3.10T,Strong Buy,https://www.google.com/finance/quote/NVDA:NASDAQ,Blackwell 供應鏈持續緊俏，CSP 客戶資本支出上修，維持長期看多。

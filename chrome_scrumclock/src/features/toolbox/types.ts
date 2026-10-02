@@ -1,4 +1,4 @@
-export type ToolboxToolId = 'image-scraper' | 'activity-monitor' | 'subtitle-collector';
+export type ToolboxToolId = 'image-scraper' | 'activity-monitor' | 'subtitle-collector' | 'finance-research';
 
 export interface ToolboxToolInfo {
   id: ToolboxToolId;

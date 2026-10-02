@@ -330,6 +330,44 @@ function handleMessage(request, sender, sendResponse) {
     case 'collectToScrumClock':
       sendNoteToScrumClock().then(res => sendResponse(res));
       return true;
+
+    case 'openBookmarkModal':
+      openBookmarkModal();
+      sendResponse({ success: true });
+      break;
+
+    case 'seekToTime':
+      if (videoElement && typeof request.timeSeconds === 'number') {
+        videoElement.currentTime = request.timeSeconds;
+        sendResponse({ success: true, currentTime: videoElement.currentTime });
+      } else {
+        sendResponse({ success: false, error: 'Video element not found or invalid time' });
+      }
+      break;
+
+    case 'saveBookmark':
+      saveBookmark(request.note, request.timeSeconds).then(res => sendResponse(res));
+      return true;
+
+    case 'getBookmarks':
+      getStoredBookmarks(request.videoId).then(res => sendResponse({ success: true, bookmarks: res }));
+      return true;
+
+    case 'deleteBookmark':
+      deleteBookmark(request.id).then(res => sendResponse(res));
+      return true;
+
+    case 'clearBookmarks':
+      clearBookmarksForVideo(request.videoId).then(res => sendResponse(res));
+      return true;
+
+    case 'exportMarkdown':
+      getStoredBookmarks(request.videoId).then(bms => {
+        const meta = getVideoMetadata();
+        const md = generateMarkdownNotes(bms, meta.title, meta.url);
+        sendResponse({ success: true, markdown: md, title: meta.title, count: bms.length });
+      });
+      return true;
       
     default:
       sendResponse({error: '未知的動作'});
@@ -359,6 +397,16 @@ document.addEventListener('keydown', function(event) {
     event.preventDefault();
     console.log('[VideoSpeedPlus] 快捷鍵觸發：收集字幕與筆記至 ScrumClock');
     sendNoteToScrumClock();
+    return;
+  }
+
+  // Alt + B 或 Ctrl + Shift + B：記錄當前時間戳記重點摘要 (Bookmark Modal)
+  const isAltB = event.altKey && (event.key === 'b' || event.key === 'B' || event.code === 'KeyB');
+  const isCtrlShiftB = event.ctrlKey && event.shiftKey && (event.key === 'b' || event.key === 'B' || event.code === 'KeyB');
+  if (isAltB || isCtrlShiftB) {
+    event.preventDefault();
+    console.log('[VideoSpeedPlus] 快捷鍵觸發：開啟時間標記記錄視窗');
+    openBookmarkModal();
     return;
   }
 
@@ -981,6 +1029,164 @@ function createShadowControlPanel() {
       background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
       box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
     }
+
+    .bookmark-panel-section {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .bookmark-btn-row {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .bookmark-copy-md-btn {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #cbd5e1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 12px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      box-sizing: border-box;
+    }
+
+    .bookmark-copy-md-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .bookmark-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100000;
+      animation: bookmarkFadeIn 0.2s ease-out;
+      box-sizing: border-box;
+    }
+
+    @keyframes bookmarkFadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .bookmark-modal-card {
+      width: 440px;
+      max-width: 92vw;
+      background: rgba(24, 24, 27, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 16px;
+      padding: 22px;
+      box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+      color: #ffffff;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+
+    .bookmark-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .bookmark-modal-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #e0e7ff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .bookmark-timestamp-tag {
+      background: rgba(99, 102, 241, 0.3);
+      border: 1px solid rgba(129, 140, 248, 0.5);
+      color: #a5b4fc;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .bookmark-input-textarea {
+      width: 100%;
+      height: 85px;
+      box-sizing: border-box;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #ffffff;
+      font-size: 13px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      margin-bottom: 14px;
+      line-height: 1.5;
+      transition: border-color 0.2s ease;
+    }
+
+    .bookmark-input-textarea:focus {
+      border-color: #818cf8;
+      background: rgba(255, 255, 255, 0.09);
+    }
+
+    .bookmark-modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .bookmark-modal-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+
+    .bookmark-btn-cancel {
+      background: rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+
+    .bookmark-btn-cancel:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+    }
+
+    .bookmark-btn-save {
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(99, 102, 241, 0.4);
+    }
+
+    .bookmark-btn-save:hover {
+      background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+      transform: translateY(-1px);
+    }
   `;
   shadowRoot.appendChild(style);
   
@@ -1091,9 +1297,89 @@ function createShadowControlPanel() {
 
   collectorSection.append(collectorHeader, sendToScrumBtn);
 
-  panel.append(header, speedControls, customSpeed, statusDisplay, loopControls, collectorSection);
+  // 法說會/影音筆記打點區塊
+  const bookmarkSection = document.createElement('div');
+  bookmarkSection.className = 'bookmark-panel-section';
+  const bookmarkHeader = document.createElement('div');
+  bookmarkHeader.className = 'collector-header';
+  const bookmarkTitle = document.createElement('span');
+  bookmarkTitle.className = 'collector-title';
+  bookmarkTitle.textContent = '⏱️ 法說會/影音筆記打點';
+  const bookmarkBadge = document.createElement('span');
+  bookmarkBadge.className = 'collector-shortcut-badge';
+  bookmarkBadge.textContent = 'Alt + B';
+  bookmarkHeader.append(bookmarkTitle, bookmarkBadge);
+
+  const bookmarkBtnRow = document.createElement('div');
+  bookmarkBtnRow.className = 'bookmark-btn-row';
+
+  const addBookmarkBtn = document.createElement('button');
+  addBookmarkBtn.className = 'collector-btn add-bookmark-panel-btn';
+  const addBookmarkSpan = document.createElement('span');
+  addBookmarkSpan.textContent = '⏱️ 記錄時間標記 (Alt + B)';
+  addBookmarkBtn.appendChild(addBookmarkSpan);
+
+  const copyMdBtn = document.createElement('button');
+  copyMdBtn.className = 'bookmark-copy-md-btn copy-markdown-panel-btn';
+  copyMdBtn.textContent = '📋 複製本片 Markdown 筆記';
+
+  bookmarkBtnRow.append(addBookmarkBtn, copyMdBtn);
+  bookmarkSection.append(bookmarkHeader, bookmarkBtnRow);
+
+  panel.append(header, speedControls, customSpeed, statusDisplay, loopControls, collectorSection, bookmarkSection);
   
-  shadowRoot.appendChild(panel);
+  // 建立法說會/影音時間戳記筆記記錄對話框 (Modal)
+  const modalOverlay = document.createElement('div');
+  modalOverlay.id = 'yt-speed-plus-bookmark-modal';
+  modalOverlay.className = 'bookmark-modal-overlay';
+  modalOverlay.style.display = 'none';
+
+  const modalContent = document.createElement('div');
+  modalContent.className = 'bookmark-modal-card';
+
+  const modalHeader = document.createElement('div');
+  modalHeader.className = 'bookmark-modal-header';
+
+  const modalTitle = document.createElement('div');
+  modalTitle.className = 'bookmark-modal-title';
+  const titleSpan = document.createElement('span');
+  titleSpan.textContent = '⏱️ 記錄法說會/影音重點';
+  const timeTag = document.createElement('span');
+  timeTag.className = 'bookmark-timestamp-tag';
+  timeTag.id = 'bookmarkModalTimeTag';
+  timeTag.textContent = '00:00';
+  modalTitle.append(titleSpan, timeTag);
+
+  const modalClose = document.createElement('button');
+  modalClose.className = 'panel-close-btn';
+  modalClose.textContent = '×';
+  modalClose.id = 'bookmarkModalCloseBtn';
+
+  modalHeader.append(modalTitle, modalClose);
+
+  const modalTextarea = document.createElement('textarea');
+  modalTextarea.id = 'bookmarkModalTextarea';
+  modalTextarea.className = 'bookmark-input-textarea';
+  modalTextarea.placeholder = '請輸入重點摘要 (Key Takeaway)，Enter 儲存 / Esc 取消...';
+
+  const modalActions = document.createElement('div');
+  modalActions.className = 'bookmark-modal-actions';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.id = 'bookmarkModalCancelBtn';
+  cancelBtn.className = 'bookmark-modal-btn bookmark-btn-cancel';
+  cancelBtn.textContent = '取消 (Esc)';
+
+  const saveBtn = document.createElement('button');
+  saveBtn.id = 'bookmarkModalSaveBtn';
+  saveBtn.className = 'bookmark-modal-btn bookmark-btn-save';
+  saveBtn.textContent = '儲存重點 (Enter)';
+
+  modalActions.append(cancelBtn, saveBtn);
+  modalContent.append(modalHeader, modalTextarea, modalActions);
+  modalOverlay.appendChild(modalContent);
+
+  shadowRoot.append(panel, modalOverlay);
   
   shadowRoot.querySelector('.panel-close-btn').addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1218,6 +1504,85 @@ function bindShadowPanelEvents() {
           sendToScrumBtn.classList.remove('error');
           updateBtnText(sendToScrumBtn, defaultText);
         }, 2500);
+      }
+    });
+  }
+
+  // 法說會打點面板與對話框事件
+  const addBookmarkPanelBtn = shadowRoot.querySelector('.add-bookmark-panel-btn');
+  if (addBookmarkPanelBtn) {
+    addBookmarkPanelBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      openBookmarkModal();
+    });
+  }
+
+  const copyMarkdownPanelBtn = shadowRoot.querySelector('.copy-markdown-panel-btn');
+  if (copyMarkdownPanelBtn) {
+    copyMarkdownPanelBtn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      const meta = getVideoMetadata();
+      const vId = getVideoId(meta.url);
+      const bookmarks = await getStoredBookmarks(vId);
+      if (!bookmarks || bookmarks.length === 0) {
+        showNotification('⚠️ 本影片尚無時間標記筆記，請先使用 Alt + B 記錄');
+        return;
+      }
+      const md = generateMarkdownNotes(bookmarks, meta.title, meta.url);
+      try {
+        await navigator.clipboard.writeText(md);
+        showNotification(`📋 已複製 ${bookmarks.length} 則時間標記至剪貼簿！`);
+      } catch (_) {
+        showNotification('⚠️ 剪貼簿存取受限，請改用擴充功能 Popup 匯出');
+      }
+    });
+  }
+
+  // Bookmark Modal 互動邏輯
+  const modal = shadowRoot.getElementById('yt-speed-plus-bookmark-modal');
+  const textarea = shadowRoot.getElementById('bookmarkModalTextarea');
+  const closeBtnModal = shadowRoot.getElementById('bookmarkModalCloseBtn');
+  const cancelBtnModal = shadowRoot.getElementById('bookmarkModalCancelBtn');
+  const saveBtnModal = shadowRoot.getElementById('bookmarkModalSaveBtn');
+
+  const closeModal = () => {
+    if (modal) modal.style.display = 'none';
+  };
+
+  const handleSave = async () => {
+    const text = textarea ? textarea.value.trim() : '';
+    const sec = modal ? parseFloat(modal.dataset.seconds || '0') : 0;
+    const timeStr = modal ? modal.dataset.timeFormatted || '00:00' : '00:00';
+    closeModal();
+    const res = await saveBookmark(text, sec);
+    if (res.success) {
+      showNotification(`📌 已儲存時間標記 [${timeStr}]`);
+    } else {
+      showNotification(`⚠️ 儲存失敗: ${res.error || '未知錯誤'}`);
+    }
+  };
+
+  if (closeBtnModal) closeBtnModal.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
+  if (cancelBtnModal) cancelBtnModal.addEventListener('click', (e) => { e.stopPropagation(); closeModal(); });
+  if (saveBtnModal) saveBtnModal.addEventListener('click', (e) => { e.stopPropagation(); handleSave(); });
+
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeModal();
+      }
+    });
+  }
+
+  if (textarea) {
+    textarea.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSave();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeModal();
       }
     });
   }
@@ -1521,6 +1886,164 @@ async function sendNoteToScrumClock(customPayload) {
       }
     }
   });
+}
+
+// ============================================================================
+// 法說會影音時間戳打點與 Markdown 導出模組 (Timestamp Bookmarks & Markdown Export)
+// ============================================================================
+
+function getVideoId(urlStr) {
+  try {
+    const u = new URL(urlStr || window.location.href);
+    if (u.hostname.includes('youtube.com')) {
+      return u.searchParams.get('v') || '';
+    }
+  } catch (_) {}
+  return '';
+}
+
+async function getStoredBookmarks(videoId = null) {
+  try {
+    const data = await chrome.storage.local.get('vsp_bookmarks');
+    const allBookmarks = Array.isArray(data.vsp_bookmarks) ? data.vsp_bookmarks : [];
+    if (videoId) {
+      return allBookmarks.filter(b => b.videoId === videoId);
+    }
+    return allBookmarks;
+  } catch (_) {
+    return [];
+  }
+}
+
+async function saveBookmark(noteText, customTime = null) {
+  const meta = getVideoMetadata();
+  const vId = getVideoId(meta.url) || 'general_video';
+  const sec = typeof customTime === 'number' ? customTime : meta.seconds;
+  const timeFormatted = formatTimeDisplay(sec);
+
+  let targetUrl = meta.url;
+  try {
+    const u = new URL(meta.url);
+    u.searchParams.set('t', `${sec}s`);
+    targetUrl = u.toString();
+  } catch (_) {}
+
+  const cleanNote = typeof noteText === 'string' ? noteText.trim().slice(0, 1000) : '';
+  const newBookmark = {
+    id: `bm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    videoId: vId,
+    videoTitle: meta.title,
+    url: targetUrl,
+    timeSeconds: sec,
+    timeFormatted: timeFormatted,
+    note: cleanNote || `時間點 [${timeFormatted}] 重點標記`,
+    createdAt: Date.now()
+  };
+
+  try {
+    const all = await getStoredBookmarks();
+    all.push(newBookmark);
+    all.sort((a, b) => {
+      if (a.videoId === b.videoId) {
+        return a.timeSeconds - b.timeSeconds;
+      }
+      return b.createdAt - a.createdAt;
+    });
+    await chrome.storage.local.set({ vsp_bookmarks: all });
+    return { success: true, bookmark: newBookmark };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function deleteBookmark(bookmarkId) {
+  try {
+    const all = await getStoredBookmarks();
+    const filtered = all.filter(b => b.id !== bookmarkId);
+    await chrome.storage.local.set({ vsp_bookmarks: filtered });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function clearBookmarksForVideo(videoId) {
+  try {
+    const all = await getStoredBookmarks();
+    const remaining = videoId ? all.filter(b => b.videoId !== videoId) : [];
+    await chrome.storage.local.set({ vsp_bookmarks: remaining });
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+}
+
+function generateMarkdownNotes(bookmarks, videoTitle, videoUrl) {
+  const title = videoTitle || '法說會/影音筆記';
+  const cleanUrl = videoUrl ? videoUrl.split('&t=')[0] : '';
+  const nowStr = new Date().toISOString().split('T')[0];
+
+  let md = `---
+title: "法說會/影音筆記：${title}"
+source_url: "${cleanUrl}"
+created: "${nowStr}"
+tags:
+  - 投研筆記
+  - 法說會
+  - 影音打點
+---
+
+# 🎬 法說會/影音投研筆記：${title}
+
+- **影片來源**：[${title}](${cleanUrl})
+- **筆記總數**：${bookmarks.length} 個重點打點
+- **匯出日期**：${new Date().toLocaleString('zh-TW')}
+
+---
+
+## 📌 時間戳記與重點摘要 (Key Takeaways)
+
+| 時間戳 | 重點內容摘要 | 影音跳轉 |
+| :--- | :--- | :--- |
+`;
+
+  bookmarks.forEach(bm => {
+    const safeNote = bm.note.replace(/\|/g, '\\|');
+    md += `| [${bm.timeFormatted}] | ${safeNote} | [${bm.timeFormatted} 跳轉](${bm.url}) |\n`;
+  });
+
+  md += `\n---
+
+## 📝 逐點筆記清單
+
+`;
+
+  bookmarks.forEach(bm => {
+    md += `- [${bm.timeFormatted}](${bm.url}) **重點**：${bm.note}\n`;
+  });
+
+  return md;
+}
+
+function openBookmarkModal() {
+  if (!shadowHost) {
+    createShadowControlPanel();
+  }
+  const modal = shadowRoot.getElementById('yt-speed-plus-bookmark-modal');
+  const textarea = shadowRoot.getElementById('bookmarkModalTextarea');
+  const timeTag = shadowRoot.getElementById('bookmarkModalTimeTag');
+  if (!modal) return;
+
+  const meta = getVideoMetadata();
+  if (timeTag) timeTag.textContent = meta.currentTime;
+  modal.dataset.seconds = meta.seconds;
+  modal.dataset.timeFormatted = meta.currentTime;
+  if (textarea) textarea.value = '';
+
+  modal.style.display = 'flex';
+  setTimeout(() => {
+    if (textarea) textarea.focus();
+  }, 50);
 }
 
 // 頁面載入完成後初始化

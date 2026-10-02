@@ -1,0 +1,2 @@
+﻿timestamp,ticker,name,price,target_median,target_mean,target_high,target_low,target_upside_pct,target_std_dev,target_cv,beta,range52w,low52,high52,latest_eps_actual,latest_eps_est,eps_surprise_pct,yoy_pct,pe,market_cap,analyst_consensus,url,note
+2026-10-02 12:05:00,AAPL,Apple Inc.,224.2,250.0,248.8,300.0,185.0,11.51,18.5,0.0744,1.05,164.08 - 237.23,164.08,237.23,1.4,1.35,3.7,4.9,34.2,3.42T,Moderate Buy,https://www.google.com/finance/quote/AAPL:NASDAQ,Apple Intelligence 整合持續推進，高階機型換機意願提升。

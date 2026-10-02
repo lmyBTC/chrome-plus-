@@ -404,9 +404,129 @@
           });
         }
       });
+    },
+
+    /**
+     * 🎯 結構化 AI 投研 Prompt 產生器 (SSOT Prompt Generator)
+     * 將快照或 Payload 轉換為深度買方機構級 Prompt，涵蓋：
+     * 1. 執行摘要與投資評級
+     * 2. 多方核心論點與護城河 (Bull Case)
+     * 3. 空方疑慮與下行風險 (Bear Case)
+     * 4. 關鍵催化劑時程表 (Catalysts Timeline)
+     * 5. 財務體質與估值診斷矩陣 (Financial & Valuation Matrix)
+     * 6. 機構級操盤與風控策略 (Actionable Trading Strategy)
+     * 
+     * @param {Object} data 快照資料、Payload 或個股物件
+     * @returns {string} 完整的繁體中文結構化 Prompt
+     */
+    buildInvestmentPrompt(data) {
+      if (!data || typeof data !== 'object') {
+        return '請提供有效的個股研報資料以生成 Prompt。';
+      }
+
+      const ticker = String(data.ticker || data.symbol || (data.overview && data.overview.symbol) || '未知標的').toUpperCase().trim();
+      const companyName = data.name || (data.overview && data.overview.name) || '';
+      const price = data.price || (data.overview && data.overview.price) || 'N/A';
+
+      // 關鍵統計數據提取
+      const mktCap = data.mktcap || data.marketCap || (data.stats && (data.stats['市值'] || data.stats['Market cap'])) || 'N/A';
+      const pe = data.pe || (data.stats && (data.stats['本益比'] || data.stats['P/E ratio'])) || 'N/A';
+      const range52w = data.range52w || (data.stats && (data.stats['52 週高點'] ? `${data.stats['52 週低點']} - ${data.stats['52 週高點']}` : '')) || 'N/A';
+      const beta = data.beta || (data.stats && (data.stats['Beta'] || data.stats['貝他值'])) || 'N/A';
+
+      // 目標價與分析師共識
+      const consensus = data.analyst_consensus || (data.analyst && data.analyst.consensus) || (data.analysis && data.analysis.consensus) || 'N/A';
+      const targetMedian = data.target_price_median || (data.analyst && data.analyst.targetMedian) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.median) || 'N/A';
+      const targetMean = data.target_price_mean || (data.targetPriceStats && data.targetPriceStats.mean) || (data.target_price_stats && data.target_price_stats.mean) || 'N/A';
+      const targetHigh = data.target_price_high || (data.analyst && data.analyst.targetHigh) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.high) || 'N/A';
+      const targetLow = data.target_price_low || (data.analyst && data.analyst.targetLow) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.low) || 'N/A';
+      const targetUpside = data.target_price_upside || (data.targetPriceStats && data.targetPriceStats.upsidePercent !== undefined ? `${data.targetPriceStats.upsidePercent}%` : '') || (data.target_price_stats && data.target_price_stats.upsidePercent !== undefined ? `${data.target_price_stats.upsidePercent}%` : 'N/A');
+      const targetCv = data.target_price_cv || (data.targetPriceStats && data.targetPriceStats.cv !== undefined ? `${(data.targetPriceStats.cv * 100).toFixed(2)}%` : '') || (data.target_price_stats && data.target_price_stats.cv !== undefined ? `${(data.target_price_stats.cv * 100).toFixed(2)}%` : 'N/A');
+
+      // 財報與營收
+      const earningsPeriod = data.earnings_period || (data.earnings && (data.earnings.period || data.earnings.latestQuarter?.quarter)) || 'N/A';
+      const epsData = data.earnings_eps || (data.earnings && data.earnings.epsActual ? `實值 ${data.earnings.epsActual} / 預期 ${data.earnings.epsEstimate || '-'}` : 'N/A');
+      const revData = data.earnings_revenue || (data.earnings && data.earnings.revenueActual ? `實值 ${data.earnings.revenueActual} / 預期 ${data.earnings.revenueEstimate || '-'}` : 'N/A');
+      const earningsInsights = data.earnings_insights || (data.earnings && Array.isArray(data.earnings.insights) ? data.earnings.insights.join('\n') : '') || '';
+
+      // 損益表與財務表格
+      const financialsTable = data.financials_table || (data.financialsTable) || '';
+
+      // 筆記或關鍵觀點
+      const note = data.note || '';
+
+      let prompt = `# 【深度買方投研分析請求】標的：${ticker}${companyName ? ` (${companyName})` : ''}\n\n`;
+      prompt += `## 你的角色與任務定位：\n`;
+      prompt += `你是一位擁有 15 年以上頂級對沖基金 (Buy-side Hedge Fund) 經驗的資深權益研究員 (Senior Equity Research Analyst)。請基於以下所提供的客觀基本面、即時市場行情、分析師共識目標價、財務報表及研究筆記，針對 **${ticker}** 進行全方位、批判性、機構級別的投資價值深度評估。\n\n`;
+
+      prompt += `## 標的情報與數據快照 (Ground Truth Context)：\n`;
+      prompt += `- **標的名稱 (Ticker)**: ${ticker} ${companyName ? `(${companyName})` : ''}\n`;
+      prompt += `- **當前股價 (Current Price)**: ${price}\n`;
+      prompt += `- **市值規模 (Market Cap)**: ${mktCap}\n`;
+      prompt += `- **本益比 (P/E)**: ${pe} | **貝他值 (Beta)**: ${beta}\n`;
+      prompt += `- **52週價格區間 (52-wk Range)**: ${range52w}\n`;
+      prompt += `- **分析師評級共識 (Consensus)**: ${consensus}\n`;
+      prompt += `- **目標價統計矩陣**:\n`;
+      prompt += `  * 中位數 (Median): $${targetMedian}\n`;
+      prompt += `  * 平均值 (Mean): $${targetMean}\n`;
+      prompt += `  * 區間 (Range): $${targetLow} ~ $${targetHigh}\n`;
+      prompt += `  * 隱含現價上漲空間 (Implied Upside): ${targetUpside}\n`;
+      prompt += `  * 目標價離散係數 (CV): ${targetCv} (反映華爾街分歧度)\n`;
+      prompt += `- **最新財報季度**: ${earningsPeriod}\n`;
+      prompt += `  * EPS (實值 vs 預估): ${epsData}\n`;
+      prompt += `  * 營收 (實值 vs 預估): ${revData}\n`;
+
+      if (earningsInsights) {
+        prompt += `\n### 財報關鍵資訊與 AI 亮點：\n${earningsInsights}\n`;
+      }
+
+      if (financialsTable && financialsTable !== 'N/A') {
+        prompt += `\n### 近期季度財務報表：\n${financialsTable}\n`;
+      }
+
+      if (note) {
+        prompt += `\n### 研報觀察筆記與延伸背景：\n${note}\n`;
+      }
+
+      prompt += `\n---\n\n`;
+      prompt += `## 請嚴格依照以下六大模組進行結構化輸出（請使用專業繁體中文、金融終端語氣、嚴謹邏輯）：\n\n`;
+      prompt += `### 1. 【投資評級與執行摘要 (Executive Summary)】\n`;
+      prompt += `- 明確給出投資建議評級（如：**強力買進 / 買進 / 中立持有 / 逢高減碼 / 賣出**）。\n`;
+      prompt += `- 綜合現價與目標價中位數（隱含空間 ${targetUpside}），給出 6~12 個月合理目標價區間與估值隱含回報。\n`;
+      prompt += `- 100~150 字精準概括核心投資哲學與核心多空矛盾點。\n\n`;
+
+      prompt += `### 2. 【多方核心論點與護城河 (Bull Case)】\n`;
+      prompt += `- 條列至少 3 點驅動未來營收與獲利超額成長的結構性優勢（如定價權、技術壁壘、市場份額擴張、毛利率提升動能）。\n`;
+      prompt += `- 結合損益表數據與 EPS Surprise 表現進行佐證。\n\n`;
+
+      prompt += `### 3. 【空方疑慮與下行風險 (Bear Case & Key Risks)】\n`;
+      prompt += `- 條列至少 3 點關鍵下行風險因子（如估值倍數過高風險、同業價格競爭、地緣政治、總經利率影響、主要客戶集中度等）。\n`;
+      prompt += `- 評估若最悲觀情境 (Worst-case) 發生時，股價可能回測的下檔支撐。\n\n`;
+
+      prompt += `### 4. 【關鍵催化劑時程表 (Catalysts Timeline)】\n`;
+      prompt += `- 列出未來 3~12 個月內可能推動股價重估 (Re-rating) 的具體催化劑（如：下季度財報發布、重大產品發表、法說會指引、監管政策進展）。\n\n`;
+
+      prompt += `### 5. 【財務體質與估值診斷矩陣 (Financial & Valuation Matrix)】\n`;
+      prompt += `- 診斷營收年增率 (YoY)、營業利益率與每股盈餘 (EPS) 走勢之健康度。\n`;
+      prompt += `- 比對 P/E 與歷史估值中樞或行業龍頭平均，評估當前估值是否處於溢價或折價狀態。\n\n`;
+
+      prompt += `### 6. 【機構級操盤策略與風控指引 (Trading & Risk Management Strategy)】\n`;
+      prompt += `- **建議建倉節奏**：首筆部位建議比例、逢回檔加碼點位。\n`;
+      prompt += `- **關鍵價位監測**：核心支撐位、目標停利區間、嚴格停損 (Stop-loss) 點位或跌破條件。\n`;
+
+      return prompt;
     }
   };
 
-  // 掛載到全域
-  window.FinanceAIClient = FinanceAIClient;
+  // 掛載到全域與 CommonJS
+  if (typeof window !== 'undefined') {
+    window.FinanceAIClient = FinanceAIClient;
+  }
+  if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+      FinanceAIClient,
+      sanitizeFinancePayload,
+      sanitizeTaskPayload
+    };
+  }
 })(typeof window !== 'undefined' ? window : this);

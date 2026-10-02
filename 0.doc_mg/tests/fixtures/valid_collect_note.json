@@ -1,0 +1,13 @@
+{
+  "protocolVersion": 1,
+  "type": "COLLECT_NOTE",
+  "payload": {
+    "source": "video_speed_plus",
+    "title": "2026 Q3 科技巨頭法說會重點摘要",
+    "url": "https://www.youtube.com/watch?v=sample123",
+    "currentTime": "14:25",
+    "text": "管理層表示下半年資料中心資本支出將提高 20%，毛利率維持在 75% 高水準。",
+    "tags": ["#法說會", "#影音筆記"],
+    "type": "subtitle"
+  }
+}

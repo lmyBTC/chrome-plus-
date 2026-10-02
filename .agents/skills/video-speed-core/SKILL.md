@@ -40,7 +40,8 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md"]
 2. `vsp_speed_step`: `number` (快捷鍵每次微調步進值，如 `0.1` 或 `0.25`)
 3. `vsp_shortcuts`: `Record<string, string>` (快捷鍵映射表，如加速、減速、重置為 1.0、隱藏 OSD、收集字幕)
 4. `vsp_site_overrides`: `Record<domain, { speed: number, disabled: boolean }>` (特定網域專屬倍速記憶)
-5. `scrumclockExtensionId`: `string` (選填，快取指定之 ScrumClock Extension ID，供跨插件通訊使用)
+5. `vsp_bookmarks`: `Array<{ id, videoId, videoTitle, url, timeSeconds, timeFormatted, note, createdAt }>` (法說會與影音時間標記儲存清單)
+6. `scrumclockExtensionId`: `string` (選填，快取指定之 ScrumClock Extension ID，供跨插件通訊使用)
 
 ---
 
