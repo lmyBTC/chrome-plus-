@@ -10,6 +10,10 @@ import {
   broadcastFocusToFinanceClipper,
   saveGeminiConversation
 } from './background/externalService';
+import { monitorService } from './features/activity-monitor/services/monitorService';
+
+// 初始化活動監控服務
+monitorService.initialize();
 
 // 初始化
 chrome.runtime.onInstalled.addListener(async () => {
@@ -75,7 +79,12 @@ chrome.commands.onCommand.addListener((command: string) => {
 });
 
 // 監聽內部訊息
-chrome.runtime.onMessage.addListener((message: any) => {
+chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
+  const handledAsync = monitorService.handleRuntimeMessage(message, sender, sendResponse);
+  if (handledAsync) {
+    return true;
+  }
+
   switch (message.type) {
     case 'START_FOCUS_MODE':
       startFocusMode();
@@ -95,10 +104,19 @@ chrome.runtime.onMessage.addListener((message: any) => {
       chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/newtab/index.html') });
       break;
   }
+  return false;
+});
+
+// 監聽 Port 長連接 (供 monitor-stream 串流使用)
+chrome.runtime.onConnect.addListener((port) => {
+  monitorService.handlePortConnect(port);
 });
 
 // 監聽鬧鐘
-chrome.alarms.onAlarm.addListener(handleAlarm);
+chrome.alarms.onAlarm.addListener((alarm) => {
+  handleAlarm(alarm);
+  monitorService.handleAlarm(alarm);
+});
 
 // 跨插件 AI 服務化協議監聽器 (externally_connectable)
-chrome.runtime.onMessageExternal.addListener(handleExternalMessage);
+chrome.runtime.onMessageExternal.addListener(handleExternalMessage);

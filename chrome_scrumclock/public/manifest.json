@@ -13,6 +13,8 @@
     "alarms",
     "notifications",
     "tabs",
+    "webRequest",
+    "contentSettings",
     "scripting",
     "declarativeNetRequest",
     "downloads",
@@ -23,6 +25,15 @@
   ],
   "host_permissions": [
     "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "scripts/probes/probe-isolated.js",
+        "scripts/probes/probe-main.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"

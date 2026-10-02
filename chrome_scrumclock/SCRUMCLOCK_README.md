@@ -26,6 +26,7 @@
 | **7. Gemini Exporter (對話匯出)** | Gemini 官方網頁對話自動偵測、Markdown 結構化轉換與本機檔案下載 | `src/features/gemini-exporter/index.ts` | `src/features/gemini-exporter/types.ts` | `GeminiManager.tsx` (對話清單管理面板) | - `utils/exporter.ts` (Markdown 轉換與觸發下載)<br>- **注入腳本**：`src/geminiContent.ts` | - | `docs/gemini-content-spec.md` |
 | **8. Experimental SRT (字幕實驗室)** | 字幕檔案解析原型（解析核心已整併至 Subtitle Collector，維持代理相容） | `src/features/experimental-srt/index.ts` | `types/srt.ts` | `SrtReader.tsx` | `utils/srtParser.ts` (已代理轉接至 Subtitle Collector) | - | - |
 | **9. Finance Integration (投研自選看板)** | 載入 Clipper 投研快照 JSON、華爾街目標價偏離程度展示、深度投研清單 (Checklist) 聯動與 25m 番茄鐘專注日誌產出 (支援 `ToolboxHub` isSidebar 與獨立頁面) | `src/features/finance-integration/index.ts` | `src/features/finance-integration/types.ts` | `WatchListWidget.tsx` (支援 `isSidebar`) | - `financeClient.ts` (快照防腐解析、Local 快照與日誌儲存、Clipper 通訊)<br>- `contexts/TimerContext.tsx` 整合 | - | `0.doc_mg/docs/cross_plugin_contract.md` |
+| **10. Activity Monitor (全功能活動監控)** | 整合原獨立插件之瀏覽器常駐活動監控（80% 原生 webRequest/downloads/tabs/contentSettings）與隨選動態雙層探針（20%），支援即時串流、分類過濾、本機 IndexedDB 持久化與 React 統計儀表板 | `src/features/activity-monitor/index.ts` | `src/features/activity-monitor/types/index.ts` | `ActivityMonitorView.tsx` (主儀表板)<br>  ↳ 原生整合於側邊欄與工具箱 | - `services/monitorService.ts` (背景監聽與排程服務)<br>- `storage/activityDb.ts` (IndexedDB 儲存層)<br>- `public/scripts/probes/` (動態探針) | - | `docs/activity-monitor-spec.md` |
 
 ---
 
@@ -33,7 +34,7 @@
 
 | 入口檔案 | 類型 / 職責 | 關鍵依賴與通訊機制 | 備註 |
 | :--- | :--- | :--- | :--- |
-| `src/background.ts` | **Background Service Worker** | `chrome.alarms`, `chrome.notifications`, `chrome.commands`, `chrome.contextMenus` | 背景常駐事件路由中心 (96 行)。業務邏輯分流至：<br>- `src/background/alarmHandlers.ts` (定時鬧鐘)<br>- `src/background/externalService.ts` (外部通訊與 Offscreen 音效) |
+| `src/background.ts` | **Background Service Worker** | `chrome.alarms`, `chrome.notifications`, `chrome.commands`, `chrome.contextMenus`, `chrome.webRequest`, `chrome.contentSettings`, `chrome.downloads` | 背景常駐事件路由中心 (115 行)。業務邏輯分流至：<br>- `src/background/alarmHandlers.ts` (定時鬧鐘)<br>- `src/background/externalService.ts` (外部通訊與 Offscreen 音效)<br>- `src/features/activity-monitor/services/monitorService.ts` (網路/下載/分頁監控與定期清理) |
 | `src/content.ts` | **全域 Content Script** | 注入於 `<all_urls>` | 網頁端快捷鍵攔截、輔助 DOM 操作 |
 | `src/geminiContent.ts` | **Gemini 專屬 Content Script** | 注入於 `https://gemini.google.com/*`，Shadow DOM 封裝 | 自動監聽對話變更、浮動按鈕、一鍵同步至 Extension Storage |
 | `src/entries/sidebar/` | **Side Panel (側邊欄)** | `main.tsx`, `components/AIAssistantView.tsx`, `hooks.ts`, `index.html` | 側邊欄完整工作區視圖 (123 行)。提供「🧰 實用工具箱 (ToolboxHub)」與「🤖 PK+ 助理 (AIAssistantView)」雙分頁切換，預設按需延遲載入 Gemini Nano，避免啟動效能損耗。`hooks.ts` 為門面 (8 行)，子 Hooks 位於 `src/entries/sidebar/hooks/`：<br>- `useAISession.ts` (AI 對話 session)<br>- `useTimerSync.ts` (計時器同步)<br>- `useContextMenuSync.ts` (右鍵選單同步) |
@@ -90,3 +91,4 @@
 | **暗色系設計系統** | `docs/dark_theme_design_system.md` | TailwindCSS 色彩規範、高質感暗色主題元件設計風格 |
 | **Google Apps Script 串接**| `docs/google-apps-script.md` | Google 日曆不可打擾事件建立、試算表自動化記錄腳本 |
 | **工作流流程圖** | `docs/workflow-flowchart.md` | Mermaid 繪製之整體數據流與狀態機轉移圖 |
+| **活動監控技術規格書** | `docs/activity-monitor-spec.md` | 80% 原生監控 + 20% 隨選探針混合架構、IndexedDB 儲存模型、通訊協議與 React 視覺化面板 |

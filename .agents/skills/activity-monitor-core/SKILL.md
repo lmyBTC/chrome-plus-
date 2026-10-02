@@ -47,9 +47,12 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ---
 
-## 4. 與 ScrumClock Toolbox 之邊界與黑盒關係
-* **解耦規範**: `chrome_scrumclock/src/features/toolbox/tools/activity-monitor/` 僅為 ScrumClock 內部之純前端展示與安全沙盒檢測視圖，與 `browser-activity-monitor` **源碼 100% 獨立解耦**。
-* **無直接依賴**: 兩者不共用代碼庫，嚴禁跨目錄 import。跨專案數據流通一律依循 `0.doc_mg/docs/cross_plugin_contract.md` 規範。
+## 4. 與 ScrumClock 之整併關係 (ScrumClock Integration)
+* **已整合至 ScrumClock 架構**:
+  - 核心監控邏輯、IndexedDB 本機資料庫與雙層探針已整併至 `chrome_scrumclock/src/features/activity-monitor/`。
+  - 背景監聽掛載於 `chrome_scrumclock/src/background.ts`（由 `monitorService.ts` 統一管理）。
+  - UI 介面已移植為 React + Tailwind 元件 `ActivityMonitorView.tsx`，並整合於 ScrumClock 側邊欄與工具箱。
+* **獨立專案定位**: `browser-activity-monitor/` 原型目錄保留作為零依賴 Vanilla JS/CSS 原生參考實作。跨專案通訊協同仍依循 `0.doc_mg/docs/cross_plugin_contract.md` 規範。
 
 ---
 

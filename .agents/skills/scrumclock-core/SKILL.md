@@ -22,9 +22,11 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
   * `src/background.ts`: Service Worker 入口，負責事件路由。分流模組：
     - `src/background/alarmHandlers.ts`: 倒數計時器 Alarms 與通知管理。
     - `src/background/externalService.ts`: 跨插件通訊接收與 Offscreen 音效協調。
+    - `src/features/activity-monitor/services/monitorService.ts`: 瀏覽器活動監控背景監聽器（webRequest, downloads, tabs, contentSettings）。
   * `src/entries/sidebar/`: 瀏覽器側邊欄視圖 (Chrome SidePanel API)。雙模式：工具箱 (`ToolboxHub`) 與 PK+ 助理 (`AIAssistantView`)。子 Hooks 位於 `src/entries/sidebar/hooks/`。
   * `src/entries/newtab/`: 新分頁儀表板視圖。
-  * `public/manifest.json`: Manifest V3 配置 (`alarms`, `storage`, `sidePanel`, `offscreen`)。
+  * `public/manifest.json`: Manifest V3 配置 (`alarms`, `storage`, `sidePanel`, `offscreen`, `webRequest`, `contentSettings`, `downloads`, `scripting`)。
+  * `public/scripts/probes/`: 動態探針資源 (`probe-main.js`, `probe-isolated.js`)。
 
 ---
 
@@ -69,6 +71,13 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 - `tools/activity-monitor/`: 瀏覽行為與網頁敏感權限（鏡頭/麥克風/定位/剪貼簿）實時監控面板 (支援 `isSidebar`)。
 - `tools/subtitle-collector/`: 跨插件（VideoSpeedPlus）影音字幕與筆記快照收集面板，支援時間戳跳轉、Markdown 引用與今日戰役轉化 (支援 `isSidebar`)。
 
+### 活動監控完整模組 (`src/features/activity-monitor/`)
+- `index.ts`: 門面導出。
+- `components/ActivityMonitorView.tsx`: 活動監控即時面板 (React + Tailwind)，支援即時串流、分類篩選、統計卡片與深度探針觸發。
+- `services/monitorService.ts`: 背景監控管理服務，整合 `tabs`, `webRequest`, `downloads`, `contentSettings` 與 alarms 定時清理。
+- `storage/activityDb.ts`: IndexedDB (`BrowserActivityMonitorDB`) 本機資料存取層。
+- `types/index.ts`: 活動日誌、型態、統計與探針相關 TypeScript 型別定義。
+
 ### 側邊欄 Hooks 子模組 (`src/entries/sidebar/hooks/`)
 - `useAISession.ts`: AI 側邊欄會話與 Prompt 互動管理。
 - `useTimerSync.ts`: 全域番茄鐘即時狀態雙向同步。
@@ -82,9 +91,9 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 ---
 
 ## 3. 資料模型與儲存 SSOT (Storage Schema)
-所有數據儲存於 `chrome_scrumclock` 獨立之 `chrome.storage.local`，嚴禁與其他插件共用。
+所有數據儲存於 `chrome_scrumclock` 獨立之 `chrome.storage.local` 及專屬 IndexedDB，嚴禁與其他插件共用。
 
-### 主要儲存鍵值 (Storage Keys)
+### 主要儲存鍵值 (Chrome Storage Local)
 1. `scrumclock_tasks`: `Task[]`
    ```typescript
    interface Task {
@@ -113,6 +122,13 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 3. `scrumclock_settings`: `SettingsConfig` (工作時長、提示音、自動開始下一階段等)
 4. `scrumclock_finance_cache`: 自選股即時快照快取（只讀，來自 FinanceClipper，絕不回寫對端）。
 5. `capturedNotes`: `CapturedSubtitleNote[]` (跨插件影音字幕與時間戳筆記快照，由 VideoSpeedPlus 透過 `COLLECT_NOTE` 注入)。
+
+### 活動監控本機資料庫 (IndexedDB)
+* **資料庫名稱**: `BrowserActivityMonitorDB` (版本 1)
+* **Object Store**: `activity_logs`
+  * 主鍵: `id` (autoIncrement: true)
+  * 索引: `timestamp`, `type`, `origin`, `tabId`
+  * 自動清理: 每日由 `chrome.alarms` 定期清除超過 3 天之歷史審計記錄。
 
 ---
 

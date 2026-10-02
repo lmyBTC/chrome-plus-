@@ -1,2 +1,2 @@
-export { ActivityMonitor } from './ActivityMonitor';
+export { ActivityMonitorView as ActivityMonitor } from '../../../activity-monitor';
 export * from './types';
