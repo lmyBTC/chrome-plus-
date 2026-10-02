@@ -1,4 +1,541 @@
-/**
+"""
+split_dashboard_phase3.py
+自動執行 FinanceClipper 儀表板 Phase 3 控制器邏輯解耦任務：
+1. 建立 dashboard-tabs.js (族群分類與自訂標籤之狀態管理、CRUD 與專屬事件)
+2. 建立 dashboard-ai.js (Gemini Nano AI 研報推論狀態、渲染與專屬事件)
+3. 淨化 dashboard.js，將 Tabs/Tags 與 AI 職責全面委派，控制在 <= 600 行健康區間
+4. 更新 dashboard.html 引入新腳本
+5. 驗證所有檔案行數與語法
+"""
+
+import os
+import sys
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "finance-research-clipper-oss"))
+
+DASHBOARD_TABS_CONTENT = '''/**
+ * dashboard-tabs.js - Finance Research Clipper 族群分類與自訂標籤邏輯控制模組
+ * 負責 Categories 族群、Topic Tags 自訂標籤之狀態管理、CRUD 操作與專屬 DOM 事件
+ */
+
+(function () {
+  'use strict';
+
+  const DEFAULT_CATEGORIES = [
+    { id: 'all', name: '全部標的', isSystem: true },
+    { id: 'core', name: '自選核心' },
+    { id: 'tech', name: '科技半導體' }
+  ];
+
+  const DEFAULT_TOPIC_TAGS = ['NVDA', 'TSLA', 'AAPL', 'MSFT', '2330'];
+
+  let categories = [...DEFAULT_CATEGORIES];
+  let activeCategoryId = 'all';
+  let topicTags = [...DEFAULT_TOPIC_TAGS];
+
+  // DOM 緩存
+  let sheetTabContainer = null;
+  let sheetTabCount = null;
+  let topicTagsList = null;
+  let btnTabPrev = null;
+  let btnTabNext = null;
+  let btnTabAdd = null;
+  let btnAddTopicTag = null;
+
+  const DashboardTabs = {
+    DEFAULT_CATEGORIES,
+    DEFAULT_TOPIC_TAGS,
+
+    init: function (storageData) {
+      sheetTabContainer = document.getElementById('sheets-tab-container');
+      sheetTabCount = document.getElementById('sheet-tab-count');
+      topicTagsList = document.getElementById('topic-tags-list');
+      btnTabPrev = document.getElementById('btn-tab-prev');
+      btnTabNext = document.getElementById('btn-tab-next');
+      btnTabAdd = document.getElementById('btn-tab-add');
+      btnAddTopicTag = document.getElementById('btn-add-topic-tag');
+
+      if (storageData) {
+        if (storageData.categories && Array.isArray(storageData.categories) && storageData.categories.length > 0) {
+          categories = storageData.categories;
+        } else {
+          categories = [...DEFAULT_CATEGORIES];
+        }
+
+        if (storageData.activeCategoryId) {
+          activeCategoryId = storageData.activeCategoryId;
+        }
+
+        if (storageData.custom_topic_tags && Array.isArray(storageData.custom_topic_tags) && storageData.custom_topic_tags.length > 0) {
+          topicTags = storageData.custom_topic_tags;
+        } else {
+          topicTags = [...DEFAULT_TOPIC_TAGS];
+        }
+      }
+    },
+
+    getCategories: function () {
+      return categories;
+    },
+
+    setCategories: function (cats) {
+      categories = cats;
+    },
+
+    getActiveCategoryId: function () {
+      return activeCategoryId;
+    },
+
+    setActiveCategoryId: function (catId) {
+      activeCategoryId = catId;
+    },
+
+    getTopicTags: function () {
+      return topicTags;
+    },
+
+    filterHistoryList: function (historyList) {
+      if (!historyList) return [];
+      if (activeCategoryId === 'all') return historyList;
+      return historyList.filter((item) => (item.categoryId || 'core') === activeCategoryId);
+    },
+
+    renderCategoryTabs: function (historyList, callbacks) {
+      if (!window.DashboardRender || !window.DashboardRender.renderCategoryTabs) return;
+      window.DashboardRender.renderCategoryTabs(
+        categories,
+        activeCategoryId,
+        historyList,
+        sheetTabContainer,
+        sheetTabCount,
+        {
+          onSelectCategory: (catId) => DashboardTabs.selectCategory(catId, callbacks),
+          onEditCategory: (catId, newName) => DashboardTabs.renameCategory(catId, newName, callbacks),
+          onDeleteCategory: (catId, catName) => DashboardTabs.deleteCategory(catId, catName, callbacks)
+        }
+      );
+    },
+
+    selectCategory: function (catId, callbacks) {
+      const { onSelected, getHistoryList, getCurrentStock, onStockChange } = callbacks || {};
+      activeCategoryId = catId;
+      chrome.storage.local.set({ activeCategoryId: catId }, () => {
+        if (typeof onSelected === 'function') onSelected(catId);
+        const historyList = typeof getHistoryList === 'function' ? getHistoryList() : [];
+        const currentStock = typeof getCurrentStock === 'function' ? getCurrentStock() : null;
+        const filtered = DashboardTabs.filterHistoryList(historyList);
+        if (currentStock && !filtered.some((it) => it.ticker === currentStock.ticker)) {
+          if (filtered.length > 0 && typeof onStockChange === 'function') {
+            onStockChange(filtered[0]);
+          }
+        }
+      });
+    },
+
+    promptAddCategory: function (callbacks) {
+      const { onAdded, showToast } = callbacks || {};
+      const name = prompt('請輸入新族群分類名稱 (例如: AI概念、綠能供應鏈):');
+      if (!name || !name.trim()) return;
+      const trimmed = name.trim();
+      if (categories.some((c) => c.name === trimmed)) {
+        if (showToast) showToast('⚠️ 已存在相同名稱的族群分類！');
+        return;
+      }
+      const newCategory = { id: 'cat_' + Date.now(), name: trimmed };
+      categories.push(newCategory);
+      activeCategoryId = newCategory.id;
+      chrome.storage.local.set({ categories, activeCategoryId }, () => {
+        if (typeof onAdded === 'function') onAdded(newCategory);
+        if (showToast) showToast(`✅ 已新增並切換至「${trimmed}」族群`);
+      });
+    },
+
+    renameCategory: function (catId, newName, callbacks) {
+      const { onRenamed, showToast } = callbacks || {};
+      const cat = categories.find((c) => c.id === catId);
+      if (!cat || cat.isSystem) return;
+      cat.name = newName;
+      chrome.storage.local.set({ categories }, () => {
+        if (typeof onRenamed === 'function') onRenamed(cat);
+        if (showToast) showToast(`✅ 已更名為「${newName}」`);
+      });
+    },
+
+    deleteCategory: function (catId, catName, callbacks) {
+      const { getHistoryList, setHistoryList, onDeleted, showToast } = callbacks || {};
+      if (!confirm(`確定要刪除「${catName}」族群嗎？該族群下的標的將移至「自選核心」。`)) return;
+      categories = categories.filter((c) => c.id !== catId);
+      let historyList = typeof getHistoryList === 'function' ? getHistoryList() : [];
+      historyList = historyList.map((it) => (it.categoryId === catId ? { ...it, categoryId: 'core' } : it));
+      if (typeof setHistoryList === 'function') setHistoryList(historyList);
+      if (activeCategoryId === catId) activeCategoryId = 'all';
+
+      chrome.storage.local.set({ categories, stockHistory: historyList, activeCategoryId }, () => {
+        if (typeof onDeleted === 'function') onDeleted(catId);
+        if (showToast) showToast(`🗑️ 已刪除「${catName}」族群`);
+      });
+    },
+
+    updateStockCategory: function (ticker, newCatId, callbacks) {
+      const { getHistoryList, onUpdated, showToast } = callbacks || {};
+      let historyList = typeof getHistoryList === 'function' ? getHistoryList() : [];
+      const target = historyList.find((it) => it.ticker === ticker);
+      if (target) {
+        target.categoryId = newCatId;
+        chrome.storage.local.set({ stockHistory: historyList }, () => {
+          if (typeof onUpdated === 'function') onUpdated(ticker, newCatId);
+          const catObj = categories.find((c) => c.id === newCatId);
+          if (showToast) showToast(`📌 [${ticker}] 已歸入「${catObj ? catObj.name : newCatId}」`);
+        });
+      }
+    },
+
+    renderTopicTags: function (callbacks) {
+      if (!window.DashboardRender || !window.DashboardRender.renderTopicTags) return;
+      const { onSelectTag, showToast, onTagsChanged } = callbacks || {};
+      window.DashboardRender.renderTopicTags(
+        topicTags,
+        topicTagsList,
+        {
+          onSelectTag: (tag) => {
+            if (typeof onSelectTag === 'function') onSelectTag(tag);
+          },
+          onRemoveTag: (tag) => DashboardTabs.removeTopicTag(tag, { showToast, onTagsChanged })
+        }
+      );
+    },
+
+    addTopicTag: function (tagText, callbacks) {
+      const { showToast, onTagsChanged } = callbacks || {};
+      const trimmed = (tagText || '').trim().toUpperCase();
+      if (!trimmed) return;
+      if (topicTags.includes(trimmed)) {
+        if (showToast) showToast(`⚠️ 主題標籤「${trimmed}」已存在！`);
+        return;
+      }
+      topicTags.push(trimmed);
+      chrome.storage.local.set({ custom_topic_tags: topicTags }, () => {
+        if (typeof onTagsChanged === 'function') onTagsChanged(topicTags);
+        if (showToast) showToast(`✅ 已新增主題標籤「${trimmed}」`);
+      });
+    },
+
+    removeTopicTag: function (tagText, callbacks) {
+      const { showToast, onTagsChanged } = callbacks || {};
+      topicTags = topicTags.filter((t) => t !== tagText);
+      chrome.storage.local.set({ custom_topic_tags: topicTags }, () => {
+        if (typeof onTagsChanged === 'function') onTagsChanged(topicTags);
+        if (showToast) showToast(`🗑️ 已移除主題標籤「${tagText}」`);
+      });
+    },
+
+    promptAddTopicTag: function (callbacks) {
+      const name = prompt('請輸入新主題標籤或股票代號 (例如: AMZN, 2330, AI概念):');
+      if (!name || !name.trim()) return;
+      DashboardTabs.addTopicTag(name.trim(), callbacks);
+    },
+
+    bindEvents: function (callbacks) {
+      if (btnTabPrev && sheetTabContainer) {
+        btnTabPrev.addEventListener('click', () => {
+          sheetTabContainer.scrollBy({ left: -160, behavior: 'smooth' });
+        });
+      }
+
+      if (btnTabNext && sheetTabContainer) {
+        btnTabNext.addEventListener('click', () => {
+          sheetTabContainer.scrollBy({ left: 160, behavior: 'smooth' });
+        });
+      }
+
+      if (btnTabAdd) {
+        btnTabAdd.addEventListener('click', () => DashboardTabs.promptAddCategory(callbacks));
+      }
+
+      if (btnAddTopicTag) {
+        btnAddTopicTag.addEventListener('click', () => DashboardTabs.promptAddTopicTag(callbacks));
+      }
+    }
+  };
+
+  window.DashboardTabs = DashboardTabs;
+})();
+'''
+
+DASHBOARD_AI_CONTENT = '''/**
+ * dashboard-ai.js - Finance Research Clipper 本機 Gemini Nano AI 研報推論與狀態管理模組
+ * 負責本機 AI 服務檢測、研報快取載入、推論進度渲染、Markdown 複製與專屬面板事件
+ */
+
+(function () {
+  'use strict';
+
+  let currentAiSummary = null;
+
+  // DOM 元素快取
+  let btnGenerateAi = null;
+  let btnRefreshAi = null;
+  let btnCopyAiMarkdown = null;
+  let aiBtnSpinner = null;
+  let aiStatusIndicator = null;
+  let aiLoadingContainer = null;
+  let aiIdleState = null;
+  let aiResultContainer = null;
+  let aiQuickTakeList = null;
+  let aiBullCaseList = null;
+  let aiBearCaseList = null;
+  let aiFinancialHealthText = null;
+  let aiMetaTimestamp = null;
+  let aiMetaSource = null;
+  let aiErrorNotice = null;
+  let aiErrorMessage = null;
+  let btnOpenAiSettings = null;
+  let settingScrumclockId = null;
+  let btnTestAiConn = null;
+  let scrumclockConnStatus = null;
+
+  const DashboardAI = {
+    init: function () {
+      btnGenerateAi = document.getElementById('btn-generate-ai');
+      btnRefreshAi = document.getElementById('btn-refresh-ai');
+      btnCopyAiMarkdown = document.getElementById('btn-copy-ai-markdown');
+      aiBtnSpinner = document.getElementById('ai-btn-spinner');
+      aiStatusIndicator = document.getElementById('ai-status-indicator');
+      aiLoadingContainer = document.getElementById('ai-loading-container');
+      aiIdleState = document.getElementById('ai-idle-state');
+      aiResultContainer = document.getElementById('ai-result-container');
+      aiQuickTakeList = document.getElementById('ai-quick-take-list');
+      aiBullCaseList = document.getElementById('ai-bull-case-list');
+      aiBearCaseList = document.getElementById('ai-bear-case-list');
+      aiFinancialHealthText = document.getElementById('ai-financial-health-text');
+      aiMetaTimestamp = document.getElementById('ai-meta-timestamp');
+      aiMetaSource = document.getElementById('ai-meta-source');
+      aiErrorNotice = document.getElementById('ai-error-notice');
+      aiErrorMessage = document.getElementById('ai-error-message');
+      btnOpenAiSettings = document.getElementById('btn-open-ai-settings');
+      settingScrumclockId = document.getElementById('setting-scrumclock-id');
+      btnTestAiConn = document.getElementById('btn-test-ai-conn');
+      scrumclockConnStatus = document.getElementById('scrumclock-conn-status');
+    },
+
+    getCurrentAiSummary: function () {
+      return currentAiSummary;
+    },
+
+    checkAiStatus: async function () {
+      if (!window.FinanceAIClient || !aiStatusIndicator) return;
+      const res = await window.FinanceAIClient.checkAvailability();
+      if (res.success && res.available) {
+        aiStatusIndicator.className = 'ai-status-dot connected';
+        aiStatusIndicator.title = `已連線: ${res.model || 'Gemini Nano'}`;
+      } else {
+        aiStatusIndicator.className = 'ai-status-dot';
+        aiStatusIndicator.title = res.error || 'ScrumClock AI 服務未連線';
+      }
+    },
+
+    showAiLoading: function (isLoading) {
+      if (!aiLoadingContainer || !btnGenerateAi) return;
+      if (isLoading) {
+        aiLoadingContainer.style.display = 'flex';
+        if (aiIdleState) aiIdleState.style.display = 'none';
+        if (aiResultContainer) aiResultContainer.style.display = 'none';
+        if (aiErrorNotice) aiErrorNotice.style.display = 'none';
+        btnGenerateAi.disabled = true;
+        btnGenerateAi.style.opacity = '0.7';
+        if (aiBtnSpinner) aiBtnSpinner.style.display = 'inline';
+      } else {
+        aiLoadingContainer.style.display = 'none';
+        btnGenerateAi.disabled = false;
+        btnGenerateAi.style.opacity = '1';
+        if (aiBtnSpinner) aiBtnSpinner.style.display = 'none';
+      }
+    },
+
+    showAiError: function (errorMessage) {
+      DashboardAI.showAiLoading(false);
+      if (aiErrorNotice && aiErrorMessage) {
+        aiErrorNotice.style.display = 'block';
+        aiErrorMessage.textContent = errorMessage;
+        if (aiIdleState) aiIdleState.style.display = 'none';
+        if (aiResultContainer) aiResultContainer.style.display = 'none';
+      }
+    },
+
+    renderAiSummary: function (summary) {
+      currentAiSummary = summary;
+      if (!summary || !aiResultContainer) return;
+
+      // 1. 三句話速讀
+      if (aiQuickTakeList) {
+        aiQuickTakeList.textContent = '';
+        const quickTake = Array.isArray(summary.quickTake) ? summary.quickTake : [];
+        quickTake.forEach((item) => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          aiQuickTakeList.appendChild(li);
+        });
+      }
+
+      // 2. 多方核心看點
+      if (aiBullCaseList) {
+        aiBullCaseList.textContent = '';
+        const bullCase = Array.isArray(summary.bullCase) ? summary.bullCase : [];
+        bullCase.forEach((item) => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          aiBullCaseList.appendChild(li);
+        });
+      }
+
+      // 3. 空方核心疑慮
+      if (aiBearCaseList) {
+        aiBearCaseList.textContent = '';
+        const bearCase = Array.isArray(summary.bearCase) ? summary.bearCase : [];
+        bearCase.forEach((item) => {
+          const li = document.createElement('li');
+          li.textContent = item;
+          aiBearCaseList.appendChild(li);
+        });
+      }
+
+      // 4. 財務健康評語
+      if (aiFinancialHealthText) {
+        aiFinancialHealthText.textContent = summary.financialHealth || '無財務健康特別評語。';
+      }
+
+      // 5. 元數據
+      if (aiMetaTimestamp) {
+        aiMetaTimestamp.textContent = `生成時間：${summary.generatedAt || new Date().toLocaleTimeString()}`;
+      }
+      if (aiMetaSource && summary.model) {
+        aiMetaSource.textContent = `推論核心：${summary.model}`;
+      }
+
+      if (aiIdleState) aiIdleState.style.display = 'none';
+      if (aiErrorNotice) aiErrorNotice.style.display = 'none';
+      aiResultContainer.style.display = 'flex';
+      if (btnRefreshAi) btnRefreshAi.style.display = 'inline-flex';
+      if (btnCopyAiMarkdown) btnCopyAiMarkdown.style.display = 'inline-flex';
+      if (btnGenerateAi) btnGenerateAi.style.display = 'none';
+    },
+
+    loadStockAi: async function (stock, forceRefresh = false, callbacks) {
+      const { showToast } = callbacks || {};
+      if (!stock || !stock.ticker) return;
+      if (aiErrorNotice) aiErrorNotice.style.display = 'none';
+
+      if (!forceRefresh) {
+        const cached = await window.FinanceAIClient?.getCachedSummary(stock.ticker);
+        if (cached) {
+          console.log(`[FinanceClipper] 載入 ${stock.ticker} 當日 AI 快取研報`);
+          DashboardAI.renderAiSummary(cached);
+          return;
+        }
+
+        currentAiSummary = null;
+        if (aiIdleState) aiIdleState.style.display = 'block';
+        if (aiResultContainer) aiResultContainer.style.display = 'none';
+        if (btnRefreshAi) btnRefreshAi.style.display = 'none';
+        if (btnCopyAiMarkdown) btnCopyAiMarkdown.style.display = 'none';
+        if (btnGenerateAi) btnGenerateAi.style.display = 'inline-flex';
+        return;
+      }
+
+      DashboardAI.showAiLoading(true);
+      if (showToast) showToast(`🤖 正在為 ${stock.ticker} 調用本地 Gemini Nano 分析中...`);
+
+      const result = await window.FinanceAIClient?.requestStockSummary(stock, true);
+      DashboardAI.showAiLoading(false);
+
+      if (result && result.success && result.summary) {
+        DashboardAI.renderAiSummary(result.summary);
+        if (showToast) showToast('✨ Gemini Nano 研報摘要已生成完畢！');
+      } else {
+        DashboardAI.showAiError(result?.error || '無法取得 AI 分析結果，請確認 ScrumClock 是否運行且已啟用 Gemini Nano。');
+        if (showToast) showToast('⚠️ AI 生成未完成，請檢視面板提示。');
+      }
+    },
+
+    copyAiMarkdownOnly: function (callbacks) {
+      const { showToast } = callbacks || {};
+      if (!currentAiSummary || !currentAiSummary.rawMarkdown) {
+        if (showToast) showToast('⚠️ 目前尚未生成 AI 研報摘要');
+        return;
+      }
+      navigator.clipboard.writeText(currentAiSummary.rawMarkdown).then(() => {
+        if (showToast) showToast('📋 AI 研報摘要已複製至剪貼簿！');
+      }).catch(() => {
+        if (showToast) showToast('複製失敗，請手動選取');
+      });
+    },
+
+    testAiConnection: async function () {
+      const extId = (settingScrumclockId ? settingScrumclockId.value.trim() : '') || 'ahiihabnbjeoeneahcgbdcofncjoclcp';
+
+      if (scrumclockConnStatus) {
+        scrumclockConnStatus.textContent = '連線測試中 (PING_HUB)...';
+        scrumclockConnStatus.style.color = 'var(--text-secondary)';
+      }
+
+      const res = await window.FinanceAIClient.checkAvailability(extId);
+      if (res.success) {
+        const capText = res.capabilities && res.capabilities.length ? `[${res.capabilities.join(', ')}]` : '';
+        if (scrumclockConnStatus) {
+          scrumclockConnStatus.textContent = `✅ 連線成功！中樞：${res.hub || 'ScrumClock'} ${capText} - ${res.model}`;
+          scrumclockConnStatus.style.color = 'var(--accent-green)';
+        }
+        DashboardAI.checkAiStatus();
+      } else {
+        if (scrumclockConnStatus) {
+          scrumclockConnStatus.textContent = `❌ ${res.error || '連線失敗或中樞未回應'}`;
+          scrumclockConnStatus.style.color = 'var(--accent-red)';
+        }
+      }
+    },
+
+    bindEvents: function (callbacks) {
+      const { getCurrentStock, showToast, openSettings } = callbacks || {};
+
+      if (btnGenerateAi) {
+        btnGenerateAi.addEventListener('click', () => {
+          const stock = typeof getCurrentStock === 'function' ? getCurrentStock() : null;
+          if (stock) DashboardAI.loadStockAi(stock, true, { showToast });
+        });
+      }
+
+      if (btnRefreshAi) {
+        btnRefreshAi.addEventListener('click', () => {
+          const stock = typeof getCurrentStock === 'function' ? getCurrentStock() : null;
+          if (stock) DashboardAI.loadStockAi(stock, true, { showToast });
+        });
+      }
+
+      if (btnCopyAiMarkdown) {
+        btnCopyAiMarkdown.addEventListener('click', () => {
+          DashboardAI.copyAiMarkdownOnly({ showToast });
+        });
+      }
+
+      if (btnOpenAiSettings) {
+        btnOpenAiSettings.addEventListener('click', () => {
+          if (typeof openSettings === 'function') openSettings();
+        });
+      }
+
+      if (btnTestAiConn) {
+        btnTestAiConn.addEventListener('click', () => {
+          DashboardAI.testAiConnection();
+        });
+      }
+    }
+  };
+
+  window.DashboardAI = DashboardAI;
+})();
+'''
+
+DASHBOARD_CLEANED_CONTENT = '''/**
  * dashboard.js - Finance Research Clipper 獨立分頁儀表板控制主核心
  * 協調整合視圖渲染 (dashboard-render.js)、分頁與標籤 (dashboard-tabs.js)、AI 研報 (dashboard-ai.js) 與動作外發 (dashboard-actions.js)
  */
@@ -642,3 +1179,65 @@
 
   document.addEventListener('DOMContentLoaded', init);
 })();
+'''
+
+def run_modularization():
+    print("[1/4] Writing dashboard-tabs.js...")
+    tabs_path = os.path.join(BASE_DIR, "dashboard-tabs.js")
+    with open(tabs_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(DASHBOARD_TABS_CONTENT)
+    print(f" -> Created {tabs_path} ({len(DASHBOARD_TABS_CONTENT.splitlines())} lines)")
+
+    print("[2/4] Writing dashboard-ai.js...")
+    ai_path = os.path.join(BASE_DIR, "dashboard-ai.js")
+    with open(ai_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(DASHBOARD_AI_CONTENT)
+    print(f" -> Created {ai_path} ({len(DASHBOARD_AI_CONTENT.splitlines())} lines)")
+
+    print("[3/4] Purifying dashboard.js...")
+    dashboard_path = os.path.join(BASE_DIR, "dashboard.js")
+    with open(dashboard_path, "w", encoding="utf-8", newline="\n") as f:
+        f.write(DASHBOARD_CLEANED_CONTENT)
+    print(f" -> Updated {dashboard_path} ({len(DASHBOARD_CLEANED_CONTENT.splitlines())} lines)")
+
+    print("[4/4] Updating dashboard.html scripts tag...")
+    html_path = os.path.join(BASE_DIR, "dashboard.html")
+    with open(html_path, "r", encoding="utf-8") as f:
+        html_content = f.read()
+
+    # 確保引用 dashboard-tabs.js 與 dashboard-ai.js 在 dashboard.js 之前
+    if 'src="dashboard-tabs.js"' not in html_content:
+        replacement = '  <script src="dashboard-tabs.js"></script>\n  <script src="dashboard-ai.js"></script>\n  <script src="dashboard.js"></script>'
+        html_content = html_content.replace('  <script src="dashboard.js"></script>', replacement)
+        with open(html_path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(html_content)
+        print(f" -> Injected script tags into {html_path}")
+    else:
+        print(" -> Script tags already present in dashboard.html")
+
+    print("\n=== Verification & File Line Counts ===")
+    targets = [
+        "dashboard.html",
+        "dashboard-tabs-render.js",
+        "dashboard-render.js",
+        "dashboard-tabs.js",
+        "dashboard-ai.js",
+        "dashboard.js"
+    ]
+    all_healthy = True
+    for t in targets:
+        p = os.path.join(BASE_DIR, t)
+        if os.path.exists(p):
+            with open(p, "r", encoding="utf-8") as f:
+                lines = len(f.readlines())
+            status = "HEALTHY (<= 650)" if lines <= 650 else "LARGE (> 650)"
+            if lines > 650 and t != "dashboard.html":
+                all_healthy = False
+            print(f" - {t:30}: {lines:5} lines [{status}]")
+        else:
+            print(f" - {t:30}: NOT FOUND")
+
+    print(f"\nAll JS target files healthy (<= 650 lines): {all_healthy}")
+
+if __name__ == "__main__":
+    run_modularization()

@@ -258,10 +258,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateStatus("⚡ 正在注入爬蟲模組並走訪 4 大分頁...", "orange");
 
     try {
-      // 注入 crawler.js
+      // 注入 crawler-sanitizer.js 與 crawler.js
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ['crawler.js']
+        files: ['crawler-sanitizer.js', 'crawler.js']
       });
 
       // 執行主調度器

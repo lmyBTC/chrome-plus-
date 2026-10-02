@@ -389,6 +389,9 @@ function calculateTargetPriceStats(targets, currentPrice) {
 }
 
 function sanitizeToMinerSchema(input) {
+  if (typeof CrawlerSanitizer !== 'undefined' && typeof CrawlerSanitizer.sanitizeToMinerSchema === 'function') {
+    return CrawlerSanitizer.sanitizeToMinerSchema(input);
+  }
   if (typeof FinanceCrawler !== 'undefined' && typeof FinanceCrawler.sanitizeToMinerSchema === 'function') {
     return FinanceCrawler.sanitizeToMinerSchema(input);
   }

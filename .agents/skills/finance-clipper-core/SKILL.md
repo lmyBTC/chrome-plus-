@@ -3,7 +3,7 @@ name: FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec
 description: 定義 finance-research-clipper-oss 插件之技術規格、資料來源選擇器 SSOT、頁面架構、儲存模型與跨插件對外接口。
 triggers: [finance-clipper, 研報採集, 股票爬蟲, 財務儀表板, yahoo finance爬蟲, 個股剪輯, 財報分析]
 dependencies: []
-ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0.doc_mg/docs/cross_plugin_contract.md"]
+ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "finance-research-clipper-oss/docs/peer-matrix-and-valuation-spec.md", "0.doc_mg/docs/cross_plugin_contract.md"]
 ---
 
 # 專家技能：FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec)
@@ -18,14 +18,26 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 * **擴充功能入口 (Extension Entrypoints)**:
   * `manifest.json`: Manifest V3，宣告 `storage`, `activeTab`, `scripting`, `sidePanel` 與 `externally_connectable`。
   * `background.js`: Service Worker，處理 `onMessageExternal`（跨插件資料服務 API）與擴充功能生命週期。
-  * `crawler.js`: Content Script，注入至各財經網站擷取結構化財務數據。
+  * `crawler.js`: Content Script，注入至各財經網站擷取結構化財務數據（專注 SPA DOM 節點走訪與 Tab 切換探針）。
+  * `crawler-sanitizer.js`: 跨環境純數字清洗與 Miner Schema 正規化函式庫（掛載 `window.CrawlerSanitizer`，提供 `cleanNumber`、`cleanMarketCap`、`cleanRange52w`、`calcEpsSurprise`、`cleanPercentage`、`parseTargetPrices`、`calculateTargetPriceStats`、`sanitizeToMinerSchema`，支援 background/popup/content script 跨模組共用）。
   * `popup.html` / `popup.js`: 點擊插件圖示的輕量彈出視窗主控（模式切換、選項渲染）。
     * `popup-scraper.js`: 彈窗專屬 DOM 爬取模組（解析 Google Finance 與 AI 對話頁面）。
     * `popup-export.js`: 彈窗文字規則引擎（RuleEngine）、圖片壓縮與 MD/CSV 匯出下載。
   * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄，提供即時個股摘要與快速筆記。
-  * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板主控，支援多頁籤、Gemini Nano AI 研報推論連動。
-    * `dashboard-render.js`: 儀表板視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、市場主題與相關專題、Sheet Tabs 分頁列與吐司）。
-    * `dashboard-actions.js`: 動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、`sendRuntimeMessageWithRetry` 指數退避重試防禦、GAS 同步、CSV/MD 下載與 ScrumClock 任務建立）。
+  * `dashboard.html` / `dashboard.js` / `dashboard.css`: 核心完整獨立儀表板主控，支援多頁籤、View Switcher（個股主視圖、同業對比矩陣、敏感度估值沙盒）與 Gemini Nano AI 研報推論連動。
+    * `dashboard-stock.css`: 個股核心數據、指標卡片、損益表、市場專題等視覺樣式。
+    * `dashboard-components.css`: AI 研報卡片、匯出中心下拉面板、Toast 與 Modal 樣式。
+    * `dashboard-peer-matrix.css`: 同業橫向對比矩陣專屬樣式模組（包含 2~5 檔標的對比、長條圖視覺化、極值高亮）。
+    * `dashboard-valuation.css`: 敏感度估值沙盒專屬樣式模組（包含 Bear/Base/Bull 情境卡片、動態參數滑桿、5x5 熱力矩陣）。
+    * `dashboard-render.js`: 核心視圖渲染模組（`window.DashboardRender`，涵蓋指標卡、損益表、市場專題、歷史清單與吐司）。
+    * `dashboard-tabs-render.js`: 族群分頁、自訂主題標籤與底部分頁列渲染子模組（擴充 `window.DashboardRender`）。
+    * `dashboard-peer-render.js`: 同業對比矩陣視圖模組（掛載 `window.DashboardRender.renderPeerMatrix` 及其附屬子元件視圖）。
+    * `dashboard-valuation-render.js`: 估值沙盒視圖模組（掛載 `window.DashboardRender.renderValuationSandbox` 及其圖表/表格視圖）。
+    * `dashboard-actions.js`: 核心動作外發模組（`window.DashboardActions`，涵蓋背景採集發起、`sendRuntimeMessageWithRetry` 防禦、CSV/MD 下載等）。
+    * `dashboard-peer-actions.js`: 同業矩陣動作模組（掛載 `window.DashboardActions` 之矩陣數據聚合、Markdown 複製、GAS 同步等方法）。
+    * `dashboard-valuation-actions.js`: 估值沙盒動作模組（掛載 `window.DashboardActions` 之情境估值運算、模型產出、GAS 同步、ScrumClock 轉入等方法）。
+    * `dashboard-tabs.js`: 族群分類 (Categories) 與自訂標籤 (Topic Tags) 狀態控制器（掛載 `window.DashboardTabs`）。
+    * `dashboard-ai.js`: 本地 Gemini Nano AI 研報推論與狀態管理控制器（掛載 `window.DashboardAI`）。
   * `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）。
 
 ---
@@ -52,12 +64,14 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 ---
 
 ## 3. UI 模組與視圖架構 (View Modules)
-* **儀表板視圖 (`dashboard-render.js` & `dashboard.js`)**:
+* **儀表板視圖 (`dashboard-render.js`、`dashboard-peer-render.js`、`dashboard-valuation-render.js`)**:
   - `renderFinancialsTable()`: 渲染損益表數據矩陣，若無財報數據時優雅顯示提示。
   - `renderMarketTopicsTable()`: 獨立渲染市場熱門主題與相關專題清單矩陣。
   - `renderWatchlist()` / `renderHistoryList()`: 渲染左側歷史追蹤庫、活躍標籤標記。
   - `renderFinancialMetrics()`: 財務三表與關鍵比率卡片。
   - `renderAnalystRatings()`: 分析師評等、目標價階梯與潛在上漲空間儀表。
+  - `renderPeerMatrix()` (`dashboard-peer-render.js`): 同業橫向對比矩陣（2~5 檔標的橫向對比、長條圖視覺化、極值高亮、Markdown/GAS 匯出）。
+  - `renderValuationSandbox()` (`dashboard-valuation-render.js`): 敏感度估值沙盒（Bear/Base/Bull 情境卡片、動態參數滑桿、5x5 敏感度二維熱力矩陣、推播 ScrumClock 任務）。
   - `renderAIReportPanel()`: 研報解讀面板（連動本地 AI 或外部代理）。
 * **通訊客戶端 (`aiClient.js`)**:
   - 封裝跨插件請求，內建 `sanitizeFinancePayload()` 白名單防腐層。

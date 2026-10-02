@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finance Research Clipper - 智能投資研報儀表板</title>
   <link rel="stylesheet" href="dashboard.css">
+  <link rel="stylesheet" href="dashboard-stock.css">
+  <link rel="stylesheet" href="dashboard-components.css">
+  <link rel="stylesheet" href="dashboard-peer-matrix.css">
+  <link rel="stylesheet" href="dashboard-valuation.css">
 </head>
 <body>
 
@@ -109,15 +113,41 @@
     <!-- 右側儀表板主視圖 -->
     <main id="main-view-container" class="main-view">
 
-      <!-- 空狀態 (無資料時顯示) -->
+      <!-- 視圖切換列 (View Switcher) -->
+      <div class="view-switcher-bar">
+        <div class="view-segmented-control" role="tablist" aria-label="儀表板視圖切換">
+          <button id="tab-btn-single" class="view-tab-btn active" role="tab" aria-selected="true" data-view="single">
+            <span class="tab-icon">📊</span>
+            <span class="tab-title">個股深度研報</span>
+          </button>
+          <button id="tab-btn-peer" class="view-tab-btn" role="tab" aria-selected="false" data-view="peer">
+            <span class="tab-icon">⚖️</span>
+            <span class="tab-title">同業對比矩陣</span>
+            <span id="peer-selected-count-badge" class="view-badge">0/5</span>
+          </button>
+          <button id="tab-btn-valuation" class="view-tab-btn" role="tab" aria-selected="false" data-view="valuation">
+            <span class="tab-icon">🧮</span>
+            <span class="tab-title">估值敏感度沙盒</span>
+          </button>
+        </div>
+
+        <div class="view-switcher-actions">
+          <div id="view-mode-hint" class="view-mode-hint">
+            <span class="hint-dot"></span>
+            <span id="view-mode-hint-text">單檔深度分析模式</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- [視圖 1: 單檔個股研報] 空狀態 (無資料時顯示) -->
       <div id="empty-state" class="empty-state">
         <div class="empty-icon">📊</div>
         <h3>展開您的深度投資研究</h3>
         <p>在上方搜尋列輸入股票代號（例如 <b>NVDA</b>）或點擊熱門標籤，系統將自動於後台啟動 4合1 SPA 爬蟲，擷取即時股價、分析師目標價、財報表現與損益表矩陣。</p>
       </div>
 
-      <!-- 核心儀表板區塊 (有資料時顯示) -->
-      <div id="stock-content-section" style="display: none; display: flex; flex-direction: column; gap: 24px;">
+      <!-- [視圖 1: 單檔個股研報] 核心儀表板區塊 (有資料時顯示) -->
+      <div id="stock-content-section" class="view-section" style="display: none; display: flex; flex-direction: column; gap: 24px;">
 
         <!-- 頂部個股 Hero 卡片 -->
         <section class="hero-card">
@@ -284,6 +314,96 @@
         </section>
 
       </div>
+
+      <!-- [視圖 2: 同業橫向對比矩陣] -->
+      <div id="peer-matrix-section" class="view-section" style="display: none; flex-direction: column; gap: 20px;">
+        <!-- 標的多選器控制列 (Peer Selector Bar) -->
+        <div class="peer-selector-bar">
+          <div class="peer-selector-header">
+            <div class="peer-selector-title-wrap">
+              <span class="peer-selector-icon">⚖️</span>
+              <div>
+                <h2 class="peer-selector-title">同業橫向對比矩陣 (Peer Comparison Matrix)</h2>
+                <div class="peer-selector-subtitle">選擇 2~5 檔標的，以表格與指標長條圖即時橫向對比市值、P/E、P/S、EPS 與 52 週位階</div>
+              </div>
+            </div>
+            <div class="peer-selector-controls">
+              <button id="btn-peer-select-all-cat" class="btn-peer-control" title="選取當前族群前 5 檔標的">
+                ⚡ 當前族群快捷選取
+              </button>
+              <button id="btn-peer-clear-all" class="btn-peer-control btn-peer-clear" title="清空已選標的">
+                ✕ 清空選取
+              </button>
+            </div>
+          </div>
+
+          <!-- 已選標的 Chips 與快速新增選單 -->
+          <div class="peer-chips-bar">
+            <div class="peer-chips-label">已選標的 (<span id="peer-chips-count">0</span>/5)：</div>
+            <div id="peer-selected-chips" class="peer-chips-list">
+              <!-- 動態生成例如 [ AAPL ✕ ] 晶片 -->
+            </div>
+            <div class="peer-quick-add-wrap">
+              <select id="peer-quick-add-select" class="peer-quick-add-select">
+                <option value="">➕ 從歷史庫新增標的...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- 矩陣視圖操作列 (匯出與切換) -->
+        <div id="peer-matrix-actions-bar" class="peer-matrix-actions-bar" style="display: none;">
+          <div class="peer-actions-left">
+            <span class="peer-status-text" id="peer-matrix-status-text">對比 0 檔標的</span>
+          </div>
+          <div class="peer-actions-right">
+            <button id="btn-peer-copy-markdown" class="btn-action btn-primary" title="複製對比矩陣 Markdown 表格">
+              📋 複製對比 Markdown
+            </button>
+            <button id="btn-peer-send-gas" class="btn-action btn-success" title="將同業對比同步至 Google Sheets">
+              ☁️ 同步至 Sheets
+            </button>
+          </div>
+        </div>
+
+        <!-- 對比矩陣容器 -->
+        <div id="peer-matrix-container" class="peer-matrix-container">
+          <div id="peer-empty-prompt" class="peer-empty-prompt">
+            <div class="peer-empty-icon">⚖️</div>
+            <h3>請選取 2~5 檔標的展開橫向對比</h3>
+            <p>點擊上方快捷選取、下拉加入，或在左側歷史清單勾選複數標的。</p>
+          </div>
+          <div id="peer-matrix-content" style="display: none;"></div>
+        </div>
+      </div>
+
+      <!-- [視圖 3: 估值情境敏感度沙盒] -->
+      <div id="valuation-sandbox-section" class="view-section" style="display: none; flex-direction: column; gap: 20px;">
+        <div class="sandbox-header-bar">
+          <div class="sandbox-title-wrap">
+            <span class="sandbox-icon">🧮</span>
+            <div>
+              <h2 class="sandbox-title">估值情境敏感度沙盒 (Valuation Sandbox)</h2>
+              <div class="sandbox-subtitle">透過即時成長率、Exit P/E 與折現率滑桿，動態試算 Bear / Base / Bull 三種情境目標價</div>
+            </div>
+          </div>
+          <div class="sandbox-target-selector-wrap">
+            <label for="sandbox-base-ticker-select" class="sandbox-select-label">基準標的：</label>
+            <select id="sandbox-base-ticker-select" class="sandbox-ticker-select">
+              <!-- 動態填充歷史標的 -->
+            </select>
+          </div>
+        </div>
+
+        <div id="valuation-sandbox-container" class="valuation-sandbox-container">
+          <div id="sandbox-empty-prompt" class="sandbox-empty-prompt">
+            <div class="sandbox-empty-icon">🧮</div>
+            <h3>尚未選擇估值基準標的</h3>
+            <p>請先採集或在歷史清單中選取一檔標的，以啟動敏感度估值沙盒。</p>
+          </div>
+          <div id="sandbox-content" style="display: none;"></div>
+        </div>
+      </div>
     </main>
   </div>
 
@@ -343,7 +463,15 @@
 
   <script src="aiClient.js"></script>
   <script src="dashboard-render.js"></script>
+  <script src="dashboard-tabs-render.js"></script>
+  <script src="dashboard-peer-render.js"></script>
+  <script src="dashboard-valuation-render.js"></script>
   <script src="dashboard-actions.js"></script>
+  <script src="dashboard-peer-actions.js"></script>
+  <script src="dashboard-valuation-actions.js"></script>
+  <script src="dashboard-tabs.js"></script>
+  <script src="dashboard-ai.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>
+

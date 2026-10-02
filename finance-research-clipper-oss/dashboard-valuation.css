@@ -1,0 +1,707 @@
+/* ==========================================================================
+   Finance Clipper - 敏感度估值沙盒 (Valuation Sandbox) 樣式
+   ========================================================================== */
+
+/* 估值沙盒頂部橫條 */
+.sandbox-header-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: var(--shadow-md);
+}
+
+.sandbox-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sandbox-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.sandbox-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.sandbox-subtitle {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.sandbox-target-selector-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sandbox-select-label {
+  font-size: 0.84rem;
+  color: var(--text-secondary);
+}
+
+.sandbox-ticker-select {
+  background: rgba(17, 24, 39, 0.9);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  font-size: 0.86rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  min-width: 120px;
+}
+
+.sandbox-ticker-select:focus {
+  border-color: var(--accent-blue);
+}
+
+/* 空狀態提示卡片 (估值沙盒) */
+.sandbox-empty-prompt {
+  background: var(--bg-card);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 60px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.sandbox-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 14px;
+  opacity: 0.85;
+}
+
+.sandbox-empty-prompt h3 {
+  font-size: 1.15rem;
+  color: #fff;
+  margin-bottom: 6px;
+}
+
+.sandbox-empty-prompt p {
+  font-size: 0.86rem;
+  color: var(--text-muted);
+  max-width: 460px;
+  margin: 0 auto;
+}
+
+/* ========================================================
+   敏感度估值沙盒主體樣式
+   ======================================================== */
+
+/* 1. 沙盒頂部標的資訊與操作按鈕列 */
+.sandbox-actions-bar {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sandbox-stock-info-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sandbox-ticker-badge {
+  background: linear-gradient(135deg, #3b82f6, #6366f1);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.5px;
+}
+
+.sandbox-info-item {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.sandbox-info-item strong {
+  color: #fff;
+  font-size: 0.88rem;
+  margin-left: 2px;
+}
+
+.sandbox-action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-action.btn-scrum {
+  background: linear-gradient(135deg, #7c3aed, #9333ea);
+  color: #fff;
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.btn-action.btn-scrum:hover {
+  background: linear-gradient(135deg, #6d28d9, #7e22ce);
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.35);
+  transform: translateY(-1px);
+}
+
+/* 2. 三種情境核心卡片網格 (Scenario Cards) */
+.sandbox-scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.sandbox-scenario-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.sandbox-scenario-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: var(--shadow-md);
+}
+
+.sandbox-scenario-card.is-active-scenario {
+  border-width: 2px;
+}
+
+/* 悲觀情境 (Bear) */
+.sandbox-scenario-card.card-bear {
+  border-left: 4px solid #ef4444;
+}
+
+.sandbox-scenario-card.card-bear.is-active-scenario {
+  border-color: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.25);
+  background: linear-gradient(180deg, rgba(239, 68, 68, 0.06), var(--bg-card) 60%);
+}
+
+/* 基準情境 (Base) */
+.sandbox-scenario-card.card-base {
+  border-left: 4px solid #3b82f6;
+}
+
+.sandbox-scenario-card.card-base.featured {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), var(--bg-card) 70%);
+}
+
+.sandbox-scenario-card.card-base.is-active-scenario {
+  border-color: #3b82f6;
+  box-shadow: 0 0 16px rgba(59, 130, 246, 0.3);
+}
+
+/* 樂觀情境 (Bull) */
+.sandbox-scenario-card.card-bull {
+  border-left: 4px solid #10b981;
+}
+
+.sandbox-scenario-card.card-bull.is-active-scenario {
+  border-color: #10b981;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
+  background: linear-gradient(180deg, rgba(16, 185, 129, 0.06), var(--bg-card) 60%);
+}
+
+.scenario-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scenario-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.scenario-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+}
+
+.scenario-badge.tag-bear {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.scenario-badge.tag-base {
+  background: rgba(59, 130, 246, 0.18);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.scenario-badge.tag-bull {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.scenario-target-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.scenario-target-price {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  font-family: monospace, sans-serif;
+}
+
+.scenario-target-upside {
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  font-family: monospace, sans-serif;
+}
+
+.scenario-target-upside.upside-pos {
+  background: rgba(16, 185, 129, 0.16);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.scenario-target-upside.upside-neg {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.scenario-meta-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.scenario-meta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.scenario-meta-item strong {
+  color: #e2e8f0;
+  font-family: monospace;
+}
+
+.scenario-edit-indicator {
+  font-size: 0.72rem;
+  text-align: center;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.is-active-scenario .scenario-edit-indicator {
+  color: var(--accent-blue);
+}
+
+/* 3. 互動微調面板與敏感度矩陣容器 (Workspace Panel) */
+.sandbox-workspace-wrap {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) 1.25fr;
+  gap: 18px;
+}
+
+@media (max-width: 1024px) {
+  .sandbox-workspace-wrap {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 左側：滑桿微調面板 */
+.sandbox-sliders-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.sliders-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sliders-panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.sliders-panel-title span {
+  color: var(--accent-blue);
+}
+
+.btn-reset-preset {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset-preset:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sandbox-slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sandbox-slider-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.82rem;
+}
+
+.sandbox-slider-name {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.sandbox-slider-val-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sandbox-slider-num-input {
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: monospace;
+  width: 68px;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+  text-align: right;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sandbox-slider-num-input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.35);
+}
+
+.sandbox-slider-unit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  min-width: 14px;
+}
+
+/* 現代化 Range 滑桿外觀 */
+.sandbox-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.sandbox-range-slider:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.sandbox-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3b82f6;
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  transition: transform 0.15s, background-color 0.15s;
+}
+
+.sandbox-range-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+  background: #60a5fa;
+}
+
+.sandbox-range-slider::-webkit-slider-thumb:active {
+  cursor: grabbing;
+  transform: scale(1.25);
+}
+
+.sandbox-subparams-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.subparam-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.subparam-label {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.subparam-input {
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--border-color);
+  color: #fff;
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: monospace;
+  width: 80px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  outline: none;
+}
+
+.subparam-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.horizon-btn-group {
+  display: flex;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.btn-horizon {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-horizon:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-horizon.active {
+  background: var(--accent-blue);
+  color: #fff;
+}
+
+/* 右側：敏感度二維熱力矩陣 (Heatmap Panel) */
+.sandbox-heatmap-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.heatmap-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.heatmap-panel-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0;
+}
+
+.heatmap-panel-subtitle {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.sandbox-heatmap-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.sandbox-heatmap-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 5px;
+  font-family: monospace, sans-serif;
+  text-align: center;
+}
+
+.heatmap-corner-th,
+.heatmap-pe-th,
+.heatmap-growth-th {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 4px 6px;
+}
+
+.heatmap-pe-th {
+  color: #60a5fa;
+}
+
+.heatmap-growth-th {
+  color: #e2e8f0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.heatmap-cell {
+  padding: 8px 6px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  position: relative;
+  min-width: 64px;
+  border: 1px solid transparent;
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.06);
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+.cell-target-price {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+}
+
+.cell-upside-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.cell-center-star {
+  position: absolute;
+  top: -4px;
+  right: -2px;
+  font-size: 0.65rem;
+}
+
+/* 熱力色彩分類 */
+.heat-pos-strong {
+  background: rgba(16, 185, 129, 0.35);
+  border-color: rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+
+.heat-pos-mid {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+
+.heat-pos-soft {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.22);
+  color: #a7f3d0;
+}
+
+.heat-neutral {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.heat-neg-soft {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.22);
+  color: #fca5a5;
+}
+
+.heat-neg-mid {
+  background: rgba(239, 68, 68, 0.22);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.heat-neg-strong {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+}
+
+/* 當前情境中心基準錨點特別高亮 */
+.heatmap-cell.is-center-anchor {
+  border: 2px solid #fbbf24 !important;
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}

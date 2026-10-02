@@ -25,6 +25,8 @@
   - 📈 **最新季度財報表現 (Earnings)**：EPS 與營收實際值 vs 分析師預期。
   - 📑 **損益表數據矩陣 (Income Statement)**：主動導航至 financials 分頁並結合語意關鍵字白名單，精準呈現個股真實各年/季度營收與獲利變化。
   - 🌐 **市場主題與相關專題 (Market Topics)**：獨立呈現 Overview 總覽頁提取之市場熱門主題、趨勢與相關標的行情矩陣。
+  - ⚖️ **同業橫向對比矩陣 (Peer Matrix)**：支援從歷史庫勾選 2~5 檔標的，橫向對比現價、市值、P/E、P/S、EPS、52週高低與潛在上漲空間，具備極值自動標色與市值/估值/上漲空間視覺化長條比對，支援一鍵 Markdown/GAS 匯出。
+  - 🧮 **估值情境敏感度沙盒 (Valuation Sandbox)**：以選定標的為基準，提供動態互動滑桿（成長率、Exit P/E、折現率）即時推演 Bear / Base / Bull 三種情境目標價，內建 5x5 成長率 vs P/E 敏感度二維熱力矩陣，並支援一鍵推播作戰任務至 ScrumClock。
 - 🏷️ **頂部自訂主題式分類標籤 (Topic Tags)**：可由使用者自訂新增、編輯與刪除主題標籤（存儲於 `custom_topic_tags`），點擊即可快速篩選或一鍵採集特定領域標的。
 - ✍️ **頂部研報筆記與輸出中心 (Dropdown Drawer)**：以無干擾的 Modern Glassmorphism 頂部下拉浮動面板整合研報備忘錄與 5 顆輸出操作按鈕（🎯 加入今日作戰戰役轉入 ScrumClock、📋 複製 Markdown、📥 下載 CSV、☁️ 發送至 GAS、📦 批次同步），大幅釋放主內容垂直捲動空間。
 - 📑 **底部族群分類選單列 (Category Tabs Bar)**：畫面底端常駐族群分類標籤列（如全部標的、自選核心、科技半導體等），支援新增族群、切換、雙擊編輯名稱與刪除；切換時左側邊欄即時動態連動，標的支援跨族群拖拉或歸類，提供無衝突雙層導航。
@@ -46,18 +48,30 @@
 
 ## 🧭 專案模組架構速查 (File Map)
 
-詳細系統架構與技術規範請參閱完整文件：👉 開發規格與架構說明書 (`docs/chrome-extension-v3-spec.md`)
+詳細系統架構與技術規範請參閱完整文件：
+- 👉 開發規格與架構說明書 (`docs/chrome-extension-v3-spec.md`)
+- 👉 同業對比矩陣與敏感度估值沙盒業務規格 (`docs/peer-matrix-and-valuation-spec.md`)
 
 | 模組 / 檔案 | 職責說明 | 關鍵元素 / 實作函式 |
 | :--- | :--- | :--- |
 | `manifest.json` | MV3 規範宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) | `"side_panel": { "default_path": "sidepanel.html" }` |
-| `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、事件調度、族群分類管理、自訂主題標籤 CRUD、輸出中心下拉面板與 Gemini Nano AI 交互 | `init()`, `setupCategoryEvents()`, `setupTopicTagEvents()`, `loadStockAi()`, `bindEvents()` |
-| `dashboard-render.js` | **[視圖] 儀表板渲染模組**：歷史清單、個股主看板、指標均稱網格 (`renderStatsGrid`)、SVG 趨勢向量 (`formatStatValue`)、目標價、損益表、市場主題卡片與族群 Tab 列構建 | `window.DashboardRender.renderStock()`, `renderCategoryTabs()`, `renderTopicTags()`, `formatStatValue()` |
-| `dashboard-actions.js` | **[動作] 動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 指數退避重試防禦）、Markdown/CSV 匯出、GAS 同步與轉入 ScrumClock | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportMarkdown()`, `sendToGas()` |
+| `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、三向 View Switcher（個股、同業對比、估值沙盒）與核心協調整合器 | `init()`, `setupViewSwitcherEvents()`, `bindEvents()` |
+| `dashboard-stock.css`<br>`dashboard-components.css` | **[樣式] 儀表板視覺子模組**：個股 Hero/指標卡/損益表樣式、AI 研報卡片/匯出面板/Modal 樣式 | 指標卡排版、AI 研報雙欄卡片、匯出中心下拉面板樣式 |
+| `dashboard-peer-matrix.css`<br>`dashboard-valuation.css` | **[樣式] 儀表板領域樣式子模組**：同業橫向對比矩陣與敏感度估值沙盒專屬樣式隔離 | 2~5 檔標的對比排版、極值高亮、5x5 敏感度二維熱力網格與情境卡片樣式 |
+| `dashboard-render.js` | **[視圖] 核心渲染模組**：歷史清單、個股主看板、指標均稱網格 (`renderStatsGrid`)、SVG 趨勢向量 (`formatStatValue`)、損益表與市場專題卡片 | `window.DashboardRender.renderStock()`, `renderFinancialsTable()`, `formatStatValue()` |
+| `dashboard-tabs-render.js` | **[視圖] 標籤與分頁渲染模組**：族群分類分頁列、自訂主題標籤列與底部分頁狀態渲染 | `window.DashboardRender.renderCategoryTabs()`, `renderTopicTags()`, `renderSheetTabs()` |
+| `dashboard-peer-render.js` | **[視圖] 同業矩陣渲染子模組**：同業橫向對比矩陣、動態標的核選列、市值/估值/上漲空間長條比對圖表與極值標色 | `window.DashboardRender.renderPeerMatrix()` |
+| `dashboard-valuation-render.js` | **[視圖] 估值沙盒渲染子模組**：Bear / Base / Bull 三情境卡片、即時參數滑桿與 5x5 成長率 vs P/E 二維敏感度熱力矩陣 | `window.DashboardRender.renderValuationSandbox()` |
+| `dashboard-actions.js` | **[動作] 核心動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 防禦）、CSV 下載、GAS 同步等共通動作通道 | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportToGas()` |
+| `dashboard-peer-actions.js` | **[動作] 同業矩陣動作子模組**：多選標的即時數據聚合、Markdown 對比表格複製、同業矩陣 Google 試算表 (GAS) 獨立同步 | `window.DashboardActions.getPeerComparisonData()`, `exportPeerMatrixMarkdown()`, `exportPeerMatrixToGas()` |
+| `dashboard-valuation-actions.js` | **[動作] 估值沙盒動作子模組**：折現現金流與終值估值引擎、模型報表產出、推播 ScrumClock 作戰任務與 GAS 估值頁同步 | `window.DashboardActions.calculateValuation()`, `exportSandboxToGas()`, `pushSandboxToScrumClock()` |
+| `dashboard-tabs.js` | **[控制器] 標籤與分類狀態模組**：Categories 族群分類與 Topic Tags 自訂主題標籤狀態維護與持久化 | `window.DashboardTabs.init()`, `setupCategoryEvents()`, `setupTopicTagEvents()` |
+| `dashboard-ai.js` | **[控制器] 本地 AI 研報控制器**：連動 ScrumClock 本地 Gemini Nano 之 AI 解讀生命週期與複製功能 | `window.DashboardAI.init()`, `loadStockAi()`, `generateStockAi()`, `copyAiMarkdown()` |
 | `aiClient.js` | **[AI] 跨插件通訊客戶端**：與 ScrumClock 本地 Gemini Nano API 交互防腐層 | `window.FinanceAIClient.requestStockSummary()` |
 | `sidepanel.html`<br>`sidepanel.js`<br>`sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：快捷輸入（內建安全重試）、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
 | `background.js` | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度、Storage 快取維護，支援 `PING` 心跳與安全異步錯誤捕獲 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
 | `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取、Key Stats 純淨提取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
+| `crawler-sanitizer.js` | **[純函數] 數值清洗與 Miner Schema 模組**：純數字萃取、單位換算（$B/百萬/千）、52週高低範圍、目標價統計與 AI 礦企規範轉換 | `window.CrawlerSanitizer.cleanNumber()`, `cleanMarketCap()`, `sanitizeToMinerSchema()` |
 | `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染與一鍵前往儀表板 | `#open-dashboard-btn`, `#btn-goto-dashboard` |
 | `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
 | `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |

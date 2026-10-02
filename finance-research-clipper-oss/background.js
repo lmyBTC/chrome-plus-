@@ -185,10 +185,10 @@ async function crawlStockByKeyword(keyword) {
       console.warn('[FinanceClipper:BG] 搜尋清單跳轉輔助略過:', navErr.message);
     }
 
-    // 注入 crawler.js 模組
+    // 注入 crawler-sanitizer.js 與 crawler.js 模組
     await chrome.scripting.executeScript({
       target: { tabId: bgTab.id },
-      files: ['crawler.js']
+      files: ['crawler-sanitizer.js', 'crawler.js']
     });
 
     // 呼叫快速萃取爬蟲

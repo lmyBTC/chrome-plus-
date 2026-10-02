@@ -451,6 +451,49 @@
         }
         showToast(`❌ 發生異常：${err.message}`);
       }
+    },
+
+    /**
+     * 數值清理輔助工具
+     */
+    parseNumeric: function (val) {
+      if (typeof val === 'number') return isNaN(val) ? 0 : val;
+      if (!val || typeof val !== 'string') return 0;
+      const clean = val.replace(/[^0-9.-]/g, '');
+      const num = parseFloat(clean);
+      return isNaN(num) ? 0 : num;
+    },
+
+    /**
+     * 市值解析轉為 $B 浮點數
+     */
+    parseMarketCapValue: function (val) {
+      if (typeof val === 'number') {
+        if (val > 100000) return parseFloat((val / 1e9).toFixed(3));
+        return parseFloat(val.toFixed(3));
+      }
+      if (!val || typeof val !== 'string') return 0;
+      const s = val.trim().toUpperCase();
+      const clean = s.replace(/[^0-9.-]/g, '');
+      const num = parseFloat(clean);
+      if (isNaN(num)) return 0;
+      if (s.includes('T')) return parseFloat((num * 1000).toFixed(3));
+      if (s.includes('B') || s.includes('十億')) return parseFloat(num.toFixed(3));
+      if (s.includes('M') || s.includes('百萬')) return parseFloat((num / 1000).toFixed(3));
+      if (num > 100000) return parseFloat((num / 1e9).toFixed(3));
+      return parseFloat(num.toFixed(3));
+    },
+
+    /**
+     * 格式化市值顯示
+     */
+    formatMarketCapDisplay: function (valB) {
+      if (!valB || isNaN(valB) || valB <= 0) return 'N/A';
+      if (valB >= 1000) {
+        return `$${(valB / 1000).toFixed(2)}T`;
+      }
+      return `$${valB.toFixed(2)}B`;
     }
   };
 })();
+

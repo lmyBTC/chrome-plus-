@@ -329,9 +329,9 @@
     },
 
     /**
-     * 渲染左側歷史追蹤清單 (支援依當前族群過濾與歸屬切換)
+     * 渲染左側歷史追蹤清單 (支援依當前族群過濾、歸屬切換與同業多選勾選)
      */
-    renderHistoryList: function (filteredList, currentStock, container, categories, onSelect, onCategoryChange) {
+    renderHistoryList: function (filteredList, currentStock, container, categories, onSelect, onCategoryChange, peerSelectedTickers = [], onTogglePeer) {
       if (!container) return;
       container.textContent = '';
 
@@ -348,12 +348,31 @@
 
       // 可分配的分類列表（排除全部標的）
       const assignableCats = (categories || []).filter((c) => c.id !== 'all');
+      const peerSet = new Set((peerSelectedTickers || []).map((t) => String(t).toUpperCase()));
 
       filteredList.forEach((item) => {
         const card = document.createElement('div');
         const isActive = currentStock && currentStock.ticker === item.ticker;
-        card.className = `history-item ${isActive ? 'active' : ''}`;
+        const isPeerSelected = peerSet.has(String(item.ticker).toUpperCase());
+        card.className = `history-item ${isActive ? 'active' : ''} ${isPeerSelected ? 'peer-selected' : ''}`;
         card.dataset.ticker = item.ticker;
+
+        // 多選 Checkbox (用於同業對比快速勾選)
+        const checkWrap = document.createElement('div');
+        checkWrap.className = 'history-item-checkbox-wrap';
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'history-item-checkbox';
+        checkbox.checked = isPeerSelected;
+        checkbox.title = isPeerSelected ? '從同業對比中移除' : '加入同業對比 (上限 5 檔)';
+        checkbox.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (typeof onTogglePeer === 'function') {
+            onTogglePeer(item.ticker);
+          }
+        });
+        checkWrap.appendChild(checkbox);
+        card.appendChild(checkWrap);
 
         const left = document.createElement('div');
         left.className = 'history-item-left';
@@ -416,6 +435,112 @@
     },
 
     /**
+     * 渲染同業對比 Chips 標籤列
+     */
+    renderPeerSelectorChips: function (selectedTickers, chipsContainer, countBadgeEl, countBadgeNavEl, onRemoveTicker) {
+      const count = Array.isArray(selectedTickers) ? selectedTickers.length : 0;
+      if (countBadgeEl) countBadgeEl.textContent = String(count);
+      if (countBadgeNavEl) countBadgeNavEl.textContent = `${count}/5`;
+
+      if (!chipsContainer) return;
+      chipsContainer.textContent = '';
+
+      if (count === 0) {
+        const hint = document.createElement('span');
+        hint.style.fontSize = '0.8rem';
+        hint.style.color = 'var(--text-muted)';
+        hint.textContent = '尚未選取標的（可於左側歷史清單打勾，或使用右側下拉選單加入）';
+        chipsContainer.appendChild(hint);
+        return;
+      }
+
+      selectedTickers.forEach((ticker) => {
+        const chip = document.createElement('span');
+        chip.className = 'peer-chip';
+        chip.textContent = ticker;
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'peer-chip-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.title = `移除 ${ticker}`;
+        removeBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (typeof onRemoveTicker === 'function') onRemoveTicker(ticker);
+        });
+
+        chip.appendChild(removeBtn);
+        chipsContainer.appendChild(chip);
+      });
+    },
+
+    /**
+     * 渲染同業對比快速新增下拉選單
+     */
+    renderPeerQuickAddSelect: function (historyList, selectedTickers, selectEl, onAddTicker) {
+      if (!selectEl) return;
+      selectEl.textContent = '';
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = '➕ 從歷史庫新增標的...';
+      selectEl.appendChild(defaultOpt);
+
+      const selSet = new Set((selectedTickers || []).map((t) => String(t).toUpperCase()));
+      (historyList || []).forEach((item) => {
+        if (item && item.ticker && !selSet.has(String(item.ticker).toUpperCase())) {
+          const opt = document.createElement('option');
+          opt.value = item.ticker;
+          opt.textContent = `${item.ticker} (${item.price || '--'})`;
+          selectEl.appendChild(opt);
+        }
+      });
+
+      selectEl.onchange = (e) => {
+        const val = e.target.value;
+        if (val && typeof onAddTicker === 'function') {
+          onAddTicker(val);
+          e.target.value = '';
+        }
+      };
+    },
+
+    /**
+     * 渲染估值沙盒基準標的下拉選單
+     */
+    renderSandboxTickerSelect: function (historyList, currentTicker, selectEl, onSelectTicker) {
+      if (!selectEl) return;
+      selectEl.textContent = '';
+
+      if (!historyList || historyList.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = '歷史庫尚無標的';
+        selectEl.appendChild(opt);
+        return;
+      }
+
+      const activeSym = currentTicker ? String(currentTicker).toUpperCase() : '';
+
+      historyList.forEach((item) => {
+        if (!item || !item.ticker) return;
+        const opt = document.createElement('option');
+        opt.value = item.ticker;
+        opt.textContent = `${item.ticker} ${item.price ? '(' + item.price + ')' : ''}`;
+        if (activeSym && String(item.ticker).toUpperCase() === activeSym) {
+          opt.selected = true;
+        }
+        selectEl.appendChild(opt);
+      });
+
+      selectEl.onchange = (e) => {
+        const val = e.target.value;
+        if (val && typeof onSelectTicker === 'function') {
+          onSelectTicker(val);
+        }
+      };
+    },
+
+    /**
      * 同步高亮選中的標的與族群分頁
      */
     highlightActiveHistoryItem: function (ticker, historyContainer, activeCategoryId, sheetContainer) {
@@ -439,189 +564,6 @@
           } else {
             tab.classList.remove('active');
           }
-        });
-      }
-    },
-
-    /**
-     * 渲染底部族群分類 Tab 列
-     */
-    renderCategoryTabs: function (categories, activeCategoryId, historyList, container, countEl, callbacks) {
-      if (!container) return;
-      container.textContent = '';
-      const { onSelectCategory, onEditCategory, onDeleteCategory } = callbacks || {};
-
-      if (!categories || categories.length === 0) {
-        if (countEl) countEl.textContent = '0 個族群';
-        return;
-      }
-
-      const totalStocks = historyList ? historyList.length : 0;
-      if (countEl) {
-        countEl.textContent = `${categories.length} 個族群 / 共 ${totalStocks} 檔`;
-      }
-
-      categories.forEach((cat) => {
-        const tab = document.createElement('div');
-        const isActive = cat.id === activeCategoryId;
-        tab.className = `sheet-tab category-tab ${isActive ? 'active' : ''}`;
-        tab.dataset.categoryId = cat.id;
-
-        // 計算該族群下的標的數量
-        let count = 0;
-        if (historyList) {
-          if (cat.id === 'all') {
-            count = historyList.length;
-          } else {
-            count = historyList.filter((item) => {
-              const catId = item.categoryId || 'core';
-              return catId === cat.id;
-            }).length;
-          }
-        }
-
-        const icon = document.createElement('span');
-        icon.className = 'sheet-tab-icon';
-        icon.textContent = cat.id === 'all' ? '📊' : '📁';
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'sheet-tab-name';
-        nameSpan.textContent = cat.name;
-
-        const countBadge = document.createElement('span');
-        countBadge.className = 'sheet-tab-badge';
-        countBadge.textContent = String(count);
-
-        tab.appendChild(icon);
-        tab.appendChild(nameSpan);
-        tab.appendChild(countBadge);
-
-        // 非系統族群支援更名與刪除
-        if (!cat.isSystem) {
-          const editBtn = document.createElement('span');
-          editBtn.className = 'sheet-tab-edit-btn';
-          editBtn.title = `重新命名「${cat.name}」`;
-          editBtn.textContent = '✎';
-          editBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            startRename(cat, nameSpan);
-          });
-          tab.appendChild(editBtn);
-
-          nameSpan.addEventListener('dblclick', (e) => {
-            e.stopPropagation();
-            startRename(cat, nameSpan);
-          });
-
-          const closeBtn = document.createElement('span');
-          closeBtn.className = 'sheet-tab-close';
-          closeBtn.title = `刪除「${cat.name}」族群`;
-          closeBtn.textContent = '✕';
-          closeBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (typeof onDeleteCategory === 'function') {
-              onDeleteCategory(cat.id, cat.name);
-            }
-          });
-          tab.appendChild(closeBtn);
-        }
-
-        tab.addEventListener('click', () => {
-          if (typeof onSelectCategory === 'function') {
-            onSelectCategory(cat.id);
-          }
-        });
-
-        container.appendChild(tab);
-      });
-
-      function startRename(cat, nameSpan) {
-        const originalName = cat.name;
-        const input = document.createElement('input');
-        input.type = 'text';
-        input.className = 'sheet-tab-inline-input';
-        input.value = originalName;
-        nameSpan.replaceWith(input);
-        input.focus();
-        input.select();
-
-        let finished = false;
-        const finish = (save) => {
-          if (finished) return;
-          finished = true;
-          const newName = input.value.trim();
-          if (save && newName && newName !== originalName) {
-            if (typeof onEditCategory === 'function') {
-              onEditCategory(cat.id, newName);
-            }
-          } else {
-            input.replaceWith(nameSpan);
-          }
-        };
-
-        input.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter') finish(true);
-          if (e.key === 'Escape') finish(false);
-        });
-        input.addEventListener('blur', () => finish(true));
-      }
-    },
-
-    /**
-     * 渲染頂部主題式分類標籤 (Topic Tags)
-     * @param {Array<string>} tags 標籤字串清單
-     * @param {HTMLElement} container 標籤掛載容器
-     * @param {Object} callbacks { onSelectTag: (tag) => void, onRemoveTag: (tag) => void }
-     */
-    renderTopicTags: function (tags, container, callbacks) {
-      if (!container) return;
-      container.innerHTML = '';
-      const { onSelectTag, onRemoveTag } = callbacks || {};
-
-      (tags || []).forEach((tag) => {
-        const pill = document.createElement('div');
-        pill.className = 'topic-tag-pill';
-        pill.title = `點擊採集或篩選：${tag}`;
-
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'topic-tag-name';
-        nameSpan.textContent = tag;
-
-        const removeBtn = document.createElement('span');
-        removeBtn.className = 'topic-tag-remove';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.title = `刪除標籤「${tag}」`;
-
-        removeBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          if (typeof onRemoveTag === 'function') {
-            onRemoveTag(tag);
-          }
-        });
-
-        pill.addEventListener('click', () => {
-          if (typeof onSelectTag === 'function') {
-            onSelectTag(tag);
-          }
-        });
-
-        pill.appendChild(nameSpan);
-        pill.appendChild(removeBtn);
-        container.appendChild(pill);
-      });
-    },
-
-    /**
-     * 相容性轉發：舊版 renderSheetTabs 調用自動轉向
-     */
-    renderSheetTabs: function (historyList, currentStock, container, countEl, onSelect, onClose) {
-      // 保持向下相容性轉向，若外部仍傳入舊參數則渲染一般 tab
-      if (this.renderCategoryTabs) {
-        const dummyCats = [
-          { id: 'all', name: '全部標的', isSystem: true }
-        ];
-        this.renderCategoryTabs(dummyCats, 'all', historyList, container, countEl, {
-          onSelectCategory: () => {}
         });
       }
     }
