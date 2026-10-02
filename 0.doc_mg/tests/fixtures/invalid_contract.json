@@ -1,0 +1,7 @@
+{
+  "protocolVersion": "not-an-int",
+  "type": "CREATE_TASK",
+  "payload": {
+    "tags": "should-be-a-list"
+  }
+}

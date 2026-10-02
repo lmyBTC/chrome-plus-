@@ -29,6 +29,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const saveSettingsBtn = document.getElementById('save-settings-btn');
   const exportMdBtn = document.getElementById('export-md-btn');
   const exportCsvBtn = document.getElementById('export-csv-btn');
+  const copyPromptBtn = document.getElementById('copy-prompt-btn');
   const fullScrapeBtn = document.getElementById('full-scrape-btn');
   const openDashboardBtn = document.getElementById('open-dashboard-btn');
   const btnGotoDashboard = document.getElementById('btn-goto-dashboard');
@@ -581,8 +582,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ana = capturedStockData.analysis;
         let analysisExtra = `\n\n### 🎯 分析師共識與目標價\n`;
         if (ana.consensus) analysisExtra += `- **共識評級**: ${ana.consensus}\n`;
-        if (ana.targetPrice?.median || ana.targetPrice?.high) {
-          analysisExtra += `- **目標價**: 中位數 ${ana.targetPrice.median || '-'} (最高: ${ana.targetPrice.high || '-'}, 最低: ${ana.targetPrice.low || '-'})\n`;
+
+        // 計算完整統計量 (均值、中位數、上漲空間、標準差、離散係數)
+        const targetStats = typeof calculateTargetPriceStats === 'function'
+          ? calculateTargetPriceStats(ana.targetPrice || [ana.targetPrice?.low, ana.targetPrice?.median, ana.targetPrice?.high], payload.price)
+          : { count: 0, mean: 0, median: 0, high: 0, low: 0, upsidePercent: 0, stdDev: 0, cv: 0 };
+
+        if (targetStats.count > 0 || ana.targetPrice?.median || ana.targetPrice?.high) {
+          const medianVal = targetStats.median || ana.targetPrice?.median || '-';
+          const meanVal = targetStats.mean || '-';
+          const highVal = targetStats.high || ana.targetPrice?.high || '-';
+          const lowVal = targetStats.low || ana.targetPrice?.low || '-';
+          analysisExtra += `- **目標價統計**: 中位數 $${medianVal} (均值: $${meanVal}, 最高: $${highVal}, 最低: $${lowVal})\n`;
+          if (targetStats.upsidePercent !== 0) {
+            analysisExtra += `- **隱含現價上漲空間 (Upside %)**: ${targetStats.upsidePercent > 0 ? '+' : ''}${targetStats.upsidePercent}%\n`;
+          }
+          if (targetStats.stdDev > 0) {
+            analysisExtra += `- **離散度指標**: 標準差 ±$${targetStats.stdDev} (變異係數 CV: ${(targetStats.cv * 100).toFixed(2)}%)\n`;
+          }
         }
         if (ana.ratingsSummary) {
           analysisExtra += `\n**評級概況**:\n${ana.ratingsSummary.substring(0, 500)}\n`;
@@ -590,9 +607,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         financeExtra = analysisExtra + financeExtra;
 
         payload.analyst_consensus = ana.consensus || "N/A";
-        payload.target_price_median = ana.targetPrice?.median || "N/A";
-        payload.target_price_high = ana.targetPrice?.high || "N/A";
-        payload.target_price_low = ana.targetPrice?.low || "N/A";
+        payload.target_price_median = targetStats.median || ana.targetPrice?.median || "N/A";
+        payload.target_price_mean = targetStats.mean || "N/A";
+        payload.target_price_high = targetStats.high || ana.targetPrice?.high || "N/A";
+        payload.target_price_low = targetStats.low || ana.targetPrice?.low || "N/A";
+        payload.target_price_upside = targetStats.upsidePercent !== undefined ? `${targetStats.upsidePercent}%` : "N/A";
+        payload.target_price_stddev = targetStats.stdDev || 0;
+        payload.target_price_cv = targetStats.cv || 0;
+        payload.target_price_stats = targetStats;
       }
 
       // 整合 SPA 財報表格
@@ -736,6 +758,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateStatus(`❌ ${err.message}`, "red");
     }
   });
+
+  if (copyPromptBtn) {
+    copyPromptBtn.addEventListener('click', async () => {
+      try {
+        const p = await buildPayload();
+        if (!window.FinanceAIClient || typeof window.FinanceAIClient.buildInvestmentPrompt !== 'function') {
+          throw new Error('FinanceAIClient 模組尚未就緒');
+        }
+        const promptText = window.FinanceAIClient.buildInvestmentPrompt(p);
+        await navigator.clipboard.writeText(promptText);
+
+        const originalText = copyPromptBtn.innerText;
+        copyPromptBtn.innerText = "✅ 已複製！";
+        copyPromptBtn.style.backgroundColor = "#e6f4ea";
+        copyPromptBtn.style.color = "var(--success-color)";
+        copyPromptBtn.style.borderColor = "var(--success-color)";
+        updateStatus("📋 成功複製結構化 AI 投研 Prompt 至剪貼簿！", "green");
+
+        setTimeout(() => {
+          copyPromptBtn.innerText = originalText;
+          copyPromptBtn.style.backgroundColor = "#e8f0fe";
+          copyPromptBtn.style.color = "var(--primary-color)";
+          copyPromptBtn.style.borderColor = "var(--primary-color)";
+        }, 2000);
+      } catch (err) {
+        updateStatus(`❌ ${err.message}`, "red");
+      }
+    });
+  }
 });
 
 /**

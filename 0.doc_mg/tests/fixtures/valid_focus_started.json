@@ -1,0 +1,9 @@
+{
+  "protocolVersion": 1,
+  "type": "FOCUS_STARTED",
+  "payload": {
+    "ticker": "AAPL",
+    "missionText": "Apple Intelligence 推出後 iPhone 換機潮調查",
+    "tags": ["#投資研究", "#美股"]
+  }
+}

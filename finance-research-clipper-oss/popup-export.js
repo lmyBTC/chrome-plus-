@@ -274,6 +274,120 @@ function cleanPercentage(val) {
   return cleanNumber(val);
 }
 
+/**
+ * 目標價陣列解析器：從物件、陣列或字串中解析出所有有效的目標價數值陣列
+ * @param {Array|Object|string|number} input 
+ * @returns {number[]} 排序後的目標價陣列 (升序)
+ */
+function parseTargetPrices(input) {
+  if (!input) return [];
+  const prices = [];
+
+  const addValidNumber = (val) => {
+    const num = cleanNumber(val);
+    if (!isNaN(num) && num > 0) {
+      prices.push(num);
+    }
+  };
+
+  if (Array.isArray(input)) {
+    input.forEach(addValidNumber);
+  } else if (typeof input === 'object') {
+    if (Array.isArray(input.prices)) input.prices.forEach(addValidNumber);
+    else if (Array.isArray(input.targets)) input.targets.forEach(addValidNumber);
+    else if (Array.isArray(input.items)) input.items.forEach(addValidNumber);
+
+    if (input.low !== undefined && input.low !== '' && input.low !== '-') addValidNumber(input.low);
+    if (input.median !== undefined && input.median !== '' && input.median !== '-') addValidNumber(input.median);
+    if (input.high !== undefined && input.high !== '' && input.high !== '-') addValidNumber(input.high);
+    if (input.targetPrice !== undefined && input.targetPrice !== input) {
+      const nested = parseTargetPrices(input.targetPrice);
+      nested.forEach(n => prices.push(n));
+    }
+  } else if (typeof input === 'string') {
+    const matches = input.match(/\$?(\d{1,6}(?:\.\d{1,2})?)/g);
+    if (matches && matches.length > 0) {
+      matches.forEach(m => addValidNumber(m));
+    } else {
+      addValidNumber(input);
+    }
+  } else if (typeof input === 'number') {
+    addValidNumber(input);
+  }
+
+  return prices.filter(n => !isNaN(n) && n > 0).sort((a, b) => a - b);
+}
+
+/**
+ * 目標價統計計算函式：計算平均值、中位數、最高/最低、現價上漲空間 (Upside %)、標準差與離散係數 (CV)
+ * @param {Array|Object|string|number} targets 目標價輸入
+ * @param {number|string} currentPrice 現價
+ * @returns {Object} 包含 mean, median, high, low, count, upsidePercent, upsideMeanPercent, stdDev, cv 的統計物件
+ */
+function calculateTargetPriceStats(targets, currentPrice) {
+  const current = cleanNumber(currentPrice);
+  const prices = parseTargetPrices(targets);
+  const n = prices.length;
+
+  if (n === 0) {
+    return {
+      count: 0,
+      mean: 0,
+      median: 0,
+      high: 0,
+      low: 0,
+      upsidePercent: 0,
+      upsideMeanPercent: 0,
+      stdDev: 0,
+      cv: 0
+    };
+  }
+
+  const sum = prices.reduce((acc, p) => acc + p, 0);
+  const mean = parseFloat((sum / n).toFixed(2));
+
+  let median = 0;
+  if (n % 2 !== 0) {
+    median = prices[Math.floor(n / 2)];
+  } else {
+    median = (prices[n / 2 - 1] + prices[n / 2]) / 2;
+  }
+  median = parseFloat(median.toFixed(2));
+
+  const high = parseFloat(prices[n - 1].toFixed(2));
+  const low = parseFloat(prices[0].toFixed(2));
+
+  const upsidePercent = (current > 0 && median > 0)
+    ? parseFloat((((median - current) / current) * 100).toFixed(2))
+    : 0;
+
+  const upsideMeanPercent = (current > 0 && mean > 0)
+    ? parseFloat((((mean - current) / current) * 100).toFixed(2))
+    : 0;
+
+  let stdDev = 0;
+  if (n >= 2) {
+    const variance = prices.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / (n - 1);
+    stdDev = parseFloat(Math.sqrt(variance).toFixed(2));
+  }
+
+  const cv = (mean > 0 && stdDev > 0)
+    ? parseFloat((stdDev / mean).toFixed(4))
+    : 0;
+
+  return {
+    count: n,
+    mean,
+    median,
+    high,
+    low,
+    upsidePercent,
+    upsideMeanPercent,
+    stdDev,
+    cv
+  };
+}
+
 function sanitizeToMinerSchema(input) {
   if (typeof FinanceCrawler !== 'undefined' && typeof FinanceCrawler.sanitizeToMinerSchema === 'function') {
     return FinanceCrawler.sanitizeToMinerSchema(input);
@@ -298,10 +412,15 @@ function sanitizeToMinerSchema(input) {
   const marketCap = cleanMarketCap(rawMktCap);
 
   const rawTarget = input.targetPrice ||
-    (input.analyst && input.analyst.targetMedian) ||
+    (input.analyst && (input.analyst.targets || input.analyst.targetMedian)) ||
     (input.analysis && input.analysis.targetPrice && input.analysis.targetPrice.median) ||
     findStat(/Target price|Price target|目標價/i);
-  const targetPrice = cleanNumber(rawTarget);
+
+  const targetStats = calculateTargetPriceStats(
+    (input.analysis && input.analysis.targetPrice) || input.targetPrice || input.analyst || rawTarget,
+    price
+  );
+  const targetPrice = targetStats.median > 0 ? targetStats.median : cleanNumber(rawTarget);
 
   const rawBeta = input.beta || (input.overview && input.overview.beta) || findStat(/Beta|貝他值/i);
   const beta = parseFloat(cleanNumber(rawBeta).toFixed(2));
@@ -344,6 +463,14 @@ function sanitizeToMinerSchema(input) {
     price,
     marketCap,
     targetPrice,
+    targetPriceStats: targetStats,
+    targetMean: targetStats.mean,
+    targetMedian: targetStats.median,
+    targetHigh: targetStats.high,
+    targetLow: targetStats.low,
+    targetUpside: targetStats.upsidePercent,
+    targetStdDev: targetStats.stdDev,
+    targetCv: targetStats.cv,
     beta,
     range52w,
     low52,
@@ -361,6 +488,8 @@ if (typeof window !== 'undefined') {
   window.cleanRange52w = cleanRange52w;
   window.calcEpsSurprise = calcEpsSurprise;
   window.cleanPercentage = cleanPercentage;
+  window.parseTargetPrices = parseTargetPrices;
+  window.calculateTargetPriceStats = calculateTargetPriceStats;
   window.sanitizeToMinerSchema = sanitizeToMinerSchema;
 }
 
@@ -377,6 +506,8 @@ if (typeof module !== 'undefined' && module.exports) {
     cleanRange52w,
     calcEpsSurprise,
     cleanPercentage,
+    parseTargetPrices,
+    calculateTargetPriceStats,
     sanitizeToMinerSchema
   };
 }

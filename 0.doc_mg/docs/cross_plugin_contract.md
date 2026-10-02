@@ -141,20 +141,61 @@
 
 ---
 
-## 5. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)
+## 6. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)
 
 為徹底落實「分開開發、互不干擾、避免資料與上下文污染」：
 1. **單一插件專注原則**：
    - 當任務目標為 `finance-research-clipper-oss` 時，AI Agent 僅能讀寫該專案內的原始碼，**嚴禁跨目錄讀取 `chrome_scrumclock/` 內部檔案**。
    - 當任務目標為 `chrome_scrumclock` 時，AI Agent 僅能讀寫該專案內的原始碼，**嚴禁跨目錄讀取 `finance-research-clipper-oss/` 內部檔案**。
 2. **通訊視為黑盒子遠端 API**：
-   - AI 若需要實作跨插件通訊，**只能且必須依據本契約文件**（`cross_plugin_contract.md`）中的 Request / Response 規範編寫程式，將對端完全視為外部第三方程式。
+   - AI 若需要實作跨插件通訊，**只能且必須依據本契約文件**（`0.doc_mg/docs/cross_plugin_contract.md`）中的 Request / Response 規範編寫程式，將對端完全視為外部第三方程式。
 3. **防止資料庫跨域幻覺**：
    - 任何插件的資料結構變更，均不得預設對端會自動知曉；跨插件通訊一律透過 Sanitizer 防腐過濾。
 
 ---
 
-## 6. 常見開發疑問解答 (FAQ)
+## 7. 0.doc_mg 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
+
+工作區於 `0.doc_mg/tools/` 提供無外部依賴之 Python 自動化管線工具：
+
+### 7.1 合約與快照 JSON Schema 校驗器 (`validate_contract.py`)
+- **檔案路徑**：`0.doc_mg/tools/validate_contract.py`
+- **使用指令**：
+  ```bash
+  # 校驗單一快照或合約 JSON
+  python 0.doc_mg/tools/validate_contract.py snapshot.json
+
+  # 批次校驗目錄內所有 JSON
+  python 0.doc_mg/tools/validate_contract.py --dir path/to/dir/
+
+  # 啟用嚴格欄位檢查
+  python 0.doc_mg/tools/validate_contract.py snapshot.json --strict
+  ```
+
+### 7.2 投研快照多格式匯出轉譯器 (`export_converter.py`)
+- **檔案路徑**：`0.doc_mg/tools/export_converter.py`
+- **功能**：
+  1. **Obsidian Markdown**：自動解析快照生成相容 YAML Frontmatter、Dataview 與完整估值/獲利分析表格之筆記。
+  2. **量化 CSV**：扁平化匯出包含現價、共識目標價、離散係數 (CV)、Beta、EPS 與 YoY 之數值分析表。
+- **使用指令**：
+  ```bash
+  # 同步轉譯為 Obsidian Markdown 與 CSV
+  python 0.doc_mg/tools/export_converter.py snapshot.json --format all
+
+  # 僅轉譯為 Obsidian Markdown 筆記
+  python 0.doc_mg/tools/export_converter.py snapshot.json --format markdown
+
+  # 批次將目錄內多份快照合併為單一彙總量化 CSV
+  python 0.doc_mg/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
+  ```
+
+### 7.3 自動化回歸測試
+- **檔案路徑**：`0.doc_mg/tests/run_tests.py`
+- **執行指令**：`python 0.doc_mg/tests/run_tests.py`
+
+---
+
+## 8. 常見開發疑問解答 (FAQ)
 
 ### Q: 我在 Finance 功能裡新增奇怪的變數或功能，會不會把 ScrumClock 弄壞？
 **不會**。因為 Finance 的變數只存在於 FinanceClipper 的執行上下文中（Content Script、Dashboard 頁面），與 ScrumClock 完全隔離。只有透過 `aiClient.js` 發出的請求會到達 ScrumClock，而發送前會被「防腐層 (Sanitizer)」嚴格過濾。

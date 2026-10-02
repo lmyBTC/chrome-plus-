@@ -1,0 +1,30 @@
+{
+  "timestamp": "2026-10-02 12:05:00",
+  "ticker": "AAPL",
+  "name": "Apple Inc.",
+  "price": 224.20,
+  "marketCap": "3.42T",
+  "pe": "34.2",
+  "beta": 1.05,
+  "range52w": "164.08 - 237.23",
+  "low52": 164.08,
+  "high52": 237.23,
+  "analyst_consensus": "Moderate Buy",
+  "target_price_median": "250.00",
+  "targetPriceStats": {
+    "count": 40,
+    "mean": 248.80,
+    "median": 250.00,
+    "high": 300.00,
+    "low": 185.00,
+    "upsidePercent": 11.51,
+    "stdDev": 18.50,
+    "cv": 0.0744
+  },
+  "latestEpsActual": 1.40,
+  "latestEpsEst": 1.35,
+  "epsSurprise": 3.70,
+  "yoy": 4.9,
+  "note": "Apple Intelligence 整合持續推進，高階機型換機意願提升。",
+  "url": "https://www.google.com/finance/quote/AAPL:NASDAQ"
+}

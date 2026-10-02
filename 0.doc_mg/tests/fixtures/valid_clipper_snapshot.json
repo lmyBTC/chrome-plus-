@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-10-02 12:00:00",
+  "ticker": "NVDA",
+  "name": "NVIDIA Corporation",
+  "price": 125.50,
+  "marketCap": "3.10T",
+  "pe": "65.4",
+  "beta": 1.68,
+  "range52w": "45.00 - 140.00",
+  "low52": 45.00,
+  "high52": 140.00,
+  "analyst_consensus": "Strong Buy",
+  "target_price_median": "150.00",
+  "targetPriceStats": {
+    "count": 35,
+    "mean": 148.50,
+    "median": 150.00,
+    "high": 175.00,
+    "low": 110.00,
+    "upsidePercent": 19.52,
+    "stdDev": 14.20,
+    "cv": 0.0956
+  },
+  "latestEpsActual": 0.68,
+  "latestEpsEst": 0.64,
+  "epsSurprise": 6.25,
+  "yoy": 122.0,
+  "financials_table": [
+    ["季度", "營收 (B)", "淨利 (B)", "EPS", "毛利率"],
+    ["2026 Q2", "$30.04", "$16.60", "$0.68", "75.1%"],
+    ["2026 Q1", "$26.04", "$14.88", "$0.61", "78.4%"],
+    ["2025 Q4", "$22.10", "$12.29", "$0.51", "76.0%"]
+  ],
+  "note": "Blackwell 供應鏈持續緊俏，CSP 客戶資本支出上修，維持長期看多。",
+  "url": "https://www.google.com/finance/quote/NVDA:NASDAQ"
+}

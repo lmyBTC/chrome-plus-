@@ -254,9 +254,265 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
+  // ============================================================================
+  // 法說會/影音筆記打點與 Markdown 導出邏輯
+  // ============================================================================
+  const btnToggleBookmarkInput = document.getElementById('btnToggleBookmarkInput');
+  const bookmarkInputPanel = document.getElementById('bookmarkInputPanel');
+  const popupCurrentTimeTag = document.getElementById('popupCurrentTimeTag');
+  const popupBookmarkNote = document.getElementById('popupBookmarkNote');
+  const btnSavePopupBookmark = document.getElementById('btnSavePopupBookmark');
+  const btnCancelPopupBookmark = document.getElementById('btnCancelPopupBookmark');
+  const btnExportMarkdown = document.getElementById('btnExportMarkdown');
+  const btnDownloadMarkdown = document.getElementById('btnDownloadMarkdown');
+  const btnClearBookmarks = document.getElementById('btnClearBookmarks');
+  const bookmarkList = document.getElementById('bookmarkList');
+  const bookmarkCount = document.getElementById('bookmarkCount');
+  const bookmarkStatusMsg = document.getElementById('bookmarkStatusMsg');
+
+  let activeVideoSec = 0;
+
+  function showBookmarkStatus(msg, isError = false) {
+    if (!bookmarkStatusMsg) return;
+    bookmarkStatusMsg.textContent = msg;
+    bookmarkStatusMsg.style.color = isError ? '#fca5a5' : '#a7f3d0';
+    setTimeout(() => {
+      bookmarkStatusMsg.textContent = '';
+      bookmarkStatusMsg.style.color = 'rgba(255, 255, 255, 0.9)';
+    }, 2800);
+  }
+
+  function formatTime(seconds) {
+    if (isNaN(seconds) || seconds < 0) return '00:00';
+    const totalSec = Math.floor(seconds);
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return hrs > 0 ? `${hrs}:${pad(mins)}:${pad(secs)}` : `${pad(mins)}:${pad(secs)}`;
+  }
+
+  function getVideoIdFromCurrentTab(callback) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (tabs && tabs[0] && tabs[0].url) {
+        try {
+          const u = new URL(tabs[0].url);
+          if (u.hostname.includes('youtube.com')) {
+            callback(u.searchParams.get('v') || '');
+            return;
+          }
+        } catch (_) {}
+      }
+      callback('');
+    });
+  }
+
+  function loadBookmarks() {
+    getVideoIdFromCurrentTab(function(videoId) {
+      sendMessageToContent({ action: 'getBookmarks', videoId: videoId }, function(res) {
+        if (!res || !res.bookmarks) {
+          // 兜底直接從 storage 讀取
+          chrome.storage.local.get('vsp_bookmarks', function(store) {
+            const all = Array.isArray(store.vsp_bookmarks) ? store.vsp_bookmarks : [];
+            const bms = videoId ? all.filter(b => b.videoId === videoId) : all;
+            renderBookmarkList(bms);
+          });
+          return;
+        }
+        renderBookmarkList(res.bookmarks);
+      });
+    });
+  }
+
+  function renderBookmarkList(bookmarks) {
+    if (!bookmarkList || !bookmarkCount) return;
+    bookmarkCount.textContent = bookmarks.length;
+    bookmarkList.textContent = '';
+
+    if (bookmarks.length === 0) {
+      const emptyDiv = document.createElement('div');
+      emptyDiv.className = 'bookmark-empty-msg';
+      emptyDiv.textContent = '尚無記錄，點擊上方按鈕或按 Alt + B';
+      bookmarkList.appendChild(emptyDiv);
+      return;
+    }
+
+    bookmarks.forEach(bm => {
+      const item = document.createElement('div');
+      item.className = 'bookmark-item';
+
+      const left = document.createElement('div');
+      left.className = 'bookmark-item-content';
+
+      const timeBadge = document.createElement('span');
+      timeBadge.className = 'bookmark-time-badge';
+      timeBadge.textContent = bm.timeFormatted;
+      timeBadge.title = '點擊跳轉至此時間點';
+      timeBadge.addEventListener('click', () => {
+        sendMessageToContent({ action: 'seekToTime', timeSeconds: bm.timeSeconds });
+        showBookmarkStatus(`已跳轉至 ${bm.timeFormatted}`);
+      });
+
+      const noteText = document.createElement('span');
+      noteText.className = 'bookmark-note-text';
+      noteText.textContent = bm.note;
+      noteText.title = bm.note;
+
+      left.append(timeBadge, noteText);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'bookmark-del-btn';
+      delBtn.textContent = '×';
+      delBtn.title = '刪除此標記';
+      delBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        sendMessageToContent({ action: 'deleteBookmark', id: bm.id }, () => {
+          loadBookmarks();
+          showBookmarkStatus('已刪除時間標記');
+        });
+      });
+
+      item.append(left, delBtn);
+      bookmarkList.appendChild(item);
+    });
+  }
+
+  // 開啟打點面板
+  if (btnToggleBookmarkInput && bookmarkInputPanel) {
+    btnToggleBookmarkInput.addEventListener('click', function() {
+      const isVisible = bookmarkInputPanel.classList.contains('active');
+      if (isVisible) {
+        bookmarkInputPanel.classList.remove('active');
+      } else {
+        sendMessageToContent({ action: 'getCurrentTime' }, function(res) {
+          activeVideoSec = res && typeof res.currentTime === 'number' ? res.currentTime : 0;
+          if (popupCurrentTimeTag) {
+            popupCurrentTimeTag.textContent = formatTime(activeVideoSec);
+          }
+          bookmarkInputPanel.classList.add('active');
+          if (popupBookmarkNote) {
+            popupBookmarkNote.value = '';
+            popupBookmarkNote.focus();
+          }
+        });
+      }
+    });
+  }
+
+  // 取消打點
+  if (btnCancelPopupBookmark && bookmarkInputPanel) {
+    btnCancelPopupBookmark.addEventListener('click', function() {
+      bookmarkInputPanel.classList.remove('active');
+    });
+  }
+
+  // 儲存打點
+  function savePopupBookmark() {
+    const note = popupBookmarkNote ? popupBookmarkNote.value.trim() : '';
+    sendMessageToContent({
+      action: 'saveBookmark',
+      note: note,
+      timeSeconds: activeVideoSec
+    }, function(res) {
+      if (res && res.success) {
+        if (bookmarkInputPanel) bookmarkInputPanel.classList.remove('active');
+        if (popupBookmarkNote) popupBookmarkNote.value = '';
+        loadBookmarks();
+        showBookmarkStatus(`已儲存標記 [${formatTime(activeVideoSec)}]`);
+      } else {
+        showBookmarkStatus('⚠️ 儲存失敗: ' + (res?.error || '請確認影片頁面'), true);
+      }
+    });
+  }
+
+  if (btnSavePopupBookmark) {
+    btnSavePopupBookmark.addEventListener('click', savePopupBookmark);
+  }
+
+  if (popupBookmarkNote) {
+    popupBookmarkNote.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        savePopupBookmark();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        if (bookmarkInputPanel) bookmarkInputPanel.classList.remove('active');
+      }
+    });
+  }
+
+  // 複製 Markdown
+  if (btnExportMarkdown) {
+    btnExportMarkdown.addEventListener('click', function() {
+      getVideoIdFromCurrentTab(function(videoId) {
+        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId }, function(res) {
+          if (res && res.markdown) {
+            if (res.count === 0) {
+              showBookmarkStatus('⚠️ 本影片尚無打點記錄', true);
+              return;
+            }
+            navigator.clipboard.writeText(res.markdown).then(() => {
+              showBookmarkStatus(`📋 已複製 ${res.count} 條重點 MD 至剪貼簿！`);
+            }).catch(() => {
+              showBookmarkStatus('⚠️ 剪貼簿存取失敗', true);
+            });
+          } else {
+            showBookmarkStatus('⚠️ 無法導出筆記，請確認位於影片頁面', true);
+          }
+        });
+      });
+    });
+  }
+
+  // 下載 Markdown 檔案
+  if (btnDownloadMarkdown) {
+    btnDownloadMarkdown.addEventListener('click', function() {
+      getVideoIdFromCurrentTab(function(videoId) {
+        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId }, function(res) {
+          if (res && res.markdown) {
+            if (res.count === 0) {
+              showBookmarkStatus('⚠️ 本影片尚無打點記錄', true);
+              return;
+            }
+            const blob = new Blob([res.markdown], { type: 'text/markdown;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const safeTitle = (res.title || 'video_notes').replace(/[\/\\?%*:|"<>]/g, '_').slice(0, 50);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${safeTitle}_notes.md`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showBookmarkStatus(`💾 已下載 ${res.count} 條重點 MD 檔案`);
+          } else {
+            showBookmarkStatus('⚠️ 下載失敗，請確認位於影片頁面', true);
+          }
+        });
+      });
+    });
+  }
+
+  // 清空本片標記
+  if (btnClearBookmarks) {
+    btnClearBookmarks.addEventListener('click', function() {
+      getVideoIdFromCurrentTab(function(videoId) {
+        if (!confirm('確定清空本影片的所有時間戳記重點？')) return;
+        sendMessageToContent({ action: 'clearBookmarks', videoId: videoId }, function() {
+          loadBookmarks();
+          showBookmarkStatus('已清空本片所有標記');
+        });
+      });
+    });
+  }
+
+  // 初始載入打點列表
+  loadBookmarks();
+
   // 暴露全域輔助以供後續 UI 綁定
   window.__videoSpeedPlus = {
     sendMessageToContent: sendMessageToContent,
-    pingScrumClock: pingScrumClock
+    pingScrumClock: pingScrumClock,
+    loadBookmarks: loadBookmarks
   };
 }); 

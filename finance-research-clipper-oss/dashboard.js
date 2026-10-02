@@ -11,6 +11,19 @@
   let historyList = [];
   let currentAiSummary = null; // 當前標的的 AI 摘要快取
 
+  // 族群分類預設與狀態管理
+  const DEFAULT_CATEGORIES = [
+    { id: 'all', name: '全部標的', isSystem: true },
+    { id: 'core', name: '自選核心' },
+    { id: 'tech', name: '科技半導體' }
+  ];
+  let categories = [...DEFAULT_CATEGORIES];
+  let activeCategoryId = 'all';
+
+  // 自訂主題式標籤 (Topic Tags) 預設與狀態管理
+  const DEFAULT_TOPIC_TAGS = ['NVDA', 'TSLA', 'AAPL', 'MSFT', '2330'];
+  let topicTags = [...DEFAULT_TOPIC_TAGS];
+
   // DOM 元素快取
   const searchInput = document.getElementById('dashboard-search-input');
   const btnCrawl = document.getElementById('btn-dashboard-crawl');
@@ -19,8 +32,11 @@
   const stockContentSection = document.getElementById('stock-content-section');
   const historyListContainer = document.getElementById('history-list-container');
   const btnClearHistory = document.getElementById('btn-clear-history');
+  const sidebarActiveCatBadge = document.getElementById('sidebar-active-cat-badge');
+  const topicTagsList = document.getElementById('topic-tags-list');
+  const btnAddTopicTag = document.getElementById('btn-add-topic-tag');
 
-  // 底部類似 Google Sheets 分頁列元素
+  // 底部族群分類分頁列元素
   const sheetTabContainer = document.getElementById('sheets-tab-container');
   const sheetTabCount = document.getElementById('sheet-tab-count');
   const btnTabPrev = document.getElementById('btn-tab-prev');
@@ -50,6 +66,11 @@
   const financialsTableWrap = document.getElementById('financials-table-wrap');
   const marketTopicsTableWrap = document.getElementById('market-topics-table-wrap');
   const noteInput = document.getElementById('dashboard-note-input');
+
+  // 頂部研報筆記與輸出中心下拉選單
+  const btnToggleExportPanel = document.getElementById('btn-toggle-export-panel');
+  const exportDropdownPanel = document.getElementById('export-dropdown-panel');
+  const btnCloseExportPanel = document.getElementById('btn-close-export-panel');
 
   // 輸出按鈕
   const btnAddToScrum = document.getElementById('btn-add-scrum-task');
@@ -127,41 +148,188 @@
     window.DashboardRender.renderStock(stock, uiElements, {
       onStockRendered: (s) => loadStockAi(s, false)
     });
+    // 同步高亮選中的標的與族群分頁
+    if (window.DashboardRender && window.DashboardRender.highlightActiveHistoryItem) {
+      window.DashboardRender.highlightActiveHistoryItem(
+        stock ? stock.ticker : '',
+        historyListContainer,
+        activeCategoryId,
+        sheetTabContainer
+      );
+    }
+  }
+
+  function getFilteredHistoryList() {
+    if (activeCategoryId === 'all') {
+      return historyList;
+    }
+    return historyList.filter((item) => {
+      const catId = item.categoryId || 'core';
+      return catId === activeCategoryId;
+    });
+  }
+
+  function updateSidebarBadge() {
+    if (sidebarActiveCatBadge) {
+      const cur = categories.find((c) => c.id === activeCategoryId);
+      sidebarActiveCatBadge.textContent = cur ? cur.name : '全部標的';
+    }
   }
 
   function renderHistoryList() {
-    window.DashboardRender.renderHistoryList(historyList, currentStock, historyListContainer, (stock) => {
-      renderStock(stock);
-    });
-  }
-
-  function renderSheetTabs() {
-    window.DashboardRender.renderSheetTabs(
-      historyList,
+    updateSidebarBadge();
+    const filtered = getFilteredHistoryList();
+    window.DashboardRender.renderHistoryList(
+      filtered,
       currentStock,
-      sheetTabContainer,
-      sheetTabCount,
+      historyListContainer,
+      categories,
       (stock) => renderStock(stock),
-      (ticker) => closeSheetTab(ticker)
+      (ticker, newCatId) => updateStockCategory(ticker, newCatId)
     );
   }
 
-  function closeSheetTab(ticker) {
-    historyList = historyList.filter((it) => it.ticker !== ticker);
-    chrome.storage.local.set({ stockHistory: historyList }, () => {
-      if (currentStock && currentStock.ticker === ticker) {
-        if (historyList.length > 0) {
-          renderStock(historyList[0]);
-        } else {
-          currentStock = null;
-          chrome.storage.local.remove(['latestStockData']);
-          showEmptyState();
+  function renderCategoryTabs() {
+    window.DashboardRender.renderCategoryTabs(
+      categories,
+      activeCategoryId,
+      historyList,
+      sheetTabContainer,
+      sheetTabCount,
+      {
+        onSelectCategory: (catId) => selectCategory(catId),
+        onEditCategory: (catId, newName) => renameCategory(catId, newName),
+        onDeleteCategory: (catId, catName) => deleteCategory(catId, catName)
+      }
+    );
+  }
+
+  // 向下相容
+  function renderSheetTabs() {
+    renderCategoryTabs();
+  }
+
+  function selectCategory(catId) {
+    activeCategoryId = catId;
+    chrome.storage.local.set({ activeCategoryId: catId }, () => {
+      renderCategoryTabs();
+      renderHistoryList();
+      const filtered = getFilteredHistoryList();
+      // 若當前顯示的標的不在所選族群中，自動切換至該族群第一檔標的
+      if (currentStock && !filtered.some((it) => it.ticker === currentStock.ticker)) {
+        if (filtered.length > 0) {
+          renderStock(filtered[0]);
         }
       }
-      renderSheetTabs();
-      renderHistoryList();
-      showToast(`已關閉 [${ticker}] 分頁`);
     });
+  }
+
+  function promptAddCategory() {
+    const name = prompt('請輸入新族群分類名稱 (例如: AI概念、綠能供應鏈):');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    if (categories.some((c) => c.name === trimmed)) {
+      showToast('⚠️ 已存在相同名稱的族群分類！');
+      return;
+    }
+    const newCategory = {
+      id: 'cat_' + Date.now(),
+      name: trimmed
+    };
+    categories.push(newCategory);
+    activeCategoryId = newCategory.id;
+    chrome.storage.local.set({ categories, activeCategoryId }, () => {
+      renderCategoryTabs();
+      renderHistoryList();
+      showToast(`✅ 已新增並切換至「${trimmed}」族群`);
+    });
+  }
+
+  function renameCategory(catId, newName) {
+    const cat = categories.find((c) => c.id === catId);
+    if (!cat || cat.isSystem) return;
+    cat.name = newName;
+    chrome.storage.local.set({ categories }, () => {
+      renderCategoryTabs();
+      renderHistoryList();
+      showToast(`✅ 已更名為「${newName}」`);
+    });
+  }
+
+  function deleteCategory(catId, catName) {
+    if (!confirm(`確定要刪除「${catName}」族群嗎？該族群下的標的將移至「自選核心」。`)) return;
+    categories = categories.filter((c) => c.id !== catId);
+    historyList = historyList.map((it) => {
+      if (it.categoryId === catId) {
+        return { ...it, categoryId: 'core' };
+      }
+      return it;
+    });
+    if (activeCategoryId === catId) {
+      activeCategoryId = 'all';
+    }
+    chrome.storage.local.set({ categories, stockHistory: historyList, activeCategoryId }, () => {
+      renderCategoryTabs();
+      renderHistoryList();
+      showToast(`🗑️ 已刪除「${catName}」族群`);
+    });
+  }
+
+  function updateStockCategory(ticker, newCatId) {
+    const target = historyList.find((it) => it.ticker === ticker);
+    if (target) {
+      target.categoryId = newCatId;
+      chrome.storage.local.set({ stockHistory: historyList }, () => {
+        renderCategoryTabs();
+        renderHistoryList();
+        const catObj = categories.find((c) => c.id === newCatId);
+        showToast(`📌 [${ticker}] 已歸入「${catObj ? catObj.name : newCatId}」`);
+      });
+    }
+  }
+
+  // ===== 自訂主題式分類標籤 (Topic Tags) 控制 =====
+  function renderTopicTags() {
+    if (!window.DashboardRender || !window.DashboardRender.renderTopicTags) return;
+    window.DashboardRender.renderTopicTags(
+      topicTags,
+      topicTagsList,
+      {
+        onSelectTag: (tag) => {
+          if (searchInput) searchInput.value = tag;
+          triggerCrawl(tag);
+        },
+        onRemoveTag: (tag) => removeTopicTag(tag)
+      }
+    );
+  }
+
+  function addTopicTag(tagText) {
+    const trimmed = (tagText || '').trim().toUpperCase();
+    if (!trimmed) return;
+    if (topicTags.includes(trimmed)) {
+      showToast(`⚠️ 主題標籤「${trimmed}」已存在！`);
+      return;
+    }
+    topicTags.push(trimmed);
+    chrome.storage.local.set({ custom_topic_tags: topicTags }, () => {
+      renderTopicTags();
+      showToast(`✅ 已新增主題標籤「${trimmed}」`);
+    });
+  }
+
+  function removeTopicTag(tagText) {
+    topicTags = topicTags.filter((t) => t !== tagText);
+    chrome.storage.local.set({ custom_topic_tags: topicTags }, () => {
+      renderTopicTags();
+      showToast(`🗑️ 已移除主題標籤「${tagText}」`);
+    });
+  }
+
+  function promptAddTopicTag() {
+    const name = prompt('請輸入新主題標籤或股票代號 (例如: AMZN, 2330, AI概念):');
+    if (!name || !name.trim()) return;
+    addTopicTag(name.trim());
   }
 
   function triggerCrawl(keyword) {
@@ -171,10 +339,20 @@
       {
         onCrawlSuccess: (data) => {
           chrome.storage.local.get(['stockHistory'], (storageRes) => {
-            historyList = storageRes.stockHistory || [];
-            renderHistoryList();
-            renderSheetTabs();
-            renderStock(data);
+            const rawList = storageRes.stockHistory || [];
+            // 若為新採集標的，預設綁定至當前族群（若當前為 all 則綁定至 core）
+            const defaultCat = activeCategoryId === 'all' ? 'core' : activeCategoryId;
+            historyList = rawList.map((it) => {
+              if (it.ticker === data.ticker && !it.categoryId) {
+                return { ...it, categoryId: defaultCat };
+              }
+              return it;
+            });
+            chrome.storage.local.set({ stockHistory: historyList }, () => {
+              renderHistoryList();
+              renderCategoryTabs();
+              renderStock(data);
+            });
           });
         }
       }
@@ -202,6 +380,23 @@
   function addStockToScrumTask() {
     const note = noteInput ? noteInput.value.trim() : '';
     window.DashboardActions.addStockToScrumTask(currentStock, note, currentAiSummary, btnAddToScrum);
+  }
+
+  function toggleExportPanel(force) {
+    if (!exportDropdownPanel || !btnToggleExportPanel) return;
+    const isCurrentlyOpen = exportDropdownPanel.style.display !== 'none';
+    const nextState = typeof force === 'boolean' ? force : !isCurrentlyOpen;
+
+    if (nextState) {
+      exportDropdownPanel.style.display = 'block';
+      btnToggleExportPanel.classList.add('active');
+      if (noteInput) {
+        setTimeout(() => noteInput.focus(), 50);
+      }
+    } else {
+      exportDropdownPanel.style.display = 'none';
+      btnToggleExportPanel.classList.remove('active');
+    }
   }
 
   // ===========================================================================
@@ -373,6 +568,8 @@
     console.log('[FinanceClipper] 儀表板初始化中 (純本地模式優先)...');
     chrome.storage.local.get([
       'latestStockData', 'stockHistory', 
+      'categories', 'activeCategoryId',
+      'custom_topic_tags',
       'gasUrl', 'sheetsUrl', 'gasSecretToken',
       'appsScriptUrl', 'userSpreadsheetUrl', 
       'contextNote', 'scrumclock_ext_id'
@@ -389,15 +586,53 @@
         settingScrumclockId.value = res.scrumclock_ext_id;
       }
 
-      historyList = res.stockHistory || [];
-      console.log(`[FinanceClipper] 本地已載入 ${historyList.length} 檔歷史標的。`);
+      // 載入族群列表與目前選中族群
+      if (res.categories && Array.isArray(res.categories) && res.categories.length > 0) {
+        categories = res.categories;
+        if (!categories.find((c) => c.id === 'all')) {
+          categories.unshift({ id: 'all', name: '全部標的', isSystem: true });
+        }
+      } else {
+        categories = [...DEFAULT_CATEGORIES];
+      }
+
+      activeCategoryId = res.activeCategoryId || 'all';
+      if (!categories.find((c) => c.id === activeCategoryId)) {
+        activeCategoryId = 'all';
+      }
+
+      // 既有歷史資料平滑遷移 (無 categoryId 者預設歸入 core)
+      let historyChanged = false;
+      historyList = (res.stockHistory || []).map((item) => {
+        if (!item.categoryId) {
+          historyChanged = true;
+          return { ...item, categoryId: 'core' };
+        }
+        return item;
+      });
+      if (historyChanged) {
+        chrome.storage.local.set({ stockHistory: historyList });
+      }
+
+      console.log(`[FinanceClipper] 本地已載入 ${historyList.length} 檔歷史標的，當前族群：${activeCategoryId}。`);
       renderHistoryList();
-      renderSheetTabs();
+      renderCategoryTabs();
+
+      // 載入自訂主題標籤
+      if (res.custom_topic_tags && Array.isArray(res.custom_topic_tags) && res.custom_topic_tags.length > 0) {
+        topicTags = res.custom_topic_tags;
+      } else {
+        topicTags = [...DEFAULT_TOPIC_TAGS];
+      }
+      renderTopicTags();
 
       checkAiStatus();
 
+      const filtered = getFilteredHistoryList();
       if (res.latestStockData) {
         renderStock(res.latestStockData);
+      } else if (filtered.length > 0) {
+        renderStock(filtered[0]);
       } else if (historyList.length > 0) {
         renderStock(historyList[0]);
       } else {
@@ -416,14 +651,10 @@
       if (e.key === 'Enter') triggerCrawl(searchInput.value);
     });
 
-    // 熱門標籤按鈕
-    document.querySelectorAll('.pill').forEach((pill) => {
-      pill.addEventListener('click', () => {
-        const symbol = pill.dataset.symbol;
-        searchInput.value = symbol;
-        triggerCrawl(symbol);
-      });
-    });
+    // 新增主題標籤按鈕
+    if (btnAddTopicTag) {
+      btnAddTopicTag.addEventListener('click', promptAddTopicTag);
+    }
 
     // 匯出功能
     btnCopyMarkdown.addEventListener('click', exportMarkdown);
@@ -432,6 +663,54 @@
     if (btnBatchSendGas) btnBatchSendGas.addEventListener('click', batchSendToGas);
     if (btnAddToScrum) btnAddToScrum.addEventListener('click', addStockToScrumTask);
 
+    // 頂部研報筆記與輸出中心下拉選單控制
+    if (btnToggleExportPanel) {
+      btnToggleExportPanel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportPanel();
+      });
+    }
+
+    if (btnCloseExportPanel) {
+      btnCloseExportPanel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleExportPanel(false);
+      });
+    }
+
+    if (exportDropdownPanel) {
+      exportDropdownPanel.addEventListener('click', (e) => {
+        e.stopPropagation();
+      });
+    }
+
+    // 點擊面板外部自動收合
+    document.addEventListener('click', (e) => {
+      if (exportDropdownPanel && exportDropdownPanel.style.display !== 'none') {
+        if (!exportDropdownPanel.contains(e.target) && !btnToggleExportPanel.contains(e.target)) {
+          toggleExportPanel(false);
+        }
+      }
+    });
+
+    // 按下 Esc 鍵自動收合面板
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && exportDropdownPanel && exportDropdownPanel.style.display !== 'none') {
+        toggleExportPanel(false);
+      }
+    });
+
+    // 筆記內容即時防抖暫存 (300ms)
+    if (noteInput) {
+      let noteSaveTimer = null;
+      noteInput.addEventListener('input', () => {
+        clearTimeout(noteSaveTimer);
+        noteSaveTimer = setTimeout(() => {
+          chrome.storage.local.set({ contextNote: noteInput.value });
+        }, 300);
+      });
+    }
+
     // 清空歷史清單
     btnClearHistory.addEventListener('click', () => {
       if (confirm('確定要清空所有已記錄的歷史標的嗎？')) {
@@ -439,14 +718,14 @@
           historyList = [];
           currentStock = null;
           renderHistoryList();
-          renderSheetTabs();
+          renderCategoryTabs();
           showEmptyState();
           showToast('歷史追蹤清單已清空');
         });
       }
     });
 
-    // 底部 Google Sheets 分頁控制按鈕
+    // 底部族群分頁控制按鈕
     if (btnTabPrev && sheetTabContainer) {
       btnTabPrev.addEventListener('click', () => {
         sheetTabContainer.scrollBy({ left: -160, behavior: 'smooth' });
@@ -460,11 +739,7 @@
     }
 
     if (btnTabAdd) {
-      btnTabAdd.addEventListener('click', () => {
-        searchInput.focus();
-        searchInput.select();
-        showToast('請在上方搜尋列輸入股票代號並按下「深度採集」！');
-      });
+      btnTabAdd.addEventListener('click', promptAddCategory);
     }
 
     // AI 研報面板按鈕
@@ -530,10 +805,19 @@
     chrome.runtime.onMessage.addListener((msg) => {
       if (msg.action === 'STOCK_CRAWL_SUCCESS' && msg.data) {
         chrome.storage.local.get(['stockHistory'], (storageRes) => {
-          historyList = storageRes.stockHistory || [];
-          renderHistoryList();
-          renderSheetTabs();
-          renderStock(msg.data);
+          const rawList = storageRes.stockHistory || [];
+          const defaultCat = activeCategoryId === 'all' ? 'core' : activeCategoryId;
+          historyList = rawList.map((it) => {
+            if (it.ticker === msg.data.ticker && !it.categoryId) {
+              return { ...it, categoryId: defaultCat };
+            }
+            return it;
+          });
+          chrome.storage.local.set({ stockHistory: historyList }, () => {
+            renderHistoryList();
+            renderCategoryTabs();
+            renderStock(msg.data);
+          });
         });
       }
     });

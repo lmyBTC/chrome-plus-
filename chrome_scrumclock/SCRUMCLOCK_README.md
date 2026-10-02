@@ -25,6 +25,7 @@
 | **6. Bookmarks (辦公室傳送門)** | 常用辦公服務傳送門（Google Tasks, Notion, Jira, GitHub）書籤與導航 | `src/features/bookmarks/index.ts` | `src/features/bookmarks/types.ts` | `BookmarksHub.tsx` (自訂圖示與快速開啟面板) | - | - | - |
 | **7. Gemini Exporter (對話匯出)** | Gemini 官方網頁對話自動偵測、Markdown 結構化轉換與本機檔案下載 | `src/features/gemini-exporter/index.ts` | `src/features/gemini-exporter/types.ts` | `GeminiManager.tsx` (對話清單管理面板) | - `utils/exporter.ts` (Markdown 轉換與觸發下載)<br>- **注入腳本**：`src/geminiContent.ts` | - | `docs/gemini-content-spec.md` |
 | **8. Experimental SRT (字幕實驗室)** | 字幕檔案解析原型（解析核心已整併至 Subtitle Collector，維持代理相容） | `src/features/experimental-srt/index.ts` | `types/srt.ts` | `SrtReader.tsx` | `utils/srtParser.ts` (已代理轉接至 Subtitle Collector) | - | - |
+| **9. Finance Integration (投研自選看板)** | 載入 Clipper 投研快照 JSON、華爾街目標價偏離程度展示、深度投研清單 (Checklist) 聯動與 25m 番茄鐘專注日誌產出 (支援 `ToolboxHub` isSidebar 與獨立頁面) | `src/features/finance-integration/index.ts` | `src/features/finance-integration/types.ts` | `WatchListWidget.tsx` (支援 `isSidebar`) | - `financeClient.ts` (快照防腐解析、Local 快照與日誌儲存、Clipper 通訊)<br>- `contexts/TimerContext.tsx` 整合 | - | `0.doc_mg/docs/cross_plugin_contract.md` |
 
 ---
 

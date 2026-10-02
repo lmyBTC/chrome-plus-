@@ -1,0 +1,28 @@
+{
+  "protocolVersion": 1,
+  "type": "AI_GENERATE_FINANCE_SUMMARY",
+  "payload": {
+    "ticker": "NVDA",
+    "name": "NVIDIA Corporation",
+    "price": "125.50",
+    "stats": {
+      "Market cap": "3.1T",
+      "P/E ratio": "65.4",
+      "52-wk range": "45.00 - 140.00",
+      "Beta": "1.68"
+    },
+    "analyst": {
+      "consensus": "Strong Buy",
+      "targetLow": "110.00",
+      "targetMedian": "150.00",
+      "targetHigh": "175.00"
+    },
+    "earnings": {
+      "epsActual": "0.68",
+      "epsEstimate": "0.64",
+      "revenueActual": "30.04B",
+      "revenueEstimate": "28.68B"
+    },
+    "note": "Blackwell 產能放量，資料中心需求依然強勁。"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "protocolVersion": 1,
+  "type": "CREATE_TASK",
+  "payload": {
+    "ticker": "TSM",
+    "title": "台積電法說會與資本支出深入追蹤",
+    "notes": "# TSM 研報：2nm 進度超前，CoWoS 產能吃緊...",
+    "tags": ["#投資研究", "#台股", "#晶圓代工"],
+    "estimatedPomodoros": 3,
+    "url": "https://www.google.com/finance/quote/TSM:NYSE"
+  }
+}

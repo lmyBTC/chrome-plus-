@@ -9,6 +9,45 @@ export interface StockWatchItem {
   dashboardUrl?: string;
 }
 
+export interface TargetStats {
+  median?: number;
+  mean?: number;
+  upsidePercent?: number;
+  cv?: number;
+  stdDev?: number;
+}
+
+export interface ResearchChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
+export interface FinanceSnapshotItem {
+  id?: string;
+  ticker: string;
+  name?: string;
+  price?: string | number;
+  change?: string;
+  changePercent?: string;
+  currency?: string;
+  analyst?: {
+    consensus?: string;
+    targetLow?: string | number;
+    targetMedian?: string | number;
+    targetHigh?: string | number;
+  };
+  targetStats?: TargetStats;
+  earnings?: Record<string, any>;
+  stats?: Record<string, any>;
+  note?: string;
+  url?: string;
+  updatedAt?: string;
+  checklist?: ResearchChecklistItem[];
+  lastResearchAt?: string;
+  lastResearchSummary?: string;
+}
+
 export interface FinanceClipperResponse {
   success: boolean;
   watchlist?: StockWatchItem[];

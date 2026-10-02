@@ -43,12 +43,22 @@
 
 | 快捷鍵組合 | 功能說明 |
 | :--- | :--- |
+| `Alt + B` 或 `Ctrl + Shift + B` | **⏱️ 開啟法說會影音時間戳記重點輸入視窗 (Bookmark Modal)** |
 | `Alt + S` 或 `Ctrl + Shift + S` | **📥 一鍵收集當前時間戳字幕與影片資訊至 ScrumClock 收集箱** |
 | `Ctrl + Shift + 1` | 切換為 **1.0x** 正常速度 |
 | `Ctrl + Shift + 2` | 切換為 **2.0x** 倍速 |
 | `Ctrl + Shift + 3` | 切換為 **3.0x** 倍速 |
 | `Ctrl + Shift + 4` | 切換為 **4.0x** 倍速 |
 | `Ctrl + Shift + 5` | 切換為 **5.0x** 倍速 |
+
+---
+
+## ⏱️ 法說會影音時間戳打點與 Markdown 導出 (Timestamp Bookmarks)
+
+- 📌 **時間戳秒級錨定**：按下 `Alt + B` 或點擊控制面板，即時抓取 HTML5 `<video>` 當前播放秒數、時間戳字串 (`02:15`) 與帶秒數之 YouTube 連結 (`&t=135s`)。
+- 📝 **純淨 Shadow DOM 輸入框**：以高斯模糊面板提供專注文字輸入框，支援 `Enter` 快速儲存、`Esc` 關閉，樣式與宿主網頁 100% 物理隔離。
+- 📊 **儲存與管理**：儲存於 `chrome.storage.local` 之 `vsp_bookmarks`，依影片與時間戳記排序。Popup 介面支援點擊時間戳記自動跳轉影片播放進度 (`seekToTime`)。
+- 📋 **標準 Markdown 格式化匯出**：一鍵產生相容 Obsidian Dataview 與 YAML Frontmatter 之專業投研筆記，支援剪貼簿複製與 `.md` 檔案下載。
 
 ---
 
