@@ -1,37 +1,34 @@
-# 🛡️ Browser Activity Monitor - 混合架構瀏覽器活動監控與原生授權審查 (SSOT)
+# 🛡️ Browser Activity Monitor - 雙軌隨選健檢架構與原生授權審查 (SSOT)
 
 > [!IMPORTANT]
 > **AI 開發專用導航指引 (SSOT)**：
 > 本文檔為 `browser-activity-monitor` 之**單一真實來源說明與架構手冊 (SSOT)**。
-> 本插件遵循 Chrome Extension Manifest V3 規範，採用「80% 原生常駐 + 20% 隨選深入」之混合監控架構。
+> 本插件遵循 Chrome Extension Manifest V3 規範，徹底消除觀察者效應，採用「常態零耗能待命 + 雙軌隨選健檢」架構。
 > 所有 Markdown 連結與檔案參照一律相對於當前檔案或工作區相對路徑，嚴格禁止本機絕對路徑。
 
 ---
 
 ## 🌟 核心功能亮點 (Key Features)
 
-- 🌐 **80% 原生常駐監控 (Zero Content Script Overhead)**：
-  - **網路流量捕獲**：監聽 `chrome.webRequest.onBeforeRequest`，即時攔截並記錄第三方請求、API 調用與跨站流量。
-  - **下載行為審查**：監聽 `chrome.downloads.onCreated`，記錄下載目標檔名、檔案大小與 MIME 類型。
-  - **原生網站權限審查**：動態調用 `chrome.contentSettings`，即時批次審查當前網域之相機、麥克風、地理定位、系統通知與剪貼簿原生物理設定。
-- 🔬 **20% 隨選動態深入探針 (On-Demand Deep Inspector)**：
-  - 平時 0% 網頁腳本注入，不干擾頁面執行或佔用常駐記憶體。
-  - 使用者點擊時，透過 `chrome.scripting.executeScript` 注入雙層探針：
-    - **MAIN 探針** (`scripts/probe-main.js`)：掛鉤 `navigator.mediaDevices.getUserMedia`、`navigator.geolocation.getCurrentPosition`、`navigator.clipboard.readText` 原生 API，捕獲精確調用參數與呼叫堆疊。
+- ⚡ **徹底消除觀察者效應 (Zero Standby Overhead)**：
+  - 平時 Service Worker 深度待命，完全不掛載 `webRequest` 網路攔截器、不進行背景磁碟寫入，日常瀏覽 0% 額外開銷。
+- ⏱️ **雙軌隨選健檢機制 (Dual Profiling Modes)**：
+  - **快速定時健檢 (Quick Audit - 60s)**：一鍵開啟 60 秒採樣，時間倒數結束自動結算並卸載監聽。
+  - **持續檢測記錄模式 (Continuous Session Mode)**：手動開啟開始追蹤，手動停止、面板關閉或瀏覽器休眠時即刻自動結算並產生結構化「階段檢測報告卡」。
+- 📋 **Session 彙總分析引擎與結構化報告 (Profiler Engine)**：
+  - 記憶體輕量統計 TOP 耗能分頁/來源網域、高頻遙測比率與串流流量，自動產出可操作優化建議（如關閉高頻背景分頁）。
+  - 儲存層升級：拔除單筆高頻寫入，改由 Session 結算時寫入 1 筆結構化報告至 `health_reports` 集合。
+- 🫧 **前端 DOM 節點防護與環形緩衝區 (Ring Buffer)**：
+  - 即時日誌串流嚴格維持最新 30 筆上限，DOM 節點總量恆定低於 100，根除前端節點過多警告。
+- 🔬 **隨選動態深入探針 (On-Demand Deep Inspector)**：
+  - 使用者點擊時透過 `chrome.scripting.executeScript` 注入雙層探針：
+    - **MAIN 探針** (`scripts/probe-main.js`)：掛鉤 `getUserMedia`、`getCurrentPosition`、`readText` 原生 API，捕獲調用參數與 Callstack。
     - **ISOLATED 探針** (`scripts/probe-isolated.js`)：作為中繼防禦層，驗證 `__PROBE_MAIN__` 訊息並轉發至 Background。
-- 📊 **Side Panel 現代監控面板**：
-  - 採用 Chrome 原生 Side Panel API，支援點擊 Action 圖示直接開啟側邊欄。
-  - 提供當前分頁 Origin 權限徽章區、隨選探針開關、多色即時瀑布流、分類篩選 (全部/探針/網路/下載)、日誌 JSON 匯出與一鍵清除。
-- ⚡ **組件資源監視器與效能診斷 (Resource Profiler)**：
-  - 內建輕量級效能採集核心，以微秒級精度監控 Native Audit、IndexedDB 寫入、Port 廣播與 DOM 渲染開銷。
-  - 即時統計 DOM 節點、JS Heap 記憶體與佇列積壓，自動輸出視覺化耗時排行榜。
-  - 整合「智慧優化建議引擎」，主動診斷潛在卡頓點與長任務，並提供具體改善方針。
-  - 遵循零常駐原則，面板收合時 0% 輪詢開銷。
-- 💾 **IndexedDB 本機持久化與排程維護**：
-  - 封裝 `AuditStorageDB` 非同步資料庫，支援事務批次寫入與多索引倒序查詢。
-  - 整合 `chrome.alarms`，每日定期自動清理 3 天前過期日誌，防止 Storage 膨脹。
-- 🛡️ **純原生零打包依賴**：
-  - 採用純原生 Vanilla JavaScript (ES Module) + Vanilla CSS，無 Webpack/Vite 複雜建置負擔，輕量高效。
+  - 網頁重整或分頁關閉後探針自動失效。
+- 🛡️ **原生網站權限審查**：
+  - 調用 `chrome.contentSettings`，即時審查當前 Origin 之相機、麥克風、地理定位、通知與剪貼簿原生物理設定。
+- 📈 **組件資源監視器與效能診斷 (Resource Profiler)**：
+  - 內建微秒級耗時採集核心，實時統計 DOM 節點、JS Heap 記憶體、佇列積壓與平均延遲，面板收合時 0% 輪詢開銷。
 
 ---
 
@@ -39,42 +36,47 @@
 
 | 檔案相對路徑 | 類型 / 職責 | 關鍵技術實作 |
 | :--- | :--- | :--- |
-| `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 權限宣告 |
-| `background.js` | **背景服務背景常駐核心 (Service Worker)** | 80% 原生事件監聽、Origin 權限審查、雙層探針注入調度、Port 長連接廣播、IndexedDB 寫入與定時清理 |
+| `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 宣告 |
+| `background.js` | **背景服務核心 (Service Worker)** | 隨選動態掛載/卸載 `webRequest`、Session 生命週期狀態機、Port 廣播與定時清理 |
+| `scripts/session-profiler.js` | **Session 彙總分析引擎** | 記憶體輕量統計器 (`ProfilerSession`)、Noise Gate、TOP 分頁分析與優化建議生成 |
 | `scripts/resource-profiler.js` | **組件資源監視與效能診斷核心** | 輕量耗時統計 (`ResourceProfiler`)、記憶體/佇列/DOM 診斷、智慧優化建議引擎 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
-| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、日誌批次寫入、倒序時間索引查詢、3 天過期清理 |
-| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 權限徽章網格、深入探針控制列、資源監視面板、串流過濾工具列、活動瀑布流容器 |
-| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、狀態發光指示燈、資源四宮格 KPI、效能進度條與診斷卡片 |
-| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | Port 長連接管理、活動分頁同步、資源監視器折疊渲染、探針啟動控制、日誌篩選 |
+| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、`health_reports` 儲存集合、報告歷史倒序查詢與過期清理 |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 雙軌控制卡片、報告視圖切換標籤、環形串流容器、資源監視面板 |
+| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、雙軌按鈕樣式、30筆環形緩衝流、結構化報告卡樣式 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 雙軌生命週期控制、環形緩衝區管理 (30筆)、報告卡渲染與歷史報告切換 |
 | `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---
 
-## 🔄 混合架構通訊與資料流 (Architecture Dataflow)
+## 🔄 雙軌隨選健檢通訊與資料流 (Architecture Dataflow)
 
 ```
 [使用者點擊擴充圖示] ──> 開啟 Side Panel (sidepanel.html)
                               │
                               ├── 建立 Port ('monitor-stream') ──> [Background Service Worker]
+                              │                                          │ (平時待命 0% 耗能，webRequest 未掛載)
+                     [啟動 60s 快速健檢 或 開始檢測記錄]
+                              │
+                              ├── postMessage('START_SESSION') ──> [Background SW]
                               │                                          │
-                              │ <── 廣播即時日誌 (ACTIVITY_LOG) ─────────┼── webRequest (網路請求)
-                              │ <── 廣播權限狀態 (AUDIT_RESULT) ─────────┼── contentSettings (相機/麥克風/定位/通知/剪貼簿)
-                              │ <── 歷史日誌 (RECENT_LOGS_RESULT) ───────┼── downloads (下載審查)
-                              │                                          └── AuditStorageDB (IndexedDB 儲存)
+                              │                                          ├── mountWebRequest() 動態掛載監聽
+                              │                                          └── ProfilerSession 記憶體彙總
                               │
-                    [點擊「注入深度探針」]
+                              │ <── 廣播 ACTIVITY_LOG (環形緩衝區 30 筆) ──┤
                               │
+                     [手動停止 / 倒數結束 / 面板關閉 / SW休眠]
+                              │
+                              ├── 自動觸發 stopSession() ────────────> [Background SW]
+                              │                                          │
+                              │                                          ├── unmountWebRequest() 卸載監聽
+                              │                                          ├── generateReport() 產出建議
+                              │                                          └── insertReport() 寫入 1 筆報告
+                              │
+                              │ <── 廣播 SESSION_REPORT_CREATED ─────────┤
                               ▼
-                      [Background SW]
-                              │
-                              ├── 注入 ISOLATED ──> [scripts/probe-isolated.js]
-                              │                             ▲
-                              │                             │ (window.postMessage)
-                              └── 注入 MAIN ──────> [scripts/probe-main.js]
-                                                            │
-                                                  (攔截敏感 API 調用)
+                      [Side Panel 渲染健康報告卡]
 ```
 
 ---
@@ -86,20 +88,17 @@
    - 開啟右上角的「**開發人員模式**」(Developer mode)。
    - 點擊「**載入未打包項目**」(Load unpacked)，選取此目錄：`./browser-activity-monitor/`。
 2. **開啟監控面板**：
-   - 點擊 Chrome 工具列上的擴充功能圖示，或將其固定 (Pin) 後點擊圖示，將自動滑出右側 **Side Panel**。
-3. **驗證 80% 原生監控**：
-   - 在分頁中瀏覽任何網頁（例如 `https://news.ycombinator.com` 或 `https://google.com`），Side Panel 即時顯示網路請求瀑布流。
-   - 觀察上方「**網站原生權限審查**」，即時顯示該 Origin 的相機、麥克風、定位等原生物理授權狀態。
-4. **驗證 20% 深入隨選探針**：
-   - 點擊面板上的「**注入深度探針**」按鈕，狀態燈切換為紅色閃爍（探針已運作中）。
-   - 在該網頁控制台中執行 `navigator.geolocation.getCurrentPosition(()=>{})` 或複製文字，面板立即彈出高亮紅色的 `PROBE` 事件卡片，並附帶調用參數。
-5. **持久化與清除**：
-   - 點擊「清除」按鈕，同步清空畫面與 IndexedDB；重新整理 Side Panel 歷史記錄持久化正常。
-6. **組件資源監視與效能診斷驗證**：
-   - 點擊「組件資源監視器」卡片標題以展開面板，確認 DOM 節點、JS 記憶體、佇列積壓與平均延遲四宮格數據正常顯示。
-   - 檢視「模組耗時排行榜」，確認顯示「原生網路監聽」、「原生權限審查」等模組平均每次毫秒數與呼叫次數。
-   - 檢視「優化診斷建議」，確認在正常狀態下呈現「組件資源狀況良好」，或針對異常項目給出具體優化建議。
-   - 點擊「重置計時統計」按鈕，確認累計計時數據成功清零；再次點擊標題收合面板，確認背景定時器自動停止。
+   - 點擊 Chrome 工具列上的擴充功能圖示，自動開啟 **Side Panel**。
+3. **驗證常態零耗能與雙軌健檢模式**：
+   - 面板開啟且未啟動健檢時，處於「待命中」狀態，背景不攔截 `webRequest`。
+   - 點擊「**60s 快速健檢**」或「**開始檢測記錄**」，頂部指示燈亮綠燈，開始即時記錄請求，並即時統計筆數與計時。
+   - 點擊「**停止並結算報告**」（或 60s 倒數完畢），自動切換至「**階段檢測報告**」頁籤，檢視 TOP 耗能分頁、背景遙測比率與具體優化建議。
+4. **驗證環形緩衝區與 DOM 節點健康**：
+   - 展開「**組件資源監視器**」，確認即使高頻產生數百筆請求，即時串流僅保留最新 30 筆，DOM 節點總量恆定保持在 70~100 區間。
+5. **驗證深入隨選探針**：
+   - 點擊「**注入深度探針**」，於控制台執行敏感 API（如剪貼簿讀取或地理定位），面板彈出 `PROBE` 事件卡片。
+6. **歷史報告管理**：
+   - 檢測報告自動持久化儲存於 IndexedDB，切換至歷史檢測記錄可隨時回溯查看或一鍵清空歷史。
 
 ---
 
@@ -115,5 +114,5 @@
 ## 🔒 隱私與 Chrome Web Store 合規保證 (Compliance & Privacy)
 
 - **符合 Manifest V3 規範**：無遠端代碼載入 (`unsafe-eval` 零使用)，所有程式碼為在地靜態封裝。
-- **資料本機性**：所有日誌僅保存在使用者瀏覽器的 IndexedDB (`BrowserActivityMonitorDB`)，絕不上傳外部伺服器。
+- **資料本機性**：所有日誌與報告僅保存在使用者瀏覽器的 IndexedDB (`BrowserActivityMonitorDB`)，絕不上傳外部伺服器。
 - **無侵入性保證**：探針注入採嚴格隨選觸發，分頁關閉或刷新後探針自動失效，絕不污染全域日常瀏覽效能。

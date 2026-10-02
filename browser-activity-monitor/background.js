@@ -1,5 +1,6 @@
 import { AuditStorageDB } from './scripts/storage-db.js';
 import { profiler } from './scripts/resource-profiler.js';
+import { ProfilerSession } from './scripts/session-profiler.js';
 
 /**
  * Browser Activity Monitor - Background Service Worker (MV3)
@@ -31,31 +32,27 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-// 監聽 Alarm 事件：定期清理 3 天前過期日誌
+// 監聽 Alarm 事件：定期清理過期日誌 (3 天) 與檢測報告 (7 天)
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'DAILY_AUDIT_PURGE') {
       try {
         await db.purgeExpiredLogs(3);
+        await db.purgeExpiredReports(7);
       } catch (err) {
-        console.warn('[BAM SW] 定期清理過期日誌失敗:', err);
+        console.warn('[BAM SW] 定期清理過期日誌或報告失敗:', err);
       }
     }
   });
 }
 
 /**
- * 廣播訊息至所有已連接的 Side Panel 並非同步寫入 IndexedDB
+ * 廣播訊息至所有已連接的 Side Panel
  * @param {Object} payload 廣播的事件物件
  */
 function broadcast(payload) {
   const startTime = performance.now();
-  // 若為活動日誌，非同步持久化至 IndexedDB
-  if (payload && payload.type === 'ACTIVITY_LOG' && payload.log) {
-    db.insertLog(payload.log).catch((err) => {
-      console.warn('[BAM SW] 寫入 IndexedDB 失敗:', err);
-    });
-  }
+  // 停用常態單筆 IndexedDB 寫入，徹底消除高頻 I/O 開銷；改由 Session 結算時寫入結構化報告
 
   for (const port of activePorts) {
     try {
@@ -168,36 +165,170 @@ async function auditOriginSettings(origin) {
   return results;
 }
 
-// 2. 80% 原生監控：網路請求監控 (chrome.webRequest)
-if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
-  chrome.webRequest.onBeforeRequest.addListener(
-    (details) => {
-      // 排除擴充功能自身內部請求與系統內部 scheme
-      if (
-        details.url.startsWith('chrome-extension://') ||
-        details.url.startsWith('chrome://') ||
-        details.url.startsWith('edge://') ||
-        details.url.startsWith('devtools://')
-      ) {
-        return;
+// 2. 隨選監測架構：動態掛載/卸載網路請求監控 (chrome.webRequest) 與 Session 狀態機
+let currentSession = null;
+let timedSessionTimeoutId = null;
+let isWebRequestMounted = false;
+
+function onBeforeRequestListener(details) {
+  // 排除擴充功能自身內部請求與系統內部 scheme
+  if (
+    details.url.startsWith('chrome-extension://') ||
+    details.url.startsWith('chrome://') ||
+    details.url.startsWith('edge://') ||
+    details.url.startsWith('devtools://')
+  ) {
+    return;
+  }
+
+  const startTime = performance.now();
+  const event = {
+    id: crypto.randomUUID ? crypto.randomUUID() : `bam_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    category: 'network',
+    method: details.method || 'GET',
+    url: details.url,
+    type: details.type || 'other',
+    tabId: details.tabId,
+    timestamp: Date.now()
+  };
+
+  recordSessionEvent(event);
+  broadcast({ type: 'ACTIVITY_LOG', log: event });
+  profiler.recordDuration('原生網路監聽 (WebRequest)', performance.now() - startTime);
+}
+
+function mountWebRequest() {
+  if (isWebRequestMounted) return;
+  if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
+    chrome.webRequest.onBeforeRequest.addListener(
+      onBeforeRequestListener,
+      { urls: ['<all_urls>'] }
+    );
+    isWebRequestMounted = true;
+  }
+}
+
+function unmountWebRequest() {
+  if (!isWebRequestMounted) return;
+  if (chrome.webRequest && chrome.webRequest.onBeforeRequest) {
+    chrome.webRequest.onBeforeRequest.removeListener(onBeforeRequestListener);
+    isWebRequestMounted = false;
+  }
+}
+
+/**
+ * 非同步批次查詢 Top 分頁之標題、網址與圖示資訊
+ * @param {Array<number>} tabIds 分頁 ID 陣列
+ * @returns {Promise<Array<Object>>}
+ */
+async function enrichTabsInfo(tabIds) {
+  if (!tabIds || tabIds.length === 0) return [];
+
+  const results = await Promise.allSettled(
+    tabIds.map(async (tabId) => {
+      if (tabId == null || tabId === -1) {
+        return { tabId: -1, title: '系統背景/非分頁請求', url: '', favIconUrl: '' };
       }
-
-      const startTime = performance.now();
-      const event = {
-        id: crypto.randomUUID ? crypto.randomUUID() : `bam_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-        category: 'network',
-        method: details.method || 'GET',
-        url: details.url,
-        type: details.type || 'other',
-        tabId: details.tabId,
-        timestamp: Date.now()
-      };
-
-      broadcast({ type: 'ACTIVITY_LOG', log: event });
-      profiler.recordDuration('原生網路監聽 (WebRequest)', performance.now() - startTime);
-    },
-    { urls: ['<all_urls>'] }
+      try {
+        const tab = await chrome.tabs.get(tabId);
+        return {
+          tabId,
+          title: tab?.title || `分頁 #${tabId}`,
+          url: tab?.url || '',
+          favIconUrl: tab?.favIconUrl || ''
+        };
+      } catch {
+        return {
+          tabId,
+          title: `分頁 #${tabId} (已關閉)`,
+          url: '',
+          favIconUrl: ''
+        };
+      }
+    })
   );
+
+  return results.filter((r) => r.status === 'fulfilled').map((r) => r.value);
+}
+
+function recordSessionEvent(event) {
+  if (!currentSession) return;
+  currentSession.recordEvent(event);
+}
+
+function getSessionSnapshot() {
+  if (!currentSession) {
+    return { status: 'IDLE' };
+  }
+  return currentSession.getSnapshot();
+}
+
+async function startSession(mode = 'TIMED', durationMs = 60000) {
+  if (currentSession) {
+    await stopSession('SUPERSEDED');
+  }
+
+  currentSession = new ProfilerSession({ mode, durationMs });
+  mountWebRequest();
+
+  if (mode === 'TIMED') {
+    if (timedSessionTimeoutId) clearTimeout(timedSessionTimeoutId);
+    timedSessionTimeoutId = setTimeout(async () => {
+      await stopSession('TIMED_OUT');
+    }, durationMs);
+  }
+
+  broadcast({
+    type: 'SESSION_STATE_CHANGED',
+    session: getSessionSnapshot()
+  });
+
+  return getSessionSnapshot();
+}
+
+async function stopSession(reason = 'MANUAL') {
+  if (!currentSession) {
+    unmountWebRequest();
+    return null;
+  }
+
+  if (timedSessionTimeoutId) {
+    clearTimeout(timedSessionTimeoutId);
+    timedSessionTimeoutId = null;
+  }
+
+  const session = currentSession;
+  currentSession = null;
+  unmountWebRequest();
+
+  // 嘗試取得 Top 分頁之標題與網址資訊以提升報告可讀性
+  const topTabIds = Array.from(session.tabStats.keys());
+  const enrichedTabs = await enrichTabsInfo(topTabIds);
+
+  // 由 Session Profiler 引擎產出結構化健康檢測報告與可操作建議
+  const report = session.generateReport({
+    stopReason: reason,
+    enrichedTabs
+  });
+
+  // 持久化儲存報告至 IndexedDB (health_reports) - 僅結算時寫入 1 筆
+  try {
+    await db.insertReport(report);
+  } catch (err) {
+    console.warn('[BAM SW] 儲存健康報告失敗:', err);
+  }
+
+  broadcast({
+    type: 'SESSION_STATE_CHANGED',
+    session: { status: 'IDLE', currentReport: report }
+  });
+
+  broadcast({
+    type: 'SESSION_REPORT_CREATED',
+    report
+  });
+
+  return report;
 }
 
 // 3. 80% 原生監控：下載事件審查 (chrome.downloads)
@@ -213,6 +344,7 @@ if (chrome.downloads && chrome.downloads.onCreated) {
       timestamp: Date.now()
     };
 
+    recordSessionEvent(event);
     broadcast({ type: 'ACTIVITY_LOG', log: event });
   });
 }
@@ -222,12 +354,78 @@ chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'monitor-stream') {
     activePorts.add(port);
 
-    port.onDisconnect.addListener(() => {
+    port.onDisconnect.addListener(async () => {
       activePorts.delete(port);
+      // 生命週期防護：當所有面板關閉且 Session 進行中時，自動安全結算並卸載監聽
+      if (activePorts.size === 0 && currentSession) {
+        await stopSession('PANEL_CLOSED');
+      }
     });
 
     port.onMessage.addListener(async (msg) => {
       if (!msg || typeof msg !== 'object') return;
+
+      // Session 生命週期控制：啟動 Session
+      if (msg.type === 'START_SESSION') {
+        const session = await startSession(msg.mode || 'TIMED', msg.durationMs || 60000);
+        port.postMessage({
+          type: 'START_SESSION_RESULT',
+          success: true,
+          session
+        });
+      }
+
+      // Session 生命週期控制：手動停止 Session
+      if (msg.type === 'STOP_SESSION') {
+        const report = await stopSession('MANUAL');
+        port.postMessage({
+          type: 'STOP_SESSION_RESULT',
+          success: true,
+          report
+        });
+      }
+
+      // Session 狀態查詢
+      if (msg.type === 'GET_SESSION_STATUS') {
+        port.postMessage({
+          type: 'SESSION_STATUS_RESULT',
+          session: getSessionSnapshot()
+        });
+      }
+
+      // 取得歷史檢測報告清單
+      if (msg.type === 'GET_RECENT_REPORTS') {
+        try {
+          const reports = await db.getRecentReports(msg.limit || 20);
+          port.postMessage({
+            type: 'RECENT_REPORTS_RESULT',
+            reports
+          });
+        } catch (err) {
+          port.postMessage({
+            type: 'RECENT_REPORTS_RESULT',
+            reports: [],
+            error: err.message
+          });
+        }
+      }
+
+      // 清空歷史檢測報告
+      if (msg.type === 'CLEAR_ALL_REPORTS') {
+        try {
+          await db.clearAllReports();
+          port.postMessage({
+            type: 'ALL_REPORTS_CLEARED',
+            success: true
+          });
+        } catch (err) {
+          port.postMessage({
+            type: 'ALL_REPORTS_CLEARED',
+            success: false,
+            error: err.message
+          });
+        }
+      }
 
       // 權限查詢
       if (msg.type === 'AUDIT_ORIGIN') {
@@ -360,6 +558,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       tabId: sender.tab ? sender.tab.id : null,
       timestamp: Date.now()
     };
+    recordSessionEvent(event);
     broadcast({ type: 'ACTIVITY_LOG', log: event });
     sendResponse({ received: true });
     return false;
@@ -367,3 +566,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return false;
 });
+
+// 6. 生命週期防護：監聽瀏覽器休眠 / SW Suspend 事件
+if (chrome.runtime && chrome.runtime.onSuspend) {
+  chrome.runtime.onSuspend.addListener(() => {
+    if (currentSession) {
+      stopSession('SUSPEND');
+    }
+    unmountWebRequest();
+  });
+}

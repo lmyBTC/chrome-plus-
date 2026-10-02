@@ -21,6 +21,48 @@
       </div>
     </header>
 
+    <!-- 雙軌隨選健檢與檢測記錄控制台 (Session Profiler Console) -->
+    <section class="card session-card" id="session-card">
+      <div class="session-card-header">
+        <div class="session-status-wrap">
+          <span class="session-indicator status-idle" id="session-indicator"></span>
+          <div class="session-status-text-wrap">
+            <span class="session-status-title" id="session-status-title">待命狀態 (零常態耗能)</span>
+            <span class="session-status-sub" id="session-status-sub">Service Worker 休眠中，零網路攔截與磁碟 I/O</span>
+          </div>
+        </div>
+        <div class="session-metric-badge" id="session-metric-badge" style="display: none;">
+          <span class="metric-timer" id="session-metric-timer">00:00</span>
+          <span class="metric-divider">|</span>
+          <span class="metric-events" id="session-metric-events">0 筆</span>
+        </div>
+      </div>
+      
+      <!-- 控制按鈕組 -->
+      <div class="session-actions" id="session-actions">
+        <!-- 待命中狀態按鈕群 -->
+        <div class="session-idle-actions" id="session-idle-actions">
+          <button class="btn btn-session-timed" id="btn-start-timed" title="啟動 60 秒快速採樣，倒數結束後自動結算報告並卸載監聽">
+            <span class="btn-icon">⏱️</span> 60s 快速健檢
+          </button>
+          <button class="btn btn-session-continuous" id="btn-start-continuous" title="手動啟動檢測記錄，持續收集直到點擊停止或關閉面板">
+            <span class="btn-icon">⏺️</span> 開始持續檢測
+          </button>
+        </div>
+
+        <!-- 記錄中狀態控制列 -->
+        <div class="session-running-actions" id="session-running-actions" style="display: none;">
+          <div class="running-info-pill">
+            <span class="pulse-recording-dot"></span>
+            <span id="session-running-mode-text">採樣中...</span>
+          </div>
+          <button class="btn btn-session-stop" id="btn-stop-session" title="停止監測並立即結算結構化檢測報告">
+            <span class="btn-icon">⏹️</span> 停止並結算報告
+          </button>
+        </div>
+      </div>
+    </section>
+
     <!-- 原生權限審查卡片 (80% 原生層 contentSettings) -->
     <section class="card permissions-card">
       <div class="card-header">
@@ -150,29 +192,72 @@
       </div>
     </section>
 
-    <!-- 日誌工具列與過濾條件 -->
-    <section class="toolbar">
-      <div class="filter-tabs">
-        <button class="filter-btn active" data-filter="all">全部 <span class="counter" id="count-all">0</span></button>
-        <button class="filter-btn" data-filter="probe">探針 <span class="counter" id="count-probe">0</span></button>
-        <button class="filter-btn" data-filter="network">網路 <span class="counter" id="count-network">0</span></button>
-        <button class="filter-btn" data-filter="download">下載 <span class="counter" id="count-download">0</span></button>
+    <!-- 視圖切換主標籤頁 (動態串流 vs 健檢報告) -->
+    <div class="view-tabs-container">
+      <div class="view-tabs">
+        <button class="view-tab-btn active" id="tab-btn-stream" data-view="stream">
+          <span>📡 即時動態</span>
+          <span class="view-tab-badge" id="badge-stream-buffer">0/30</span>
+        </button>
+        <button class="view-tab-btn" id="tab-btn-reports" data-view="reports">
+          <span>📊 檢測報告</span>
+          <span class="view-tab-badge" id="badge-reports-count">0</span>
+        </button>
       </div>
-      <div class="actions">
-        <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出日誌 JSON">匯出</button>
-        <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空所有日誌">清除</button>
+    </div>
+
+    <!-- 視圖 1: 即時採樣串流區 -->
+    <section class="view-section" id="view-section-stream">
+      <!-- 日誌工具列與過濾條件 -->
+      <div class="toolbar">
+        <div class="filter-tabs">
+          <button class="filter-btn active" data-filter="all">全部 <span class="counter" id="count-all">0</span></button>
+          <button class="filter-btn" data-filter="probe">探針 <span class="counter" id="count-probe">0</span></button>
+          <button class="filter-btn" data-filter="network">網路 <span class="counter" id="count-network">0</span></button>
+          <button class="filter-btn" data-filter="download">下載 <span class="counter" id="count-download">0</span></button>
+        </div>
+        <div class="actions">
+          <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出當前緩衝區日誌 JSON">匯出</button>
+          <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空當前緩衝區">清空</button>
+        </div>
       </div>
+
+      <!-- 活動串流瀑布流容器 (環形緩衝區上限 30 筆) -->
+      <main class="stream-container" id="stream-container">
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">📡</div>
+          <div class="empty-title">暫無監控活動紀錄</div>
+          <div class="empty-desc">請點擊上方「60s 快速健檢」或「開始持續檢測」以啟動網路採樣。</div>
+        </div>
+        <div class="stream-list" id="stream-list"></div>
+      </main>
     </section>
 
-    <!-- 活動串流瀑布流容器 -->
-    <main class="stream-container" id="stream-container">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">📡</div>
-        <div class="empty-title">暫無監控活動紀錄</div>
-        <div class="empty-desc">請瀏覽網頁或點擊上方「注入深度探針」以開始捕獲即時活動。</div>
+    <!-- 視圖 2: 階段檢測報告區 -->
+    <section class="view-section" id="view-section-reports" style="display: none;">
+      <!-- 最新或當前選取報告卡 -->
+      <div class="report-view-container" id="report-view-container">
+        <div class="empty-state" id="reports-empty-state">
+          <div class="empty-icon">📊</div>
+          <div class="empty-title">尚無檢測報告</div>
+          <div class="empty-desc">執行「60s 快速健檢」或在「持續檢測模式」停止後，將自動產出專業結構化報告。</div>
+        </div>
+        <div class="report-content" id="report-content" style="display: none;">
+          <!-- 動態渲染報告卡 -->
+        </div>
       </div>
-      <div class="stream-list" id="stream-list"></div>
-    </main>
+
+      <!-- 歷史檢測紀錄列表 -->
+      <div class="report-history-card">
+        <div class="report-history-header">
+          <span class="report-history-title">歷史檢測報告清單</span>
+          <button class="btn btn-ghost btn-xs text-danger" id="btn-clear-reports" title="清空所有歷史檢測報告">清空歷史</button>
+        </div>
+        <div class="report-history-list" id="report-history-list">
+          <div class="history-empty-hint">暫無歷史報告</div>
+        </div>
+      </div>
+    </section>
 
     <!-- 底部資訊列 -->
     <footer class="footer">

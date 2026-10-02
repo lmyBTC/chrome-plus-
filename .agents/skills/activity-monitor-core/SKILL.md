@@ -23,12 +23,16 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ---
 
-## 2. 核心架構：80% 原生常駐 + 20% 隨選探針 (Hybrid Architecture)
-* **80% 原生常駐 (Zero Content Script Overhead)**:
-  - 平時 **0%** 網頁腳本常駐注入，杜絕記憶體洩漏與網頁 DOM 污染。
-  - 網路請求審查：`chrome.webRequest.onBeforeRequest` 即時監控第三方 API 調用與跨站傳輸。
-  - 下載審查：`chrome.downloads.onCreated` 追蹤下載檔名、大小與 MIME 類型。
-  - 網域物理權限：調用 `chrome.contentSettings` 批次審查相機、麥克風、地理定位、通知與剪貼簿。
+## 2. 核心架構：常態零耗能待命 + 雙軌隨選監測 (Zero Standby & On-Demand Profiling)
+* **常態零耗能待命 (Zero Standby Overhead - 根除觀察者效應)**:
+  - 平時 Service Worker 處於深度休眠，完全不掛載 `webRequest` 網路攔截器、不進行背景磁碟寫入。
+  - 網頁端 **0%** 腳本常駐注入，杜絕記憶體洩漏與網頁 DOM 污染。
+  - 網域物理權限：調用 `chrome.contentSettings` 隨選批次審查相機、麥克風、地理定位、通知與剪貼簿。
+* **雙軌隨選監測架構 (Dual Profiling Modes)**:
+  1. **軌道 A：快速定時健檢 (Quick Audit - 60s)**：一鍵啟動 60 秒採樣，時間倒數結束自動結算並完全卸載 `webRequest` 監聽。
+  2. **軌道 B：持續檢測記錄模式 (Continuous Session Mode)**：使用者點擊「開始檢測記錄」後啟動動態監聽，持續收集直到手動停止、關閉面板（Sidepanel Disconnect）或關閉瀏覽器（SW Suspend），即刻自動結算統計並持久化儲存「階段檢測報告」，隨後卸載監聽恢復零耗能。
+* **動態生命週期防護 (Lifecycle Guards)**:
+  - 監聽 `port.onDisconnect`（當所有面板關閉且 Session 進行中時自動安全結算）與 `chrome.runtime.onSuspend`（瀏覽器休眠時自動結算並卸載監聽），確保永遠不產生孤兒監聽器。
 * **20% 隨選動態雙層探針 (On-Demand Deep Inspector)**:
   - 僅在使用者主動點擊 Side Panel 的「注入深度探針」時，由 Background 透過 `chrome.scripting.executeScript` 注入：
     1. **MAIN 探針** (`scripts/probe-main.js`)：掛鉤 `getUserMedia`、`getCurrentPosition`、`readText` 原生 API，捕獲調用參數與 Callstack。
@@ -39,15 +43,28 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ## 3. 資料模型與儲存 SSOT (Storage Schema)
 日誌與狀態透過本機 IndexedDB (`BrowserActivityMonitorDB`) 持久化，不傳送外部伺服器：
-* **資料表 (Object Store)**: `activity_logs`
-  * 主鍵: `id` (autoIncrement)
-  * 索引: `timestamp`、`type` (webRequest / download / probe / permission)、`origin`、`tabId`
+* **資料表 (Object Stores)**:
+  * `activity_logs`:
+    - 主鍵: `id` (autoIncrement)
+    - 索引: `timestamp`、`type` (webRequest / download / probe / permission)、`origin`、`tabId`
+  * `health_reports`:
+    - 階段檢測報告儲存集合，僅在每次 Session 結算時寫入 1 筆結構化報告（包含統計指標、耗能排行、TOP 分頁與優化建議）。
+    - 主鍵: `id` (string，如 `rep_timestamp_uuid`)
+    - 索引: `timestamp`、`mode` (TIMED / CONTINUOUS)、`healthScore`
 * **資料清理機制**:
-  - 整合 `chrome.alarms` 定期（每日）觸發過期檢查，自動清除超過 3 天之歷史審計資料。
+  - 拔除高頻單筆日誌寫入，徹底消除日常磁碟 I/O。
+  - 整合 `chrome.alarms` 定期（每日）觸發過期檢查，自動清除超過 3 天之歷史日誌與超過 7 天之檢測報告。
 
 ---
 
-## 4. 與 ScrumClock 之整併關係 (ScrumClock Integration)
+## 4. 前端 DOM 節點控制與環形緩衝區 (Ring Buffer Spec)
+* **環形緩衝區機制**: Side Panel 即時串流嚴格維持最新 30 筆 (`MAX_RING_BUFFER = 30`)，新記錄移入時同步將 DOM 頂部最舊節點移除。
+* **節點上限約束**: 全面板 DOM 節點總量恆定控制在 100 以內，根除「節點過多造成效能低落」警示。
+* **雙視圖架構**: 提供「即時串流 (Stream)」與「階段檢測報告 (Reports)」分頁無縫切換。
+
+---
+
+## 5. 與 ScrumClock 之整併關係 (ScrumClock Integration)
 * **已整合至 ScrumClock 架構**:
   - 核心監控邏輯、IndexedDB 本機資料庫與雙層探針已整併至 `chrome_scrumclock/src/features/activity-monitor/`。
   - 背景監聽掛載於 `chrome_scrumclock/src/background.ts`（由 `monitorService.ts` 統一管理）。
@@ -56,7 +73,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ---
 
-## 5. 組件資源監視與效能診斷規格 (Resource Profiler & Diagnostic Spec)
+## 6. 組件資源監視與效能診斷規格 (Resource Profiler & Diagnostic Spec)
 * **核心採集器 (`scripts/resource-profiler.js`)**:
   - **模組耗時統計**: 提供 `time(label)`、`timeEnd(label)` 與 `measure(label, fn)`，以微秒級精度計算 avg、min、max、calls 與最近 30 次歷史採樣。
   - **四宮格系統指標**: 實時採集 DOM 節點總量、JS Heap 記憶體粗估 (`performance.memory`)、佇列積壓深度 (`db_batch_queue`, `active_ports`) 與全域平均呼叫延遲。
@@ -66,7 +83,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md"]
 
 ---
 
-## 6. 安全與合規底線 (Compliance Rules)
+## 7. 安全與合規底線 (Compliance Rules)
 1. **嚴禁 innerHTML 漏洞**: 所有動態渲染之文字節點一律使用 `.textContent` 或安全的 DOM 元素構造，杜絕 XSS。
 2. **CSP 零豁免**: 禁止引入外部 CDN 腳本，禁止 `unsafe-eval`、`new Function()` 或 HTML 內嵌事件監聽 (`onclick`)。
 3. **隱私最小化**: 僅收集用於本機安全審查之網路與行為元資料，不記錄使用者鍵入之敏感密碼或表單內容。

@@ -7,8 +7,9 @@
 import { profiler } from './resource-profiler.js';
 
 const DB_NAME = 'BrowserActivityMonitorDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'activity_logs';
+const REPORT_STORE_NAME = 'health_reports';
 
 export class AuditStorageDB {
   constructor() {
@@ -34,6 +35,11 @@ export class AuditStorageDB {
           store.createIndex('timestamp', 'timestamp', { unique: false });
           store.createIndex('category', 'category', { unique: false });
           store.createIndex('tabId', 'tabId', { unique: false });
+        }
+        if (!db.objectStoreNames.contains(REPORT_STORE_NAME)) {
+          const reportStore = db.createObjectStore(REPORT_STORE_NAME, { keyPath: 'id' });
+          reportStore.createIndex('timestamp', 'timestamp', { unique: false });
+          reportStore.createIndex('mode', 'mode', { unique: false });
         }
       };
 
@@ -212,6 +218,125 @@ export class AuditStorageDB {
       };
       req.onerror = (e) => {
         profiler.recordDuration('IndexedDB 清空全部 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
+    });
+  }
+
+  /**
+   * 寫入單筆階段健康檢測報告
+   * @param {Object} report 檢測報告資料
+   * @returns {Promise<void>}
+   */
+  async insertReport(report) {
+    if (!report || !report.id) return;
+    const startTime = performance.now();
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([REPORT_STORE_NAME], 'readwrite');
+      const store = tx.objectStore(REPORT_STORE_NAME);
+      const req = store.put(report);
+
+      req.onsuccess = () => {
+        profiler.recordDuration('IndexedDB 報告寫入', performance.now() - startTime);
+        resolve();
+      };
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 報告寫入 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
+    });
+  }
+
+  /**
+   * 查詢最近的健康檢測報告 (依時間由新至舊排序)
+   * @param {number} limit 讀取上限筆數 (預設 20)
+   * @returns {Promise<Array<Object>>}
+   */
+  async getRecentReports(limit = 20) {
+    const startTime = performance.now();
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([REPORT_STORE_NAME], 'readonly');
+      const store = tx.objectStore(REPORT_STORE_NAME);
+      const index = store.index('timestamp');
+      const request = index.openCursor(null, 'prev'); // 倒序游標
+      const results = [];
+
+      request.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor || results.length >= limit) {
+          profiler.recordDuration('IndexedDB 報告查詢', performance.now() - startTime);
+          resolve(results);
+          return;
+        }
+
+        results.push(cursor.value);
+        cursor.continue();
+      };
+
+      request.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 報告查詢 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
+    });
+  }
+
+  /**
+   * 清空所有健康檢測報告
+   * @returns {Promise<void>}
+   */
+  async clearAllReports() {
+    const startTime = performance.now();
+    const db = await this.open();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([REPORT_STORE_NAME], 'readwrite');
+      const store = tx.objectStore(REPORT_STORE_NAME);
+      const req = store.clear();
+
+      req.onsuccess = () => {
+        profiler.recordDuration('IndexedDB 報告清空全部', performance.now() - startTime);
+        resolve();
+      };
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 報告清空全部 (失敗)', performance.now() - startTime);
+        reject(e.target.error);
+      };
+    });
+  }
+
+  /**
+   * 清除過期健康檢測報告 (預設保留 7 天)
+   * @param {number} retentionDays 保存天數 (預設 7 天)
+   * @returns {Promise<number>} 清除筆數
+   */
+  async purgeExpiredReports(retentionDays = 7) {
+    const startTime = performance.now();
+    const db = await this.open();
+    const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction([REPORT_STORE_NAME], 'readwrite');
+      const store = tx.objectStore(REPORT_STORE_NAME);
+      const index = store.index('timestamp');
+      const keyRange = IDBKeyRange.upperBound(cutoffTime);
+      const req = index.openCursor(keyRange);
+      let purgedCount = 0;
+
+      req.onsuccess = (e) => {
+        const cursor = e.target.result;
+        if (!cursor) {
+          profiler.recordDuration('IndexedDB 報告清理過期', performance.now() - startTime);
+          resolve(purgedCount);
+          return;
+        }
+        cursor.delete();
+        purgedCount++;
+        cursor.continue();
+      };
+
+      req.onerror = (e) => {
+        profiler.recordDuration('IndexedDB 報告清理過期 (失敗)', performance.now() - startTime);
         reject(e.target.error);
       };
     });
