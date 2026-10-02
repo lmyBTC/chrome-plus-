@@ -33,9 +33,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   const fullScrapeBtn = document.getElementById('full-scrape-btn');
   const openDashboardBtn = document.getElementById('open-dashboard-btn');
   const btnGotoDashboard = document.getElementById('btn-goto-dashboard');
+  const tickerInput = document.getElementById('ticker');
+
+  // 廣播最新擷取標的至 chrome.storage.local
+  const broadcastCapturedStock = (ticker, price = '', mode = currentMode) => {
+    if (!ticker || ticker === 'UNKNOWN' || ticker === '讀取中...') return;
+    const cleanTicker = ticker.trim().toUpperCase();
+    if (!cleanTicker) return;
+    const payload = {
+      ticker: cleanTicker,
+      price: price ? String(price).trim() : '',
+      timestamp: Date.now(),
+      mode: mode || 'stock'
+    };
+    chrome.storage.local.set({ lastCapturedStock: payload });
+  };
 
   const handleOpenDashboard = () => {
-    chrome.tabs.create({ url: 'dashboard.html' });
+    const ticker = tickerInput ? tickerInput.value.trim() : '';
+    const validTicker = (ticker && ticker !== 'UNKNOWN' && ticker !== '讀取中...') ? ticker.toUpperCase() : '';
+
+    if (validTicker) {
+      chrome.tabs.create({ url: `dashboard.html?ticker=${encodeURIComponent(validTicker)}` });
+    } else {
+      chrome.tabs.create({ url: 'dashboard.html' });
+    }
   };
 
   if (openDashboardBtn) {
@@ -44,29 +66,59 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (btnGotoDashboard) {
     btnGotoDashboard.addEventListener('click', handleOpenDashboard);
   }
+  if (tickerInput) {
+    tickerInput.addEventListener('change', (e) => {
+      broadcastCapturedStock(e.target.value, document.getElementById('price')?.value || '', currentMode);
+    });
+  }
 
   // 0. 載入與設定 Storage 以及檢查右鍵暫存文字
-  chrome.storage.local.get(['appsScriptUrl', 'userSpreadsheetUrl', 'contextNote', 'ruleDisclaimer', 'ruleTableizer', 'ruleExtractor'], (result) => {
+  chrome.storage.local.get([
+    'appsScriptUrl', 'gasUrl',
+    'userSpreadsheetUrl', 'sheetsUrl',
+    'contextNote', 'ruleDisclaimer', 'ruleTableizer', 'ruleExtractor'
+  ], (result) => {
     if (result.contextNote) {
       noteEl.value = result.contextNote;
       chrome.storage.local.remove('contextNote');
     }
-    if (result.appsScriptUrl) {
-      APPS_SCRIPT_URL = result.appsScriptUrl;
+    const resolvedGasUrl = result.appsScriptUrl || result.gasUrl;
+    if (resolvedGasUrl) {
+      APPS_SCRIPT_URL = resolvedGasUrl;
       settingsUrl.value = APPS_SCRIPT_URL;
     } else {
       settingsPanel.style.display = 'block';
       updateStatus("請先設定 Google Apps Script URL", "orange");
       submitBtn.disabled = true;
     }
-    if (result.userSpreadsheetUrl) {
-      settingsSheetUrl.value = result.userSpreadsheetUrl;
+    const resolvedSheetsUrl = result.userSpreadsheetUrl || result.sheetsUrl;
+    if (resolvedSheetsUrl) {
+      settingsSheetUrl.value = resolvedSheetsUrl;
     }
 
     // 初始化規則開關狀態 (預設值皆為 true)
     document.getElementById('rule-disclaimer').checked = result.ruleDisclaimer !== false;
     document.getElementById('rule-tableizer').checked = result.ruleTableizer !== false;
     document.getElementById('rule-extractor').checked = result.ruleExtractor !== false;
+  });
+
+  // 實時監聽 Storage 設定變更（若從 Dashboard 修改能即時同步）
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+    if (changes.appsScriptUrl || changes.gasUrl) {
+      const newGas = (changes.appsScriptUrl && changes.appsScriptUrl.newValue) || (changes.gasUrl && changes.gasUrl.newValue);
+      if (newGas) {
+        APPS_SCRIPT_URL = newGas;
+        if (settingsUrl) settingsUrl.value = newGas;
+        if (submitBtn) submitBtn.disabled = false;
+      }
+    }
+    if (changes.userSpreadsheetUrl || changes.sheetsUrl) {
+      const newSheets = (changes.userSpreadsheetUrl && changes.userSpreadsheetUrl.newValue) || (changes.sheetsUrl && changes.sheetsUrl.newValue);
+      if (newSheets && settingsSheetUrl) {
+        settingsSheetUrl.value = newSheets;
+      }
+    }
   });
 
   // 綁定規則開關變更事件，即時儲存至 chrome.storage.local
@@ -88,7 +140,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       alert("請輸入有效的 Google Apps Script URL！");
       return;
     }
-    chrome.storage.local.set({ appsScriptUrl: url, userSpreadsheetUrl: sheetUrl }, () => {
+    chrome.storage.local.set({ 
+      appsScriptUrl: url, 
+      gasUrl: url,
+      userSpreadsheetUrl: sheetUrl,
+      sheetsUrl: sheetUrl 
+    }, () => {
       APPS_SCRIPT_URL = url;
       settingsPanel.style.display = 'none';
       submitBtn.disabled = false;
@@ -184,6 +241,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('price').value = capturedStockData.price;
         capturedKeyStats = capturedStockData.keyStats;
 
+        broadcastCapturedStock(capturedStockData.ticker, capturedStockData.price, 'stock');
+
         // 回填至進階財報與 AI 收益摺疊面板
         const previewEl = document.getElementById('financials-preview-content');
         renderStockPreviewBasic(previewEl, capturedStockData);
@@ -213,6 +272,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           document.getElementById('ticker').value = data.ticker || "UNKNOWN";
           document.getElementById('price').value = data.price || "UNKNOWN";
           capturedKeyStats = data.keyStats || {};
+          broadcastCapturedStock(data.ticker, data.price, 'stock');
           updateStatus(data.error ? "部分數據讀取失敗" : "數據載入成功！", data.error ? "orange" : "green");
         } else {
           capturedAIDialogueArr = data.dialogueArr || [];
@@ -231,6 +291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
               
               if (extractedTicker) {
                 statusText += ` (🧠 標的: ${extractedTicker} | 情緒: ${extractedSentiment})`;
+                broadcastCapturedStock(extractedTicker, '', 'ai');
               } else {
                 statusText += ` (🧠 情緒: ${extractedSentiment})`;
               }
@@ -302,6 +363,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         earnings: fullData.earnings,
         financials: fullData.financials
       };
+
+      broadcastCapturedStock(capturedStockData.ticker, capturedStockData.price, 'stock');
 
       // 渲染進階預覽面板
       const previewEl = document.getElementById('financials-preview-content');

@@ -73,6 +73,9 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "f
   - `renderPeerMatrix()` (`dashboard-peer-render.js`): 同業橫向對比矩陣（2~5 檔標的橫向對比、長條圖視覺化、極值高亮、Markdown/GAS 匯出）。
   - `renderValuationSandbox()` (`dashboard-valuation-render.js`): 敏感度估值沙盒（Bear/Base/Bull 情境卡片、動態參數滑桿、5x5 敏感度二維熱力矩陣、推播 ScrumClock 任務）。
   - `renderAIReportPanel()`: 研報解讀面板（連動本地 AI 或外部代理）。
+* **跨視圖協同機制 (Popup-Dashboard Interop)**:
+  - **URL 導向帶入**: Popup 點擊前往儀表板時攜帶 `?ticker=TICKER`，Dashboard 於 `init()` 解析後自動填入、即時渲染歷史快照並非同步啟動 4合1 SPA 爬蟲，隨後透過 `window.history.replaceState` 清理參數避免循環重載。
+  - **Storage 實時連動 Toast**: Popup 擷取標的後自動廣播 `lastCapturedStock`，已開啟之 Dashboard 實時接收並彈出非侵入式 Toast，支援點擊直接切換標的與觸發分析。
 * **通訊客戶端 (`aiClient.js`)**:
   - 封裝跨插件請求，內建 `sanitizeFinancePayload()` 白名單防腐層。
 
@@ -90,6 +93,10 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "f
 3. `fc_stock_notes`: `Record<ticker, string>`（用戶對個股的手動筆記與研究心法）
 4. `fc_reports`: `Record<ticker, { summary: string, highlights: string[], risks: string[], generatedAt: number }>`
 5. `fc_settings`: 偏好設定（預設市場、貨幣單位、自動抓取間隔等）
+6. `lastCapturedStock`: `{ ticker: string, price: string, timestamp: number, mode: string }`（Popup 擷取或變更標的時廣播之最新快照；Dashboard 透過 `chrome.storage.onChanged` 實時監聽並提示切換）
+7. **雲端設定雙向相容鍵值 (Settings Dual-Key Sync)**:
+   - GAS Web App URL: `gasUrl` (Dashboard 預設) 與 `appsScriptUrl` (Popup 歷史相容) 雙向讀取回退與儲存同步。
+   - Google Sheets URL: `sheetsUrl` (Dashboard 預設) 與 `userSpreadsheetUrl` (Popup 歷史相容) 雙向讀取回退與儲存同步。
 
 ---
 

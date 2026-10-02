@@ -91,9 +91,9 @@
     exportPanelTicker
   };
 
-  function showToast(msg) {
+  function showToast(msg, duration = 3000, onClick = null) {
     if (window.DashboardRender && window.DashboardRender.showToast) {
-      window.DashboardRender.showToast(msg);
+      window.DashboardRender.showToast(msg, duration, onClick);
     }
   }
 
@@ -176,14 +176,16 @@
       showToast
     });
 
-    window.DashboardTabs.renderTopicTags({
-      onSelectTag: (tag) => {
-        if (searchInput) searchInput.value = tag;
-        triggerCrawl(tag);
-      },
-      showToast,
-      onTagsChanged: () => renderTabs()
-    });
+    if (window.DashboardTabs && window.DashboardTabs.renderTopicTags) {
+      window.DashboardTabs.renderTopicTags({
+        onSelectTag: (tag) => {
+          if (searchInput) searchInput.value = tag;
+          triggerCrawl(tag);
+        },
+        showToast,
+        onTagsChanged: () => renderTabs()
+      });
+    }
   }
 
   // 處理同業標的勾選/取消
@@ -430,17 +432,21 @@
       'latestStockData',
       'contextNote',
       'gasUrl',
+      'appsScriptUrl',
       'gasSecretToken',
       'sheetsUrl',
+      'userSpreadsheetUrl',
       'categories',
       'activeCategoryId',
       'custom_topic_tags',
       'scrumclock_ext_id'
     ], (res) => {
+      const resolvedGasUrl = res.gasUrl || res.appsScriptUrl;
+      const resolvedSheetsUrl = res.sheetsUrl || res.userSpreadsheetUrl;
       if (res.contextNote && noteInput) noteInput.value = res.contextNote;
-      if (res.gasUrl && settingGasUrl) settingGasUrl.value = res.gasUrl;
+      if (resolvedGasUrl && settingGasUrl) settingGasUrl.value = resolvedGasUrl;
       if (res.gasSecretToken && settingGasSecret) settingGasSecret.value = res.gasSecretToken;
-      if (res.sheetsUrl && settingSheetsUrl) settingSheetsUrl.value = res.sheetsUrl;
+      if (resolvedSheetsUrl && settingSheetsUrl) settingSheetsUrl.value = resolvedSheetsUrl;
       if (res.scrumclock_ext_id && settingScrumclockId) settingScrumclockId.value = res.scrumclock_ext_id;
 
       window.DashboardTabs.init(res);
@@ -461,8 +467,29 @@
       renderTabs();
       window.DashboardAI.checkAiStatus();
 
+      // 解析 URL query parameter ticker (若由 Popup 跳轉攜帶)
+      let targetTickerFromUrl = null;
+      if (!initialUrlTickerHandled) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramTicker = urlParams.get('ticker');
+        if (paramTicker && paramTicker.trim()) {
+          targetTickerFromUrl = paramTicker.trim().toUpperCase();
+        }
+        initialUrlTickerHandled = true;
+        if (paramTicker) {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+
       const filtered = window.DashboardTabs.filterHistoryList(historyList);
-      if (res.latestStockData) {
+      if (targetTickerFromUrl) {
+        if (searchInput) searchInput.value = targetTickerFromUrl;
+        const matched = historyList.find((s) => s.ticker && s.ticker.toUpperCase() === targetTickerFromUrl);
+        if (matched) {
+          renderStock(matched);
+        }
+        triggerCrawl(targetTickerFromUrl);
+      } else if (res.latestStockData) {
         renderStock(res.latestStockData);
       } else if (filtered.length > 0) {
         renderStock(filtered[0]);
@@ -486,12 +513,20 @@
     bindEvents();
   }
 
+  let initialUrlTickerHandled = false;
+  let eventsBound = false;
+
   // 綁定所有事件
   function bindEvents() {
-    btnCrawl.addEventListener('click', () => triggerCrawl(searchInput.value));
-    searchInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') triggerCrawl(searchInput.value);
-    });
+    if (eventsBound) return;
+    eventsBound = true;
+
+    if (btnCrawl && searchInput) {
+      btnCrawl.addEventListener('click', () => triggerCrawl(searchInput.value));
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') triggerCrawl(searchInput.value);
+      });
+    }
 
     // 委派 Tabs 與 AI 專屬事件
     window.DashboardTabs.bindEvents({
@@ -638,6 +673,64 @@
         renderValuationSandboxView();
       });
     }
+
+    // 實時監聽 Storage 設定變更（若從 Popup 或其他視圖修改能即時同步）
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
+
+      // GAS Web App URL 實時同步
+      if (changes.gasUrl || changes.appsScriptUrl) {
+        const newGas = (changes.gasUrl && changes.gasUrl.newValue) || (changes.appsScriptUrl && changes.appsScriptUrl.newValue);
+        if (newGas && settingGasUrl && settingGasUrl.value !== newGas) {
+          settingGasUrl.value = newGas;
+        }
+      }
+
+      // Sheets URL 實時同步
+      if (changes.sheetsUrl || changes.userSpreadsheetUrl) {
+        const newSheets = (changes.sheetsUrl && changes.sheetsUrl.newValue) || (changes.userSpreadsheetUrl && changes.userSpreadsheetUrl.newValue);
+        if (newSheets && settingSheetsUrl && settingSheetsUrl.value !== newSheets) {
+          settingSheetsUrl.value = newSheets;
+        }
+      }
+
+      // Token 與 ScrumClock 設定實時同步
+      if (changes.gasSecretToken && settingGasSecret) {
+        if (changes.gasSecretToken.newValue !== undefined) {
+          settingGasSecret.value = changes.gasSecretToken.newValue || '';
+        }
+      }
+      if (changes.scrumclock_ext_id && settingScrumclockId) {
+        if (changes.scrumclock_ext_id.newValue !== undefined) {
+          settingScrumclockId.value = changes.scrumclock_ext_id.newValue || '';
+        }
+      }
+
+      // 監聽 Popup 廣播之最新標的
+      if (changes.lastCapturedStock && changes.lastCapturedStock.newValue) {
+        const captured = changes.lastCapturedStock.newValue;
+        const capturedTicker = (captured.ticker || '').trim().toUpperCase();
+        if (capturedTicker) {
+          const currentTicker = currentStock && currentStock.ticker ? currentStock.ticker.toUpperCase() : '';
+          if (currentTicker !== capturedTicker) {
+            const priceText = captured.price ? `（$${captured.price}）` : '';
+            const toastMsg = `📥 Popup 已擷取標的 ${capturedTicker}${priceText}，點擊立即載入`;
+
+            showToast(toastMsg, 6000, () => {
+              if (searchInput) searchInput.value = capturedTicker;
+              if (currentView !== 'single') {
+                switchView('single');
+              }
+              const matched = historyList.find((s) => s.ticker && s.ticker.toUpperCase() === capturedTicker);
+              if (matched) {
+                renderStock(matched);
+              }
+              triggerCrawl(capturedTicker);
+            });
+          }
+        }
+      }
+    });
   }
 
   document.addEventListener('DOMContentLoaded', init);

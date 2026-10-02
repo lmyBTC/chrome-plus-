@@ -176,7 +176,7 @@
     },
 
     renderTopicTags: function (callbacks) {
-      if (!window.DashboardRender || !window.DashboardRender.renderTopicTags) return;
+      if (!window.DashboardRender || !window.DashboardRender.renderTopicTags || !topicTagsList) return;
       const { onSelectTag, showToast, onTagsChanged } = callbacks || {};
       window.DashboardRender.renderTopicTags(
         topicTags,

@@ -72,7 +72,7 @@
 | `background.js` | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度、Storage 快取維護，支援 `PING` 心跳與安全異步錯誤捕獲 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
 | `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取、Key Stats 純淨提取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
 | `crawler-sanitizer.js` | **[純函數] 數值清洗與 Miner Schema 模組**：純數字萃取、單位換算（$B/百萬/千）、52週高低範圍、目標價統計與 AI 礦企規範轉換 | `window.CrawlerSanitizer.cleanNumber()`, `cleanMarketCap()`, `sanitizeToMinerSchema()` |
-| `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染與一鍵前往儀表板 | `#open-dashboard-btn`, `#btn-goto-dashboard` |
+| `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染、標的即時廣播 (`lastCapturedStock`)、攜帶參數跳轉儀表板與雲端設定雙鍵同步 | `#open-dashboard-btn`, `broadcastCapturedStock()`, `handleOpenDashboard()` |
 | `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
 | `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |
 
@@ -91,19 +91,22 @@
 ## 💡 推薦使用流程 (Workflow)
 
 ```
-[瀏覽任何網頁]
+[瀏覽任何網頁 / 財經網站]
        │
-       ▼
-在 Chrome 側邊欄 (Side Panel) 輸入股票代號 (如: NVDA) 或點擊熱門標籤
-       │
-       ▼
-背景自動開啟無痕分頁完成 4合1 SPA 採集，側邊欄即時呈現價格與評級摘要
-       │
-       ▼
-點擊側邊欄左下角「🚀 獨立分頁儀表板」按鈕
-       │
-       ▼
-在大螢幕檢視損益表矩陣與財報細節 ──> 一鍵複製 Markdown / 匯出 CSV 試算表
+       ├─────────────────────────────────────────┐
+       ▼ (模式 A: 側邊欄常駐)                   ▼ (模式 B: 頂部工具列 Popup)
+在 Chrome 側邊欄輸入股票代號 (如: NVDA)      點擊 Popup 圖示自動讀取當前個股或手動輸入
+       │                                         │
+       ▼                                         ▼
+背景自動開啟無痕分頁完成 4合1 SPA 採集       Popup 自動廣播最新標的至 Storage
+       │                                         │
+       ▼                                         ├─ 若 Dashboard 已開啟：即時跳出可點擊 Toast
+點擊左下角「🚀 獨立分頁儀表板」按鈕                └─ 點擊「前往儀表板」：攜帶參數直接載入 4合1 研報
+       │                                         │
+       └─────────────────────────────────────────┘
+                               │
+                               ▼
+在大螢幕檢視損益表矩陣與財報細節 ──> 一鍵複製 Markdown / 匯出 CSV 試算表 / 同步雲端
 ```
 
 ---

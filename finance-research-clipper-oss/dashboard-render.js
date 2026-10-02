@@ -8,19 +8,32 @@
 
   window.DashboardRender = {
     /**
-     * 顯示吐司通知
+     * 顯示吐司通知 (支援自訂停留時間與點擊動作)
      */
-    showToast: function (message, duration = 3000) {
+    showToast: function (message, duration = 3000, onClick = null) {
       const toastContainer = document.getElementById('toast-container');
       if (!toastContainer) return;
       const toast = document.createElement('div');
-      toast.className = 'toast';
+      toast.className = 'toast' + (typeof onClick === 'function' ? ' toast-clickable' : '');
       toast.textContent = message;
-      toastContainer.appendChild(toast);
-      setTimeout(() => {
+
+      let timer = null;
+      const dismiss = () => {
+        if (timer) clearTimeout(timer);
         toast.style.opacity = '0';
         setTimeout(() => toast.remove(), 300);
-      }, duration);
+      };
+
+      if (typeof onClick === 'function') {
+        toast.addEventListener('click', (e) => {
+          e.stopPropagation();
+          dismiss();
+          onClick();
+        });
+      }
+
+      toastContainer.appendChild(toast);
+      timer = setTimeout(dismiss, duration);
     },
 
     /**

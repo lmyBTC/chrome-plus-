@@ -71,19 +71,20 @@ body {
   text-transform: uppercase;
 }
 
-/* 頂部搜尋列與熱門標籤 */
+/* 頂部搜尋列 */
 .search-container {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex: 1;
-  max-width: 680px;
+  max-width: 580px;
   margin: 0 24px;
 }
 
 .search-input-wrap {
   position: relative;
   flex: 1;
+  min-width: 240px;
 }
 
 .search-input {
@@ -124,6 +125,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 

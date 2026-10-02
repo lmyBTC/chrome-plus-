@@ -266,6 +266,19 @@
   animation: slideIn 0.3s ease;
 }
 
+.toast.toast-clickable {
+  cursor: pointer;
+  border-left-color: var(--accent-green, #10b981);
+  transition: transform 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.toast.toast-clickable:hover {
+  transform: translateY(-2px);
+  background-color: #334155;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
