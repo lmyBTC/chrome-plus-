@@ -18,7 +18,7 @@ export interface UniversalTaskPayload {
   status?: GTDStatus;
   url?: string;
   gtdContext?: GTDContext;
-  priority?: 'P1' | 'P2' | 'P3';
+  priority?: 'P0' | 'P1' | 'P2' | 'P3';
   sourcePlugin?: 'FINANCE_CLIPPER' | 'VIDEO_SPEED_PLUS' | 'ACTIVITY_MONITOR' | 'SCRUMCLOCK' | string;
   createdAt?: number;
 }

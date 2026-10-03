@@ -9,7 +9,11 @@ export interface DashboardColumns {
   createdAt: boolean;
 }
 
-export type SprintLogWithMission = SprintLog & { missionText: string };
+export type SprintLogWithMission = SprintLog & {
+  missionText: string;
+  missionUrl?: string;
+  priority?: 'P0' | 'P1' | 'P2' | 'P3';
+};
 
 export interface TaskPoolTabProps {
   weeklyMissions: WeeklyMission[];
@@ -18,15 +22,15 @@ export interface TaskPoolTabProps {
   setVisibleColumns: React.Dispatch<React.SetStateAction<DashboardColumns>>;
   newTitle: string;
   setNewTitle: (val: string) => void;
-  newPriority: 'P1' | 'P2' | 'P3';
-  setNewPriority: (val: 'P1' | 'P2' | 'P3') => void;
+  newPriority: 'P0' | 'P1' | 'P2' | 'P3';
+  setNewPriority: (val: 'P0' | 'P1' | 'P2' | 'P3') => void;
   notesInputs: Record<string, string>;
   breakingDownId?: string | null;
   subtasks?: Record<string, string[]>;
   onAddTask: () => Promise<void>;
   onDeleteTask: (id: string) => Promise<void>;
   onUpdateStatus: (id: string, statusText: string) => Promise<void>;
-  onUpdatePriority: (id: string, priority: 'P1' | 'P2' | 'P3') => Promise<void>;
+  onUpdatePriority: (id: string, priority: 'P0' | 'P1' | 'P2' | 'P3') => Promise<void>;
   onNotesChange: (id: string, value: string) => void;
   onUpdateNotes: (id: string) => Promise<void>;
   onToggleFocus: (id: string) => Promise<void>;
@@ -55,6 +59,7 @@ export interface InboxTabProps {
 
 export interface SprintLogsTabProps {
   sprintLogs: SprintLogWithMission[];
+  weeklyMissions?: WeeklyMission[];
 }
 
 export interface SyncSettingsModalProps {

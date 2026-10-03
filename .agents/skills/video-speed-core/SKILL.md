@@ -64,3 +64,13 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md"]
 1. **單一插件專注**: 開發 VideoSpeedPlus 時，禁止直接讀寫 ScrumClock 之內部代碼與私有資料庫，所有互動僅限於標準跨插件通訊契約。
 2. **純淨原生約束**: 維持無打包純 JS 結構，避免依賴外部龐大函式庫，確保在各大影音平台毫秒級載入。
 3. **優雅降級**: 當目標插件離線或未安裝時，必須有 6 秒超時保護與非阻塞 Notification 提示，嚴禁阻斷主播放功能。
+
+---
+
+## 6. 投研工作流規格與功能真空區備註 (Analyst Workflow Spec & Vacuum Zones)
+依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 診斷，在投資研究員法說會快篩場景中需注意以下規格演進：
+* **鍵盤盲打標記與步進調速 (已實作)**：提供免喚出 Popup 之全域快捷鍵（`Alt+[` / `Alt+]` 微調 0.25x；`Alt+M` 即時打點至 `vsp_bookmarks` 並帶全螢幕 OSD 反饋）。
+* **雙向反查 Deep-Link (已實作)**：跨插件發送之 URL 保證攜帶秒數參數（`&t=Xxs`），支援自 ScrumClock 卡片一鍵反向喚起原影片並定位播放。
+* **多段精華彙整容器 (規劃中)**：需避免單次 `Alt+S` 造成 ScrumClock 卡片碎片化，規劃支援以單一影音場次為單位的聚合草稿箱。
+
+

@@ -90,6 +90,7 @@
     "tags": ["#投資研究", "#美股", "$NVDA", "@Focus"],
     "estimatedPomodoros": 2,
     "url": "https://www.google.com/finance/quote/NVDA:NASDAQ",
+    "deepLinkUrl": "chrome-extension://.../dashboard.html?ticker=NVDA",
     "gtdContext": "@Focus",
     "priority": "P1",
     "sourcePlugin": "FINANCE_CLIPPER",
@@ -98,6 +99,7 @@
 }
 ```
 - **欄位規範**：
+  - `deepLinkUrl`（選填）：反向深層連結（如指向 FinanceClipper 儀表板個股快照或影音精準秒數播放）。
   - `gtdContext`（選填）：枚舉值，限 `@Focus`、`@Meeting`、`@Review`、`@Waiting-For`、`@Blocked`（預設 `@Focus`）。
   - `priority`（選填）：枚舉值，限 `P1`、`P2`、`P3`（預設 `P1`）。
   - `sourcePlugin`（選填）：來源插件標識字串（如 `FINANCE_CLIPPER`, `VIDEO_SPEED_PLUS`）。
@@ -163,6 +165,225 @@
   "message": "已成功收集字幕至 ScrumClock"
 }
 ```
+
+### 6.4 結構化試算表匯出協定 (`EXPORT_TO_SHEETS`)
+- **發送端**：FinanceClipper（財務指標/估值分析）、ScrumClock（工時日誌/衝刺看板）或 ActivityMonitor（行為審計）
+- **接收端**：Google Apps Script Webhook 轉發器 或 ScrumClock Hub 對接模組
+- **請求格式**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "EXPORT_TO_SHEETS",
+  "payload": {
+    "mode": "finance_metrics",
+    "spreadsheetId": "1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms",
+    "targetSheetName": "個股估值追蹤",
+    "appendMode": "UPSERT_BY_KEY",
+    "keyField": "ticker",
+    "headers": ["代號", "公司名稱", "現價", "目標價中位數", "潛在空間", "本益比", "ROE", "更新時間"],
+    "rows": [
+      {
+        "ticker": "NVDA",
+        "companyName": "NVIDIA Corporation",
+        "currentPrice": 128.5,
+        "targetPriceMedian": 150.0,
+        "upsidePotential": "+16.7%",
+        "peRatio": 42.1,
+        "roe": "55.8%",
+        "updatedAt": "2026-10-03 09:30:00"
+      }
+    ],
+    "metadata": {
+      "sourcePlugin": "FINANCE_CLIPPER",
+      "operator": "Analyst-G1",
+      "timestamp": 1727919000000
+    }
+  }
+}
+```
+- **工時日誌模式範例 (`mode: "sprint_timesheet"`)**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "EXPORT_TO_SHEETS",
+  "payload": {
+    "mode": "sprint_timesheet",
+    "targetSheetName": "工時與衝刺日誌",
+    "appendMode": "APPEND_ROW",
+    "headers": ["任務ID", "標題", "標籤", "GTD分類", "預估番茄", "實際番茄", "狀態", "完成時間"],
+    "rows": [
+      {
+        "taskId": "task-v2-1727856000000",
+        "title": "深入研究 NVDA 財報與估值",
+        "tags": "#投資研究, #美股",
+        "gtdContext": "@Focus",
+        "estimatedPomodoros": 2,
+        "actualPomodoros": 3,
+        "status": "COMPLETED",
+        "completedAt": "2026-10-03 10:15:00"
+      }
+    ]
+  }
+}
+```
+- **響應格式**：
+```json
+{
+  "success": true,
+  "ack": true,
+  "spreadsheetUrl": "https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/edit",
+  "insertedRows": 1,
+  "updatedRows": 0,
+  "updatedAt": 1727919005000
+}
+```
+
+### 6.5 研報與多媒體文件生成協定 (`CREATE_DOC_REPORT`)
+- **發送端**：FinanceClipper、VideoSpeedPlus、ScrumClock（可聚合多插件資料發起）
+- **接收端**：Google Apps Script Webhook 轉發器 或 Google Docs API 服務
+- **請求格式**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "CREATE_DOC_REPORT",
+  "payload": {
+    "templateType": "INVESTMENT_RESEARCH",
+    "title": "NVDA 深度投研與估值評估報告 (2026Q3)",
+    "folderId": "root_or_drive_folder_id",
+    "sections": [
+      {
+        "heading": "一、核心投資觀點與評級",
+        "level": 1,
+        "contentType": "markdown",
+        "content": "**評級：強力買進 (Strong Buy)**\n- 受惠於 Blackwell 架構全面放量，營收年增預期維持 40%+。\n- 雲端 CSP 資本支出維持雙位數成長，算力需求依舊緊繃。"
+      },
+      {
+        "heading": "二、財務關鍵指標與共識預測",
+        "level": 1,
+        "contentType": "table",
+        "content": {
+          "headers": ["指標", "2025A", "2026E", "2027E"],
+          "rows": [
+            ["營收 (Billion $)", "60.9", "112.5", "148.0"],
+            ["EPS ($)", "1.30", "2.85", "3.90"],
+            ["毛利率 (%)", "72.7%", "75.5%", "76.0%"]
+          ]
+        }
+      },
+      {
+        "heading": "三、法人說明會與專家影音精華 (由 VideoSpeedPlus 採集)",
+        "level": 1,
+        "contentType": "bullet_list",
+        "content": [
+          "[05:12] CEO 提及液冷散熱模組供應瓶頸已獲顯著緩解",
+          "[18:40] 針對推論端晶片佔比提高至整體營收 40% 的戰略說明"
+        ]
+      },
+      {
+        "heading": "四、待辦事項與後續追蹤",
+        "level": 1,
+        "contentType": "action_items",
+        "content": [
+          {"task": "比對台積電 CoWoS 產能交期更新", "deadline": "2026-10-10"},
+          {"task": "追蹤 Hyperscalers Q3 財報電話會議", "deadline": "2026-10-25"}
+        ]
+      }
+    ],
+    "sourcePlugins": ["FINANCE_CLIPPER", "VIDEO_SPEED_PLUS", "SCRUMCLOCK"]
+  }
+}
+```
+- **響應格式**：
+```json
+{
+  "success": true,
+  "ack": true,
+  "documentId": "195ZSbTLBPjiwaq1rdfhyG8yM4SEVn_E",
+  "documentUrl": "https://docs.google.com/document/d/195ZSbTLBPjiwaq1rdfhyG8yM4SEVn_E/edit",
+  "createdAt": 1727919010000
+}
+```
+
+### 6.6 日曆排程與待辦雙向同步協定 (`SYNC_CALENDAR_EVENT`)
+- **發送端**：ScrumClock（番茄鐘排程、Focus Task 排定）
+- **接收端**：Google Calendar / Google Tasks 對接服務
+- **請求格式**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "SYNC_CALENDAR_EVENT",
+  "payload": {
+    "action": "CREATE_EVENT",
+    "target": "GOOGLE_CALENDAR",
+    "item": {
+      "id": "task-v2-1727856000000",
+      "externalId": "",
+      "summary": "🍅 [Focus] 深入研究 NVDA 財報與估值",
+      "description": "關聯研報：https://www.google.com/finance/quote/NVDA:NASDAQ\n標籤：#投資研究 #美股\n來源插件：FinanceClipper -> ScrumClock",
+      "startTime": "2026-10-03T14:00:00+08:00",
+      "endTime": "2026-10-03T15:30:00+08:00",
+      "colorId": "11",
+      "reminders": {
+        "useDefault": false,
+        "overrides": [
+          {"method": "popup", "minutes": 10}
+        ]
+      },
+      "gtdContext": "@Focus"
+    },
+    "sourcePlugin": "SCRUMCLOCK"
+  }
+}
+```
+- **建立 Google Tasks 待辦模式範例 (`target: "GOOGLE_TASKS"`)**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "SYNC_CALENDAR_EVENT",
+  "payload": {
+    "action": "CREATE_TASK",
+    "target": "GOOGLE_TASKS",
+    "item": {
+      "id": "task-v2-1727856000000",
+      "summary": "【今日戰役】深入研究 NVDA 財報與估值",
+      "description": "預計消耗 2 番茄鐘；GTD: @Focus",
+      "due": "2026-10-03T18:00:00Z"
+    },
+    "sourcePlugin": "SCRUMCLOCK"
+  }
+}
+```
+- **響應格式**：
+```json
+{
+  "success": true,
+  "ack": true,
+  "externalId": "google_cal_ev_8492048102948",
+  "htmlLink": "https://www.google.com/calendar/event?eid=Z29vZ2xlX2NhbF9ldl84NDkyMDQ4MTAyOTQ4",
+  "status": "confirmed",
+  "syncedAt": 1727919015000
+}
+```
+
+### 6.7 通訊轉發與回執結構 (Forwarding, Dispatch & Error Handling)
+1. **雙軌拓撲轉發 (Dual Topology Forwarding)**：
+   - **分散直連 (Decentralized Direct)**：各插件（如 FinanceClipper）可於本地儲存自己的 GAS Webhook URL，在需要匯出時直接調用 `fetch(gasWebhookUrl, { method: 'POST', body: ... })`，不經由 ScrumClock。
+   - **中樞匯聚 (Hub Aggregation)**：若使用者在 ScrumClock 統一配置 Google OAuth 憑證或通用 Webhook，各 Spoke 插件透過 `chrome.runtime.sendMessage(SCRUMCLOCK_ID, ...)` 傳送 `EXPORT_TO_SHEETS` / `CREATE_DOC_REPORT`，由 ScrumClock 代理轉發並回傳結果。
+2. **標準化回執結構 (Standardized Response Envelope)**：
+   ```typescript
+   interface CrossPluginGoogleResponse {
+     success: boolean;
+     ack: boolean;
+     externalId?: string;
+     resourceUrl?: string;
+     errorCode?: "TIMEOUT_FALLBACK" | "UNAUTHORIZED" | "INVALID_PAYLOAD" | "NETWORK_ERROR";
+     errorMessage?: string;
+     syncedAt: number;
+   }
+   ```
+3. **超時與降級熔斷 (Circuit Breaker & Fallback)**：
+   - 跨插件請求與對外 Google 呼叫均受嚴格 6 秒超時保護。
+   - 若發生逾時或網路中斷，發送端立即捕獲並返回 `TIMEOUT_FALLBACK`，並自動將匯出內容降級儲存為本地 JSON/CSV 快照，保證使用者資料零遺失、前端介面零卡頓。
 
 ---
 

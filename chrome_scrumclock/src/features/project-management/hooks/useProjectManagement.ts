@@ -20,7 +20,7 @@ export const useProjectManagement = () => {
   const [northStarText, setNorthStarText] = useState<string>('');
 
   const [newTitle, setNewTitle] = useState('');
-  const [newPriority, setNewPriority] = useState<'P1' | 'P2' | 'P3'>('P2');
+  const [newPriority, setNewPriority] = useState<'P0' | 'P1' | 'P2' | 'P3'>('P2');
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<Record<string, string[]>>({});
@@ -72,7 +72,12 @@ export const useProjectManagement = () => {
         if (log && log.sprintLogs) {
           log.sprintLogs.forEach((sprint) => {
             const mission = missions.find((m) => m.id === sprint.missionId);
-            allSprintLogs.push({ ...sprint, missionText: mission?.text || '獨立衝刺' });
+            allSprintLogs.push({
+              ...sprint,
+              missionText: mission?.text || '獨立衝刺',
+              missionUrl: mission?.url || '',
+              priority: mission?.priority,
+            });
           });
         }
       });
@@ -268,7 +273,7 @@ export const useProjectManagement = () => {
     }
   };
 
-  const handleUpdatePriority = async (missionId: string, priority: 'P1' | 'P2' | 'P3') => {
+  const handleUpdatePriority = async (missionId: string, priority: 'P0' | 'P1' | 'P2' | 'P3') => {
     try {
       const missions = await storage.getWeeklyMissions();
       const mission = missions.find((m) => m.id === missionId);

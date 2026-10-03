@@ -9,7 +9,8 @@ export interface TaskDetailDrawerProps {
   onToggleFocus: (id: string) => Promise<void>;
   onUpdateTitle?: (id: string, title: string) => Promise<void>;
   onUpdateStatus: (id: string, status: string) => Promise<void>;
-  onUpdatePriority: (id: string, priority: 'P1' | 'P2' | 'P3') => Promise<void>;
+  onUpdatePriority: (id: string, priority: 'P0' | 'P1' | 'P2' | 'P3') => Promise<void>;
+  onUpdateEstimatedPomodoros?: (id: string, estimate: number) => Promise<void>;
   notesValue: string;
   onNotesChange: (id: string, value: string) => void;
   onUpdateNotes: (id: string) => Promise<void>;
@@ -32,6 +33,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onUpdateTitle,
   onUpdateStatus,
   onUpdatePriority,
+  onUpdateEstimatedPomodoros,
   notesValue,
   onNotesChange,
   onUpdateNotes,
@@ -234,7 +236,7 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   優先級 (Priority)
                 </span>
                 <div className="flex items-center gap-1.5">
-                  {(['P1', 'P2', 'P3'] as const).map((p) => {
+                  {(['P0', 'P1', 'P2', 'P3'] as const).map((p) => {
                     const active = (task.priority || 'P2') === p;
                     return (
                       <button
@@ -242,19 +244,68 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                         onClick={() => onUpdatePriority(task.id, p)}
                         className={`flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
                           active
-                            ? p === 'P1'
+                            ? p === 'P0'
+                              ? 'bg-rose-950/80 border-rose-600 text-rose-200 ring-1 ring-rose-500/50 shadow-sm'
+                              : p === 'P1'
                               ? 'bg-red-950/60 border-red-800/60 text-red-300'
                               : p === 'P2'
                               ? 'bg-blue-950/60 border-blue-800/60 text-blue-300'
                               : 'bg-slate-800/80 border-slate-700 text-slate-300'
                             : 'bg-dark-card/50 border-dark-border-subtle text-dark-muted hover:text-dark-secondary'
                         }`}
+                        title={p === 'P0' ? '🚨 P0 (Blocker) 緊急阻斷' : `優先級 ${p}`}
                       >
                         {p}
                       </button>
                     );
                   })}
                 </div>
+              </div>
+            </div>
+
+            {/* 預估番茄鐘步進器 (Estimated Pomodoros Stepper) */}
+            <div className="p-4 rounded-xl bg-dark-surface/60 border border-dark-border-subtle flex items-center justify-between">
+              <div>
+                <span className="block text-[11px] font-semibold text-dark-muted uppercase">
+                  預估番茄鐘 (Estimated Pomodoros)
+                </span>
+                <span className="text-xs text-dark-secondary">
+                  已消耗 <span className="font-mono font-bold text-amber-400">{task.spentPomodoros || 0}</span> 顆 / 預計 <span className="font-mono font-bold text-dark-primary">{task.estimatedPomodoros || 1}</span> 顆
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = task.estimatedPomodoros || 1;
+                    if (current > 1 && onUpdateEstimatedPomodoros) {
+                      onUpdateEstimatedPomodoros(task.id, current - 1);
+                    }
+                  }}
+                  disabled={!onUpdateEstimatedPomodoros || (task.estimatedPomodoros || 1) <= 1}
+                  className="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border-subtle text-dark-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-sm"
+                  title="減少 1 顆預估番茄鐘"
+                >
+                  −
+                </button>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-base rounded-lg border border-dark-border-subtle text-sm font-mono font-bold text-dark-primary min-w-[56px] justify-center shadow-inner">
+                  <span className="text-red-400 text-xs">🍅</span>
+                  <span>{task.estimatedPomodoros || 1}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const current = task.estimatedPomodoros || 1;
+                    if (onUpdateEstimatedPomodoros) {
+                      onUpdateEstimatedPomodoros(task.id, current + 1);
+                    }
+                  }}
+                  disabled={!onUpdateEstimatedPomodoros || (task.estimatedPomodoros || 1) >= 20}
+                  className="w-8 h-8 rounded-lg bg-dark-card hover:bg-dark-hover border border-dark-border-subtle text-dark-primary disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center font-bold text-base cursor-pointer transition-colors shadow-sm"
+                  title="增加 1 顆預估番茄鐘"
+                >
+                  +
+                </button>
               </div>
             </div>
 

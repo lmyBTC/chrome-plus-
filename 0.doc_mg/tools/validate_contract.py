@@ -141,7 +141,7 @@ class ContractValidator:
     def _validate_create_task(cls, payload: Dict[str, Any], errors: List[ValidationError], strict: bool):
         allowed_keys = {
             "id", "ticker", "title", "notes", "tags", "estimatedPomodoros",
-            "url", "protocolVersion", "gtdContext", "priority",
+            "url", "deepLinkUrl", "protocolVersion", "gtdContext", "priority",
             "workspaceSync", "sourcePlugin", "createdAt"
         }
         if strict:
@@ -150,6 +150,10 @@ class ContractValidator:
         title = payload.get("title")
         if not title or not isinstance(title, str) or not title.strip():
             errors.append(ValidationError("payload.title", "必填欄位 title 缺失或為空"))
+
+        if "deepLinkUrl" in payload and payload["deepLinkUrl"] is not None:
+            if not isinstance(payload["deepLinkUrl"], str) or not payload["deepLinkUrl"].strip():
+                errors.append(ValidationError("payload.deepLinkUrl", "deepLinkUrl 必須為合法非空字串"))
 
         if "estimatedPomodoros" in payload and payload["estimatedPomodoros"] is not None:
             pomodoro = payload["estimatedPomodoros"]

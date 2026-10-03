@@ -200,17 +200,59 @@ function handleTimeUpdate() {
   }
 }
 
-// 顯示速度提示
-function showSpeedNotification(speed) {
-  showNotification(`播放速度: ${speed}x`);
+// 步進微調影片速度 (支援 0.25x 連續步進，範圍 0.1x ~ 16.0x)
+function adjustSpeedStep(delta) {
+  if (!videoElement) {
+    findVideoElement();
+  }
+  const baseSpeed = (videoElement && typeof videoElement.playbackRate === 'number') 
+    ? videoElement.playbackRate 
+    : currentSpeed;
+  let newSpeed = Math.round((baseSpeed + delta) * 100) / 100;
+  if (newSpeed < 0.1) newSpeed = 0.1;
+  if (newSpeed > 16.0) newSpeed = 16.0;
+  setVideoSpeed(newSpeed);
 }
 
-// 顯示通用提示
+// 顯示速度提示
+function showSpeedNotification(speed) {
+  const displaySpeed = Number(Number(speed).toFixed(2)).toString();
+  showNotification(`⚡ 播放速度: ${displaySpeed}x`);
+}
+
+// 顯示通用提示 (支援全螢幕 OSD 與視窗模式)
 function showNotification(message) {
   // 移除舊的提示
-  const existingNotification = document.getElementById('yt-speed-notification');
-  if (existingNotification) {
-    existingNotification.remove();
+  const oldNotifications = document.querySelectorAll('#yt-speed-notification');
+  oldNotifications.forEach(el => el.remove());
+  
+  // 注入全域樣式（單例，避免重複插入 style）
+  if (!document.getElementById('yt-speed-notification-style')) {
+    const style = document.createElement('style');
+    style.id = 'yt-speed-notification-style';
+    style.textContent = `
+      @keyframes vspSlideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      @keyframes vspSlideOut {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+      }
+    `;
+    (document.head || document.documentElement).appendChild(style);
   }
   
   // 建立新的提示
@@ -218,51 +260,43 @@ function showNotification(message) {
   notification.id = 'yt-speed-notification';
   notification.style.cssText = `
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 12px 20px;
-    border-radius: 25px;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    top: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, rgba(30, 27, 75, 0.95) 0%, rgba(79, 70, 229, 0.95) 100%);
+    border: 1px solid rgba(165, 180, 252, 0.4);
+    color: #ffffff;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     font-size: 14px;
-    font-weight: bold;
-    z-index: 9999;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    animation: slideIn 0.3s ease-out;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    z-index: 2147483647;
+    pointer-events: none;
+    user-select: none;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    animation: vspSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   `;
   
   notification.textContent = message;
   
-  // 添加動畫樣式
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes slideIn {
-      from {
-        transform: translateX(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateX(0);
-        opacity: 1;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+  // 掛載容器：若全螢幕則掛載至全螢幕容器，否則掛載至 body
+  const container = document.fullscreenElement || document.body || document.documentElement;
+  container.appendChild(notification);
   
-  document.body.appendChild(notification);
-  
-  // 3 秒後自動移除
+  // 2.2 秒後自動移除（含退場動畫）
   setTimeout(() => {
     if (notification.parentNode) {
-      notification.style.animation = 'slideOut 0.3s ease-in';
+      notification.style.animation = 'vspSlideOut 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards';
       setTimeout(() => {
         if (notification.parentNode) {
           notification.remove();
         }
-      }, 300);
+      }, 250);
     }
-  }, 3000);
+  }, 2200);
 }
 
 // 處理來自 popup 的訊息
@@ -390,6 +424,31 @@ document.addEventListener('keydown', function(event) {
     }
   }
 
+  // Alt + [ ：全螢幕步進微調減速 0.25x (範圍 0.1x ~ 16.0x)
+  const isBracketLeft = event.altKey && !event.ctrlKey && !event.metaKey && (event.key === '[' || event.code === 'BracketLeft');
+  if (isBracketLeft) {
+    event.preventDefault();
+    adjustSpeedStep(-0.25);
+    return;
+  }
+
+  // Alt + ] ：全螢幕步進微調加速 0.25x (範圍 0.1x ~ 16.0x)
+  const isBracketRight = event.altKey && !event.ctrlKey && !event.metaKey && (event.key === ']' || event.code === 'BracketRight');
+  if (isBracketRight) {
+    event.preventDefault();
+    adjustSpeedStep(0.25);
+    return;
+  }
+
+  // Alt + M ：全螢幕快捷精華標記鍵 (無需喚出 Popup，一鍵自動打點記錄當前秒數與標題)
+  const isAltM = event.altKey && !event.ctrlKey && !event.metaKey && (event.key === 'm' || event.key === 'M' || event.code === 'KeyM');
+  if (isAltM) {
+    event.preventDefault();
+    console.log('[VideoSpeedPlus] 快捷鍵觸發：全螢幕快速標記書籤 (Alt+M)');
+    quickBookmarkCurrentTime();
+    return;
+  }
+
   // Alt + S 或 Ctrl + Shift + S：一鍵收集當前時間戳字幕與筆記至 ScrumClock
   const isAltS = event.altKey && (event.key === 's' || event.key === 'S' || event.code === 'KeyS');
   const isCtrlShiftS = event.ctrlKey && event.shiftKey && (event.key === 's' || event.key === 'S' || event.code === 'KeyS');
@@ -438,6 +497,22 @@ document.addEventListener('keydown', function(event) {
     setVideoSpeed(speed);
   }
 });
+
+// 全螢幕快速標記書籤 (無需彈窗，一鍵自動抓取當前秒數、影片標題與時間戳 URL 並寫入儲存)
+async function quickBookmarkCurrentTime() {
+  if (!videoElement) {
+    findVideoElement();
+  }
+  const meta = getVideoMetadata();
+  const timeFormatted = meta.currentTime || formatTimeDisplay(meta.seconds);
+  const defaultNote = `📌 [${timeFormatted}] 快篩精華打點`;
+  const result = await saveBookmark(defaultNote, meta.seconds);
+  if (result && result.success) {
+    showNotification(`📌 已快速標記 [${timeFormatted}] 精華重點`);
+  } else {
+    showNotification(`⚠️ 書籤標記失敗: ${result?.error || '未知錯誤'}`);
+  }
+}
 
 // 點擊頁面其他地方時隱藏面板
 document.addEventListener('click', function() {
@@ -1808,10 +1883,47 @@ async function getScrumClockExtensionId() {
 
 function sanitizeCollectorPayload(rawPayload) {
   const safeTitle = typeof rawPayload.title === 'string' ? rawPayload.title.trim().slice(0, 200) : 'YouTube 影片筆記';
-  const safeUrl = typeof rawPayload.url === 'string' ? rawPayload.url.slice(0, 500) : '';
+  let safeUrl = typeof rawPayload.url === 'string' ? rawPayload.url.slice(0, 500) : '';
   const safeCurrentTime = typeof rawPayload.currentTime === 'string' ? rawPayload.currentTime.slice(0, 30) : '';
-  const safeText = typeof rawPayload.text === 'string' ? rawPayload.text.trim().slice(0, 20000) : '';
+  let safeText = typeof rawPayload.text === 'string' ? rawPayload.text.trim().slice(0, 20000) : '';
   const safeType = typeof rawPayload.type === 'string' ? rawPayload.type.slice(0, 30) : 'subtitle';
+
+  // 1. 保證攜帶標準 &t={seconds}s 參數
+  if (safeUrl) {
+    try {
+      const u = new URL(safeUrl);
+      if (!u.searchParams.has('t')) {
+        let sec = 0;
+        if (typeof rawPayload.seconds === 'number' && rawPayload.seconds > 0) {
+          sec = Math.floor(rawPayload.seconds);
+        } else if (safeCurrentTime) {
+          const parts = safeCurrentTime.split(':').map(Number);
+          if (parts.length === 2 && !isNaN(parts[0]) && !isNaN(parts[1])) {
+            sec = parts[0] * 60 + parts[1];
+          } else if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+            sec = parts[0] * 3600 + parts[1] * 60 + parts[2];
+          }
+        }
+        if (sec > 0) {
+          u.searchParams.set('t', `${sec}s`);
+          safeUrl = u.toString();
+        }
+      }
+    } catch (_) {}
+  }
+
+  // 2. 確保說明中含有可點擊的時間戳記導航 (若 safeText 尚未帶有超連結)
+  if (safeUrl && safeCurrentTime && !safeText.includes(safeUrl)) {
+    const timeNav = `\n\n⏱️ 時間戳記導航：[${safeCurrentTime}](${safeUrl})`;
+    if (!safeText.includes(timeNav.trim())) {
+      safeText += timeNav;
+    }
+  }
+
+  const tags = ['#影片學習', '#YouTube'];
+  if (safeCurrentTime) {
+    tags.push(`#${safeCurrentTime}`);
+  }
 
   return {
     source: 'video_speed_plus',
@@ -1819,7 +1931,7 @@ function sanitizeCollectorPayload(rawPayload) {
     url: safeUrl,
     currentTime: safeCurrentTime,
     text: safeText,
-    tags: ['#影片學習', '#YouTube'],
+    tags: tags,
     type: safeType
   };
 }
@@ -1830,6 +1942,7 @@ async function sendNoteToScrumClock(customPayload) {
     title: extracted.meta ? extracted.meta.title : extracted.title,
     url: extracted.meta ? extracted.meta.url : extracted.url,
     currentTime: extracted.meta ? extracted.meta.currentTime : extracted.currentTime,
+    seconds: extracted.meta ? extracted.meta.seconds : extracted.seconds,
     text: extracted.text,
     type: extracted.type
   });

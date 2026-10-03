@@ -16,6 +16,9 @@ const activePorts = new Set();
 // 存放當前已注入深入動態探針的 tabId 集合
 const activeInspectorTabs = new Set();
 
+// 跨插件衝刺協同狀態 (SF-03)
+let activeSprintSession = null;
+
 // 1. 初始化擴充功能行為：點擊 Action 圖示直接開啟 Side Panel，並註冊排程清理 alarm
 chrome.runtime.onInstalled.addListener(() => {
   if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
@@ -53,6 +56,13 @@ if (chrome.alarms) {
 function broadcast(payload) {
   const startTime = performance.now();
   // 停用常態單筆 IndexedDB 寫入，徹底消除高頻 I/O 開銷；改由 Session 結算時寫入結構化報告
+
+  // 若當前處於敏捷衝刺狀態，自動為日誌事件打上衝刺會話標記 (SF-03)
+  if (activeSprintSession && payload?.log) {
+    payload.log.sprintSessionId = activeSprintSession.sprintSessionId;
+    payload.log.missionId = activeSprintSession.missionId;
+    payload.log.isSprintFocus = true;
+  }
 
   for (const port of activePorts) {
     try {
@@ -354,6 +364,14 @@ chrome.runtime.onConnect.addListener((port) => {
   if (port.name === 'monitor-stream') {
     activePorts.add(port);
 
+    // 若當前有進行中的衝刺，主動同步衝刺狀態至 Side Panel (SF-03)
+    if (activeSprintSession) {
+      port.postMessage({
+        type: 'SPRINT_SESSION_CHANGED',
+        sprint: activeSprintSession
+      });
+    }
+
     port.onDisconnect.addListener(async () => {
       activePorts.delete(port);
       // 生命週期防護：當所有面板關閉且 Session 進行中時，自動安全結算並卸載監聽
@@ -508,6 +526,14 @@ chrome.runtime.onConnect.addListener((port) => {
         });
       }
 
+      // 取得當前進行中的衝刺狀態 (SF-03)
+      if (msg.type === 'GET_ACTIVE_SPRINT') {
+        port.postMessage({
+          type: 'SPRINT_SESSION_CHANGED',
+          sprint: activeSprintSession
+        });
+      }
+
       // 重置背景服務 Profiler 指標
       if (msg.type === 'RESET_BACKGROUND_PROFILER') {
         profiler.reset();
@@ -576,3 +602,76 @@ if (chrome.runtime && chrome.runtime.onSuspend) {
     unmountWebRequest();
   });
 }
+
+// 7. 跨插件通訊協議監聽器 (SF-03 & externally_connectable)
+chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
+  console.log('[BAM External] 收到外部插件通訊:', message?.type, '來自:', sender?.id);
+
+  if (!message || typeof message !== 'object') {
+    sendResponse({ success: false, error: '無效的訊息負載' });
+    return false;
+  }
+
+  // 輕量存活確認
+  if (message.type === 'PING' || message.type === 'PING_HUB') {
+    sendResponse({
+      success: true,
+      ack: true,
+      plugin: 'ACTIVITY_MONITOR',
+      version: '1.0.0',
+      activeSprint: activeSprintSession
+    });
+    return false;
+  }
+
+  // 敏捷衝刺啟動廣播 (EVENT_SPRINT_START)
+  if (message.type === 'EVENT_SPRINT_START' || message.type === 'FOCUS_STARTED') {
+    const payload = message.payload || {};
+    activeSprintSession = {
+      sprintSessionId: payload.sprintSessionId || `sprint_${Date.now()}`,
+      missionId: payload.missionId || '',
+      title: payload.title || payload.missionText || '敏捷衝刺',
+      duration: payload.duration || payload.durationMinutes || 25,
+      startTime: payload.startTime || Date.now()
+    };
+
+    // 若尚未開啟網路監測，可自動啟動持續監測以便記錄衝刺活動
+    if (!currentSession) {
+      startSession('CONTINUOUS').catch((err) => console.warn('[BAM SW] 自動啟動衝刺監測失敗:', err));
+    }
+
+    broadcast({
+      type: 'SPRINT_SESSION_CHANGED',
+      sprint: activeSprintSession
+    });
+
+    sendResponse({
+      success: true,
+      ack: true,
+      sprintSessionId: activeSprintSession.sprintSessionId
+    });
+    return false;
+  }
+
+  // 敏捷衝刺結束廣播 (EVENT_SPRINT_STOP)
+  if (message.type === 'EVENT_SPRINT_STOP' || message.type === 'FOCUS_STOPPED') {
+    const prevSprint = activeSprintSession;
+    activeSprintSession = null;
+
+    broadcast({
+      type: 'SPRINT_SESSION_CHANGED',
+      sprint: null,
+      lastSprint: prevSprint,
+      status: message.payload?.status || 'COMPLETED'
+    });
+
+    sendResponse({
+      success: true,
+      ack: true
+    });
+    return false;
+  }
+
+  return false;
+});
+

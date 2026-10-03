@@ -111,12 +111,15 @@
 
 ---
 
-## ⚙️ 雲端 Google Sheets 同步指南
+## ⚙️ Google 生態系自動化對接指引 (Google Sheets & Docs)
 
-若需要將資料同步至個人的 Google 雲端試算表：
-1. **建立試算表**：在 Google Drive 新增試算表並命名工作表為 `Main`。
-2. **部署 GAS**：依照 `docs/google-apps-script.md` 將代碼貼至 Apps Script 編輯器，並部署為「網頁應用程式 (所有人具存取權)」。
-3. **儲存 URL**：在儀表板或側邊欄點選 ⚙️ 設定圖示，將產生的 Web App URL 貼入並儲存。
+FinanceClipper 支援將個股財務底稿、同業橫向對比矩陣與估值沙盒推演結果，結構化匯出至個人 Google 試算表，並能自動產生排版完整的 Google Docs 深度研報：
+1. **建立專屬試算表**：在 Google Drive 新增試算表，並可建立 `Individual_Summary`、`Peer_Comparison` 與 `Valuation_Sandbox` 分頁。
+2. **部署 GAS Webhook**：參照全域 SSOT 規格書 `0.doc_mg/docs/google_ecosystem_integration_spec.md` 第 5 章提供之 Apps Script 腳本貼入編輯器，部署為「網頁應用程式 (所有人具存取權)」。
+3. **設定 Web App URL**：在儀表板頂部下拉抽屜或側邊欄點選 ⚙️ 設定，貼入 Web App URL 並儲存，即可享受一鍵同步。
+4. **跨插件代理轉發**：亦支援直接透過跨插件協議 `EXPORT_TO_SHEETS` 與 `CREATE_DOC_REPORT`，將資料送交 ScrumClock 中樞代為發送。
+
+> 詳細欄位 Schema、排版樣式與常見排查請參閱 `0.doc_mg/docs/google_ecosystem_integration_spec.md` 與專案根目錄之 `使用說明.md`。
 
 ---
 
@@ -125,3 +128,14 @@
 - **零外部依賴與第三方追蹤**：無任何追蹤腳本，亦無外部第三方伺服器。
 - **純本地 Direct-to-Cloud**：所有數據儲存於瀏覽器本機 `chrome.storage.local`，並僅透過使用者自己設定的 GAS Webhook 進行加密傳輸。
 - **XSS 安全防禦**：所有動態渲染欄位全面採用實體轉義 (`escapeHtml`)，符合 Chrome Web Store 最高資安規範。
+
+---
+
+## 🚀 投研工作流支援與演進藍圖 (Analyst Workflow Roadmap)
+
+依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 之診斷分析，後續規劃演進方向：
+1. **Clean TSV / Markdown 一鍵複製 (已完成 ✅)**：損益表、同業對比與估值沙盒支援無污染數值與表格一鍵複製，直貼 Excel/Sheets 零跑版。
+2. **雙向作戰任務協同 (已完成 ✅)**：與 ScrumClock 實現任務點擊攜帶 `deepLinkUrl` 反向喚起儀表板自動定位標的。
+3. **自選投資組合批次巡檢 (Portfolio Watcher)**：支援多標的背景輪詢採集與共識評級變動告警。
+4. **動態折現估值公式導出**：沙盒運算結果支援轉換為標準試算表公式導出，保證模型可審計性。
+

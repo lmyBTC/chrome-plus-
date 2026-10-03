@@ -256,7 +256,9 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       missionId,
       startTime: Date.now(),
       endTime: 0,
-      result: ''
+      result: '',
+      interruptionCount: 0,
+      interruptionReasons: []
     };
 
     setCurrentSprint(sprint);
@@ -292,10 +294,19 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     }
   }, [settings.pomodoroDuration]);
 
-  const pauseSprint = useCallback(() => {
+  const pauseSprint = useCallback((reason?: string) => {
     if (state === 'running') {
       setState('paused');
-      chrome.storage.local.set({ activeTimer: { state: 'paused', timeLeft, sprint: currentSprint } });
+      let updatedSprint = currentSprint;
+      if (reason && currentSprint) {
+        updatedSprint = {
+          ...currentSprint,
+          interruptionCount: (currentSprint.interruptionCount || 0) + 1,
+          interruptionReasons: [...(currentSprint.interruptionReasons || []), reason]
+        };
+        setCurrentSprint(updatedSprint);
+      }
+      chrome.storage.local.set({ activeTimer: { state: 'paused', timeLeft, sprint: updatedSprint } });
       if (chrome.runtime?.sendMessage) {
         try {
           chrome.runtime.sendMessage({ type: 'STOP_FOCUS_MODE' });
@@ -305,6 +316,28 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
       }
     }
   }, [state, timeLeft, currentSprint]);
+
+  const recordInterruption = useCallback((reason: string) => {
+    if (!currentSprint) return;
+    const trimmed = reason.trim();
+    if (!trimmed) return;
+    const updatedSprint: SprintLog = {
+      ...currentSprint,
+      interruptionCount: (currentSprint.interruptionCount || 0) + 1,
+      interruptionReasons: [...(currentSprint.interruptionReasons || []), trimmed]
+    };
+    setCurrentSprint(updatedSprint);
+    chrome.storage.local.get('activeTimer', (res: Record<string, any>) => {
+      if (res.activeTimer) {
+        chrome.storage.local.set({
+          activeTimer: {
+            ...res.activeTimer,
+            sprint: updatedSprint
+          }
+        });
+      }
+    });
+  }, [currentSprint]);
 
   const resumeSprint = useCallback(async () => {
     if (state === 'paused') {
@@ -406,6 +439,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children }) => {
     resumeSprint,
     stopSprint,
     logResult,
+    recordInterruption,
     whiteNoiseEnabled,
     setWhiteNoiseEnabled,
     whiteNoiseVolume,

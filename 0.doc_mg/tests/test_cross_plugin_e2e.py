@@ -107,6 +107,7 @@ class MockSpokeOutboxClient:
         valid_p = {"P1", "P2", "P3"}
         priority = raw.get("priority") if raw.get("priority") in valid_p else "P1"
 
+        deep_link = raw.get("deepLinkUrl") or (f"chrome-extension://{FINANCE_CLIPPER_ID}/dashboard.html?ticker={ticker}" if ticker else None)
         return {
             "protocolVersion": 2,
             "ticker": ticker,
@@ -114,7 +115,8 @@ class MockSpokeOutboxClient:
             "notes": raw.get("notes", ""),
             "tags": raw.get("tags", ["#投資研究"]),
             "estimatedPomodoros": raw.get("estimatedPomodoros", 2),
-            "url": raw.get("url"),
+            "url": raw.get("url") or deep_link,
+            "deepLinkUrl": deep_link,
             "gtdContext": gtd_context,
             "priority": priority,
             "sourcePlugin": raw.get("sourcePlugin", "FINANCE_CLIPPER"),

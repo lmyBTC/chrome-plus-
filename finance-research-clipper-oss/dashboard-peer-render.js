@@ -115,14 +115,33 @@
 
       const tableHeader = document.createElement('div');
       tableHeader.className = 'peer-matrix-table-header';
+      tableHeader.style.display = 'flex';
+      tableHeader.style.justifyContent = 'space-between';
+      tableHeader.style.alignItems = 'center';
+
+      const titleWrap = document.createElement('div');
       const tableTitle = document.createElement('div');
       tableTitle.className = 'peer-matrix-table-title';
       tableTitle.textContent = '📊 多維度關鍵財務與估值指標對比表';
       const tableSub = document.createElement('div');
       tableSub.className = 'peer-matrix-table-subtitle';
       tableSub.textContent = '橫向極值已自動高亮標註';
-      tableHeader.appendChild(tableTitle);
-      tableHeader.appendChild(tableSub);
+      titleWrap.appendChild(tableTitle);
+      titleWrap.appendChild(tableSub);
+      tableHeader.appendChild(titleWrap);
+
+      const btnCopyTsv = document.createElement('button');
+      btnCopyTsv.className = 'btn-clean-tsv';
+      btnCopyTsv.title = '複製同業對比矩陣為 Clean TSV，直貼 Excel / Google Sheets';
+      btnCopyTsv.innerHTML = '📋 複製 Clean TSV';
+      btnCopyTsv.addEventListener('click', () => {
+        if (window.DashboardPeerActions && window.DashboardPeerActions.copyPeerMatrixTsv) {
+          window.DashboardPeerActions.copyPeerMatrixTsv(peerData);
+        } else if (window.DashboardActions && window.DashboardActions.copyPeerMatrixTsv) {
+          window.DashboardActions.copyPeerMatrixTsv(peerData);
+        }
+      });
+      tableHeader.appendChild(btnCopyTsv);
       tableCard.appendChild(tableHeader);
 
       const tableWrap = document.createElement('div');

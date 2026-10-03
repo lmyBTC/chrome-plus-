@@ -54,6 +54,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   // 優先級顏色樣式
   const getPriorityBadge = (priority?: string) => {
     switch (priority) {
+      case 'P0':
+        return 'bg-rose-500/25 text-rose-300 border-rose-500/50 font-extrabold ring-1 ring-rose-500/30';
       case 'P1':
         return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'P2':
@@ -169,7 +171,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       {/* 備忘與網址摘要 (若有) */}
-      {(task.notes || task.url) && (
+      {(task.notes || task.url || task.deepLinkUrl) && (
         <div className="flex items-center gap-2 mb-2 text-[11px] text-dark-muted">
           {task.notes && (
             <span className="flex items-center gap-0.5 truncate max-w-[160px]" title={task.notes}>
@@ -177,17 +179,24 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               <span className="truncate">{task.notes}</span>
             </span>
           )}
-          {task.url && (
+          {(task.deepLinkUrl || task.url) && (
             <a
-              href={task.url}
+              href={task.deepLinkUrl || task.url}
               target="_blank"
               rel="noopener noreferrer"
-              onClick={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                e.stopPropagation();
+                const targetUrl = task.deepLinkUrl || task.url;
+                if (targetUrl && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
+                  e.preventDefault();
+                  chrome.tabs.create({ url: targetUrl });
+                }
+              }}
               className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-0.5 shrink-0"
-              title={task.url}
+              title={task.deepLinkUrl || task.url}
             >
               <span>🔗</span>
-              <span>網址</span>
+              <span>{task.deepLinkUrl?.includes('dashboard.html') ? '研報' : '網址'}</span>
             </a>
           )}
         </div>

@@ -1,4 +1,5 @@
 import { profiler } from '../scripts/resource-profiler.js';
+import { classifyDomain, isWorkDomain, isStaticDomain } from '../scripts/domain-classifier.js';
 
 /**
  * Browser Activity Monitor - Side Panel 控制腳本
@@ -15,6 +16,11 @@ let logs = [];
 let currentFilter = 'all';
 let autoScroll = true;
 let isInspectorActive = false;
+
+// 智慧網域過濾狀態 (AM-V01) 與跨插件衝刺狀態 (SF-03)
+let onlyWorkFilter = false;
+let hideStaticFilter = false;
+let currentSprintState = null;
 
 // 雙軌 Session 狀態管理
 let currentSessionState = {
@@ -83,6 +89,12 @@ const dom = {
   countNetwork: document.getElementById('count-network'),
   countDownload: document.getElementById('count-download'),
   filterBtns: document.querySelectorAll('.filter-btn'),
+  btnFilterWork: document.getElementById('btn-filter-work'),
+  btnFilterHideStatic: document.getElementById('btn-filter-hide-static'),
+  sprintReviewBanner: document.getElementById('sprint-review-banner'),
+  sprintBannerMissionTitle: document.getElementById('sprint-banner-mission-title'),
+  sprintBannerDuration: document.getElementById('sprint-banner-duration'),
+  sprintBannerTimeStart: document.getElementById('sprint-banner-time-start'),
   btnExportLogs: document.getElementById('btn-export-logs'),
   btnClearLogs: document.getElementById('btn-clear-logs'),
   footerLogCount: document.getElementById('footer-log-count'),
@@ -186,6 +198,10 @@ function handlePortMessage(msg) {
       appendLog(msg.log);
       break;
 
+    case 'SPRINT_SESSION_CHANGED':
+      updateSprintUI(msg.sprint);
+      break;
+
     case 'SESSION_STATE_CHANGED':
       updateSessionUI(msg.session);
       break;
@@ -259,6 +275,45 @@ function handlePortMessage(msg) {
   }
 }
 
+// 判定日誌是否符合過濾條件 (AM-V01)
+function isLogItemMatched(item) {
+  if (!item) return false;
+  if (currentFilter !== 'all' && item.category !== currentFilter) {
+    return false;
+  }
+  const info = classifyDomain(item.url || item.origin);
+  if (onlyWorkFilter && !isWorkDomain(info.category)) {
+    return false;
+  }
+  if (hideStaticFilter && isStaticDomain(info.category)) {
+    return false;
+  }
+  return true;
+}
+
+// 更新衝刺審查橫幅與模式 (SF-03)
+function updateSprintUI(sprint) {
+  currentSprintState = sprint;
+  if (!dom.sprintReviewBanner) return;
+
+  if (sprint) {
+    dom.sprintReviewBanner.style.display = 'flex';
+    dom.sprintBannerMissionTitle.textContent = sprint.title || sprint.missionId || '衝刺任務進行中';
+    dom.sprintBannerDuration.textContent = `衝刺時間箱: ${sprint.duration || 25} 分鐘`;
+    const startTimeStr = formatTime(sprint.startTime || Date.now());
+    dom.sprintBannerTimeStart.textContent = `啟動: ${startTimeStr}`;
+
+    // 啟動衝刺審查模式時，預設開啟隱藏靜態 CDN 降噪
+    if (!hideStaticFilter) {
+      hideStaticFilter = true;
+      if (dom.btnFilterHideStatic) dom.btnFilterHideStatic.classList.add('active');
+      renderList();
+    }
+  } else {
+    dom.sprintReviewBanner.style.display = 'none';
+  }
+}
+
 // 追加日誌記錄 (環形緩衝區 30 筆上限)
 function appendLog(logItem, shouldRender = true) {
   if (!logItem || !logItem.id) return;
@@ -283,7 +338,7 @@ function appendLog(logItem, shouldRender = true) {
   updateCounters();
 
   if (shouldRender) {
-    if (currentFilter === 'all' || currentFilter === logItem.category) {
+    if (isLogItemMatched(logItem)) {
       const startTime = performance.now();
       dom.emptyState.style.display = 'none';
       const node = createLogItemElement(logItem);
@@ -326,6 +381,25 @@ function createLogItemElement(item) {
     apiTag.className = 'log-method';
     apiTag.textContent = item.api;
     tags.appendChild(apiTag);
+  }
+
+  // 網域智慧分類徽章 (AM-V01)
+  if (item.url || item.origin) {
+    const domainInfo = classifyDomain(item.url || item.origin);
+    const domainTag = document.createElement('span');
+    domainTag.className = `domain-badge ${domainInfo.badgeClass}`;
+    domainTag.textContent = `${domainInfo.icon} ${domainInfo.name}`;
+    domainTag.title = `網域: ${domainInfo.hostname} (${domainInfo.name})`;
+    tags.appendChild(domainTag);
+  }
+
+  // 敏捷衝刺會話標記 (SF-03)
+  if (item.isSprintFocus || item.sprintSessionId) {
+    const sprintTag = document.createElement('span');
+    sprintTag.className = 'domain-badge badge-prod';
+    sprintTag.textContent = '🔥 衝刺';
+    sprintTag.title = `所屬衝刺會話: ${item.sprintSessionId || '進行中'}`;
+    tags.appendChild(sprintTag);
   }
 
   const timeSpan = document.createElement('span');
@@ -371,9 +445,7 @@ function createLogItemElement(item) {
 function renderList() {
   const startTime = performance.now();
   dom.streamList.innerHTML = '';
-  const filtered = currentFilter === 'all'
-    ? logs
-    : logs.filter((l) => l.category === currentFilter);
+  const filtered = logs.filter(isLogItemMatched);
 
   if (filtered.length === 0) {
     dom.emptyState.style.display = 'flex';
@@ -570,12 +642,14 @@ function renderReportCard(report) {
     topListHtml = report.topTabs.map((tab) => {
       const pct = Math.max(5, Math.round((tab.requests / maxReq) * 100));
       const isHeavy = tab.requests > 30;
+      const domainInfo = classifyDomain(tab.url || tab.title);
       return `
         <div class="report-top-row">
           <div class="report-top-info">
             <span class="report-top-name" title="${tab.url || tab.title}">
               ${tab.favIconUrl ? `<img src="${tab.favIconUrl}" width="12" height="12" style="border-radius:2px;" onerror="this.style.display='none'">` : '🌐'}
               ${tab.title || `分頁 #${tab.tabId}`}
+              <span class="domain-badge ${domainInfo.badgeClass}" style="margin-left:4px;">${domainInfo.icon} ${domainInfo.name}</span>
             </span>
             <span class="report-top-metrics">${tab.requests} 次 (${tab.percentage}%)</span>
           </div>
@@ -589,10 +663,14 @@ function renderReportCard(report) {
     const maxReq = Math.max(...report.topDomains.map((d) => d.requests), 1);
     topListHtml = report.topDomains.map((domItem) => {
       const pct = Math.max(5, Math.round((domItem.requests / maxReq) * 100));
+      const domainInfo = classifyDomain(domItem.domain);
       return `
         <div class="report-top-row">
           <div class="report-top-info">
-            <span class="report-top-name" title="${domItem.domain}">🌐 ${domItem.domain}</span>
+            <span class="report-top-name" title="${domItem.domain}">
+              🌐 ${domItem.domain}
+              <span class="domain-badge ${domainInfo.badgeClass}" style="margin-left:4px;">${domainInfo.icon} ${domainInfo.name}</span>
+            </span>
             <span class="report-top-metrics">${domItem.requests} 次 (${domItem.percentage}%)</span>
           </div>
           <div class="report-bar-wrap">
@@ -1065,6 +1143,24 @@ function initEvents() {
       renderList();
     });
   });
+
+  // 僅看工作網域切換開關 (AM-V01)
+  if (dom.btnFilterWork) {
+    dom.btnFilterWork.addEventListener('click', () => {
+      onlyWorkFilter = !onlyWorkFilter;
+      dom.btnFilterWork.classList.toggle('active', onlyWorkFilter);
+      renderList();
+    });
+  }
+
+  // 隱藏靜態 CDN 切換開關 (AM-V01)
+  if (dom.btnFilterHideStatic) {
+    dom.btnFilterHideStatic.addEventListener('click', () => {
+      hideStaticFilter = !hideStaticFilter;
+      dom.btnFilterHideStatic.classList.toggle('active', hideStaticFilter);
+      renderList();
+    });
+  }
 
   // 清空緩衝區按鈕
   dom.btnClearLogs.addEventListener('click', () => {

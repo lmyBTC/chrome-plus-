@@ -207,14 +207,15 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           <div className="flex items-center gap-1.5 px-2 py-1.5 bg-dark-card border border-dark-border-default/70 rounded-lg">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
-                newPriority === 'P1' ? 'bg-red-500' : newPriority === 'P2' ? 'bg-amber-500' : 'bg-blue-400'
+                newPriority === 'P0' ? 'bg-rose-500 animate-pulse' : newPriority === 'P1' ? 'bg-red-500' : newPriority === 'P2' ? 'bg-amber-500' : 'bg-blue-400'
               }`}
             />
             <select
               value={newPriority}
-              onChange={(e) => setNewPriority(e.target.value as 'P1' | 'P2' | 'P3')}
+              onChange={(e) => setNewPriority(e.target.value as 'P0' | 'P1' | 'P2' | 'P3')}
               className="bg-transparent text-xs font-semibold text-dark-primary outline-none cursor-pointer pr-1"
             >
+              <option value="P0" className="bg-dark-card text-rose-400 font-bold">🚨 P0 (Blocker)</option>
               <option value="P1" className="bg-dark-card text-dark-primary">P1 (高)</option>
               <option value="P2" className="bg-dark-card text-dark-primary">P2 (中)</option>
               <option value="P3" className="bg-dark-card text-dark-primary">P3 (低)</option>
@@ -507,15 +508,18 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
                         <td className="px-4 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <select
                             value={row.priority || 'P2'}
-                            onChange={(e) => onUpdatePriority(row.id, e.target.value as 'P1' | 'P2' | 'P3')}
+                            onChange={(e) => onUpdatePriority(row.id, e.target.value as 'P0' | 'P1' | 'P2' | 'P3')}
                             className={`px-2 py-0.5 rounded text-xs font-bold border cursor-pointer outline-none bg-dark-card transition-all ${
-                              row.priority === 'P1'
+                              row.priority === 'P0'
+                                ? 'text-rose-400 border-rose-600 bg-rose-950/40 font-extrabold'
+                                : row.priority === 'P1'
                                 ? 'text-red-400 border-red-800/40'
                                 : row.priority === 'P3'
                                 ? 'text-dark-muted border-dark-border-default'
                                 : 'text-blue-400 border-blue-900/40'
                             }`}
                           >
+                            <option value="P0">🚨 P0 (Blocker)</option>
                             <option value="P1">P1 (高)</option>
                             <option value="P2">P2 (中)</option>
                             <option value="P3">P3 (低)</option>
@@ -807,6 +811,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         onDismissSubtasks={onDismissSubtasks}
         onScheduleTimebox={onScheduleTimebox}
         isSchedulingCalendar={isSchedulingCalendar}
+        onUpdateEstimatedPomodoros={onUpdatePomodoroEstimate}
       />
     </div>
   );

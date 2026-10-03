@@ -420,6 +420,10 @@
         btnAddToScrum.textContent = '⏳ 正在轉入任務...';
       }
 
+      const deepLinkUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+        ? chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(stock.ticker)}`)
+        : `dashboard.html?ticker=${encodeURIComponent(stock.ticker)}`;
+
       try {
         const res = await window.FinanceAIClient.createScrumTask({
           ticker: stock.ticker,
@@ -427,7 +431,8 @@
           notes: md,
           tags: tags,
           estimatedPomodoros: 2,
-          url: window.location.href
+          url: deepLinkUrl,
+          deepLinkUrl: deepLinkUrl
         });
 
         if (btnAddToScrum) {
@@ -493,6 +498,112 @@
         return `$${(valB / 1000).toFixed(2)}T`;
       }
       return `$${valB.toFixed(2)}B`;
+    },
+
+    /**
+     * 純數值與純文字清洗函式 (Analyst Clean TSV)
+     * 消除千分位逗號、會計括號負數轉正負號、前置貨幣符號，輸出乾淨可運算之試算表格字串
+     */
+    cleanTsvCell: function (val) {
+      if (val === null || val === undefined) return '';
+      let str = String(val).trim();
+      if (!str || str === '--' || str === 'N/A' || str === 'n/a') return '';
+
+      // 替換 non-breaking space 與清理換行/Tab
+      str = str.replace(/[\u00A0\u2000-\u200B\u202F\u205F]/g, ' ')
+               .replace(/[\t\r\n]+/g, ' ')
+               .trim();
+
+      // 去除極值徽章或標籤文字 (例如：👑 龍頭, 💎 最具性價比, ⚠️ 偏高, ⭐)
+      str = str.replace(/👑\s*龍頭|💎\s*最具性價比|⚠️\s*偏高|⭐/g, '').trim();
+
+      // 1. 會計負數括號轉換: e.g. (123.45), (1,234.5), (45.6%) -> -123.45, -1234.5, -45.6%
+      const bracketMatch = str.match(/^\s*\(([\$NT\$¥€\s]*[\d,]+(?:\.\d+)?%?)\)\s*$/);
+      if (bracketMatch) {
+        let inner = bracketMatch[1].replace(/[\$NT\$¥€\s]/g, '').replace(/,/g, '');
+        return `-${inner}`;
+      }
+
+      // 2. 去除前置貨幣符號: e.g. $1,234.56, NT$ 500
+      let numCandidate = str.replace(/^[\$NT\$¥€\s]+/, '');
+
+      // 3. 判斷是否為數值、百分比、倍數或單位量詞 (如 1,234.56 或 +12.34% 或 -5.6% 或 25.4x 或 3.12T, 500B, 20M)
+      const numericPattern = /^[+-]?[\d,]+(?:\.\d+)?(?:%|x|[tbmk])?$/i;
+      if (numericPattern.test(numCandidate)) {
+        // 消除千分位逗號
+        let cleaned = numCandidate.replace(/,/g, '');
+        // 若為 +5.6 轉 5.6 (非百分比之正號前綴純數字)
+        if (cleaned.startsWith('+') && !cleaned.endsWith('%')) {
+          cleaned = cleaned.substring(1);
+        }
+        return cleaned;
+      }
+
+      return str;
+    },
+
+    /**
+     * 二維陣列或 DOM 表格轉 Clean TSV
+     */
+    formatTableToCleanTsv: function (tableData) {
+      if (!tableData) return '';
+
+      // 若傳入的是 DOM 表格元素
+      if (tableData instanceof HTMLElement) {
+        const rows = [];
+        const trs = tableData.querySelectorAll('tr');
+        trs.forEach((tr) => {
+          const rowCells = [];
+          const cells = tr.querySelectorAll('th, td');
+          cells.forEach((cell) => {
+            rowCells.push(this.cleanTsvCell(cell.textContent));
+          });
+          if (rowCells.length > 0) {
+            rows.push(rowCells.join('\t'));
+          }
+        });
+        return rows.join('\n');
+      }
+
+      // 若傳入的是二維陣列
+      if (Array.isArray(tableData)) {
+        return tableData.map((row) => {
+          if (!Array.isArray(row)) return '';
+          return row.map((cell) => this.cleanTsvCell(cell)).join('\t');
+        }).join('\n');
+      }
+
+      return '';
+    },
+
+    /**
+     * 複製損益表為 Clean TSV
+     */
+    copyFinancialsCleanTsv: function (currentStock, fallbackContainer) {
+      let tsv = '';
+      if (currentStock && currentStock.financials && Array.isArray(currentStock.financials.table) && currentStock.financials.table.length > 0) {
+        tsv = this.formatTableToCleanTsv(currentStock.financials.table);
+      } else if (fallbackContainer) {
+        const tbl = fallbackContainer.querySelector('table');
+        if (tbl) {
+          tsv = this.formatTableToCleanTsv(tbl);
+        }
+      }
+
+      if (!tsv || tsv.trim().length === 0) {
+        showToast('⚠️ 當前標的無可複製的損益表數據');
+        return;
+      }
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(tsv).then(() => {
+          showToast('📋 損益表 Clean TSV 已複製至剪貼簿！可直接貼入 Excel / Google Sheets');
+        }).catch(() => {
+          showToast('複製失敗，請手動複製');
+        });
+      } else {
+        showToast('⚠️ 當前環境不支援剪貼簿自動寫入');
+      }
     }
   };
 })();

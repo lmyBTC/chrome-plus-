@@ -91,7 +91,20 @@
     const safeTicker = raw.ticker ? String(raw.ticker).trim().toUpperCase().slice(0, 20) : undefined;
     const safeTitle = raw.title ? String(raw.title).trim().slice(0, 200) : (safeTicker ? `${safeTicker} 投資研報深度分析` : '未命名投資研究任務');
     const safeNotes = raw.notes ? String(raw.notes).slice(0, 15000) : '';
-    const safeUrl = raw.url ? String(raw.url).slice(0, 500) : undefined;
+    let safeDeepLinkUrl = typeof raw.deepLinkUrl === 'string' && raw.deepLinkUrl.trim()
+      ? raw.deepLinkUrl.trim().slice(0, 500)
+      : undefined;
+
+    // 若未主動提供 deepLinkUrl 且有 ticker，自動以 chrome.runtime.getURL 補全儀表板喚起參數
+    if (!safeDeepLinkUrl && safeTicker) {
+      if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+        safeDeepLinkUrl = chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(safeTicker)}`);
+      } else {
+        safeDeepLinkUrl = `dashboard.html?ticker=${encodeURIComponent(safeTicker)}`;
+      }
+    }
+
+    const safeUrl = raw.url ? String(raw.url).slice(0, 500) : safeDeepLinkUrl;
     const safePomodoros = typeof raw.estimatedPomodoros === 'number' && raw.estimatedPomodoros > 0
       ? Math.min(Math.round(raw.estimatedPomodoros), 20)
       : 2;
@@ -133,6 +146,7 @@
       tags: safeTags,
       estimatedPomodoros: safePomodoros,
       url: safeUrl,
+      deepLinkUrl: safeDeepLinkUrl,
       gtdContext: safeGTDContext,
       priority: safePriority,
       sourcePlugin: safeSourcePlugin,
@@ -142,6 +156,19 @@
   }
 
   const FinanceAIClient = {
+    /**
+     * 產出特定標的之儀表板 Deep-Link URL
+     * @param {string} ticker
+     * @returns {string}
+     */
+    getDashboardDeepLink(ticker) {
+      const cleanTicker = ticker ? String(ticker).trim().toUpperCase() : '';
+      if (!cleanTicker) return '';
+      if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+        return chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(cleanTicker)}`);
+      }
+      return `dashboard.html?ticker=${encodeURIComponent(cleanTicker)}`;
+    },
     /**
      * 取得 ScrumClock Extension ID (自 chrome.storage.local)
      */

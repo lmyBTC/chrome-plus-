@@ -441,6 +441,10 @@
       <button class="speed-btn" data-speed="3">3x</button>
     </div>
     
+    <div style="font-size: 11px; color: rgba(255,255,255,0.75); margin-bottom: 8px; text-align: center;">
+      ⚡ 盲打微調：<span class="shortcut-badge">Alt + [</span> 減速 / <span class="shortcut-badge">Alt + ]</span> 加速 (0.25x)
+    </div>
+    
     <div class="custom-speed">
       <input type="number" id="customSpeed" min="0.1" max="16" step="0.1" value="3" placeholder="自訂速度">
       <button id="setCustomSpeed">設定</button>
@@ -496,7 +500,10 @@
     <div class="bookmark-section">
       <div class="section-title">
         <span>⏱️ 法說會/影音筆記打點</span>
-        <span class="shortcut-badge">Alt + B</span>
+        <div style="display: flex; gap: 4px;">
+          <span class="shortcut-badge" title="全螢幕盲打打點">Alt + M</span>
+          <span class="shortcut-badge" title="彈出摘要輸入">Alt + B</span>
+        </div>
       </div>
 
       <div class="bookmark-btn-group">

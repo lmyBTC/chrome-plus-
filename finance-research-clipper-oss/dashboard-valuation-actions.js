@@ -327,6 +327,10 @@
         btnAddToScrum.textContent = '⏳ 推播任務中...';
       }
 
+      const deepLinkUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+        ? chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(ticker)}`)
+        : `dashboard.html?ticker=${encodeURIComponent(ticker)}`;
+
       try {
         const res = await window.FinanceAIClient.createScrumTask({
           ticker: ticker,
@@ -334,7 +338,8 @@
           notes: md,
           tags: tags,
           estimatedPomodoros: 2,
-          url: window.location.href
+          url: deepLinkUrl,
+          deepLinkUrl: deepLinkUrl
         });
 
         if (btnAddToScrum) {
@@ -358,12 +363,61 @@
         }
         showToast(`❌ 推播異常: ${err.message}`);
       }
+    },
+
+    /**
+     * 複製估值沙盒 5x5 二維敏感度熱力矩陣為 Clean TSV (直貼 Excel / Google Sheets)
+     * @param {Object} model 估值模型物件
+     */
+    copySensitivityMatrixTsv: function (model) {
+      if (!model || !model.sensitivityMatrix || !model.sensitivityMatrix.grid) {
+        showToast('⚠️ 無估值敏感度矩陣資料可複製');
+        return;
+      }
+
+      const matrix = model.sensitivityMatrix;
+      const cleanCell = (window.DashboardActions && window.DashboardActions.cleanTsvCell) || ((v) => String(v || '').trim());
+
+      // 標題列：橫軸 Exit P/E
+      const headerRow = ['g \\ Exit P/E', ...matrix.peSteps.map((p) => `${p}x`)];
+      const rows = [headerRow];
+
+      // 各列：縱軸複合成長率 g，對應各儲存格純目標價
+      matrix.grid.forEach((row, rIdx) => {
+        const gVal = matrix.growthSteps[rIdx];
+        const gLabel = `${gVal >= 0 ? '+' : ''}${(gVal * 100).toFixed(1)}%`;
+        const rowCells = [gLabel];
+
+        row.forEach((cell) => {
+          // 純數值目標價，方便分析師在 Excel 運算加總
+          const priceNum = cell.targetPrice !== undefined && cell.targetPrice !== null
+            ? Number(cell.targetPrice).toFixed(2)
+            : '';
+          rowCells.push(cleanCell(priceNum));
+        });
+
+        rows.push(rowCells);
+      });
+
+      const tsv = rows.map((r) => r.join('\t')).join('\n');
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(tsv).then(() => {
+          showToast(`📋 已複製 $${model.ticker || ''} 5x5 估值敏感度 Clean TSV！`);
+        }).catch(() => {
+          showToast('複製失敗，請手動複製');
+        });
+      } else {
+        showToast('⚠️ 當前環境不支援剪貼簿自動寫入');
+      }
     }
   };
 
-  // 掛載至全域 DashboardActions 物件
+  // 掛載至全域物件 (相容 DashboardActions 與 DashboardValuationActions)
   if (!window.DashboardActions) {
     window.DashboardActions = {};
   }
   Object.assign(window.DashboardActions, ValuationActions);
+  window.DashboardValuationActions = ValuationActions;
 })();
+

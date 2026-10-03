@@ -6,6 +6,9 @@ import { sync } from '../../../core/api/sync';
 import { SprintResultModal } from './sprint/SprintResultModal';
 import { SprintMarkdownImporter } from './sprint/SprintMarkdownImporter';
 import { SprintBattleItem } from './sprint/SprintBattleItem';
+import { CalendarConflictModal } from './sprint/CalendarConflictModal';
+import { googleCalendarService } from '../../../shared/google/googleCalendarService';
+import { GoogleCalendarEvent } from '../../../shared/google/googleTypes';
 
 interface SprintPomodoroProps {
   onComplete: () => void;
@@ -21,6 +24,7 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
     resumeSprint,
     stopSprint,
     logResult,
+    recordInterruption,
     currentSprint,
     whiteNoiseEnabled,
     setWhiteNoiseEnabled,
@@ -37,6 +41,19 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
   const [busyEventId, setBusyEventId] = useState<string | null>(null);
   const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<Record<string, string[]>>({});
+
+  // 衝刺中斷原因輸入與反饋
+  const [customInterruptionReason, setCustomInterruptionReason] = useState('');
+  const [interruptionFeedback, setInterruptionFeedback] = useState<string | null>(null);
+
+  // 日曆衝突預警狀態
+  const [conflictModalOpen, setConflictModalOpen] = useState(false);
+  const [pendingConflictData, setPendingConflictData] = useState<{
+    missionId: string;
+    targetDuration: number;
+    suggestedDuration: number;
+    conflictEvent: GoogleCalendarEvent;
+  } | null>(null);
 
   const [selectedBattleIds, setSelectedBattleIds] = useState<string[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -85,15 +102,57 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
     return weeklyMissions.find(m => m.id === missionId);
   };
 
-  const handleStartSprint = async (missionId: string, duration?: number) => {
+  const executeStartSprint = async (missionId: string, duration?: number) => {
+    const durationToUse = duration || 25;
     const missionText = getMissionText(missionId);
     try {
-      const eventId = await sync.createBusyEvent(missionText, duration || 25);
+      const eventId = await sync.createBusyEvent(missionText, durationToUse);
       if (eventId) setBusyEventId(eventId);
     } catch (err) {
       console.warn('建立 Google Calendar 專注事件失敗 (不影響本地番茄鐘倒數):', err);
     }
-    startSprint(missionId, duration);
+    startSprint(missionId, durationToUse);
+  };
+
+  const handleStartSprint = async (missionId: string, duration?: number) => {
+    const durationToUse = duration || 25;
+
+    // 進行 Google 日曆衝突預先排查
+    try {
+      const conflict = await googleCalendarService.checkSprintConflict(durationToUse);
+      if (conflict && conflict.start?.dateTime) {
+        const conflictTimeMs = new Date(conflict.start.dateTime).getTime();
+        const minsUntilConflict = Math.max(1, Math.floor((conflictTimeMs - Date.now()) / 60000));
+        // 若距衝突大於等於 20 分鐘建議 15 分鐘，若更短則建議該剩餘可用時間 (至少 5 分鐘)
+        const suggested = minsUntilConflict >= 20 ? 15 : Math.max(5, Math.min(15, minsUntilConflict));
+
+        setPendingConflictData({
+          missionId,
+          targetDuration: durationToUse,
+          suggestedDuration: suggested,
+          conflictEvent: conflict
+        });
+        setConflictModalOpen(true);
+        return;
+      }
+    } catch (err) {
+      console.warn('衝突預檢失敗，直接啟動:', err);
+    }
+
+    await executeStartSprint(missionId, durationToUse);
+  };
+
+  const handleRecordInterruption = (reason: string) => {
+    recordInterruption(reason);
+    setInterruptionFeedback(`已記錄：${reason}`);
+    setTimeout(() => setInterruptionFeedback(null), 2500);
+  };
+
+  const handleCustomInterruptionSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customInterruptionReason.trim()) return;
+    handleRecordInterruption(customInterruptionReason.trim());
+    setCustomInterruptionReason('');
   };
 
   const handleRemoveBattle = async (missionId: string) => {
@@ -320,8 +379,8 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
           <div className="flex space-x-4 justify-center">
             {state === 'running' && (
               <button
-                onClick={pauseSprint}
-                className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 font-semibold shadow-md shadow-yellow-950/30 transition-all"
+                onClick={() => pauseSprint()}
+                className="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-500 font-semibold shadow-md shadow-yellow-950/30 transition-all cursor-pointer"
               >
                 暫停
               </button>
@@ -329,18 +388,91 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
             {state === 'paused' && (
               <button
                 onClick={resumeSprint}
-                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 font-semibold shadow-md shadow-green-950/30 transition-all"
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 font-semibold shadow-md shadow-green-950/30 transition-all cursor-pointer"
               >
-                繼續
+                繼續衝刺
               </button>
             )}
             <button
               onClick={handleStopSprint}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 font-semibold shadow-md shadow-red-950/30 transition-all"
+              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 font-semibold shadow-md shadow-red-950/30 transition-all cursor-pointer"
             >
               放棄衝刺
             </button>
           </div>
+
+          {/* 暫停態：中斷原因快選與收集面板 */}
+          {state === 'paused' && (
+            <div className="mt-6 pt-5 border-t border-dark-border-subtle text-left max-w-lg mx-auto animate-fade-in">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-semibold text-amber-400 flex items-center space-x-1.5">
+                  <span>🚨</span>
+                  <span>記錄本次衝刺中斷打擾原因</span>
+                </span>
+                {currentSprint?.interruptionCount ? (
+                  <span className="text-[11px] bg-amber-950/60 border border-amber-800/50 text-amber-300 px-2 py-0.5 rounded-full font-mono font-medium">
+                    已累計 {currentSprint.interruptionCount} 次中斷
+                  </span>
+                ) : null}
+              </div>
+
+              {/* 快選標籤 */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                {[
+                  { label: '🏢 會議中斷', value: '會議中斷' },
+                  { label: '🚨 緊急插單', value: '緊急插單' },
+                  { label: '☕ 個人休整', value: '個人休整' },
+                  { label: '❓ 其他打擾', value: '其他打擾' }
+                ].map(item => (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => handleRecordInterruption(item.value)}
+                    className="px-2.5 py-1.5 text-xs rounded-lg bg-dark-surface hover:bg-amber-950/40 hover:text-amber-300 border border-dark-border-default hover:border-amber-700/60 text-dark-secondary transition-all cursor-pointer font-medium text-center"
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* 自訂打擾原因輸入 */}
+              <form onSubmit={handleCustomInterruptionSubmit} className="flex space-x-2">
+                <input
+                  type="text"
+                  value={customInterruptionReason}
+                  onChange={(e) => setCustomInterruptionReason(e.target.value)}
+                  placeholder="或輸入自訂打擾原因（例：主管臨時交辦事項）..."
+                  className="flex-1 text-xs bg-dark-surface border border-dark-border-default rounded-lg px-3 py-1.5 text-dark-primary focus:outline-none focus:border-amber-500"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 bg-dark-hover hover:bg-dark-card border border-dark-border-default text-xs text-dark-primary font-medium rounded-lg transition-colors cursor-pointer"
+                >
+                  記錄
+                </button>
+              </form>
+
+              {/* 記錄反饋提示 */}
+              {interruptionFeedback && (
+                <div className="mt-2 text-xs text-emerald-400 flex items-center space-x-1 animate-fade-in">
+                  <span>✓</span>
+                  <span>{interruptionFeedback}</span>
+                </div>
+              )}
+
+              {/* 已記錄中斷歷史預覽標籤 */}
+              {currentSprint?.interruptionReasons && currentSprint.interruptionReasons.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5 items-center">
+                  <span className="text-[10px] text-dark-muted">已記錄：</span>
+                  {currentSprint.interruptionReasons.map((r, i) => (
+                    <span key={i} className="text-[11px] bg-dark-surface border border-dark-border-subtle text-amber-300/90 px-2 py-0.5 rounded">
+                      {r}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 專注白噪音控制列 */}
           {state === 'running' && (
@@ -492,11 +624,41 @@ export const SprintPomodoro: React.FC<SprintPomodoroProps> = ({ onComplete, onNa
         setResult={setResult}
         markAsCompleted={markAsCompleted}
         setMarkAsCompleted={setMarkAsCompleted}
+        interruptionCount={currentSprint?.interruptionCount}
+        interruptionReasons={currentSprint?.interruptionReasons}
         onSubmit={handleSubmitResult}
         onCancel={() => {
           setShowResultModal(false);
           setResult('');
           stopSprint();
+        }}
+      />
+
+      {/* Google 日曆會議防撞預警模態框 */}
+      <CalendarConflictModal
+        isOpen={conflictModalOpen}
+        conflictEvent={pendingConflictData?.conflictEvent || null}
+        targetDurationMinutes={pendingConflictData?.targetDuration || 25}
+        suggestedDurationMinutes={pendingConflictData?.suggestedDuration || 15}
+        onConfirmAdjusted={async (adjusted) => {
+          if (pendingConflictData) {
+            const { missionId } = pendingConflictData;
+            setConflictModalOpen(false);
+            setPendingConflictData(null);
+            await executeStartSprint(missionId, adjusted);
+          }
+        }}
+        onProceedAnyway={async () => {
+          if (pendingConflictData) {
+            const { missionId, targetDuration } = pendingConflictData;
+            setConflictModalOpen(false);
+            setPendingConflictData(null);
+            await executeStartSprint(missionId, targetDuration);
+          }
+        }}
+        onCancel={() => {
+          setConflictModalOpen(false);
+          setPendingConflictData(null);
         }}
       />
     </div>

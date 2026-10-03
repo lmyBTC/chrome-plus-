@@ -497,12 +497,29 @@
 
       const heatmapHeader = document.createElement('div');
       heatmapHeader.className = 'heatmap-panel-header';
-      heatmapHeader.innerHTML = `
-        <div>
-          <h3 class="heatmap-panel-title">📊 敏感度二維熱力矩陣</h3>
-          <div class="heatmap-panel-subtitle">橫軸：出場 Exit P/E | 縱軸：EPS 複合年成長率 (g)</div>
-        </div>
+      heatmapHeader.style.display = 'flex';
+      heatmapHeader.style.justifyContent = 'space-between';
+      heatmapHeader.style.alignItems = 'center';
+
+      const titleWrap = document.createElement('div');
+      titleWrap.innerHTML = `
+        <h3 class="heatmap-panel-title">📊 敏感度二維熱力矩陣</h3>
+        <div class="heatmap-panel-subtitle">橫軸：出場 Exit P/E | 縱軸：EPS 複合年成長率 (g)</div>
       `;
+      heatmapHeader.appendChild(titleWrap);
+
+      const btnCopyHeatmapTsv = document.createElement('button');
+      btnCopyHeatmapTsv.className = 'btn-clean-tsv';
+      btnCopyHeatmapTsv.title = '複製 5x5 估值敏感度矩陣為 Clean TSV，直貼 Excel / Google Sheets';
+      btnCopyHeatmapTsv.innerHTML = '📋 複製 Clean TSV';
+      btnCopyHeatmapTsv.addEventListener('click', () => {
+        if (window.DashboardValuationActions && window.DashboardValuationActions.copySensitivityMatrixTsv) {
+          window.DashboardValuationActions.copySensitivityMatrixTsv(currentModel);
+        } else if (window.DashboardActions && window.DashboardActions.copySensitivityMatrixTsv) {
+          window.DashboardActions.copySensitivityMatrixTsv(currentModel);
+        }
+      });
+      heatmapHeader.appendChild(btnCopyHeatmapTsv);
       heatmapPanel.appendChild(heatmapHeader);
 
       const heatmapContainer = document.createElement('div');

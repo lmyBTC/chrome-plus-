@@ -3,7 +3,7 @@ name: FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec
 description: 定義 finance-research-clipper-oss 插件之技術規格、資料來源選擇器 SSOT、頁面架構、儲存模型與跨插件對外接口。
 triggers: [finance-clipper, 研報採集, 股票爬蟲, 財務儀表板, yahoo finance爬蟲, 個股剪輯, 財報分析]
 dependencies: []
-ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "finance-research-clipper-oss/docs/peer-matrix-and-valuation-spec.md", "0.doc_mg/docs/cross_plugin_contract.md"]
+ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "finance-research-clipper-oss/docs/peer-matrix-and-valuation-spec.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md"]
 ---
 
 # 專家技能：FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec)
@@ -113,6 +113,10 @@ FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (I
    - **`GET_WATCHLIST`**: 回傳純自選股清單快照（只讀），無副作用。
    - **`GET_STOCK_SUMMARY`**: 傳入 `{ ticker: string }`，回傳個股精簡財務指標。
    - **`FOCUS_STARTED`**: 接收 ScrumClock 開始番茄鐘專注廣播，自動進行標的研報預載。
+5. **Google 生態系協同契約 (`EXPORT_TO_SHEETS` / `CREATE_DOC_REPORT`)**：
+   - **`EXPORT_TO_SHEETS`**: 支援發送個股財務底稿（`FINANCIAL_SUMMARY`）、同業對比矩陣（`PEER_COMPARISON`）與估值沙盒（`VALUATION_SANDBOX`）至自訂 GAS Webhook 或經由 ScrumClock 中樞代理轉發。
+   - **`CREATE_DOC_REPORT`**: 發送個股完整研報（含摘要、估值情境、多空觀點與跨插件影音字幕精華），自動生成 Google Docs 研報並歸檔至個人 Drive。
+   - 詳細欄位 Schema、Payload 與 GAS 部署範例依據 `0.doc_mg/docs/google_ecosystem_integration_spec.md` SSOT 規範。
 
 ---
 
@@ -120,3 +124,14 @@ FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (I
 1. **禁止跨目錄讀取**: 開發 FinanceClipper 時，禁止讀取 `chrome_scrumclock/` 內部 React 代碼。
 2. **通訊規格驅動**: 跨插件接口一律依據 `0.doc_mg/docs/cross_plugin_contract.md` 規範。
 3. **零構建約束**: FinanceClipper 維持零依賴原生 JS 特性，嚴禁無故引入 Node.js/npm 打包流程。
+
+---
+
+## 7. 投研工作流規格與功能真空區備註 (Analyst Workflow Spec & Vacuum Zones)
+依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 診斷，在投資研究員財報調研與模型建置場景中需注意以下規格演進：
+* **投研底稿直連管線 (Direct-to-Sheets Pipeline，P0 已實作)**：儀表板各項表格（損益表、同業對比、估值沙盒）已完整支援「Clean TSV 一鍵複製」（自動清理千分位逗號、括號負數符號、前綴貨幣符號，直貼 Excel/Sheets 零錯位）。
+* **作戰任務雙向回寫 (P0 已實作)**：推播至 ScrumClock 的戰役任務保證攜帶 `deepLinkUrl` 參數（含個股 Ticker），支援自 ScrumClock 待辦卡片反向喚起儀表板自動定位標的。
+* **自選投資組合批次巡檢 (Portfolio Watcher，規劃中)**：規劃背景走訪多檔自選股批次更新，提供共識評級變動與目標價階梯警報。
+* **估值模型動態公式化 (規劃中)**：估值沙盒支援導出完整 Excel/Sheets 動態折現公式，強化模型可審計性。
+
+

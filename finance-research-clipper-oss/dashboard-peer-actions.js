@@ -370,12 +370,64 @@
           showToast(`❌ 連線錯誤: ${err.message}`);
         });
       });
+    },
+
+    /**
+     * 匯出同業對比矩陣為 Clean TSV (直貼 Excel / Google Sheets)
+     * @param {Object} peerData 經 aggregatePeerMetrics 聚合之資料
+     */
+    copyPeerMatrixTsv: function (peerData) {
+      if (!peerData || !peerData.items || peerData.items.length === 0) {
+        showToast('⚠️ 無對比資料可複製');
+        return;
+      }
+
+      const cleanCell = (window.DashboardActions && window.DashboardActions.cleanTsvCell) || ((v) => String(v || '').trim());
+
+      // 構建與「多維度關鍵財務與估值指標對比表」相應的二維陣列
+      const headerRow = ['指標項目 (Metric)', ...peerData.items.map((i) => i.ticker)];
+
+      const metricDefinitions = [
+        { label: '公司名稱', fn: (i) => i.name },
+        { label: '即時價格', fn: (i) => i.priceDisplay || i.price },
+        { label: '目標價預期空間', fn: (i) => typeof i.upsideVal === 'number' ? `${i.upsideVal}%` : '' },
+        { label: '市值規模 (Market Cap)', fn: (i) => i.marketCapDisplay || i.marketCapVal },
+        { label: '本益比 (P/E Ratio)', fn: (i) => i.peVal !== null && i.peVal !== undefined ? i.peVal : '' },
+        { label: '市銷率 (P/S Ratio)', fn: (i) => i.psVal !== null && i.psVal !== undefined ? i.psVal : '' },
+        { label: '每股盈餘 (EPS)', fn: (i) => i.epsVal !== null && i.epsVal !== undefined ? i.epsVal : '' },
+        { label: '52週最低價', fn: (i) => i.low52 || '' },
+        { label: '52週最高價', fn: (i) => i.high52 || '' },
+        { label: '52週位階', fn: (i) => typeof i.position52w === 'number' ? `${i.position52w}%` : '' }
+      ];
+
+      const rows = [headerRow];
+      metricDefinitions.forEach((m) => {
+        const row = [m.label];
+        peerData.items.forEach((item) => {
+          row.push(cleanCell(m.fn(item)));
+        });
+        rows.push(row);
+      });
+
+      const tsv = rows.map((r) => r.join('\t')).join('\n');
+
+      if (typeof navigator !== 'undefined' && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(tsv).then(() => {
+          showToast(`📋 已複製 ${peerData.count} 檔標的之同業對比 Clean TSV！`);
+        }).catch(() => {
+          showToast('複製失敗，請手動複製');
+        });
+      } else {
+        showToast('⚠️ 當前環境不支援剪貼簿自動寫入');
+      }
     }
   };
 
-  // 掛載至全域 DashboardActions 物件
+  // 掛載至全域物件 (相容 DashboardActions 與 DashboardPeerActions)
   if (!window.DashboardActions) {
     window.DashboardActions = {};
   }
   Object.assign(window.DashboardActions, PeerActions);
+  window.DashboardPeerActions = PeerActions;
 })();
+

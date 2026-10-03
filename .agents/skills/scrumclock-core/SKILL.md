@@ -3,7 +3,7 @@ name: ScrumClock 插件規格與元件字典 (ScrumClock Core Spec)
 description: 定義 chrome_scrumclock 插件之技術棧、React/TS 元件架構、資料模型 SSOT 與狀態管理，確保開發時精準引用不跨界。
 triggers: [scrumclock, 番茄鐘, 敏捷看板, scrumclock開發, scrum, pomodoro, 側邊欄番茄鐘]
 dependencies: []
-ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cross_plugin_contract.md"]
+ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md"]
 ---
 
 # 專家技能：ScrumClock 插件規格與元件字典 (ScrumClock Core Spec)
@@ -193,6 +193,11 @@ ScrumClock 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoe
 - **極簡發送與回執**：
   - 模組位置：`src/shared/messaging/outboxQueue.ts`（導出 `sendDirectMessage`）、`src/background/externalService.ts`。
   - 跨模組資料交換採前端即時錯誤反饋，不積壓離線死信。
+- **Google 生態系協同通訊與中樞代理 (`EXPORT_TO_SHEETS` / `SYNC_CALENDAR_EVENT`)**：
+  - **`EXPORT_TO_SHEETS`**: 支援將專案看板衝刺日誌（`SPRINT_LOGS`）與任務池（`TASK_POOL`）結構化寫入個人 Google 試算表。
+  - **`SYNC_CALENDAR_EVENT`**: 支援將每日焦點戰役預約建立為 Google Calendar 時間箱（`POMODORO_SCHEDULE`），並於衝刺結束後自動回填實耗工時。
+  - **中樞代理轉發 (Hub Aggregation)**: 支援接收來自 Spoke 子插件的 Google 匯出請求，並透過內部 `googleAuthClient` (OAuth2) 或配置之 GAS Webhook 統一代發，所有回執符合標準化 `CrossPluginGoogleResponse` 結構。
+  - 詳細欄位 Schema 與 GAS 部署範例依據 `0.doc_mg/docs/google_ecosystem_integration_spec.md` SSOT 規範。
 
 ---
 

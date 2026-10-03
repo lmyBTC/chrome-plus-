@@ -265,13 +265,19 @@
         btnCreateTask.disabled = true;
         showStatus(`🎯 正在轉入任務...`);
 
+        const deepLinkUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL)
+          ? chrome.runtime.getURL(`dashboard.html?ticker=${encodeURIComponent(s.ticker)}`)
+          : `dashboard.html?ticker=${encodeURIComponent(s.ticker)}`;
+
         try {
           const res = await window.FinanceAIClient.createScrumTask({
             ticker: s.ticker,
             title: `研讀 $${s.ticker} 財報與投資估值`,
             notes: md,
             tags: ['#投資研究', `$${s.ticker}`],
-            estimatedPomodoros: 2
+            estimatedPomodoros: 2,
+            url: deepLinkUrl,
+            deepLinkUrl: deepLinkUrl
           });
 
           btnCreateTask.disabled = false;

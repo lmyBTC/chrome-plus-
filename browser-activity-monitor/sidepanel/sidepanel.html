@@ -21,6 +21,18 @@
       </div>
     </header>
 
+    <!-- 跨插件敏捷衝刺審查橫幅 (預設隱藏，收到廣播時自動啟動) -->
+    <div class="sprint-review-banner" id="sprint-review-banner" style="display: none;">
+      <div class="sprint-banner-top">
+        <span class="sprint-banner-tag">🔥 敏捷衝刺審查模式</span>
+        <span class="sprint-banner-title" id="sprint-banner-mission-title">載入中...</span>
+      </div>
+      <div class="sprint-banner-meta">
+        <span id="sprint-banner-duration">衝刺時間箱: 25 分鐘</span>
+        <span id="sprint-banner-time-start">起訖時段同步中</span>
+      </div>
+    </div>
+
     <!-- 雙軌隨選健檢與檢測記錄控制台 (Session Profiler Console) -->
     <section class="card session-card" id="session-card">
       <div class="session-card-header">
@@ -220,6 +232,15 @@
           <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出當前緩衝區日誌 JSON">匯出</button>
           <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空當前緩衝區">清空</button>
         </div>
+      </div>
+      <!-- 智慧網域過濾列 (AM-V01) -->
+      <div class="filter-sub-bar">
+        <button class="filter-toggle-btn" id="btn-filter-work" title="僅顯示工作與通訊網域 (GitHub, Jira, Figma, Slack...)">
+          <span>💼 僅看工作</span>
+        </button>
+        <button class="filter-toggle-btn" id="btn-filter-hide-static" title="過濾 CDN、字型與遙測分析等靜態噪音">
+          <span>🛡️ 隱藏靜態 CDN</span>
+        </button>
       </div>
 
       <!-- 活動串流瀑布流容器 (環形緩衝區上限 30 筆) -->

@@ -92,6 +92,47 @@ class GoogleCalendarService {
   }
 
   /**
+   * 檢查即將進行的衝刺是否與 Google 日曆既定會議衝突
+   * @param durationMinutes 衝刺時長（分鐘）
+   * @param calendarId 日曆 ID (預設 'primary')
+   */
+  public async checkSprintConflict(
+    durationMinutes = 25,
+    calendarId = 'primary'
+  ): Promise<GoogleCalendarEvent | null> {
+    try {
+      const authState = await googleAuthClient.getAuthState();
+      if (!authState.isAuthenticated) return null;
+
+      const now = Date.now();
+      const sprintEndTime = now + durationMinutes * 60 * 1000;
+      const events = await this.getTodayEvents(calendarId);
+
+      for (const event of events) {
+        if (!event.start?.dateTime || !event.end?.dateTime) continue;
+        const startMs = new Date(event.start.dateTime).getTime();
+        const endMs = new Date(event.end.dateTime).getTime();
+
+        // 排除已結束的事件
+        if (endMs <= now) continue;
+
+        // 排除 ScrumClock 自己建立的番茄鐘/時間箱事件
+        const summary = event.summary || '';
+        if (summary.startsWith('[🍅') || summary.startsWith('[時間箱]')) continue;
+
+        // 判斷時間區間重疊：start < sprintEndTime 且 end > now
+        if (startMs < sprintEndTime && endMs > now) {
+          return event;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('檢查 Google 日曆衝刺衝突失敗 (安全忽略):', err);
+      return null;
+    }
+  }
+
+  /**
    * 建立 Google Calendar 事件
    */
   public async createEvent(

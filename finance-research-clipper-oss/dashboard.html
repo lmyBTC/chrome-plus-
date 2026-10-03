@@ -286,8 +286,11 @@
 
         <!-- 損益表矩陣 (Financials) -->
         <section class="card">
-          <div class="card-title">
+          <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
             <span>📑 損益表數據矩陣 (Income Statement)</span>
+            <button id="btn-copy-financials-tsv" class="btn-clean-tsv" title="複製 Clean TSV 格式，去除千分位逗號與會計括號，可直貼 Excel / Google Sheets">
+              📋 複製 Clean TSV
+            </button>
           </div>
           <div id="financials-table-wrap" class="table-responsive">
             <p style="color: var(--text-muted); font-size: 0.88rem;">此標的未提供損益表數據</p>

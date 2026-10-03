@@ -4,6 +4,7 @@ import { getUserSettings } from './alarmHandlers';
 import { sendDirectMessage } from '../shared/messaging/outboxQueue';
 
 export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
+export const DEFAULT_ACTIVITY_MONITOR_ID = 'kjnoegggihncdaimlgfccccogghjapgn';
 
 /**
  * 儲存 Gemini 對話資料
@@ -212,6 +213,7 @@ export async function handleCreateTaskExternal(payload: any) {
   const safeTitle = (rawTitle || (safeTicker ? `${safeTicker} 投資研報深度分析` : '未命名研報任務')).slice(0, 200);
   const safeNotes = typeof payload.notes === 'string' ? payload.notes.slice(0, 15000) : '';
   const safeUrl = typeof payload.url === 'string' ? payload.url.slice(0, 500) : undefined;
+  const safeDeepLinkUrl = typeof payload.deepLinkUrl === 'string' ? payload.deepLinkUrl.slice(0, 500) : undefined;
   const safePomodoros = typeof payload.estimatedPomodoros === 'number' && payload.estimatedPomodoros > 0
     ? Math.min(Math.round(payload.estimatedPomodoros), 20)
     : 2;
@@ -263,6 +265,14 @@ export async function handleCreateTaskExternal(payload: any) {
         : safeNotes;
       hasChanges = true;
     }
+    if (safeDeepLinkUrl && !existingBattleMission.deepLinkUrl) {
+      existingBattleMission.deepLinkUrl = safeDeepLinkUrl;
+      hasChanges = true;
+    }
+    if ((safeDeepLinkUrl || safeUrl) && !existingBattleMission.url) {
+      existingBattleMission.url = safeDeepLinkUrl || safeUrl;
+      hasChanges = true;
+    }
 
     if (hasChanges) {
       await chrome.storage.local.set({ weeklyMissions });
@@ -298,7 +308,8 @@ export async function handleCreateTaskExternal(payload: any) {
     progressPercent: 0,
     ticker: safeTicker,
     tags: safeTags,
-    url: safeUrl,
+    url: safeDeepLinkUrl || safeUrl,
+    deepLinkUrl: safeDeepLinkUrl,
     suggestedDuration: safePomodoros * 25,
     estimatedPomodoros: safePomodoros
   };
@@ -378,3 +389,59 @@ export async function broadcastFocusToFinanceClipper(payload?: any) {
     console.warn('[ScrumClock Focus Broadcast] 廣播失敗:', err);
   }
 }
+
+/**
+ * 向 ActivityMonitor 廣播敏捷衝刺啟動事件 (SF-03 & cross_plugin_contract.md)
+ */
+export async function broadcastSprintStartToActivityMonitor(payload?: any) {
+  try {
+    const settings = await getUserSettings();
+    const extId = (settings as any).activityMonitorExtensionId || DEFAULT_ACTIVITY_MONITOR_ID;
+    if (!extId) return;
+
+    await sendDirectMessage(
+      extId,
+      {
+        protocolVersion: 2,
+        type: 'EVENT_SPRINT_START',
+        payload: {
+          sprintSessionId: payload?.sprintSessionId || `sprint_${Date.now()}`,
+          missionId: payload?.missionId || '',
+          title: payload?.missionText || payload?.title || '敏捷專注衝刺',
+          duration: payload?.duration || 25,
+          startTime: payload?.startTime || Date.now()
+        }
+      },
+      { timeoutMs: 3000 }
+    );
+  } catch (err) {
+    console.warn('[ScrumClock -> BAM] 廣播衝刺啟動失敗 (可優雅降級):', err);
+  }
+}
+
+/**
+ * 向 ActivityMonitor 廣播敏捷衝刺結束/停止事件 (SF-03)
+ */
+export async function broadcastSprintStopToActivityMonitor(payload?: any) {
+  try {
+    const settings = await getUserSettings();
+    const extId = (settings as any).activityMonitorExtensionId || DEFAULT_ACTIVITY_MONITOR_ID;
+    if (!extId) return;
+
+    await sendDirectMessage(
+      extId,
+      {
+        protocolVersion: 2,
+        type: 'EVENT_SPRINT_STOP',
+        payload: {
+          status: payload?.status || 'STOPPED',
+          endTime: Date.now()
+        }
+      },
+      { timeoutMs: 3000 }
+    );
+  } catch (err) {
+    console.warn('[ScrumClock -> BAM] 廣播衝刺停止失敗 (可優雅降級):', err);
+  }
+}
+

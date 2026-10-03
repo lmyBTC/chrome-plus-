@@ -43,6 +43,9 @@
 
 | 快捷鍵組合 | 功能說明 |
 | :--- | :--- |
+| `Alt + [` | **⚡ 全螢幕步進微調減速 0.25x (範圍 0.1x ~ 16.0x)** |
+| `Alt + ]` | **⚡ 全螢幕步進微調加速 0.25x (範圍 0.1x ~ 16.0x)** |
+| `Alt + M` | **📌 全螢幕免彈窗快捷標記當前時間戳至書籤庫** |
 | `Alt + B` 或 `Ctrl + Shift + B` | **⏱️ 開啟法說會影音時間戳記重點輸入視窗 (Bookmark Modal)** |
 | `Alt + S` 或 `Ctrl + Shift + S` | **📥 一鍵收集當前時間戳字幕與影片資訊至 ScrumClock 收集箱** |
 | `Ctrl + Shift + 1` | 切換為 **1.0x** 正常速度 |
@@ -101,3 +104,13 @@
 - **傳送至 ScrumClock 提示「未設定 Extension ID」或「無法連線」**：
   - 請於 Chrome 擴充功能清單 (`chrome://extensions/`) 複製 ScrumClock 的 ID。
   - 開啟 VideoSpeedPlus Popup 視窗，於「📥 ScrumClock 收集器」欄位貼上並點擊「儲存」與「測試」。
+
+---
+
+## 🚀 投研工作流支援與演進藍圖 (Analyst Workflow Roadmap)
+
+依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 之診斷分析，後續規劃演進方向：
+1. **免喚出 Popup 之盲打快捷鍵 (已完成 ✅)**：支援 `Alt+[` / `Alt+]` 連續步進調速（0.25x）與 `Alt+M` 即時標記書籤。
+2. **雙向反查 Deep-Link (已完成 ✅)**：跨插件推播內容附帶精準秒數導航 URL (`&t=Xxs`)，支援反向喚起自動定位。
+3. **多段精華聚合容器 (規劃中)**：支援單一法說會多時間戳逐字稿一次性彙整導出，杜絕 ScrumClock 散落卡片孤島。
+

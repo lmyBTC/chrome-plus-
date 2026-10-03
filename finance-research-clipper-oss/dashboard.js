@@ -57,6 +57,7 @@
   const btnSendGas = document.getElementById('btn-send-gas');
   const btnBatchSendGas = document.getElementById('btn-batch-send-gas');
   const btnAddToScrum = document.getElementById('btn-add-to-scrum');
+  const btnCopyFinancialsTsv = document.getElementById('btn-copy-financials-tsv');
 
   // 設定彈窗元素
   const btnOpenSettings = document.getElementById('btn-open-settings');
@@ -487,6 +488,9 @@
         const matched = historyList.find((s) => s.ticker && s.ticker.toUpperCase() === targetTickerFromUrl);
         if (matched) {
           renderStock(matched);
+          showToast(`🎯 已透過 Deep-Link 自動定位快照：$${targetTickerFromUrl}`);
+        } else {
+          showToast(`🔍 正在連線載入指定標的：$${targetTickerFromUrl}`);
         }
         triggerCrawl(targetTickerFromUrl);
       } else if (res.latestStockData) {
@@ -671,6 +675,12 @@
     if (sandboxBaseTickerSelect) {
       sandboxBaseTickerSelect.addEventListener('change', () => {
         renderValuationSandboxView();
+      });
+    }
+
+    if (btnCopyFinancialsTsv) {
+      btnCopyFinancialsTsv.addEventListener('click', () => {
+        window.DashboardActions.copyFinancialsCleanTsv(currentStock, uiElements.financialsTableWrap);
       });
     }
 

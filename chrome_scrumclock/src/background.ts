@@ -8,6 +8,8 @@ import {
 import {
   handleExternalMessage,
   broadcastFocusToFinanceClipper,
+  broadcastSprintStartToActivityMonitor,
+  broadcastSprintStopToActivityMonitor,
   saveGeminiConversation
 } from './background/externalService';
 import { monitorService } from './features/activity-monitor/services/monitorService';
@@ -62,23 +64,26 @@ export async function captureToInbox(rawText: string, url?: string, sourceTitle?
   };
 
   try {
-    const storageData = await chrome.storage.local.get(['weeklyMissions', 'inboxItems']);
+    const storageData = await chrome.storage.local.get(['weeklyMissions', 'inboxItems', 'inbox']);
     const weeklyMissions: WeeklyMission[] = storageData.weeklyMissions || [];
     const inboxItems: InboxItem[] = storageData.inboxItems || [];
+    const inboxList: any[] = storageData.inbox || [];
 
     weeklyMissions.unshift(newMission);
     inboxItems.unshift(newInboxItem);
+    inboxList.unshift(newInboxItem);
 
     await chrome.storage.local.set({
       weeklyMissions,
-      inboxItems
+      inboxItems,
+      inbox: inboxList
     });
 
     if (typeof chrome.notifications !== 'undefined') {
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon128.png',
-        title: '📥 已快速捕捉至 GTD Inbox',
+        title: '📥 已加入 ScrumClock 待辦收件匣',
         message: title
       });
     }
@@ -102,16 +107,18 @@ chrome.runtime.onInstalled.addListener(async () => {
   
   // 建立右鍵選單
   if (typeof chrome.contextMenus !== 'undefined') {
-    chrome.contextMenus.create({
-      id: 'gtd_capture_inbox',
-      title: '📥 快速捕捉至 GTD Inbox (Alt+Q)',
-      contexts: ['selection', 'page', 'link']
-    });
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create({
+        id: 'scrumclock_capture_inbox',
+        title: '📥 加入 ScrumClock 待辦收件匣',
+        contexts: ['selection', 'page', 'link']
+      });
 
-    chrome.contextMenus.create({
-      id: 'analyze_tasks',
-      title: '🤖 傳送至 Power Kit 助理分析',
-      contexts: ['selection']
+      chrome.contextMenus.create({
+        id: 'analyze_tasks',
+        title: '🤖 傳送至 Power Kit 助理分析',
+        contexts: ['selection']
+      });
     });
   }
   
@@ -128,7 +135,7 @@ chrome.runtime.onInstalled.addListener(async () => {
 // 監聽右鍵選單點擊
 if (typeof chrome.contextMenus !== 'undefined') {
   chrome.contextMenus.onClicked.addListener((info, tab) => {
-    if (info.menuItemId === 'gtd_capture_inbox') {
+    if (info.menuItemId === 'scrumclock_capture_inbox' || info.menuItemId === 'gtd_capture_inbox') {
       const textToCapture = info.selectionText || info.linkUrl || tab?.title || '';
       captureToInbox(textToCapture, info.linkUrl || tab?.url, tab?.title);
       return;
@@ -202,10 +209,12 @@ chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
         chrome.alarms.create('sprintFinished', { delayInMinutes: message.payload.duration });
       }
       broadcastFocusToFinanceClipper(message.payload);
+      broadcastSprintStartToActivityMonitor(message.payload);
       break;
     case 'STOP_FOCUS_MODE':
       stopFocusMode();
       chrome.alarms.clear('sprintFinished');
+      broadcastSprintStopToActivityMonitor(message.payload);
       break;
     case 'UPDATE_GEMINI_CHAT':
       saveGeminiConversation(message.payload);

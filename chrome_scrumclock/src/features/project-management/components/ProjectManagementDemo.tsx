@@ -193,7 +193,7 @@ export const ProjectManagementDemo: React.FC = () => {
         )}
 
         {activeTab === 'sprintLogs' && (
-          <SprintLogsTab sprintLogs={pm.sprintLogs} />
+          <SprintLogsTab sprintLogs={pm.sprintLogs} weeklyMissions={pm.weeklyMissions} />
         )}
       </div>
 

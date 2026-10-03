@@ -35,7 +35,7 @@ export interface WeeklyMission {
   spentPomodoros?: number; // 已消耗番茄鐘數
   aiTip?: string;
   suggestedDuration?: number; // in minutes
-  priority?: 'P1' | 'P2' | 'P3'; // 新增：優先級 P1/P2/P3
+  priority?: 'P0' | 'P1' | 'P2' | 'P3'; // 優先級 P0(Blocker)/P1/P2/P3
   notes?: string; // 新增：執行備註/備忘
   createdAt?: string; // 新增：建立時間 (格式: YYYY-MM-DD HH:mm)
   completedAt?: string; // 新增：完成時間
@@ -43,6 +43,7 @@ export interface WeeklyMission {
   ticker?: string; // 關聯個股代碼 (例如 NVDA, 2330)
   tags?: string[]; // 任務標籤 (例如 ['#投資研究', '#美股'])
   url?: string; // 關聯網址
+  deepLinkUrl?: string; // 跨插件反向喚起 Deep-Link (例如研報儀表板或影音秒數)
   estimatedPomodoros?: number; // 預估番茄鐘數
   gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked'; // GTD 情境分類
   workspaceSync?: {
@@ -80,6 +81,8 @@ export interface SprintLog {
   startTime: number; // timestamp
   endTime: number; // timestamp
   result: string;
+  interruptionCount?: number;
+  interruptionReasons?: string[];
 }
 
 export interface DailyReview {
@@ -109,10 +112,11 @@ export interface TimerContextType {
   timeLeft: number;
   currentSprint: SprintLog | null;
   startSprint: (missionId: string, customDurationMinutes?: number) => void;
-  pauseSprint: () => void;
+  pauseSprint: (reason?: string) => void;
   resumeSprint: () => void;
   stopSprint: () => void;
   logResult: (result: string) => void;
+  recordInterruption: (reason: string) => void;
   whiteNoiseEnabled: boolean;
   setWhiteNoiseEnabled: (enabled: boolean) => void;
   whiteNoiseVolume: number;

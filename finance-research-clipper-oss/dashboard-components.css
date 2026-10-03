@@ -628,3 +628,35 @@
   max-width: calc(100vw - 32px);
   box-shadow: var(--shadow-lg);
 }
+
+/* =============================================================================
+   📋 Clean TSV 匯出按鈕樣式 (Analyst Quick Wins)
+   ============================================================================= */
+
+.btn-clean-tsv {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+}
+
+.btn-clean-tsv:hover {
+  background: rgba(16, 185, 129, 0.24);
+  border-color: rgba(16, 185, 129, 0.6);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.25);
+  transform: translateY(-1px);
+}
+
+.btn-clean-tsv:active {
+  transform: translateY(0);
+}
