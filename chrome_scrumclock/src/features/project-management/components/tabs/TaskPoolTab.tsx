@@ -344,6 +344,8 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           onSelectTask={(id) => (id ? handleSelectRow(id) : handleCloseDrawer())}
           onUpdateTitle={onUpdateTitle}
           onUpdatePomodoroEstimate={onUpdatePomodoroEstimate}
+          onSyncGoogleTasks={onSyncGoogleTasks}
+          isGoogleSyncing={isGoogleSyncing}
         />
       ) : (
         <>

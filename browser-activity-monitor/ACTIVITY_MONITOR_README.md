@@ -102,17 +102,66 @@
 
 ---
 
-## 🧰 實用工具箱 (ToolboxHub) 整合說明
+---
 
-本監控器亦提供輕量前端審查視圖，整合至 `chrome_scrumclock/src/features/toolbox/ToolboxHub.tsx`：
-- **工具識別**：`activity-monitor`（「瀏覽行為監控器」分頁）。
-- **零依賴與防禦性降級**：在 ScrumClock 儀表板中提供安全沙盒權限檢測與日誌快照，與本外掛代碼完全解耦。
-- **組件位置**：參見 `chrome_scrumclock/src/features/toolbox/tools/activity-monitor/功能說明.md`。
+## 🗄️ 資料模型與儲存 SSOT (Storage Schema)
+
+本機資料庫採用 IndexedDB (`BrowserActivityMonitorDB`) 進行持久化，所有資料均保存在本機，嚴禁向外傳輸：
+
+### 資料表 (Object Stores)
+1. **`activity_logs`**：
+   - **主鍵**：`id` (autoIncrement)
+   - **索引**：
+     - `timestamp`：時間戳記
+     - `type`：事件類型（`webRequest` / `download` / `probe` / `permission`）
+     - `origin`：網域來源
+     - `tabId`：瀏覽器分頁 ID
+2. **`health_reports`**：
+   - **主鍵**：`id` (string，格式如 `rep_timestamp_uuid`)
+   - **索引**：
+     - `timestamp`：報告產出時間戳記
+     - `mode`：檢測模式（`TIMED` / `CONTINUOUS`）
+     - `healthScore`：健康綜合評分
+   - **儲存內容**：包含 TOP 耗能分頁/來源網域、高頻遙測比率、串流流量與結構化優化建議，在每次 Session 結算時僅寫入 1 筆。
+
+### 資料清理機制 (Alarms & Retention)
+- **零日常磁碟 I/O**：拔除高頻單筆寫入，常態監測時全記憶體統計，僅在 Session 結算時批次寫入報告。
+- **排程過期清除**：整合 `chrome.alarms` 定期（每日）觸發清理，自動刪除超過 3 天之歷史日誌與超過 7 天之檢測報告。
+
+---
+
+## 📈 組件資源監視與效能診斷規格 (Resource Profiler & Diagnostic Spec)
+
+* **核心採集器 (`scripts/resource-profiler.js`)**：
+  - **模組耗時統計**：提供 `time(label)`、`timeEnd(label)` 與 `measure(label, fn)`，微秒級精度計算 avg、min、max、calls 與最近 30 次歷史採樣。
+  - **四宮格系統指標**：
+    1. DOM 節點總量（恆定維持在 70~100 區間）
+    2. JS Heap 記憶體粗估 (`performance.memory`)
+    3. 佇列積壓深度 (`db_batch_queue`, `active_ports`)
+    4. 全域平均呼叫延遲
+  - **智慧優化建議引擎**：自動對比延遲閾值（如單次呼叫 >16ms / >40ms、高頻調用、DOM 節點 >1000、佇列積壓 >20），自動產出 `warning`、`critical` 或 `good` 級別的可操作優化建議。
+* **零常駐負擔原則**：
+  - 資源監視面板預設為收合狀態，不註冊常駐定時器；僅在使用者手動展開面板時啟動 3 秒輪詢，折疊收合時立即銷毀 Timer，達成 0% 額外常駐開銷。
+
+---
+
+## 🧰 與 ScrumClock 之整併架構 (ScrumClock Integration)
+
+* **整併實作路徑**：
+  - 核心監控邏輯、IndexedDB 本機資料庫與雙層探針已整併至 `chrome_scrumclock/src/features/activity-monitor/`。
+  - 背景監聽掛載於 `chrome_scrumclock/src/background.ts`（由 `monitorService.ts` 統一管理）。
+  - UI 介面已移植為 React + Tailwind 元件 `ActivityMonitorView.tsx`，並整合於 ScrumClock 側邊欄與工具箱 (`ToolboxHub.tsx`)。
+* **獨立原型專案定位**：
+  - 本目錄 `browser-activity-monitor/` 保留作為零打包、零建置的 Vanilla JS/CSS 原生參考實作。
+  - 跨專案協同遵循 `0.doc_mg/docs/cross_plugin_contract.md` 之黑盒通訊契約。
 
 ---
 
 ## 🔒 隱私與 Chrome Web Store 合規保證 (Compliance & Privacy)
 
 - **符合 Manifest V3 規範**：無遠端代碼載入 (`unsafe-eval` 零使用)，所有程式碼為在地靜態封裝。
+- **嚴禁 innerHTML 漏洞**：所有動態渲染之文字節點一律使用 `.textContent` 或安全的 DOM 元素構造，杜絕 XSS。
 - **資料本機性**：所有日誌與報告僅保存在使用者瀏覽器的 IndexedDB (`BrowserActivityMonitorDB`)，絕不上傳外部伺服器。
 - **無侵入性保證**：探針注入採嚴格隨選觸發，分頁關閉或刷新後探針自動失效，絕不污染全域日常瀏覽效能。
+- **隱私最小化**：僅收集用於本機安全審查之網路與行為元資料，不記錄使用者鍵入之敏感密碼或表單內容。
+

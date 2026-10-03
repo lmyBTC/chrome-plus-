@@ -251,8 +251,13 @@ export const useProjectManagement = () => {
           await storage.saveTodayLog(todayLog);
         }
       }
-      // 背景非同步推播至 Google Tasks (若已設定授權)
-      googleTasksSync.pushTaskStatusToGoogle(missionId).catch(() => {});
+      // 背景非同步推播至 Google Tasks (若已設定授權且已綁定)
+      googleTasksSync
+        .pushTaskStatusToGoogle(missionId)
+        .then(() => {
+          loadData().catch(() => {});
+        })
+        .catch(() => {});
       await loadData();
     } catch (e) {
       console.error('更新任務狀態失敗:', e);

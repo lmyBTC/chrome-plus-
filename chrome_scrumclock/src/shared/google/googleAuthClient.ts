@@ -15,6 +15,18 @@ class GoogleAuthClient {
   }
 
   /**
+   * 檢查當前擴充功能是否已配置有效的 Google OAuth Client ID
+   */
+  public isOAuthConfigured(): boolean {
+    if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.getManifest) {
+      return false;
+    }
+    const manifest = chrome.runtime.getManifest();
+    const clientId = manifest?.oauth2?.client_id;
+    return !!clientId && !clientId.includes('YOUR_GOOGLE_CLIENT_ID');
+  }
+
+  /**
    * 取得 Google OAuth Access Token
    * @param interactive 是否彈出 Google 登入視窗 (預設 true)
    */
@@ -24,10 +36,28 @@ class GoogleAuthClient {
         return reject(new Error('當前環境不支援 chrome.identity API (請確認權限宣告)'));
       }
 
+      if (!this.isOAuthConfigured()) {
+        return reject(
+          new Error(
+            'Google OAuth2 Client ID 尚未完成配置。請在 Google Cloud Console 建立憑證並於 manifest.json 設定有效 client_id。'
+          )
+        );
+      }
+
       chrome.identity.getAuthToken({ interactive }, (token) => {
         if (chrome.runtime.lastError) {
-          const err = chrome.runtime.lastError.message || '取得 Google 授權失敗';
-          return reject(new Error(err));
+          const rawErr = chrome.runtime.lastError.message || '取得 Google 授權失敗';
+          let userFriendlyMsg = rawErr;
+
+          if (/OAuth2 client id is not configured|bad client id|OAuth2 request failed/i.test(rawErr)) {
+            userFriendlyMsg = 'Google OAuth2 Client ID 尚未完成配置。請在 Google Cloud Console 建立憑證並於 manifest.json 設定有效 client_id。';
+          } else if (/OAuth2 not granted|user did not approve|canceled|cancelled/i.test(rawErr)) {
+            userFriendlyMsg = 'Google 授權已取消或未獲核准：請在授權視窗允許存取 Google Tasks。';
+          } else if (/network|offline/i.test(rawErr)) {
+            userFriendlyMsg = '網路連線異常，無法連線至 Google 授權服務。';
+          }
+
+          return reject(new Error(userFriendlyMsg));
         }
 
         if (!token) {

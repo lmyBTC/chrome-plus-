@@ -56,7 +56,7 @@
 | **文字與標籤解析** | `src/utils/markdown.tsx`<br>`src/utils/task-parser.ts` | 輕量 Markdown 渲染元件、文字自然語言任務時間解析 |
 | **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗、初次安裝指引手冊 |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
-| **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | OAuth2 最小權限授權、Google Tasks 雙向同步引擎、Google Calendar 時間箱預約與番茄鐘實績回填 |
+| **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | OAuth2 最小權限授權、Google Tasks 雙向同步引擎（支援主看板一鍵拉取今日待辦與勾選狀態自動回寫）、Google Calendar 時間箱預約與番茄鐘實績回填 |
 
 ---
 
@@ -66,17 +66,6 @@
 
 - 🔴 `src/geminiContent.ts` (~569 行) - Gemini 網頁注入 Content Script
 - 🔴 `src/components/InstallDocs.tsx` (~558 行) - 系統安裝說明文檔元件
-
-#### 🟢 模組化瘦身成功紀錄 (已自巨石清單除名)
-- 🟢 `src/features/project-management/components/ProjectManagementDemo.tsx` (826 行 ➔ 156 行) - 解耦抽離任務池、收件匣、衝刺日誌與同步設定視窗至 `components/`，並封裝 `useProjectManagement` Hook
-- 🟢 `src/features/toolbox/tools/image-scraper/ImageScraper.tsx` (1,252 行 ➔ 341 行) - 解耦抽離輸入主控、篩選器、圖片列表、下載控制與預覽燈箱至 `components/`
-- 🟢 `src/features/scrumclock/components/DailyMissionBriefing.tsx` (700 行 ➔ 194 行) - 解耦抽離任務選取器、行事曆提醒與設定抽屜至 `components/briefing/`
-- 🟢 `src/entries/sidebar/main.tsx` (658 行 ➔ 123 行) - 解耦抽離 AIAssistantView 子元件實現按需延遲載入 (Lazy Loading)，並原生嵌入 ToolboxHub isSidebar 自適應模式
-- 🟢 `src/features/toolbox/tools/image-scraper/services/imageExtractor.ts` (1,939 行 ➔ 287 行) - 策略模式重構完成，平台解析已分流
-- 🟢 `src/features/scrumclock/components/SprintPomodoro.tsx` (758 行 ➔ 412 行) - 任務項目、Markdown 匯入與結算彈窗已解耦至 `components/sprint/`
-- 🟢 `src/entries/sidebar/hooks.ts` (653 行 ➔ 8 行) - 抽離為 `useAISession`、`useTimerSync`、`useContextMenuSync`
-- 🟢 `src/background.ts` (467 行 ➔ 96 行) - 拆分為 `alarmHandlers.ts` 與 `externalService.ts`
-
 
 ---
 
@@ -95,3 +84,114 @@
 | **工作流流程圖** | `docs/workflow-flowchart.md` | Mermaid 繪製之整體數據流與狀態機轉移圖 |
 | **活動監控技術規格書** | `docs/activity-monitor-spec.md` | 80% 原生監控 + 20% 隨選探針混合架構、IndexedDB 儲存模型、通訊協議與 React 視覺化面板 |
 | **Google 生態系整合規格書** | `0.doc_mg/docs/google_ecosystem_integration_spec.md` | Google Sheets/Docs/Calendar/Tasks 雙軌對接架構、Schema 與跨插件轉發合約 SSOT |
+
+---
+
+## 💾 6. 資料模型與儲存 SSOT (Storage Schema)
+
+所有數據儲存於 `chrome_scrumclock` 獨立之 `chrome.storage.local` 及專屬 IndexedDB，嚴禁與其他插件共用。
+
+### 6.1 主要儲存鍵值 (Chrome Storage Local)
+1. `scrumclock_tasks`: `Task[]`
+   ```typescript
+   interface Task {
+     id: string;
+     title: string;
+     description?: string;
+     estimatedPomodoros: number;
+     completedPomodoros: number;
+     status: 'todo' | 'in_progress' | 'done' | 'archived';
+     priority: 'low' | 'medium' | 'high';
+     tags: string[];
+     createdAt: number;
+     completedAt?: number;
+   }
+   ```
+2. `scrumclock_sessions`: `PomodoroSession[]`
+   ```typescript
+   interface PomodoroSession {
+     id: string;
+     taskId?: string;
+     duration: number; // minutes
+     type: 'work' | 'short_break' | 'long_break';
+     timestamp: number;
+   }
+   ```
+3. `weeklyMissions`: `WeeklyMission[]` (核心任務池與看板資料源)
+   ```typescript
+   export type GTDStatus = 'inbox' | 'next-action' | 'in-progress' | 'done' | 'someday';
+   export interface WeeklyMission {
+     id: string;
+     text: string;
+     isCompleted: boolean;
+     status?: GTDStatus;
+     spentPomodoros?: number; // 番茄鐘計時完成時自動累加回填
+     estimatedPomodoros?: number;
+     priority?: 'P1' | 'P2' | 'P3';
+     gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked';
+     checklist?: Array<{ id: string; text: string; completed: boolean }>; // 調研任務 Checklist 子項目
+     notes?: string;
+     url?: string;
+     createdAt?: string;
+   }
+   ```
+4. `userSettings`: `UserSettings` (全域設定與本地 Feature Flags)
+   ```typescript
+   export interface UserSettings {
+     pomodoroDuration: number;
+     breakDuration: number;
+     enableGtdCapture?: boolean; // Alt+Q / 右鍵快捷捕捉開關 (預設 true)
+     enableWipLimit?: boolean;   // 看板 In Progress WIP 限制開關 (預設 true)
+     maxWipLimit?: number;       // 看板 WIP 卡片數量上限 (預設 3)
+   }
+   ```
+5. `scrumclock_finance_cache`: 自選股即時快照快取（只讀，來自 FinanceClipper，絕不回寫對端）。
+6. `capturedNotes`: `CapturedSubtitleNote[]` (跨插件影音字幕與時間戳筆記快照，由 VideoSpeedPlus 透過 `COLLECT_NOTE` 注入)。
+
+### 6.2 活動監控本機資料庫 (IndexedDB)
+* **資料庫名稱**: `BrowserActivityMonitorDB` (版本 1)
+* **Object Store**: `activity_logs`
+  * 主鍵: `id` (autoIncrement: true)
+  * 索引: `timestamp`, `type`, `origin`, `tabId`
+  * 自動清理: 每日由 `chrome.alarms` 定期清除超過 3 天之歷史審計記錄。
+
+---
+
+## 📡 7. 跨插件通訊中樞與 UniversalTaskPayload v2.3 規格
+
+ScrumClock 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`)，負責接收與協調各 Spoke 子插件的通訊：
+- **原生直連分發 (Direct Messaging)**：拔除 PING_HUB 握手總線與 Outbox 背景輪詢佇列，回歸 Chrome Extension 原生 `chrome.runtime.sendMessage` 直連架構，無常駐 Alarms，完全釋放 Service Worker 休眠生命週期。
+- **任務契約 (`UniversalTaskPayload` v2.3)**：
+  ```typescript
+  export type GTDContext = '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked';
+  export interface UniversalTaskPayload {
+    protocolVersion?: 2;
+    id?: string;
+    title: string;
+    ticker?: string;
+    notes?: string;
+    tags?: string[];
+    estimatedPomodoros?: number;
+    url?: string;
+    gtdContext?: GTDContext;
+    priority?: 'P1' | 'P2' | 'P3';
+    sourcePlugin?: string;
+    createdAt?: number;
+  }
+  ```
+- **極簡發送與回執**：
+  - 模組位置：`src/shared/messaging/outboxQueue.ts`（導出 `sendDirectMessage`）、`src/background/externalService.ts`。
+  - 跨模組資料交換採前端即時錯誤反饋，不積壓離線死信。
+- **Google 生態系協同通訊與中樞代理 (`EXPORT_TO_SHEETS` / `SYNC_CALENDAR_EVENT`)**：
+  - **`EXPORT_TO_SHEETS`**: 支援將專案看板衝刺日誌（`SPRINT_LOGS`）與任務池（`TASK_POOL`）結構化寫入個人 Google 試算表。
+  - **`SYNC_CALENDAR_EVENT`**: 支援將每日焦點戰役預約建立為 Google Calendar 時間箱（`POMODORO_SCHEDULE`），並於衝刺結束後自動回填實耗工時。
+  - **中樞代理轉發 (Hub Aggregation)**: 支援接收來自 Spoke 子插件的 Google 匯出請求，並透過內部 `googleAuthClient` (OAuth2) 或配置之 GAS Webhook 統一代發，所有回執符合標準化 `CrossPluginGoogleResponse` 結構。
+  - 詳細欄位 Schema 與 GAS 部署範例依據 `0.doc_mg/docs/google_ecosystem_integration_spec.md` SSOT 規範。
+
+---
+
+## 🛡️ 8. 邊界與隔離防護準則 (Isolation Hard Rules)
+1. **禁止跨目錄讀取**: 開發 ScrumClock 時，禁止讀取 `finance-research-clipper-oss` 內部 UI 或爬蟲代碼。
+2. **通訊採黑盒模式**: 如需更新財務功能，僅參照 `0.doc_mg/docs/cross_plugin_contract.md` 介面協定。
+3. **安全優雅降級**: 若 FinanceClipper 未安裝，`WatchListWidget` 自動顯示離線或佔位提示，保證番茄鐘核心流程 100% 正常。
+

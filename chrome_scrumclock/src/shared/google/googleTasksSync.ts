@@ -1,6 +1,7 @@
 import { storage } from '../../core/chrome/storage';
 import { WeeklyMission } from '../../types';
 import { googleTasksService } from './googleTasksService';
+import { googleAuthClient } from './googleAuthClient';
 import { GoogleSyncResult, GoogleTaskItem } from './googleTypes';
 
 class GoogleTasksSyncManager {
@@ -21,6 +22,17 @@ class GoogleTasksSyncManager {
   public async pullAndMergeTasks(taskListId = '@default'): Promise<GoogleSyncResult> {
     const errors: string[] = [];
     let syncedCount = 0;
+
+    if (!googleAuthClient.isOAuthConfigured()) {
+      return {
+        success: false,
+        syncedCount: 0,
+        errors: [
+          'Google OAuth2 Client ID 尚未完成配置。請在 Google Cloud Console 建立憑證並於 manifest.json 設定有效 client_id。',
+        ],
+        lastSyncedAt: Date.now(),
+      };
+    }
 
     try {
       const googleTasks = await googleTasksService.getTasks(taskListId);
@@ -108,12 +120,20 @@ class GoogleTasksSyncManager {
   }
 
   /**
-   * 當本地任務狀態變更時，單向推播至 Google Tasks
+   * 當本地任務狀態變更時，單向推播至 Google Tasks (支援優雅降級)
+   * @param missionId 本地任務 ID
+   * @param taskListId Google Tasks 清單 ID，預設 '@default'
+   * @param onlyIfLinked 若為 true，僅當任務已有 googleTaskId 時才回寫；若為 false 且未綁定則建立新 Google Task
    */
   public async pushTaskStatusToGoogle(
     missionId: string,
-    taskListId = '@default'
+    taskListId = '@default',
+    onlyIfLinked = true
   ): Promise<boolean> {
+    if (!googleAuthClient.isOAuthConfigured()) {
+      return false;
+    }
+
     try {
       const missions = await storage.getWeeklyMissions();
       const mission = missions.find((m) => m.id === missionId);
@@ -121,11 +141,12 @@ class GoogleTasksSyncManager {
 
       let gTaskId = mission.workspaceSync?.googleTaskId;
 
-      if (gTaskId) {
-        // 更新現有 Google Task 狀態
-        await googleTasksService.updateTaskStatus(gTaskId, mission.isCompleted, taskListId);
-      } else {
-        // 若尚未關聯，則在 Google Tasks 建立新任務並回填 id
+      if (!gTaskId) {
+        if (onlyIfLinked) {
+          // 純本地任務且設定為僅同步已綁定項目，安全返回
+          return false;
+        }
+        // 若允許自動建立雲端任務
         const created = await googleTasksService.createTask(
           mission.text,
           mission.notes,
@@ -136,6 +157,9 @@ class GoogleTasksSyncManager {
         if (mission.isCompleted) {
           await googleTasksService.updateTaskStatus(gTaskId, true, taskListId);
         }
+      } else {
+        // 更新現有 Google Task 狀態 (completed / needsAction)
+        await googleTasksService.updateTaskStatus(gTaskId, mission.isCompleted, taskListId);
       }
 
       mission.workspaceSync = {
@@ -148,18 +172,19 @@ class GoogleTasksSyncManager {
       await storage.saveWeeklyMissions(missions);
       return true;
     } catch (err) {
-      console.warn('[GoogleTasksSync] 推播任務狀態至 Google Tasks 失敗 (可稍後重試):', err);
-      // 標註為失敗或等待重試，不阻斷本地操作
-      const missions = await storage.getWeeklyMissions();
-      const mission = missions.find((m) => m.id === missionId);
-      if (mission) {
-        mission.workspaceSync = {
-          ...mission.workspaceSync,
-          syncStatus: 'failed',
-          lastSyncedAt: Date.now(),
-        };
-        await storage.saveWeeklyMissions(missions);
-      }
+      console.warn('[GoogleTasksSync] 推播任務狀態至 Google Tasks 失敗 (已優雅降級並保留本地狀態):', err);
+      try {
+        const missions = await storage.getWeeklyMissions();
+        const mission = missions.find((m) => m.id === missionId);
+        if (mission && mission.workspaceSync?.googleTaskId) {
+          mission.workspaceSync = {
+            ...mission.workspaceSync,
+            syncStatus: 'failed',
+            lastSyncedAt: Date.now(),
+          };
+          await storage.saveWeeklyMissions(missions);
+        }
+      } catch {}
       return false;
     }
   }

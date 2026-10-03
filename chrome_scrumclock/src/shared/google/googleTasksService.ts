@@ -18,7 +18,13 @@ class GoogleTasksService {
    * 封裝帶授權的 fetch 請求，支援 401 自動清除 Token 重試一次
    */
   private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let token = await googleAuthClient.getAuthToken(false);
+    let token: string;
+    try {
+      token = await googleAuthClient.getAuthToken(false);
+    } catch {
+      // 靜默授權失敗（如首次使用或授權重設），發起互動授權視窗
+      token = await googleAuthClient.getAuthToken(true);
+    }
     
     let res = await fetch(url, {
       ...options,
@@ -126,8 +132,6 @@ class GoogleTasksService {
     };
     if (isCompleted) {
       payload.completed = new Date().toISOString();
-    } else {
-      payload.completed = null;
     }
 
     const res = await this.fetchWithAuth(

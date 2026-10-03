@@ -121,6 +121,28 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </span>
             );
           })()}
+          {task.workspaceSync?.googleTaskId && (
+            <span
+              className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 select-none tracking-wider ${
+                task.workspaceSync.syncStatus === 'failed'
+                  ? 'bg-rose-950/40 text-rose-300 border-rose-800/50'
+                  : 'bg-blue-950/40 text-blue-300 border-blue-800/40'
+              }`}
+              title={
+                task.workspaceSync.syncStatus === 'failed'
+                  ? 'Google Tasks 同步失敗 (已離線保留本地狀態，待下次連線重試)'
+                  : '已雙向連動 Google Tasks'
+              }
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
+              </svg>
+              <span>G-Tasks</span>
+              {task.workspaceSync.syncStatus === 'failed' && (
+                <span className="text-rose-400 font-bold ml-0.5">!</span>
+              )}
+            </span>
+          )}
         </div>
 
         {/* 番茄鐘工時指標 (實際消耗 / 預估) */}
@@ -169,19 +191,44 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             className="w-full px-2 py-1 bg-dark-surface border border-indigo-500 rounded text-sm text-dark-primary outline-none"
           />
         ) : (
-          <div
-            onDoubleClick={(e) => {
-              e.stopPropagation();
-              setIsEditing(true);
-            }}
-            className={`text-sm font-medium leading-snug line-clamp-3 transition-colors ${
-              task.isCompleted || currentStatus === 'done'
-                ? 'line-through text-dark-muted'
-                : 'text-dark-primary group-hover:text-white'
-            }`}
-            title="雙擊編輯標題，單擊展開詳情"
-          >
-            {task.text}
+          <div className="flex items-start gap-2">
+            {/* 一鍵完成/取消完成 Checkbox */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                const isCurrentlyDone = task.isCompleted || currentStatus === 'done';
+                onUpdateStatus(task.id, isCurrentlyDone ? 'next-action' : 'done');
+              }}
+              className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
+                task.isCompleted || currentStatus === 'done'
+                  ? 'bg-emerald-600 border-emerald-500 text-white'
+                  : 'bg-dark-surface/80 border-dark-border-default hover:border-emerald-500/80 text-transparent hover:text-emerald-400/50'
+              }`}
+              title={
+                task.isCompleted || currentStatus === 'done'
+                  ? '點擊重新啟用 (取消完成)'
+                  : '點擊標記為完成 (自動回寫 Google Tasks)'
+              }
+            >
+              <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </button>
+            <div
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              className={`text-sm font-medium leading-snug line-clamp-3 transition-colors flex-1 ${
+                task.isCompleted || currentStatus === 'done'
+                  ? 'line-through text-dark-muted'
+                  : 'text-dark-primary group-hover:text-white'
+              }`}
+              title="雙擊編輯標題，單擊展開詳情"
+            >
+              {task.text}
+            </div>
           </div>
         )}
       </div>

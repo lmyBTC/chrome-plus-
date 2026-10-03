@@ -123,6 +123,131 @@ FinanceClipper 支援將個股財務底稿、同業橫向對比矩陣與估值�
 
 ---
 
+## 📊 資料來源選擇器與爬蟲字典 (Crawler Data Sources SSOT)
+
+FinanceClipper 採用模組化爬蟲架構，核心為 `crawler.js` 結合 `crawler-sanitizer.js`，支援多市場財經網站萃取：
+
+### 1. Google Finance (美股/台股/全球 - 核心 4合1 SPA 管線)
+- **4合1 SPA 走訪導航**：在背景靜默走訪 `Overview`、`Analysis`、`Earnings`、`Financials` 四大分頁。
+- **Overview 總覽頁**：萃取基本盤價量、Key Stats（市值、本益比、殖利率、52週區間）、大盤對比（S&P 500 / Nasdaq），以及市場專題表格 `marketTopics`（透過語意排除財報）。
+- **Analysis 分頁**：萃取分析師評級分佈（Strong Buy, Buy, Hold, Sell）、目標價階梯（High, Median, Low）與潛在上漲空間。
+- **Earnings 分頁**：萃取最新季度與歷史 EPS 及營收實際值 vs 分析師預估值。
+- **Financials 分頁**：主動點擊導航並以語意關鍵字白名單校驗，精準擷取真實各期損益表 (`financials`) 矩陣。
+
+### 2. Yahoo Finance (美股/台股/全球)
+- **標的名稱/代號**：`h1`, `div[data-testid="quote-hdr"]`
+- **即時報價與漲跌**：`fin-streamer[data-field="regularMarketPrice"]`, `fin-streamer[data-field="regularMarketChangePercent"]`
+- **估值與基本面指標**：PE (TTM), Forward PE, Market Cap, Beta, 52 Week Range。
+
+### 3. Finviz (美股量化指標與基本面)
+- **財務比率矩陣**：`table.snapshot-table2` (P/E, P/B, EPS, ROE, Debt/Eq, RSI)。
+- **分析師評級與目標價**：Target Price, Recommendation。
+
+### 4. Goodinfo / 台灣股市資訊網 (台股法人與營收)
+- **法人動態與籌碼**：外資買賣超、投信買賣超、自營商買賣超。
+- **基本面指標**：月營收年增率 (YoY)、現金殖利率、還原權息數據。
+
+### 5. Investing.com (國際總經與財報日曆)
+- **財報日曆與總經數據**：財報發布倒數、每股盈餘預估與經濟指標公告。
+
+---
+
+## 🧹 數值清洗與 Miner Schema 規範 (`crawler-sanitizer.js`)
+
+`crawler-sanitizer.js` 為全環境相容純函數函式庫，掛載於 `window.CrawlerSanitizer`，可在 background、popup、sidepanel 與 content script 跨模組共用：
+
+### 核心清洗函數 (Sanitizer Functions)
+- `cleanNumber(str)`：剔除貨幣符號、千分位逗號，處理括號負數 `(123.4)` 轉為 `-123.4`。
+- `cleanMarketCap(str)`：解析帶有單位後綴的市值字串（如 `$3.12T`, `250.5B`, `80M`, `150億`, `3兆`），統一正規化為數值。
+- `cleanRange52w(str)`：解析 `120.50 - 180.20` 或 `120.50 - 180.20` 區間字串，拆解為 `{ low: number, high: number }`。
+- `calcEpsSurprise(actual, estimate)`：安全計算財報驚喜幅度百分比 `(actual - estimate) / |estimate| * 100%`。
+- `cleanPercentage(str)`：解析百分比字串轉換為浮點數小數。
+- `parseTargetPrices(strList)` 與 `calculateTargetPriceStats(prices, currentPrice)`：計算最高、最低、中位數目標價及隱含上漲空間。
+
+### Miner Schema 正規化標準 (`sanitizeToMinerSchema`)
+轉換多源異質爬蟲數據為標準化資料結構，供 AI 研報推論與跨插件交換：
+```javascript
+{
+  ticker: string,              // 股票代號 (如 "NVDA", "2330.TW")
+  name: string,                // 公司名稱
+  price: number,               // 最新股價
+  change: number,              // 漲跌幅百分比
+  marketCap: number,           // 標準化市值數值
+  pe: number | null,           // 本益比 (TTM)
+  range52w: { low, high },     // 52 週最高最低
+  analyst: {
+    consensus: string,         // "Strong Buy" | "Buy" | "Hold" 等
+    targetHigh: number,
+    targetMedian: number,
+    targetLow: number,
+    upsidePotential: number    // 潛在上漲空間 %
+  },
+  financials: {
+    table: string[][],         // 損益表行列矩陣
+    statements: string[][][]   // 各期財報細目
+  },
+  marketTopics: {
+    table: string[][]          // 市場熱門專題行情
+  },
+  timestamp: number
+}
+```
+
+---
+
+## 💾 資料模型與儲存 SSOT (Storage Schema)
+
+所有數據均持久化於瀏覽器本地 `chrome.storage.local`，杜絕任何隱私外洩：
+
+| 儲存鍵值 (Key) | 資料型態 (Type) | 說明與欄位規格 |
+| :--- | :--- | :--- |
+| `stockHistory` | `Array<StockItem>` | 個股完整採集歷史快照清單（包含價量、Key Stats、`financials` 損益表矩陣、`marketTopics` 專題、`analyst` 評等等） |
+| `fc_watchlist` | `Array<WatchlistItem>` | 自選監控清單：`{ ticker, name, price, change, market, updatedAt }` |
+| `fc_stock_notes` | `Record<string, string>` | 使用者手動撰寫之個股研究備忘筆記（Key 為 ticker） |
+| `fc_reports` | `Record<string, AIReport>` | 本地 Gemini Nano 生成之研報快照：`{ summary, highlights, risks, generatedAt }` |
+| `fc_settings` | `Object` | 偏好設定：預設市場、貨幣單位、自動更新間隔等 |
+| `lastCapturedStock` | `Object` | Popup 採集或切換標的廣播：`{ ticker, price, timestamp, mode }`（Dashboard 實時監聽跳出 Toast） |
+| `custom_topic_tags` | `Array<string>` | 使用者自訂頂部主題分類標籤清單 |
+| `gasUrl` / `appsScriptUrl` | `string` | Google Apps Script Web App URL（雙向回退與同步相容鍵值） |
+| `sheetsUrl` / `userSpreadsheetUrl` | `string` | 目的 Google 試算表 URL（雙向回退與同步相容鍵值） |
+| `outbox_queue` | `Array<OutboxTask>` | 離線待重試任務佇列（發送至 ScrumClock 遇休眠或逾時暫存） |
+| `dead_letter_queue` | `Array<OutboxTask>` | 超過最大重試次數 (5 次) 轉入之死信佇列 |
+
+---
+
+## 🔌 跨插件通訊與協作規格 (Cross-Plugin Bus & Outbox)
+
+FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`) 遵循 `0.doc_mg/docs/cross_plugin_contract.md` 規範進行無狀態資料協同：
+
+### 1. 通訊生命週期與握手
+- **自動握手 (`PING_HUB`)**：`aiClient.js` 初始化時發送 `PING_HUB` 探測 ScrumClock 在線狀態與本地 Gemini Nano 支援度，免手動配置 Extension ID。
+- **UniversalTaskPayload v2.3 任務轉入 (`CREATE_TASK`)**：
+  - 透過 `sanitizeTaskPayload()` 防腐層校驗。
+  - 欄位包含 `title`, `notes`, `gtdContext` (`@Focus` 等), `priority` (`P1` 等), `sourcePlugin: 'FINANCE_CLIPPER'`, `deepLinkUrl` (反向喚起 FinanceClipper 定位標的)。
+
+### 2. 離線防丟單機制 (`outbox_queue`)
+- 發送 `CREATE_TASK` 遭遇 ScrumClock 休眠或 6 秒逾時未響應時，自動暫存於 `outbox_queue`。
+- 透過 `chrome.alarms` 定期（每 30 秒）與 `chrome.tabs.onActivated` 進行非同步重試。
+- 超過 5 次重試失敗轉入 `dead_letter_queue` 並通知使用者。
+
+### 3. 對外開放服務接口 (`onMessageExternal`)
+- **`GET_WATCHLIST`**：回傳本地自選股快照清單（唯讀，無副作用）。
+- **`GET_STOCK_SUMMARY`**：傳入 `{ ticker }`，回傳個股標準化財務指標。
+- **`FOCUS_STARTED`**：接收 ScrumClock 專注番茄鐘廣播，自動預載個股研報數據。
+
+### 4. Google 生態系協同契約
+- **`EXPORT_TO_SHEETS`**：發送個股財務底稿（`FINANCIAL_SUMMARY`）、同業對比矩陣（`PEER_COMPARISON`）或估值沙盒（`VALUATION_SANDBOX`）至 GAS Webhook 或透過 ScrumClock 代理。
+- **`CREATE_DOC_REPORT`**：發送完整研報結構，自動生成排版完善的 Google Docs 研報文件並歸檔至個人雲端硬碟。
+
+---
+
+## 🛡️ 邊界防禦與硬性隔離約束 (Isolation Hard Rules)
+1. **禁止跨目錄讀取**：開發 FinanceClipper 時，嚴禁跨目錄讀取 `chrome_scrumclock/`、`browser-activity-monitor/` 等其他插件源碼。
+2. **通訊規格驅動**：所有跨插件協同與對外介面一律依據 `0.doc_mg/docs/cross_plugin_contract.md` 與 `0.doc_mg/docs/google_ecosystem_integration_spec.md` 黑盒規範。
+3. **零構建約束**：維持純原生 ES6+ / Vanilla JS 特性，不引入 Node.js/Webpack/Vite 打包依賴。
+
+---
+
 ## 🔒 隱私與安全性保證
 
 - **零外部依賴與第三方追蹤**：無任何追蹤腳本，亦無外部第三方伺服器。
@@ -131,11 +256,6 @@ FinanceClipper 支援將個股財務底稿、同業橫向對比矩陣與估值�
 
 ---
 
-## 🚀 投研工作流支援與演進藍圖 (Analyst Workflow Roadmap)
 
-依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 之診斷分析，後續規劃演進方向：
-1. **Clean TSV / Markdown 一鍵複製 (已完成 ✅)**：損益表、同業對比與估值沙盒支援無污染數值與表格一鍵複製，直貼 Excel/Sheets 零跑版。
-2. **雙向作戰任務協同 (已完成 ✅)**：與 ScrumClock 實現任務點擊攜帶 `deepLinkUrl` 反向喚起儀表板自動定位標的。
-3. **自選投資組合批次巡檢 (Portfolio Watcher)**：支援多標的背景輪詢採集與共識評級變動告警。
-4. **動態折現估值公式導出 (已完成 ✅)**：沙盒運算結果支援轉換為標準 3-Statement & DCF 試算表底稿（含動態 Excel 折現公式與情境敏感度分析），支援 GAS 直套與 Clean TSV 複製。
+
 

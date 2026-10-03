@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WeeklyMission, GTDStatus } from '../../types';
 import { storage } from '../../core/chrome/storage';
+import { googleTasksSync } from '../../shared/google/googleTasksSync';
 import { TaskCard } from './TaskCard';
 
 export interface BoardViewProps {
@@ -15,6 +16,9 @@ export interface BoardViewProps {
   onUpdatePomodoroEstimate?: (id: string, estimate: number) => Promise<void>;
   maxWipLimit?: number;
   enableWipLimit?: boolean;
+  onSyncGoogleTasks?: () => Promise<void>;
+  isGoogleSyncing?: boolean;
+  onReloadMissions?: () => Promise<void>;
 }
 
 interface ColumnConfig {
@@ -73,6 +77,9 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onUpdatePomodoroEstimate,
   maxWipLimit = 3,
   enableWipLimit,
+  onSyncGoogleTasks,
+  isGoogleSyncing,
+  onReloadMissions,
 }) => {
   const [activeDropColumn, setActiveDropColumn] = useState<GTDStatus | null>(null);
   const [inboxInput, setInboxInput] = useState('');
@@ -80,6 +87,104 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [wipEnabled, setWipEnabled] = useState<boolean>(enableWipLimit ?? true);
   const [currentWipLimit, setCurrentWipLimit] = useState(maxWipLimit);
+
+  // Google Tasks 同步狀態管理
+  const [internalSyncing, setInternalSyncing] = useState(false);
+  const isSyncing = isGoogleSyncing !== undefined ? isGoogleSyncing : internalSyncing;
+  const [syncFeedback, setSyncFeedback] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const [lastSyncTime, setLastSyncTime] = useState<number | null>(() => {
+    try {
+      const saved = localStorage.getItem('scrumclock_last_google_sync');
+      return saved ? parseInt(saved, 10) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [showAuthGuideModal, setShowAuthGuideModal] = useState(false);
+  const [authErrorMessage, setAuthErrorMessage] = useState('');
+
+  const formatLastSync = (timestamp: number | null): string => {
+    if (!timestamp) return '尚未同步';
+    const diffSec = Math.floor((Date.now() - timestamp) / 1000);
+    if (diffSec < 60) return '剛剛';
+    const diffMin = Math.floor(diffSec / 60);
+    if (diffMin < 60) return `${diffMin}m 前`;
+    const d = new Date(timestamp);
+    return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
+  };
+
+  const handleTriggerSync = async () => {
+    if (isSyncing) return;
+    setInternalSyncing(true);
+    setSyncFeedback(null);
+
+    try {
+      if (onSyncGoogleTasks) {
+        await onSyncGoogleTasks();
+        const now = Date.now();
+        setLastSyncTime(now);
+        try {
+          localStorage.setItem('scrumclock_last_google_sync', String(now));
+        } catch {}
+      } else {
+        const result = await googleTasksSync.pullAndMergeTasks();
+        if (result.success) {
+          const now = Date.now();
+          setLastSyncTime(now);
+          try {
+            localStorage.setItem('scrumclock_last_google_sync', String(now));
+          } catch {}
+          setSyncFeedback({
+            type: 'success',
+            text: `Google Tasks 同步成功，共連動 ${result.syncedCount} 個任務`,
+          });
+          if (onReloadMissions) {
+            await onReloadMissions();
+          }
+        } else {
+          const errMsg = result.errors?.[0] || 'Google Tasks 同步失敗';
+          if (
+            errMsg.includes('OAuth') ||
+            errMsg.includes('Client ID') ||
+            errMsg.includes('憑證') ||
+            errMsg.includes('授權')
+          ) {
+            setAuthErrorMessage(errMsg);
+            setShowAuthGuideModal(true);
+          } else {
+            setSyncFeedback({
+              type: 'error',
+              text: errMsg,
+            });
+          }
+        }
+      }
+    } catch (err: any) {
+      const errMsg = err?.message || 'Google Tasks 同步發生異常';
+      if (
+        errMsg.includes('OAuth') ||
+        errMsg.includes('Client ID') ||
+        errMsg.includes('憑證') ||
+        errMsg.includes('授權')
+      ) {
+        setAuthErrorMessage(errMsg);
+        setShowAuthGuideModal(true);
+      } else {
+        setSyncFeedback({
+          type: 'error',
+          text: errMsg,
+        });
+      }
+    } finally {
+      setInternalSyncing(false);
+      setTimeout(() => {
+        setSyncFeedback(null);
+      }, 4000);
+    }
+  };
 
   useEffect(() => {
     storage.getUserSettings().then((s) => {
@@ -224,8 +329,44 @@ export const BoardView: React.FC<BoardViewProps> = ({
           </div>
         </div>
 
-        {/* 右側：切換 Someday 與統計指標 */}
-        <div className="flex items-center gap-3 shrink-0 text-xs">
+        {/* 右側：Google Tasks 同步、切換 Someday 與統計指標 */}
+        <div className="flex items-center gap-2.5 shrink-0 text-xs">
+          {/* Google Tasks 一鍵雙向同步按鈕 */}
+          <button
+            onClick={handleTriggerSync}
+            disabled={isSyncing}
+            className={`px-2.5 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              isSyncing
+                ? 'bg-blue-950/40 border-blue-800/40 text-blue-300 opacity-80 cursor-wait'
+                : 'bg-dark-card hover:bg-dark-hover border-dark-border-default/60 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/40 shadow-sm'
+            }`}
+            title={
+              lastSyncTime
+                ? `上次同步時間：${formatLastSync(lastSyncTime)}（點擊與 Google Tasks 進行雙向同步）`
+                : '點擊與 Google Tasks 進行雙向同步'
+            }
+          >
+            {isSyncing ? (
+              <svg className="animate-spin h-3.5 w-3.5 text-blue-400" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+              </svg>
+            ) : (
+              <svg className="w-3.5 h-3.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 16h5v5" />
+              </svg>
+            )}
+            <span>{isSyncing ? '同步中...' : 'Google Tasks'}</span>
+            {lastSyncTime && !isSyncing && (
+              <span className="text-[10px] text-dark-muted font-mono bg-dark-surface/60 px-1.5 py-0.5 rounded border border-dark-border-subtle">
+                {formatLastSync(lastSyncTime)}
+              </span>
+            )}
+          </button>
+
           <button
             onClick={() => setShowSomeday(!showSomeday)}
             className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
@@ -249,6 +390,28 @@ export const BoardView: React.FC<BoardViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* 同步即時反饋通知條 */}
+      {syncFeedback && (
+        <div
+          className={`px-3.5 py-2 rounded-xl text-xs flex items-center justify-between gap-2 border transition-all ${
+            syncFeedback.type === 'success'
+              ? 'bg-emerald-950/50 border-emerald-800/50 text-emerald-300'
+              : 'bg-red-950/50 border-red-800/50 text-red-300'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span>{syncFeedback.type === 'success' ? '✨' : '⚠️'}</span>
+            <span className="font-medium">{syncFeedback.text}</span>
+          </div>
+          <button
+            onClick={() => setSyncFeedback(null)}
+            className="text-xs opacity-60 hover:opacity-100 cursor-pointer px-1 py-0.5"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 看板核心多欄容器 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 items-start">
@@ -415,6 +578,56 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 />
               ))
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Google 授權與配置引導 Modal */}
+      {showAuthGuideModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-dark-surface border border-dark-border-default/80 rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl p-2 bg-amber-950/40 border border-amber-800/50 rounded-xl">🔑</span>
+                <div>
+                  <h3 className="text-base font-bold text-dark-primary">Google Tasks 連動授權提示</h3>
+                  <p className="text-xs text-dark-muted mt-0.5">Google OAuth 2.0 整合與權限引導</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAuthGuideModal(false)}
+                className="text-dark-muted hover:text-dark-primary text-sm p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-red-950/30 border border-red-800/40 rounded-xl text-xs text-red-300 space-y-1">
+              <div className="font-semibold flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>連動受阻原因：</span>
+              </div>
+              <p className="leading-relaxed opacity-90 pl-5">{authErrorMessage}</p>
+            </div>
+
+            <div className="space-y-2.5 text-xs text-dark-secondary">
+              <p className="font-semibold text-dark-primary">📋 如何完成 Google Tasks 串接配置：</p>
+              <ol className="list-decimal list-inside space-y-1.5 pl-1 leading-relaxed text-dark-muted">
+                <li>前往 <span className="text-blue-400 font-mono">Google Cloud Console</span> 並在 API 庫中啟用 <span className="text-dark-primary">Google Tasks API</span>。</li>
+                <li>於「憑證」中建立 <span className="text-dark-primary">OAuth 2.0 Client ID</span>，應用程式類型選擇「Chrome 擴充功能」。</li>
+                <li>將本擴充功能的 ID 填入憑證中，並將取得的用戶端 ID 填入專案 <span className="text-emerald-400 font-mono">public/manifest.json</span> 之 <span className="text-dark-primary font-mono">oauth2.client_id</span>。</li>
+                <li>重新載入擴充功能後，再次點擊同步即可喚起 Google 登入授權並無縫拉取任務。</li>
+              </ol>
+            </div>
+
+            <div className="pt-2 flex justify-end gap-2 border-t border-dark-border-subtle">
+              <button
+                onClick={() => setShowAuthGuideModal(false)}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+              >
+                了解並關閉
+              </button>
+            </div>
           </div>
         </div>
       )}

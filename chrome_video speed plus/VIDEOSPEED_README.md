@@ -37,6 +37,48 @@
 
 ---
 
+## 🛡️ 核心技術與 DOM 樣式隔離機制 (Shadow DOM Isolation)
+
+1. **宿主樣式污染防護 (Host Style Isolation)**：
+   - OSD (On-Screen Display) 控制懸浮面板與重點標記視窗 (Bookmark Modal) 必須建立在獨立的 `ShadowRoot` 內部（`element.attachShadow({ mode: 'open' })`）。
+   - 所有控制器 CSS 樣式必須內嵌於 Shadow DOM，**嚴禁**全域污染宿主網頁（如 YouTube、Bilibili、Netflix）的 CSS。
+2. **動態 Video 探測與生命週期監聽 (Dynamic Video Detection)**：
+   - 透過 `MutationObserver` 自動監聽網頁非同步載入之 `<video>` 標籤（包含 SPA 單頁應用切換、動態廣告切換、動態換集）。
+   - 對 `<video>` 進行事件代理（`play`, `ratechange`, `loadedmetadata`），保證倍速狀態持續生效與循環控制。
+3. **原生無打包約束 (Vanilla JS)**：
+   - 全插件維持純原生零依賴 Vanilla JS，杜絕打包工具與複雜 runtime，確保在影音平台毫秒級秒開執行。
+
+---
+
+## 💾 資料模型與儲存 SSOT (Storage Schema)
+
+所有設定與書籤數據儲存於獨立之 `chrome.storage.local` 或 `chrome.storage.sync`，格式如下：
+
+| 儲存鍵值 (Key) | 資料型態 | 預設值 / 說明 |
+| :--- | :--- | :--- |
+| `vsp_default_speed` | `number` | 預設播放倍速（如 `1.0`, `1.25`, `1.5`, `2.0`） |
+| `vsp_speed_step` | `number` | 快捷鍵每次微調步進值（預設 `0.25`） |
+| `vsp_shortcuts` | `Record<string, string>` | 快捷鍵映射表（加速、減速、時間標記、收集字幕等） |
+| `vsp_site_overrides` | `Record<string, { speed: number, disabled: boolean }>` | 特定網域專屬倍速記憶 |
+| `vsp_bookmarks` | `Array<VspBookmark>` | 法說會與影音時間標記儲存清單（見下方結構） |
+| `scrumclockExtensionId` | `string` | 快取指定之 ScrumClock Extension ID，供跨插件通訊使用 |
+
+### VspBookmark 實體結構
+```typescript
+interface VspBookmark {
+  id: string;               // 唯一標識符（如 timestamp 隨機碼）
+  videoId: string;          // YouTube Video ID
+  videoTitle: string;       // 影片標題
+  url: string;              // 帶秒數的時間戳記跳轉 URL (&t=Xxs)
+  timeSeconds: number;      // 影片播放當前秒數
+  timeFormatted: string;    // 格式化時間戳 (如 02:15)
+  note: string;             // 投研重點備註
+  createdAt: string;        // ISO 8601 建立時間
+}
+```
+
+---
+
 ## ⌨️ 鍵盤快捷鍵映射 (Keyboard Shortcuts)
 
 在 YouTube 影片播放頁面中，可使用以下鍵盤快捷鍵快速變速或收集字幕（在留言區、搜尋框等輸入焦點時自動停用，避免干擾）：
@@ -105,12 +147,4 @@
   - 請於 Chrome 擴充功能清單 (`chrome://extensions/`) 複製 ScrumClock 的 ID。
   - 開啟 VideoSpeedPlus Popup 視窗，於「📥 ScrumClock 收集器」欄位貼上並點擊「儲存」與「測試」。
 
----
-
-## 🚀 投研工作流支援與演進藍圖 (Analyst Workflow Roadmap)
-
-依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 之診斷分析，後續規劃演進方向：
-1. **免喚出 Popup 之盲打快捷鍵 (已完成 ✅)**：支援 `Alt+[` / `Alt+]` 連續步進調速（0.25x）與 `Alt+M` 即時標記書籤。
-2. **雙向反查 Deep-Link (已完成 ✅)**：跨插件推播內容附帶精準秒數導航 URL (`&t=Xxs`)，支援反向喚起自動定位。
-3. **多段精華聚合容器 (已完成 ✅)**：Popup 內嵌草稿箱 (Session Draft Box)，支援單一法說會多時間戳記聚合管理、一鍵複製整包 Markdown 與一鍵打包轉入 ScrumClock 建立 Checklist 任務。
 
