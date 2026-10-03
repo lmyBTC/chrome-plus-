@@ -49,6 +49,13 @@
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
             </svg>
           </button>
+          <button class="btn btn-icon btn-xs" id="btn-export-time-stats" title="匯出停留時長與網域排行 JSON (遵循脫敏設定)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
           <button class="btn btn-icon btn-xs text-danger" id="btn-clear-time-logs" title="清空今日停留記錄">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 6h18"></path>
@@ -307,7 +314,11 @@
           <button class="filter-btn" data-filter="download">下載 <span class="counter" id="count-download">0</span></button>
         </div>
         <div class="actions">
-          <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出當前緩衝區日誌 JSON">匯出</button>
+          <label class="sanitize-toggle-wrap" title="🔒 隱私脫敏開關 (AM-03)：啟用後匯出與複製將自動遮蔽機密 Token、密鑰與私有 IP">
+            <input type="checkbox" id="sanitize-checkbox" checked>
+            <span class="sanitize-toggle-pill">🔒 脫敏</span>
+          </label>
+          <button class="btn btn-ghost btn-sm" id="btn-export-logs" title="匯出當前緩衝區日誌 JSON (遵循脫敏設定)">匯出</button>
           <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空當前緩衝區">清空</button>
         </div>
       </div>

@@ -7,6 +7,14 @@ import {
   CATEGORY_TYPES,
   CATEGORY_META
 } from '../scripts/domain-classifier.js';
+import {
+  sanitizeUrl,
+  sanitizeText,
+  sanitizeLogItem,
+  sanitizeLogs,
+  sanitizeTimeStats,
+  sanitizeData
+} from '../scripts/privacy-sanitizer.js';
 
 /**
  * Browser Activity Monitor - Side Panel 控制腳本
@@ -66,6 +74,7 @@ const dom = {
   timeTrackerCollapseIcon: document.getElementById('time-tracker-collapse-icon'),
   timeTrackerFocusPill: document.getElementById('time-tracker-focus-pill'),
   btnRefreshTimeStats: document.getElementById('btn-refresh-time-stats'),
+  btnExportTimeStats: document.getElementById('btn-export-time-stats'),
   btnClearTimeLogs: document.getElementById('btn-clear-time-logs'),
   timeTrackerBody: document.getElementById('time-tracker-body'),
   timeKpiTotal: document.getElementById('time-kpi-total'),
@@ -133,6 +142,7 @@ const dom = {
   sprintBannerMissionTitle: document.getElementById('sprint-banner-mission-title'),
   sprintBannerDuration: document.getElementById('sprint-banner-duration'),
   sprintBannerTimeStart: document.getElementById('sprint-banner-time-start'),
+  sanitizeCheckbox: document.getElementById('sanitize-checkbox'),
   btnExportLogs: document.getElementById('btn-export-logs'),
   btnClearLogs: document.getElementById('btn-clear-logs'),
   footerLogCount: document.getElementById('footer-log-count'),
@@ -495,12 +505,43 @@ function createLogItemElement(item) {
     tags.appendChild(sprintTag);
   }
 
+  // 日誌右側操作列 (時間戳記與 AM-03 脫敏複製按鈕)
+  const headerActions = document.createElement('div');
+  headerActions.className = 'log-item-actions';
+
+  const copyBtn = document.createElement('button');
+  copyBtn.className = 'btn-copy-log';
+  copyBtn.title = '複製此紀錄 (遵循脫敏開關)';
+  copyBtn.textContent = '📋';
+  copyBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    try {
+      const isSanitize = dom.sanitizeCheckbox ? dom.sanitizeCheckbox.checked : true;
+      const dataToCopy = isSanitize ? sanitizeLogItem(item) : item;
+      const textToCopy = (item.category === 'network' && dataToCopy.url) 
+        ? dataToCopy.url 
+        : JSON.stringify(dataToCopy, null, 2);
+      await navigator.clipboard.writeText(textToCopy);
+      copyBtn.textContent = '✓';
+      copyBtn.classList.add('copied');
+      setTimeout(() => {
+        copyBtn.textContent = '📋';
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    } catch {
+      // 剪貼簿存取降級容錯
+    }
+  });
+
   const timeSpan = document.createElement('span');
   timeSpan.className = 'log-time';
   timeSpan.textContent = formatTime(item.timestamp || Date.now());
 
+  headerActions.appendChild(copyBtn);
+  headerActions.appendChild(timeSpan);
+
   header.appendChild(tags);
-  header.appendChild(timeSpan);
+  header.appendChild(headerActions);
   div.appendChild(header);
 
   // 主要內容
@@ -1460,6 +1501,30 @@ function initEvents() {
     });
   }
 
+  // AM-01/AM-02: 匯出今日停留時長與網域排行 JSON (AM-03 脫敏整合)
+  if (dom.btnExportTimeStats) {
+    dom.btnExportTimeStats.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!currentTimeStats) {
+        alert('尚無今日停留時長紀錄可匯出。');
+        return;
+      }
+      const isSanitize = dom.sanitizeCheckbox ? dom.sanitizeCheckbox.checked : true;
+      const exportStats = isSanitize ? sanitizeTimeStats(currentTimeStats) : currentTimeStats;
+      const filename = isSanitize
+        ? `bam_timestats_${Date.now()}_sanitized.json`
+        : `bam_timestats_${Date.now()}.json`;
+
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportStats, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute('href', dataStr);
+      downloadAnchor.setAttribute('download', filename);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    });
+  }
+
   // AM-01: 清空今日停留時長記錄
   if (dom.btnClearTimeLogs) {
     dom.btnClearTimeLogs.addEventListener('click', (e) => {
@@ -1479,16 +1544,22 @@ function initEvents() {
     updateCounters();
   });
 
-  // 匯出緩衝區日誌 JSON
+  // 匯出緩衝區日誌 JSON (AM-03 脫敏整合)
   dom.btnExportLogs.addEventListener('click', () => {
     if (logs.length === 0) {
       alert('目前緩衝區內無活動日誌。');
       return;
     }
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(logs, null, 2));
+    const isSanitize = dom.sanitizeCheckbox ? dom.sanitizeCheckbox.checked : true;
+    const exportData = isSanitize ? sanitizeLogs(logs) : logs;
+    const filename = isSanitize 
+      ? `bam_logs_${Date.now()}_sanitized.json` 
+      : `bam_logs_${Date.now()}.json`;
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(exportData, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `bam_logs_${Date.now()}.json`);
+    downloadAnchor.setAttribute('download', filename);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

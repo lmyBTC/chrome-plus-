@@ -59,7 +59,7 @@ graph TD
 | :--- | :--- | :--- | :--- | :--- |
 | **AM-01** | **底層請求噪音 vs 語意化停留時長**(已完成) | 目前僅記錄 `webRequest` 底層封包，PM 面對數千筆 JS/CSS/CDN 請求無法看出在特定分頁停留多久。 | 監聽 `chrome.tabs.onActivated` 與視窗焦點，統計網頁的前台實際有效停留時長（分鐘/秒）。 | **P0 (極高)** |
 | **AM-02** | **缺乏網域智慧分類標籤**(已完成) | 日誌僅有純 URL 網址，需人工逐條辨識工作或分心。 | 內建常見網域映射字典（如 GitHub/Figma/Docs 為「工作」，YouTube/FB 為「娛樂」），支援簡單彩色標籤與過濾。 | **P0 (高)** |
-| **AM-03** | **日誌隱私脫敏匯出** | 欲截圖或匯出活動紀錄時，URL 常帶有私人 Token 或機密參數。 | 匯出時提供一鍵遮蔽 Query String 與私有 IP 的開關。 | **P1 (中)** |
+| **AM-03** | **日誌隱私脫敏匯出**(已完成) | 欲截圖或匯出活動紀錄時，URL 常帶有私人 Token 或機密參數。 | 匯出時提供一鍵遮蔽 Query String 與私有 IP 的開關。 | **P1 (中)** |
 
 ### 2.2 ScrumClock 敏捷排程與報工改善
 
@@ -100,7 +100,7 @@ graph TD
 ## 5. 總結與執行路線圖
 
 * **當前重心**：
-  1. `browser-activity-monitor`：補齊 `tabs.onActivated` 前台停留時長與網域分類 (AM-01, AM-02)。
+  1. `browser-activity-monitor`：落實 `tabs.onActivated` 前台停留時長、網域智慧分類與日誌隱私脫敏 (AM-01, AM-02, AM-03 已全數完成)。
   2. `chrome_scrumclock`：補齊抽屜輸入欄位與本地 Markdown/CSV 匯出 (SC-01, SC-02, SC-03)。
 * **外部整合**：
   - 待單插件核心功能成熟穩固後，再行評估第 3 節之 Google 生態系對接 (GG-01 ~ GG-03)。

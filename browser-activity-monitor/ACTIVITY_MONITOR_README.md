@@ -16,6 +16,9 @@
   - 常態零負載監聽前台分頁焦點 (`chrome.tabs.onActivated`、`chrome.windows.onFocusChanged`)，秒級累計有效工作時長，排除背景分頁虛報。
 - 🏷️ **網域智慧分類標籤與聚合看板 (AM-02 Domain Classifier)**：
   - 擴充現代 PM 工具（Notion、Jira、Docs、Linear）、通訊（Slack、Teams）與娛樂（YouTube、Netflix）網域分類字典，側邊欄彩色 Badge 標示與一鍵類別過濾。
+- 🔒 **日誌隱私脫敏匯出與遮蔽開關 (AM-03 Privacy Sanitizer)**：
+  - 前端純化管線，在匯出 JSON 或複製日誌時，自動遮蔽機密 Query 參數（`token`、`auth`、`key`、`secret`、`password`、`session` 等）與內部私有 IP（`10.x`、`192.168.x`、`172.16-31.x`、`localhost`）。
+  - 側邊欄提供「🔒 脫敏」切換開關，脫敏僅在匯出/複製管道生效，100% 不污染底層 IndexedDB 原始除錯數據。
 - ⏱️ **雙軌隨選健檢機制 (Dual Profiling Modes)**：
   - **快速定時健檢 (Quick Audit - 60s)**：一鍵開啟 60 秒採樣，時間倒數結束自動結算並卸載監聽。
   - **持續檢測記錄模式 (Continuous Session Mode)**：手動開啟開始追蹤，手動停止、面板關閉或瀏覽器休眠時即刻自動結算並產生結構化「階段檢測報告卡」。
@@ -44,14 +47,15 @@
 | `background.js` | **背景服務核心 (Service Worker)** | 隨選動態掛載/卸載 `webRequest`、Session 生命週期狀態機、Port 廣播與組件協同 |
 | `scripts/tab-time-tracker.js` | **前台分頁焦點時長追蹤器 (AM-01)** | 監聽 `tabs.onActivated`、`windows.onFocusChanged`，秒級計算前台有效停留時長並結算寫入 |
 | `scripts/domain-classifier.js` | **網域智慧分類與統計聚合引擎** | PM 生產力 / 辦公通訊 / 休閒娛樂網域字典、`calculateCategoryStats` 分類時長統計 |
+| `scripts/privacy-sanitizer.js` | **前端日誌隱私脫敏模組 (AM-03)** | 機密 Query 參數遮罩、私有 IP 辨識純化、日誌與時長批次脫敏函式 |
 | `scripts/session-profiler.js` | **Session 彙總分析引擎** | 記憶體輕量統計器 (`ProfilerSession`)、Noise Gate、TOP 分頁分析與優化建議生成 |
 | `scripts/resource-profiler.js` | **組件資源監視與效能診斷核心** | 輕量耗時統計 (`ResourceProfiler`)、記憶體/佇列/DOM 診斷、智慧優化建議引擎 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
 | `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、`health_reports`、`time_spent_logs` 儲存集合與聚合查詢 |
-| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 停留時長總覽看板、分類進度條、TOP 5 活躍分頁、雙軌控制卡片、環形串流容器 |
-| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、彩色分類 Badge、多色停留時間進度條、30筆環形緩衝流 |
-| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 停留時長看板即時更新、網域分類過濾、雙軌生命週期控制、環形緩衝區 (30筆) |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 停留時長總覽看板、分類進度條、TOP 5 活躍分頁、雙軌控制卡片、環形串流容器、脫敏開關 |
+| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、彩色分類 Badge、多色停留時間進度條、30筆環形緩衝流、脫敏切換膠囊 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 停留時長看板即時更新、網域分類過濾、雙軌生命週期控制、環形緩衝區 (30筆)、脫敏匯出與複製 |
 | `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---
@@ -177,4 +181,5 @@
 - **資料本機性**：所有日誌與報告僅保存在使用者瀏覽器的 IndexedDB (`BrowserActivityMonitorDB`)，絕不上傳外部伺服器。
 - **無侵入性保證**：探針注入採嚴格隨選觸發，分頁關閉或刷新後探針自動失效，絕不污染全域日常瀏覽效能。
 - **隱私最小化**：僅收集用於本機安全審查之網路與行為元資料，不記錄使用者鍵入之敏感密碼或表單內容。
+- **前端匯出脫敏 (AM-03)**：匯出或剪貼簿複製紀錄時預設純化 Token、密鑰與私有 IP，防止使用者在分享日誌或截圖時外洩敏感機密。
 

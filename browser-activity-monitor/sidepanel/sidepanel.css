@@ -1911,5 +1911,93 @@ body {
   font-weight: 600;
 }
 
+/* ==========================================================================
+   AM-03: 日誌隱私脫敏開關與項目複製樣式
+   ========================================================================== */
+.sanitize-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  margin-right: 4px;
+}
+
+.sanitize-toggle-wrap input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.sanitize-toggle-pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 7px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.sanitize-toggle-wrap:hover .sanitize-toggle-pill {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-normal);
+}
+
+.sanitize-toggle-wrap input[type="checkbox"]:checked + .sanitize-toggle-pill {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.15);
+}
+
+.sanitize-toggle-wrap input[type="checkbox"]:focus-visible + .sanitize-toggle-pill {
+  outline: 2px solid #10b981;
+  outline-offset: 1px;
+}
+
+/* 日誌項目右側操作按鈕組 */
+.log-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-copy-log {
+  opacity: 0;
+  padding: 1px 4px;
+  font-size: 10px;
+  line-height: 1;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.log-item:hover .btn-copy-log {
+  opacity: 0.75;
+}
+
+.log-item .btn-copy-log:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-normal);
+  border-color: var(--border-color);
+}
+
+.btn-copy-log.copied {
+  opacity: 1 !important;
+  color: #10b981 !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+}
+
+
 
 
