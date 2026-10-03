@@ -33,6 +33,84 @@
       </div>
     </div>
 
+    <!-- AM-01 & AM-02: 分頁有效停留時長與網域智慧分類看板 -->
+    <section class="card time-tracker-card" id="time-tracker-section">
+      <div class="card-header time-tracker-header" id="btn-toggle-time-tracker" title="點擊展開/收合有效停留時間看板">
+        <div class="time-tracker-title-group">
+          <span class="collapse-icon" id="time-tracker-collapse-icon">▼</span>
+          <h2 class="card-title">有效停留時間看板</h2>
+          <span class="focus-pill" id="time-tracker-focus-pill" title="PM 專注度得分 (工作與通訊時長加權佔比)">專注度 --%</span>
+        </div>
+        <div class="time-tracker-header-actions">
+          <button class="btn btn-icon btn-xs" id="btn-refresh-time-stats" title="立即刷新今日停留時長">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 4v6h-6"></path>
+              <path d="M1 20v-6h6"></path>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </button>
+          <button class="btn btn-icon btn-xs text-danger" id="btn-clear-time-logs" title="清空今日停留記錄">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- 看板展開內容區 -->
+      <div class="time-tracker-body" id="time-tracker-body">
+        <!-- 今日總時長與分類四宮格 -->
+        <div class="time-kpi-grid">
+          <div class="time-kpi-item">
+            <span class="time-kpi-label">今日活躍</span>
+            <span class="time-kpi-val" id="time-kpi-total">0s</span>
+          </div>
+          <div class="time-kpi-item time-kpi-work">
+            <span class="time-kpi-label">💼 工作</span>
+            <span class="time-kpi-val" id="time-kpi-work">0s</span>
+          </div>
+          <div class="time-kpi-item time-kpi-leisure">
+            <span class="time-kpi-label">☕ 娛樂</span>
+            <span class="time-kpi-val" id="time-kpi-leisure">0s</span>
+          </div>
+          <div class="time-kpi-item time-kpi-other">
+            <span class="time-kpi-label">🌐 其他</span>
+            <span class="time-kpi-val" id="time-kpi-other">0s</span>
+          </div>
+        </div>
+
+        <!-- 類別佔比多色進度條 -->
+        <div class="time-progress-section">
+          <div class="time-progress-bar-wrap">
+            <div class="time-progress-bar" id="time-stacked-bar">
+              <div class="progress-segment seg-prod" id="seg-prod" style="width: 0%;" title="生產力: 0%"></div>
+              <div class="progress-segment seg-comm" id="seg-comm" style="width: 0%;" title="辦公通訊: 0%"></div>
+              <div class="progress-segment seg-leisure" id="seg-leisure" style="width: 0%;" title="休閒娛樂: 0%"></div>
+              <div class="progress-segment seg-other" id="seg-other" style="width: 0%;" title="其他: 0%"></div>
+            </div>
+          </div>
+          <div class="time-legend-row" id="time-legend-row">
+            <span class="legend-item"><span class="legend-dot dot-prod"></span>生產力 <b id="legend-pct-prod">0%</b></span>
+            <span class="legend-item"><span class="legend-dot dot-comm"></span>通訊 <b id="legend-pct-comm">0%</b></span>
+            <span class="legend-item"><span class="legend-dot dot-leisure"></span>娛樂 <b id="legend-pct-leisure">0%</b></span>
+            <span class="legend-item"><span class="legend-dot dot-other"></span>其他 <b id="legend-pct-other">0%</b></span>
+          </div>
+        </div>
+
+        <!-- Top 5 停留網站排行榜 -->
+        <div class="top-domains-section">
+          <div class="top-domains-header">
+            <span class="top-domains-title">Top 5 活躍停留網站</span>
+            <span class="top-domains-sub" id="top-domains-count">0 個網域</span>
+          </div>
+          <div class="top-domains-list" id="top-domains-list">
+            <div class="domains-empty-hint">今日尚無分頁停留記錄</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 雙軌隨選健檢與檢測記錄控制台 (Session Profiler Console) -->
     <section class="card session-card" id="session-card">
       <div class="session-card-header">
@@ -233,13 +311,15 @@
           <button class="btn btn-ghost btn-sm" id="btn-clear-logs" title="清空當前緩衝區">清空</button>
         </div>
       </div>
-      <!-- 智慧網域過濾列 (AM-V01) -->
-      <div class="filter-sub-bar">
-        <button class="filter-toggle-btn" id="btn-filter-work" title="僅顯示工作與通訊網域 (GitHub, Jira, Figma, Slack...)">
-          <span>💼 僅看工作</span>
-        </button>
+      <!-- 智慧網域分類過濾列 (AM-02) -->
+      <div class="filter-sub-bar" id="category-filter-bar">
+        <span class="filter-sub-label">分類:</span>
+        <button class="filter-cat-btn active" data-cat-filter="all" title="顯示所有網域類別">全部</button>
+        <button class="filter-cat-btn" data-cat-filter="work" title="僅顯示工作與通訊網域 (生產力/通訊)">💼 工作</button>
+        <button class="filter-cat-btn" data-cat-filter="leisure" title="僅顯示休閒娛樂網域">☕ 娛樂</button>
+        <button class="filter-cat-btn" data-cat-filter="static" title="僅顯示靜態資源/CDN">📦 靜態</button>
         <button class="filter-toggle-btn" id="btn-filter-hide-static" title="過濾 CDN、字型與遙測分析等靜態噪音">
-          <span>🛡️ 隱藏靜態 CDN</span>
+          <span>🛡️ 隱藏靜態</span>
         </button>
       </div>
 

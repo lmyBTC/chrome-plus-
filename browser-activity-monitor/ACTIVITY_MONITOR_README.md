@@ -12,6 +12,10 @@
 
 - ⚡ **徹底消除觀察者效應 (Zero Standby Overhead)**：
   - 平時 Service Worker 深度待命，完全不掛載 `webRequest` 網路攔截器、不進行背景磁碟寫入，日常瀏覽 0% 額外開銷。
+- ⏳ **語意化活躍停留時長統計 (AM-01 Tab Time Tracker)**：
+  - 常態零負載監聽前台分頁焦點 (`chrome.tabs.onActivated`、`chrome.windows.onFocusChanged`)，秒級累計有效工作時長，排除背景分頁虛報。
+- 🏷️ **網域智慧分類標籤與聚合看板 (AM-02 Domain Classifier)**：
+  - 擴充現代 PM 工具（Notion、Jira、Docs、Linear）、通訊（Slack、Teams）與娛樂（YouTube、Netflix）網域分類字典，側邊欄彩色 Badge 標示與一鍵類別過濾。
 - ⏱️ **雙軌隨選健檢機制 (Dual Profiling Modes)**：
   - **快速定時健檢 (Quick Audit - 60s)**：一鍵開啟 60 秒採樣，時間倒數結束自動結算並卸載監聽。
   - **持續檢測記錄模式 (Continuous Session Mode)**：手動開啟開始追蹤，手動停止、面板關閉或瀏覽器休眠時即刻自動結算並產生結構化「階段檢測報告卡」。
@@ -37,15 +41,17 @@
 | 檔案相對路徑 | 類型 / 職責 | 關鍵技術實作 |
 | :--- | :--- | :--- |
 | `manifest.json` | **擴充功能配置宣告** | Manifest V3 規範、`sidePanel`、`alarms`、`contentSettings`、`webRequest`、`downloads` 宣告 |
-| `background.js` | **背景服務核心 (Service Worker)** | 隨選動態掛載/卸載 `webRequest`、Session 生命週期狀態機、Port 廣播與定時清理 |
+| `background.js` | **背景服務核心 (Service Worker)** | 隨選動態掛載/卸載 `webRequest`、Session 生命週期狀態機、Port 廣播與組件協同 |
+| `scripts/tab-time-tracker.js` | **前台分頁焦點時長追蹤器 (AM-01)** | 監聽 `tabs.onActivated`、`windows.onFocusChanged`，秒級計算前台有效停留時長並結算寫入 |
+| `scripts/domain-classifier.js` | **網域智慧分類與統計聚合引擎** | PM 生產力 / 辦公通訊 / 休閒娛樂網域字典、`calculateCategoryStats` 分類時長統計 |
 | `scripts/session-profiler.js` | **Session 彙總分析引擎** | 記憶體輕量統計器 (`ProfilerSession`)、Noise Gate、TOP 分頁分析與優化建議生成 |
 | `scripts/resource-profiler.js` | **組件資源監視與效能診斷核心** | 輕量耗時統計 (`ResourceProfiler`)、記憶體/佇列/DOM 診斷、智慧優化建議引擎 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
-| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、`health_reports` 儲存集合、報告歷史倒序查詢與過期清理 |
-| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 雙軌控制卡片、報告視圖切換標籤、環形串流容器、資源監視面板 |
-| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、雙軌按鈕樣式、30筆環形緩衝流、結構化報告卡樣式 |
-| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 雙軌生命週期控制、環形緩衝區管理 (30筆)、報告卡渲染與歷史報告切換 |
+| `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、`health_reports`、`time_spent_logs` 儲存集合與聚合查詢 |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 停留時長總覽看板、分類進度條、TOP 5 活躍分頁、雙軌控制卡片、環形串流容器 |
+| `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、彩色分類 Badge、多色停留時間進度條、30筆環形緩衝流 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 停留時長看板即時更新、網域分類過濾、雙軌生命週期控制、環形緩衝區 (30筆) |
 | `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---
@@ -123,6 +129,13 @@
      - `mode`：檢測模式（`TIMED` / `CONTINUOUS`）
      - `healthScore`：健康綜合評分
    - **儲存內容**：包含 TOP 耗能分頁/來源網域、高頻遙測比率、串流流量與結構化優化建議，在每次 Session 結算時僅寫入 1 筆。
+3. **`time_spent_logs`**：
+   - **主鍵**：`id` (autoIncrement)
+   - **索引**：
+     - `domain`：造訪網域名稱
+     - `category`：分類標籤（`productivity` / `communication` / `entertainment` / `static` / `other`）
+     - `timestamp`：紀錄時間戳記
+   - **儲存內容**：前台有效活躍停留時長（`url`, `title`, `durationSec`, `category`, `timestamp`），於分頁切換/導航/失焦結算時寫入。
 
 ### 資料清理機制 (Alarms & Retention)
 - **零日常磁碟 I/O**：拔除高頻單筆寫入，常態監測時全記憶體統計，僅在 Session 結算時批次寫入報告。

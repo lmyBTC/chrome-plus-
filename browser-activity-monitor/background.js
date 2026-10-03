@@ -1,6 +1,7 @@
 import { AuditStorageDB } from './scripts/storage-db.js';
 import { profiler } from './scripts/resource-profiler.js';
 import { ProfilerSession } from './scripts/session-profiler.js';
+import { TabTimeTracker } from './scripts/tab-time-tracker.js';
 
 /**
  * Browser Activity Monitor - Background Service Worker (MV3)
@@ -19,6 +20,17 @@ const activeInspectorTabs = new Set();
 // 跨插件衝刺協同狀態 (SF-03)
 let activeSprintSession = null;
 
+// 初始化前台分頁焦點與停留時長追蹤器 (AM-01)
+const timeTracker = new TabTimeTracker(db, {
+  onTimeLogged: (log) => {
+    broadcast({
+      type: 'TIME_STATS_UPDATED',
+      latestLog: log
+    });
+  }
+});
+timeTracker.init();
+
 // 1. 初始化擴充功能行為：點擊 Action 圖示直接開啟 Side Panel，並註冊排程清理 alarm
 chrome.runtime.onInstalled.addListener(() => {
   if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
@@ -35,13 +47,14 @@ chrome.runtime.onInstalled.addListener(() => {
   }
 });
 
-// 監聽 Alarm 事件：定期清理過期日誌 (3 天) 與檢測報告 (7 天)
+// 監聽 Alarm 事件：定期清理過期日誌 (3 天)、停留記錄 (7 天) 與檢測報告 (7 天)
 if (chrome.alarms) {
   chrome.alarms.onAlarm.addListener(async (alarm) => {
     if (alarm.name === 'DAILY_AUDIT_PURGE') {
       try {
         await db.purgeExpiredLogs(3);
         await db.purgeExpiredReports(7);
+        await db.purgeExpiredTimeLogs(7);
       } catch (err) {
         console.warn('[BAM SW] 定期清理過期日誌或報告失敗:', err);
       }
@@ -526,6 +539,50 @@ chrome.runtime.onConnect.addListener((port) => {
         });
       }
 
+      // 取得停留時長與網域排行統計 (AM-01 & AM-02)
+      if (msg.type === 'GET_TIME_STATS') {
+        try {
+          const stats = await db.getTimeStatsByRange(msg.startTime, msg.endTime);
+          const activeSnapshot = timeTracker.getActiveSnapshot();
+          port.postMessage({
+            type: 'TIME_STATS_RESULT',
+            stats,
+            activeSnapshot
+          });
+        } catch (err) {
+          port.postMessage({
+            type: 'TIME_STATS_RESULT',
+            stats: null,
+            error: err.message
+          });
+        }
+      }
+
+      // 取得當前活躍分頁即時時長快照
+      if (msg.type === 'GET_ACTIVE_TAB_TIME') {
+        port.postMessage({
+          type: 'ACTIVE_TAB_TIME_RESULT',
+          activeSnapshot: timeTracker.getActiveSnapshot()
+        });
+      }
+
+      // 清空所有停留時長記錄
+      if (msg.type === 'CLEAR_ALL_TIME_LOGS') {
+        try {
+          await db.clearAllTimeLogs();
+          port.postMessage({
+            type: 'ALL_TIME_LOGS_CLEARED',
+            success: true
+          });
+        } catch (err) {
+          port.postMessage({
+            type: 'ALL_TIME_LOGS_CLEARED',
+            success: false,
+            error: err.message
+          });
+        }
+      }
+
       // 取得當前進行中的衝刺狀態 (SF-03)
       if (msg.type === 'GET_ACTIVE_SPRINT') {
         port.postMessage({
@@ -554,6 +611,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ origin: message.origin, settings });
     });
     return true; // 非同步響應
+  }
+
+  // 查詢當前前台活躍分頁時長 (單次訊息模式)
+  if (message.type === 'GET_ACTIVE_TAB_TIME') {
+    sendResponse(timeTracker.getActiveSnapshot());
+    return false;
   }
 
   // 注入深入探針請求 (透過單次訊息模式)
@@ -596,6 +659,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // 6. 生命週期防護：監聽瀏覽器休眠 / SW Suspend 事件
 if (chrome.runtime && chrome.runtime.onSuspend) {
   chrome.runtime.onSuspend.addListener(() => {
+    timeTracker.settleCurrentTab('SW_SUSPEND');
     if (currentSession) {
       stopSession('SUSPEND');
     }

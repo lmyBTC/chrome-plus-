@@ -17,12 +17,14 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 
 ## 2. 關鍵入口架構 (Key Entrypoints)
 * `manifest.json`: Manifest V3 配置宣告 (`sidePanel`, `alarms`, `contentSettings`, `webRequest`, `downloads`)
-* `background.js`: 背景 Service Worker，隨選掛載/卸載網路攔截、Port 長連接管理、Session 生命週期狀態機
+* `background.js`: 背景 Service Worker，隨選掛載/卸載網路攔截、Port 長連接管理、調度 TabTimeTracker
+* `scripts/tab-time-tracker.js`: 前台分頁焦點與有效停留時長追蹤器（AM-01 核心，秒級結算與焦點生命週期）
+* `scripts/domain-classifier.js`: 網域智慧分類字典與類別時長聚合引擎（生產力 / 通訊 / 娛樂標籤）
 * `scripts/session-profiler.js`: 記憶體輕量統計器、Noise Gate 與階段健康報告生成
 * `scripts/resource-profiler.js`: 組件資源監視核心（微秒級耗時、DOM/記憶體/佇列診斷，面板收合時 0% 輪詢）
 * `scripts/probe-main.js` & `scripts/probe-isolated.js`: 隨選注入之雙層防禦探針（刷新即失效）
-* `scripts/storage-db.js`: IndexedDB 本機儲存 (`BrowserActivityMonitorDB`: `activity_logs`, `health_reports`)
-* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`)
+* `scripts/storage-db.js`: IndexedDB 本機儲存 (`BrowserActivityMonitorDB`: `activity_logs`, `health_reports`, `time_spent_logs`)
+* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`，含停留時長看板與分類標籤過濾)
 
 ## 3. 安全與合規底線 (Hard Rules)
 1. **嚴禁 innerHTML 漏洞**: 所有動態渲染文字節點一律使用 `.textContent` 或安全的 DOM 操作，杜絕 XSS。

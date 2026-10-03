@@ -1,9 +1,16 @@
 import { profiler } from '../scripts/resource-profiler.js';
-import { classifyDomain, isWorkDomain, isStaticDomain } from '../scripts/domain-classifier.js';
+import {
+  classifyDomain,
+  isWorkDomain,
+  isStaticDomain,
+  formatDuration as formatSeconds,
+  CATEGORY_TYPES,
+  CATEGORY_META
+} from '../scripts/domain-classifier.js';
 
 /**
  * Browser Activity Monitor - Side Panel 控制腳本
- * 管理活動串流即時展示 (30筆環形緩衝區)、雙軌隨選檢測控制台、結構化檢測報告卡、網站原生權限審查與組件資源監視。
+ * 管理活動串流即時展示 (30筆環形緩衝區)、雙軌隨選檢測控制台、結構化檢測報告卡、網站原生權限審查與停留時長看板。
  */
 
 // 常數設定
@@ -14,6 +21,7 @@ let port = null;
 let currentTab = null;
 let logs = [];
 let currentFilter = 'all';
+let currentCatFilter = 'all'; // 'all' | 'work' | 'leisure' | 'static' (AM-02)
 let autoScroll = true;
 let isInspectorActive = false;
 
@@ -35,6 +43,12 @@ let currentView = 'stream'; // 'stream' | 'reports'
 let recentReports = [];
 let activeReport = null;
 
+// 停留時長看板狀態 (AM-01 & AM-02)
+let isTimeTrackerExpanded = true;
+let currentTimeStats = null;
+let currentActiveTabSnapshot = null;
+let timeStatsPollingTimer = null;
+
 // 資源監視器狀態
 let isProfilerExpanded = false;
 let profilerUpdateTimer = null;
@@ -45,6 +59,30 @@ const dom = {
   connectionStatus: document.getElementById('connection-status'),
   currentOrigin: document.getElementById('current-origin'),
   currentTabId: document.getElementById('current-tab-id'),
+
+  // AM-01 & AM-02 有效停留時間看板 DOM
+  timeTrackerSection: document.getElementById('time-tracker-section'),
+  btnToggleTimeTracker: document.getElementById('btn-toggle-time-tracker'),
+  timeTrackerCollapseIcon: document.getElementById('time-tracker-collapse-icon'),
+  timeTrackerFocusPill: document.getElementById('time-tracker-focus-pill'),
+  btnRefreshTimeStats: document.getElementById('btn-refresh-time-stats'),
+  btnClearTimeLogs: document.getElementById('btn-clear-time-logs'),
+  timeTrackerBody: document.getElementById('time-tracker-body'),
+  timeKpiTotal: document.getElementById('time-kpi-total'),
+  timeKpiWork: document.getElementById('time-kpi-work'),
+  timeKpiLeisure: document.getElementById('time-kpi-leisure'),
+  timeKpiOther: document.getElementById('time-kpi-other'),
+  segProd: document.getElementById('seg-prod'),
+  segComm: document.getElementById('seg-comm'),
+  segLeisure: document.getElementById('seg-leisure'),
+  segOther: document.getElementById('seg-other'),
+  legendPctProd: document.getElementById('legend-pct-prod'),
+  legendPctComm: document.getElementById('legend-pct-comm'),
+  legendPctLeisure: document.getElementById('legend-pct-leisure'),
+  legendPctOther: document.getElementById('legend-pct-other'),
+  topDomainsCount: document.getElementById('top-domains-count'),
+  topDomainsList: document.getElementById('top-domains-list'),
+  filterCatBtns: document.querySelectorAll('.filter-cat-btn'),
 
   // 雙軌隨選檢測控制台 DOM
   sessionCard: document.getElementById('session-card'),
@@ -176,17 +214,40 @@ function connectPort() {
       dom.connectionStatus.classList.add('offline');
       dom.connectionStatus.title = '背景服務連線中斷，正在嘗試重新連接...';
       port = null;
+      if (timeStatsPollingTimer) {
+        clearInterval(timeStatsPollingTimer);
+        timeStatsPollingTimer = null;
+      }
       setTimeout(connectPort, 2000);
     });
 
-    // 連線成功後查詢當前 Session 狀態與歷史報告
+    // 連線成功後查詢當前 Session 狀態、歷史報告與停留時長
     port.postMessage({ type: 'GET_SESSION_STATUS' });
     port.postMessage({ type: 'GET_RECENT_REPORTS', limit: 20 });
+    requestTimeStats();
+    startTimeStatsPolling();
   } catch (err) {
     console.warn('[BAM Sidepanel] 連接 Background 失敗:', err);
     dom.connectionStatus.classList.add('offline');
     setTimeout(connectPort, 2000);
   }
+}
+
+// 發送停留時長查詢請求 (AM-01)
+function requestTimeStats() {
+  if (port) {
+    port.postMessage({ type: 'GET_TIME_STATS' });
+  }
+}
+
+// 定期輪詢活躍分頁即時時長以保持看板秒數脈動
+function startTimeStatsPolling() {
+  if (timeStatsPollingTimer) clearInterval(timeStatsPollingTimer);
+  timeStatsPollingTimer = setInterval(() => {
+    if (port) {
+      port.postMessage({ type: 'GET_ACTIVE_TAB_TIME' });
+    }
+  }, 4000);
 }
 
 // 處理來自 Background Port 的廣播訊息
@@ -270,12 +331,34 @@ function handlePortMessage(msg) {
       renderProfilerPanel();
       break;
 
+    // AM-01 & AM-02 停留時長統計與即時更新
+    case 'TIME_STATS_RESULT':
+      currentTimeStats = msg.stats;
+      currentActiveTabSnapshot = msg.activeSnapshot;
+      renderTimeTrackerUI(msg.stats, msg.activeSnapshot);
+      break;
+
+    case 'TIME_STATS_UPDATED':
+      requestTimeStats();
+      break;
+
+    case 'ACTIVE_TAB_TIME_RESULT':
+      currentActiveTabSnapshot = msg.activeSnapshot;
+      renderTimeTrackerUI(currentTimeStats, msg.activeSnapshot);
+      break;
+
+    case 'ALL_TIME_LOGS_CLEARED':
+      currentTimeStats = null;
+      currentActiveTabSnapshot = null;
+      renderTimeTrackerUI(null, null);
+      break;
+
     default:
       break;
   }
 }
 
-// 判定日誌是否符合過濾條件 (AM-V01)
+// 判定日誌是否符合過濾條件 (AM-01 & AM-02)
 function isLogItemMatched(item) {
   if (!item) return false;
   if (currentFilter !== 'all' && item.category !== currentFilter) {
@@ -286,6 +369,16 @@ function isLogItemMatched(item) {
     return false;
   }
   if (hideStaticFilter && isStaticDomain(info.category)) {
+    return false;
+  }
+  // AM-02: 依分類標籤一鍵過濾 (全部、工作、娛樂、靜態)
+  if (currentCatFilter === 'work' && !isWorkDomain(info.category)) {
+    return false;
+  }
+  if (currentCatFilter === 'leisure' && info.category !== CATEGORY_TYPES.LEISURE) {
+    return false;
+  }
+  if (currentCatFilter === 'static' && !isStaticDomain(info.category)) {
     return false;
   }
   return true;
@@ -482,6 +575,186 @@ function updateCounters() {
   dom.countDownload.textContent = countDownload;
   dom.badgeStreamBuffer.textContent = `${logs.length}/${MAX_RING_BUFFER}`;
   dom.footerLogCount.textContent = `緩衝區: ${logs.length}/${MAX_RING_BUFFER} 筆`;
+}
+
+// ==========================================================================
+// 有效停留時間看板與分類統計視覺化 (AM-01 & AM-02)
+// ==========================================================================
+
+function toggleTimeTrackerExpand() {
+  isTimeTrackerExpanded = !isTimeTrackerExpanded;
+  if (!dom.timeTrackerBody || !dom.timeTrackerCollapseIcon) return;
+
+  if (isTimeTrackerExpanded) {
+    dom.timeTrackerBody.style.display = 'flex';
+    dom.timeTrackerCollapseIcon.textContent = '▼';
+  } else {
+    dom.timeTrackerBody.style.display = 'none';
+    dom.timeTrackerCollapseIcon.textContent = '▶';
+  }
+}
+
+function renderTimeTrackerUI(stats, activeSnapshot) {
+  if (!dom.timeTrackerSection) return;
+
+  // 若無統計資料，給予安全預設值
+  const totalSec = stats?.totalDurationSec || 0;
+  const metrics = stats?.metrics || {
+    workDurationSec: 0,
+    productivitySec: 0,
+    communicationSec: 0,
+    leisureSec: 0,
+    otherSec: 0,
+    staticSec: 0,
+    ratios: { productivity: 0, communication: 0, leisure: 0, static: 0, other: 0 },
+    focusScore: 0
+  };
+
+  // 1. 專注度得分膠囊 (Focus Score Pill)
+  if (dom.timeTrackerFocusPill) {
+    const score = metrics.focusScore || 0;
+    dom.timeTrackerFocusPill.textContent = `專注度 ${score}%`;
+    dom.timeTrackerFocusPill.className = 'focus-pill';
+    if (score >= 70) {
+      dom.timeTrackerFocusPill.classList.add('focus-high');
+    } else if (score >= 40) {
+      dom.timeTrackerFocusPill.classList.add('focus-med');
+    } else {
+      dom.timeTrackerFocusPill.classList.add('focus-low');
+    }
+  }
+
+  // 2. 核心 KPI 四宮格
+  if (dom.timeKpiTotal) dom.timeKpiTotal.textContent = formatSeconds(totalSec);
+  if (dom.timeKpiWork) dom.timeKpiWork.textContent = formatSeconds(metrics.workDurationSec);
+  if (dom.timeKpiLeisure) dom.timeKpiLeisure.textContent = formatSeconds(metrics.leisureSec);
+  if (dom.timeKpiOther) dom.timeKpiOther.textContent = formatSeconds(metrics.otherSec + (metrics.staticSec || 0));
+
+  // 3. 類別佔比多色進度條與圖例
+  const ratios = metrics.ratios || { productivity: 0, communication: 0, leisure: 0, static: 0, other: 0 };
+  const prodPct = ratios.productivity || 0;
+  const commPct = ratios.communication || 0;
+  const leisurePct = ratios.leisure || 0;
+  const otherPct = Math.max(0, 100 - prodPct - commPct - leisurePct);
+
+  if (dom.segProd) {
+    dom.segProd.style.width = `${prodPct}%`;
+    dom.segProd.title = `生產力: ${prodPct}% (${formatSeconds(metrics.productivitySec)})`;
+  }
+  if (dom.segComm) {
+    dom.segComm.style.width = `${commPct}%`;
+    dom.segComm.title = `辦公通訊: ${commPct}% (${formatSeconds(metrics.communicationSec)})`;
+  }
+  if (dom.segLeisure) {
+    dom.segLeisure.style.width = `${leisurePct}%`;
+    dom.segLeisure.title = `休閒娛樂: ${leisurePct}% (${formatSeconds(metrics.leisureSec)})`;
+  }
+  if (dom.segOther) {
+    dom.segOther.style.width = `${otherPct}%`;
+    dom.segOther.title = `其他: ${otherPct}% (${formatSeconds(metrics.otherSec + (metrics.staticSec || 0))})`;
+  }
+
+  if (dom.legendPctProd) dom.legendPctProd.textContent = `${prodPct}%`;
+  if (dom.legendPctComm) dom.legendPctComm.textContent = `${commPct}%`;
+  if (dom.legendPctLeisure) dom.legendPctLeisure.textContent = `${leisurePct}%`;
+  if (dom.legendPctOther) dom.legendPctOther.textContent = `${otherPct}%`;
+
+  // 4. Top 5 停留網站排行榜
+  if (dom.topDomainsList) {
+    dom.topDomainsList.innerHTML = '';
+    const topList = Array.isArray(stats?.topDomains) ? stats.topDomains.slice(0, 5) : [];
+    const activeDomain = activeSnapshot?.currentDomain || '';
+
+    if (dom.topDomainsCount) {
+      dom.topDomainsCount.textContent = `${topList.length} 個網域`;
+    }
+
+    if (topList.length === 0) {
+      const emptyHint = document.createElement('div');
+      emptyHint.className = 'domains-empty-hint';
+      emptyHint.textContent = '今日尚無分頁停留記錄';
+      dom.topDomainsList.appendChild(emptyHint);
+    } else {
+      topList.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'top-domain-item';
+
+        const isCurrentActive = Boolean(activeDomain && item.domain.toLowerCase() === activeDomain.toLowerCase());
+        if (isCurrentActive) {
+          row.classList.add('is-active-tab');
+        }
+
+        const left = document.createElement('div');
+        left.className = 'domain-left';
+
+        // 排名序號
+        const rank = document.createElement('span');
+        rank.className = 'domain-rank';
+        rank.textContent = `#${index + 1}`;
+        left.appendChild(rank);
+
+        // 圖示
+        if (item.favIconUrl && item.favIconUrl.startsWith('http')) {
+          const img = document.createElement('img');
+          img.className = 'domain-fav';
+          img.src = item.favIconUrl;
+          img.alt = item.domain;
+          img.onerror = () => {
+            img.style.display = 'none';
+            if (fallback) fallback.style.display = 'flex';
+          };
+          const fallback = document.createElement('span');
+          fallback.className = 'domain-fav-fallback';
+          fallback.style.display = 'none';
+          fallback.textContent = item.domain.slice(0, 1).toUpperCase();
+          left.appendChild(img);
+          left.appendChild(fallback);
+        } else {
+          const fallback = document.createElement('span');
+          fallback.className = 'domain-fav-fallback';
+          fallback.textContent = item.domain.slice(0, 1).toUpperCase();
+          left.appendChild(fallback);
+        }
+
+        // 網域名稱與活躍脈衝
+        const nameWrap = document.createElement('div');
+        nameWrap.className = 'domain-name-wrap';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'domain-name';
+        nameSpan.textContent = item.title || item.domain;
+        nameSpan.title = `${item.domain} (造訪 ${item.visitCount || 1} 次)`;
+        nameWrap.appendChild(nameSpan);
+
+        if (isCurrentActive) {
+          const pulse = document.createElement('span');
+          pulse.className = 'live-pulse-dot';
+          pulse.title = '當前活躍分頁';
+          nameWrap.appendChild(pulse);
+        }
+        left.appendChild(nameWrap);
+        row.appendChild(left);
+
+        // 右側：分類徽章與時長標籤
+        const right = document.createElement('div');
+        right.className = 'domain-right';
+
+        const catInfo = classifyDomain(item.domain);
+        const catBadge = document.createElement('span');
+        catBadge.className = `domain-badge ${catInfo.badgeClass}`;
+        catBadge.textContent = `${catInfo.icon} ${catInfo.name}`;
+        right.appendChild(catBadge);
+
+        const durTag = document.createElement('span');
+        durTag.className = 'domain-duration-tag';
+        durTag.textContent = formatSeconds(item.durationSec);
+        right.appendChild(durTag);
+
+        row.appendChild(right);
+        dom.topDomainsList.appendChild(row);
+      });
+    }
+  }
 }
 
 // ==========================================================================
@@ -1159,6 +1432,43 @@ function initEvents() {
       hideStaticFilter = !hideStaticFilter;
       dom.btnFilterHideStatic.classList.toggle('active', hideStaticFilter);
       renderList();
+    });
+  }
+
+  // AM-02: 分類過濾列按鈕群點擊切換 (全部、工作、娛樂、靜態)
+  if (dom.filterCatBtns && dom.filterCatBtns.length > 0) {
+    dom.filterCatBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        dom.filterCatBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentCatFilter = btn.dataset.catFilter || 'all';
+        renderList();
+      });
+    });
+  }
+
+  // AM-01: 停留時長看板折疊切換
+  if (dom.btnToggleTimeTracker) {
+    dom.btnToggleTimeTracker.addEventListener('click', toggleTimeTrackerExpand);
+  }
+
+  // AM-01: 停留時長手動刷新按鈕
+  if (dom.btnRefreshTimeStats) {
+    dom.btnRefreshTimeStats.addEventListener('click', (e) => {
+      e.stopPropagation();
+      requestTimeStats();
+    });
+  }
+
+  // AM-01: 清空今日停留時長記錄
+  if (dom.btnClearTimeLogs) {
+    dom.btnClearTimeLogs.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (confirm('確定要清空今日所有分頁停留時長記錄嗎？')) {
+        if (port) {
+          port.postMessage({ type: 'CLEAR_ALL_TIME_LOGS' });
+        }
+      }
     });
   }
 
