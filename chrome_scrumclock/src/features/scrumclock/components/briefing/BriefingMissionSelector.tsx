@@ -348,6 +348,23 @@ export const BriefingMissionSelector: React.FC<BriefingMissionSelectorProps> = (
                   >
                     {mission.text}
                   </label>
+                  {mission.checklist && mission.checklist.length > 0 && (() => {
+                    const completedCount = mission.checklist.filter((i) => i.completed).length;
+                    const totalCount = mission.checklist.length;
+                    return (
+                      <span
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border select-none ${
+                          completedCount === totalCount
+                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                            : 'bg-dark-card text-blue-300 border-blue-900/40'
+                        }`}
+                        title={`Checklist 查核進度：${completedCount}/${totalCount}`}
+                      >
+                        <span>☑</span>
+                        <span>{completedCount}/{totalCount}</span>
+                      </span>
+                    );
+                  })()}
                   {!mission.isCompleted && (
                     <button
                       onClick={() => {

@@ -130,6 +130,33 @@
       };
       actionBtnsWrap.appendChild(btnSendGas);
 
+      const btnExportModelGas = document.createElement('button');
+      btnExportModelGas.className = 'btn-action btn-template';
+      btnExportModelGas.innerHTML = '📊 直套財務模型底稿';
+      btnExportModelGas.title = '在 Google Sheets 產生含公式的 3-Statement 損益預測與 DCF 估值底稿';
+      btnExportModelGas.onclick = () => {
+        const settingsModal = (callbacks && callbacks.settingsModal) || document.getElementById('settings-modal');
+        if (window.DashboardValuationActions && window.DashboardValuationActions.exportFinancialModelToGas) {
+          window.DashboardValuationActions.exportFinancialModelToGas(stock, state, btnExportModelGas, settingsModal);
+        } else if (window.DashboardActions && window.DashboardActions.exportFinancialModelToGas) {
+          window.DashboardActions.exportFinancialModelToGas(stock, state, btnExportModelGas, settingsModal);
+        }
+      };
+      actionBtnsWrap.appendChild(btnExportModelGas);
+
+      const btnCopyModelTsv = document.createElement('button');
+      btnCopyModelTsv.className = 'btn-action btn-secondary';
+      btnCopyModelTsv.innerHTML = '📑 複製模型 TSV';
+      btnCopyModelTsv.title = '複製帶公式與排版之 3-Statement & DCF 財務模型底稿 (Ctrl+V 直貼 Excel / Sheets)';
+      btnCopyModelTsv.onclick = () => {
+        if (window.DashboardValuationActions && window.DashboardValuationActions.copyFinancialModelTsv) {
+          window.DashboardValuationActions.copyFinancialModelTsv(stock, state);
+        } else if (window.DashboardActions && window.DashboardActions.copyFinancialModelTsv) {
+          window.DashboardActions.copyFinancialModelTsv(stock, state);
+        }
+      };
+      actionBtnsWrap.appendChild(btnCopyModelTsv);
+
       const btnSendScrum = document.createElement('button');
       btnSendScrum.className = 'btn-action btn-scrum';
       btnSendScrum.innerHTML = '🎯 推播至 ScrumClock';

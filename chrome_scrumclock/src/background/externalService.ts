@@ -257,6 +257,17 @@ export async function handleCreateTaskExternal(payload: any) {
     return m.text === safeTitle;
   });
 
+  // 跨插件 Checklist 子項目支援 (如 VideoSpeedPlus 法說會聚合或 FinanceClipper 查核項)
+  const safeChecklist = Array.isArray(payload.checklist)
+    ? payload.checklist
+        .filter((item: any) => item && typeof item.text === 'string' && item.text.trim())
+        .map((item: any, idx: number) => ({
+          id: typeof item.id === 'string' && item.id ? item.id : `ck_${Date.now()}_${idx}`,
+          text: item.text.trim(),
+          completed: Boolean(item.completed)
+        }))
+    : undefined;
+
   if (existingBattleMission) {
     let hasChanges = false;
     if (safeNotes && (!existingBattleMission.notes || !existingBattleMission.notes.includes(safeNotes.slice(0, 100)))) {
@@ -273,6 +284,16 @@ export async function handleCreateTaskExternal(payload: any) {
       existingBattleMission.url = safeDeepLinkUrl || safeUrl;
       hasChanges = true;
     }
+    if (safeChecklist && safeChecklist.length > 0) {
+      const existingList = Array.isArray(existingBattleMission.checklist) ? existingBattleMission.checklist : [];
+      const newItems = safeChecklist.filter((ni: any) => !existingList.some((ei: any) => ei.text === ni.text));
+      if (newItems.length > 0) {
+        existingBattleMission.checklist = [...existingList, ...newItems];
+        const completedCount = existingBattleMission.checklist.filter((i: any) => i.completed).length;
+        existingBattleMission.progressPercent = Math.round((completedCount / existingBattleMission.checklist.length) * 100);
+        hasChanges = true;
+      }
+    }
 
     if (hasChanges) {
       await chrome.storage.local.set({ weeklyMissions });
@@ -283,7 +304,7 @@ export async function handleCreateTaskExternal(payload: any) {
         type: 'basic',
         iconUrl: 'icons/icon128.png',
         title: '🎯 今日戰役已存在',
-        message: `標的「${safeTicker || safeTitle}」已在今日戰役清單中，已為您同步更新筆記備忘！`
+        message: `標的「${safeTicker || safeTitle}」已在今日戰役清單中，已為您同步更新筆記與檢查項目！`
       });
     } catch (_) {}
 
@@ -296,6 +317,10 @@ export async function handleCreateTaskExternal(payload: any) {
     };
   }
 
+  const initialProgress = (safeChecklist && safeChecklist.length > 0)
+    ? Math.round((safeChecklist.filter((i: any) => i.completed).length / safeChecklist.length) * 100)
+    : 0;
+
   const newMission: any = {
     id: 'mission-' + Date.now(),
     text: safeTitle,
@@ -304,8 +329,9 @@ export async function handleCreateTaskExternal(payload: any) {
     gtdContext: safeGTDContext,
     sourcePlugin: safeSourcePlugin,
     notes: safeNotes,
+    checklist: safeChecklist,
     createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
-    progressPercent: 0,
+    progressPercent: initialProgress,
     ticker: safeTicker,
     tags: safeTags,
     url: safeDeepLinkUrl || safeUrl,

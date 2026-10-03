@@ -1,4 +1,4 @@
-import { WeeklyMission, InboxItem, SprintLog } from '../../../../types';
+import { WeeklyMission, InboxItem, SprintLog, ChecklistItem } from '../../../../types';
 
 export interface DashboardColumns {
   taskId: boolean;
@@ -48,6 +48,7 @@ export interface TaskPoolTabProps {
   onScheduleTimebox?: (taskId: string, startTime: string | number | Date, durationMinutes: number) => Promise<boolean>;
   isSchedulingCalendar?: boolean;
   onUpdatePomodoroEstimate?: (id: string, estimate: number) => Promise<void>;
+  onUpdateChecklist?: (id: string, checklist: ChecklistItem[]) => Promise<void>;
 }
 
 export interface InboxTabProps {

@@ -105,6 +105,22 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               ${task.ticker}
             </span>
           )}
+          {task.checklist && task.checklist.length > 0 && (() => {
+            const completedCount = task.checklist.filter((i) => i.completed).length;
+            const totalCount = task.checklist.length;
+            return (
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border tracking-wider select-none ${
+                  completedCount === totalCount
+                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                    : 'bg-dark-surface/90 text-blue-300 border-blue-900/40'
+                }`}
+                title={`Checklist 查核進度：${completedCount}/${totalCount}`}
+              >
+                ☑ {completedCount}/{totalCount}
+              </span>
+            );
+          })()}
         </div>
 
         {/* 番茄鐘工時指標 (實際消耗 / 預估) */}

@@ -36,6 +36,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
   onScheduleTimebox,
   isSchedulingCalendar,
   onUpdatePomodoroEstimate,
+  onUpdateChecklist,
 }) => {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     try {
@@ -450,6 +451,23 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
                               >
                                 ✏️
                               </button>
+                              {row.checklist && row.checklist.length > 0 && (() => {
+                                const completedCount = row.checklist.filter((i) => i.completed).length;
+                                const totalCount = row.checklist.length;
+                                return (
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border select-none ${
+                                      completedCount === totalCount
+                                        ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                                        : 'bg-dark-base text-blue-300 border-blue-900/40'
+                                    }`}
+                                    title={`Checklist 查核進度：${completedCount}/${totalCount}`}
+                                  >
+                                    <span>☑</span>
+                                    <span>{completedCount}/{totalCount}</span>
+                                  </span>
+                                );
+                              })()}
                               {row.progressPercent !== undefined && (
                                 <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-950/40 border border-emerald-800/40 text-[10px] text-emerald-400 font-semibold">
                                   <span>{row.progressPercent}%</span>
@@ -812,6 +830,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         onScheduleTimebox={onScheduleTimebox}
         isSchedulingCalendar={isSchedulingCalendar}
         onUpdateEstimatedPomodoros={onUpdatePomodoroEstimate}
+        onUpdateChecklist={onUpdateChecklist}
       />
     </div>
   );

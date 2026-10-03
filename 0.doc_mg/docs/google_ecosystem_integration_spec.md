@@ -127,7 +127,26 @@ Google Sheets 匯出採用結構化矩陣 Append/Upsert 機制，支援「財務
 
 ---
 
+### 5.3 財務模型底稿直套 (`action: "export_financial_model"` / `mode: "financial_model"`)
+
+#### A. 功能與結構定義 (Model Blueprint Schema)
+此協定支援由 FinanceClipper 估值沙盒直接將完整的 3-Statement (五年度損益預測) 與現金流折現 (DCF) 試算模型直套建立為獨立的工作表（工作表名稱預設為 `${ticker}_財務模型`）。
+
+- **模型區塊劃分**：
+  1. **一、模型核心假設 (Model Assumptions)**：現價、流通股數、基準 EPS、基準營收、所得稅率、WACC 折現率、終端成長率 g、出場本益比。
+  2. **二、五年度損益預測表 (Income Statement Projection)**：營收成長率、營業收入公式 (`=B16*(1+C15)`)、營業利益率、EBIT、所得稅、稅後淨利、EPS 公式 (`=C20/$B$5`)、YoY 成長率。
+  3. **三、自由現金流與折現估值 (DCF Valuation)**：FCF 轉換率、Unlevered FCF、折現期數、折現因子公式 (`=1/(1+$B$9)^C28`)、現值 PV。
+  4. **四、DCF 估值總結與目標價 (Implied Valuation Summary)**：5 年折現現金流加總 (`=SUM(C30:G30)`)、終端價值 Gordon Growth 公式、企業/權益價值、每股隱含目標價、潛在漲跌空間公式。
+  5. **五、三種情境敏感度對比 (Scenario Comparison)**：Bear、Base、Bull 三情境目標價與空間比對。
+
+#### B. 試算表寫入行為
+- GAS 接收 `payload.grid` 二維陣列，透過 `sheet.getRange(1, 1, rows, cols).setValues(grid)` 批次寫入，試算表引擎自動將以 `=` 開頭之字串轉換為動態試算公式。
+- 自動套用樣式：首行大標題深藍背景白字 (`#1E3A8A`)、各區段標題灰底粗體 (`#F3F4F6`)、自動調整欄寬。
+
+---
+
 ## 6. Google Docs 研報自動排版樣板規格 (Template Layout Spec)
+
 
 當使用者發送 `CREATE_DOC_REPORT` 時，GAS 接收資料並透過 Google Docs API (`DocumentApp`) 進行層級排版與 Drive 歸檔。
 
@@ -259,8 +278,8 @@ function doPost(e) {
     }
 
     // 3. 業務分流路由
-    var type = data.type;
-    var payload = data.payload || {};
+    var type = data.type || data.action;
+    var payload = data.payload || data;
 
     switch (type) {
       case "EXPORT_TO_SHEETS":
@@ -269,6 +288,9 @@ function doPost(e) {
         return handleCreateDocReport(payload);
       case "SYNC_CALENDAR_EVENT":
         return handleSyncCalendarEvent(payload);
+      case "EXPORT_FINANCIAL_MODEL":
+      case "export_financial_model":
+        return handleExportFinancialModel(payload);
       default:
         return createResponse(false, "UNSUPPORTED_TYPE", "Unknown action type: " + type);
     }
@@ -354,6 +376,82 @@ function handleExportToSheets(payload) {
     spreadsheetUrl: spreadsheet.getUrl(),
     insertedRows: insertedCount,
     updatedRows: updatedCount,
+    syncedAt: Date.now()
+  })).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * 處理 Google Sheets 財務模型底稿直套 (Financial Model Template Export)
+ * 支援 3-Statement 營收預測與 DCF 現金流折現試算表自動化建立 (含公式與排版)
+ */
+function handleExportFinancialModel(payload) {
+  var spreadsheet;
+  if (payload.spreadsheetId) {
+    spreadsheet = SpreadsheetApp.openById(payload.spreadsheetId);
+  } else {
+    var files = DriveApp.getFilesByName("Chrome_Plus_Master_Database");
+    if (files.hasNext()) {
+      spreadsheet = SpreadsheetApp.open(files.next());
+    } else {
+      spreadsheet = SpreadsheetApp.create("Chrome_Plus_Master_Database");
+    }
+  }
+
+  var ticker = payload.ticker || "Model";
+  var sheetName = payload.targetSheetName || (ticker + "_財務模型");
+  var sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(sheetName);
+  } else {
+    sheet.clear(); // 清理舊內容重新建立底稿
+  }
+
+  var grid = payload.grid || [];
+  if (grid.length === 0) {
+    return createResponse(false, "EMPTY_GRID", "Missing model grid data");
+  }
+
+  var numRows = grid.length;
+  var numCols = grid[0].length;
+  var range = sheet.getRange(1, 1, numRows, numCols);
+  range.setValues(grid);
+
+  // 格式化樣式 (Styling)
+  // 1. 大標題 (Row 1)
+  sheet.getRange(1, 1, 1, numCols)
+    .setFontWeight("bold")
+    .setFontSize(13)
+    .setBackground("#1E3A8A")
+    .setFontColor("#FFFFFF");
+
+  // 2. 區塊子標題與表頭樣式
+  for (var r = 1; r <= numRows; r++) {
+    var firstCell = String(grid[r - 1][0] || "").trim();
+    if (firstCell.indexOf("【") === 0) {
+      sheet.getRange(r, 1, 1, numCols)
+        .setFontWeight("bold")
+        .setFontSize(11)
+        .setBackground("#F3F4F6")
+        .setFontColor("#1F2937");
+    } else if (firstCell.indexOf("財務指標") === 0 || firstCell.indexOf("估值項目") === 0 || firstCell.indexOf("情境 (Scenario)") === 0) {
+      sheet.getRange(r, 1, 1, numCols)
+        .setFontWeight("bold")
+        .setBackground("#E5E7EB")
+        .setFontColor("#111827");
+    }
+  }
+
+  // 3. 自動調整欄寬
+  for (var c = 1; c <= numCols; c++) {
+    sheet.autoResizeColumn(c);
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({
+    success: true,
+    ack: true,
+    spreadsheetUrl: spreadsheet.getUrl(),
+    sheetName: sheetName,
+    ticker: ticker,
     syncedAt: Date.now()
   })).setMimeType(ContentService.MimeType.JSON);
 }

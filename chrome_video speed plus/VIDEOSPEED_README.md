@@ -112,5 +112,5 @@
 依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 之診斷分析，後續規劃演進方向：
 1. **免喚出 Popup 之盲打快捷鍵 (已完成 ✅)**：支援 `Alt+[` / `Alt+]` 連續步進調速（0.25x）與 `Alt+M` 即時標記書籤。
 2. **雙向反查 Deep-Link (已完成 ✅)**：跨插件推播內容附帶精準秒數導航 URL (`&t=Xxs`)，支援反向喚起自動定位。
-3. **多段精華聚合容器 (規劃中)**：支援單一法說會多時間戳逐字稿一次性彙整導出，杜絕 ScrumClock 散落卡片孤島。
+3. **多段精華聚合容器 (已完成 ✅)**：Popup 內嵌草稿箱 (Session Draft Box)，支援單一法說會多時間戳記聚合管理、一鍵複製整包 Markdown 與一鍵打包轉入 ScrumClock 建立 Checklist 任務。
 

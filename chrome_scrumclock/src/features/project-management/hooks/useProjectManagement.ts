@@ -3,7 +3,7 @@ import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
 import { googleTasksSync } from '../../../shared/google/googleTasksSync';
 import { googleCalendarService } from '../../../shared/google/googleCalendarService';
-import { WeeklyMission, InboxItem, GTDStatus } from '../../../types';
+import { WeeklyMission, InboxItem, GTDStatus, ChecklistItem } from '../../../types';
 import { DashboardColumns, SprintLogWithMission } from '../components/tabs/types';
 
 declare const chrome: any;
@@ -322,6 +322,26 @@ export const useProjectManagement = () => {
     }
   };
 
+  const handleUpdateChecklist = async (missionId: string, checklist: ChecklistItem[]) => {
+    try {
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (mission) {
+        mission.checklist = checklist;
+        if (checklist.length > 0) {
+          const completedCount = checklist.filter((c) => c.completed).length;
+          mission.progressPercent = Math.round((completedCount / checklist.length) * 100);
+        } else {
+          mission.progressPercent = 0;
+        }
+        await storage.saveWeeklyMissions(missions);
+      }
+      await loadData();
+    } catch (e) {
+      console.error('更新 Checklist 失敗:', e);
+    }
+  };
+
   const handleConvertInbox = async (row: InboxItem) => {
     const priorityInput = window.prompt('請輸入新任務優先級 (P1 / P2 / P3)：', 'P2');
     if (priorityInput === null) return;
@@ -600,6 +620,7 @@ export const useProjectManagement = () => {
     handleNotesChange,
     handleUpdateNotes,
     handleUpdateTitle,
+    handleUpdateChecklist,
     handleConvertInbox,
     handleDeleteInbox,
     handleAddInboxItem,

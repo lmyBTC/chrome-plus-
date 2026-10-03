@@ -71,6 +71,6 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md"]
 依據 `0.doc_mg/docs/analyst_workflow_friction_matrix.md` 診斷，在投資研究員法說會快篩場景中需注意以下規格演進：
 * **鍵盤盲打標記與步進調速 (已實作)**：提供免喚出 Popup 之全域快捷鍵（`Alt+[` / `Alt+]` 微調 0.25x；`Alt+M` 即時打點至 `vsp_bookmarks` 並帶全螢幕 OSD 反饋）。
 * **雙向反查 Deep-Link (已實作)**：跨插件發送之 URL 保證攜帶秒數參數（`&t=Xxs`），支援自 ScrumClock 卡片一鍵反向喚起原影片並定位播放。
-* **多段精華彙整容器 (規劃中)**：需避免單次 `Alt+S` 造成 ScrumClock 卡片碎片化，規劃支援以單一影音場次為單位的聚合草稿箱。
+* **多段精華彙整容器 (已實作)**：Popup 內嵌草稿箱 (Session Draft Box)，支援同一影片/標的多次時間戳筆記聚合、一鍵複製結構化 Markdown，並支援「一鍵打包拋送 ScrumClock」產出帶 Checklist 之單一研究卡片。
 
 

@@ -1,0 +1,1 @@
+將專案中的各個插件的README.MD  插件的SKILLS SSOT做一次整理更新。然後將SKILLS輕量化，讓複雜的敘述說明下放到README.MD中，讓SKILLS簡潔高效

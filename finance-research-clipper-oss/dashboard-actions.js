@@ -604,7 +604,30 @@
       } else {
         showToast('⚠️ 當前環境不支援剪貼簿自動寫入');
       }
+    },
+
+    /**
+     * 一鍵產生並匯出標準 3-Statement & DCF 財務模型底稿至 Google Sheets
+     */
+    exportFinancialModel: function (currentStock, btnElement, settingsModal) {
+      if (window.DashboardValuationActions && window.DashboardValuationActions.exportFinancialModelToGas) {
+        window.DashboardValuationActions.exportFinancialModelToGas(currentStock, {}, btnElement, settingsModal);
+      } else {
+        showToast('⚠️ 估值沙盒動作模組尚未載入');
+      }
+    },
+
+    /**
+     * 一鍵複製標準 3-Statement & DCF 財務模型為 Clean TSV
+     */
+    copyFinancialModelTsv: function (currentStock) {
+      if (window.DashboardValuationActions && window.DashboardValuationActions.copyFinancialModelTsv) {
+        window.DashboardValuationActions.copyFinancialModelTsv(currentStock, {});
+      } else {
+        showToast('⚠️ 估值沙盒動作模組尚未載入');
+      }
     }
   };
 })();
+
 

@@ -260,8 +260,11 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   // ============================================================================
-  // 法說會/影音筆記打點與 Markdown 導出邏輯
+  // 法說會/標的筆記草稿箱 (Session Draft Box) 聚合邏輯
   // ============================================================================
+  const draftTickerInput = document.getElementById('draftTickerInput');
+  const btnSaveDraftTicker = document.getElementById('btnSaveDraftTicker');
+  const btnBatchToScrumClock = document.getElementById('btnBatchToScrumClock');
   const btnToggleBookmarkInput = document.getElementById('btnToggleBookmarkInput');
   const bookmarkInputPanel = document.getElementById('bookmarkInputPanel');
   const popupCurrentTimeTag = document.getElementById('popupCurrentTimeTag');
@@ -284,7 +287,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => {
       bookmarkStatusMsg.textContent = '';
       bookmarkStatusMsg.style.color = 'rgba(255, 255, 255, 0.9)';
-    }, 2800);
+    }, 3200);
   }
 
   function formatTime(seconds) {
@@ -309,6 +312,50 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (_) {}
       }
       callback('');
+    });
+  }
+
+  // 讀取當前標的代號
+  function loadDraftTicker() {
+    getVideoIdFromCurrentTab(function(videoId) {
+      if (!videoId || !draftTickerInput) return;
+      sendMessageToContent({ action: 'getDraftTicker', videoId: videoId }, function(res) {
+        if (res && res.ticker) {
+          draftTickerInput.value = res.ticker;
+        } else {
+          // 兜底從 storage 讀取
+          chrome.storage.local.get(`vsp_ticker_${videoId}`, function(store) {
+            if (store && store[`vsp_ticker_${videoId}`]) {
+              draftTickerInput.value = store[`vsp_ticker_${videoId}`];
+            }
+          });
+        }
+      });
+    });
+  }
+
+  // 儲存標的代號
+  function saveDraftTicker() {
+    if (!draftTickerInput) return;
+    const ticker = draftTickerInput.value.trim().toUpperCase();
+    getVideoIdFromCurrentTab(function(videoId) {
+      if (!videoId) return;
+      sendMessageToContent({ action: 'setDraftTicker', videoId: videoId, ticker: ticker }, function(res) {
+        draftTickerInput.value = ticker;
+        showBookmarkStatus(ticker ? `✅ 已鎖定研究標的：$${ticker}` : '已清除研究標的代號');
+      });
+    });
+  }
+
+  if (btnSaveDraftTicker) {
+    btnSaveDraftTicker.addEventListener('click', saveDraftTicker);
+  }
+  if (draftTickerInput) {
+    draftTickerInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveDraftTicker();
+      }
     });
   }
 
@@ -446,18 +493,54 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 複製 Markdown
+  // 一鍵整包打包拋送至 ScrumClock 任務卡 (Session Draft Box Aggregator)
+  if (btnBatchToScrumClock) {
+    const updateBatchBtn = (text) => {
+      btnBatchToScrumClock.textContent = '';
+      const span = document.createElement('span');
+      span.textContent = text;
+      btnBatchToScrumClock.appendChild(span);
+    };
+
+    btnBatchToScrumClock.addEventListener('click', function() {
+      const defaultText = '📦 打包拋送 ScrumClock 任務卡 (聚合草稿)';
+      updateBatchBtn('⏳ 正在整包打包匯出...');
+      btnBatchToScrumClock.disabled = true;
+
+      const ticker = draftTickerInput ? draftTickerInput.value.trim().toUpperCase() : '';
+
+      sendMessageToContent({
+        action: 'packageSessionToScrumClock',
+        options: { ticker: ticker }
+      }, function(response) {
+        btnBatchToScrumClock.disabled = false;
+        if (response && response.success) {
+          updateBatchBtn('✅ 已成功建立任務卡！');
+          showBookmarkStatus(`📦 已將 ${response.count} 條草稿打包建立 ScrumClock 任務卡！`);
+        } else {
+          updateBatchBtn('⚠️ 打包失敗');
+          showBookmarkStatus(response?.error ? `錯誤: ${response.error}` : '請確認草稿箱是否有記錄或 ScrumClock 是否在線', true);
+        }
+        setTimeout(() => {
+          updateBatchBtn(defaultText);
+        }, 2800);
+      });
+    });
+  }
+
+  // 複製聚合 Markdown
   if (btnExportMarkdown) {
     btnExportMarkdown.addEventListener('click', function() {
       getVideoIdFromCurrentTab(function(videoId) {
-        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId }, function(res) {
+        const ticker = draftTickerInput ? draftTickerInput.value.trim().toUpperCase() : '';
+        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId, ticker: ticker }, function(res) {
           if (res && res.markdown) {
             if (res.count === 0) {
-              showBookmarkStatus('⚠️ 本影片尚無打點記錄', true);
+              showBookmarkStatus('⚠️ 本影片草稿箱尚無打點記錄', true);
               return;
             }
             navigator.clipboard.writeText(res.markdown).then(() => {
-              showBookmarkStatus(`📋 已複製 ${res.count} 條重點 MD 至剪貼簿！`);
+              showBookmarkStatus(`📋 已複製 ${res.count} 條重點聚合 Markdown 至剪貼簿！`);
             }).catch(() => {
               showBookmarkStatus('⚠️ 剪貼簿存取失敗', true);
             });
@@ -473,23 +556,25 @@ document.addEventListener('DOMContentLoaded', function() {
   if (btnDownloadMarkdown) {
     btnDownloadMarkdown.addEventListener('click', function() {
       getVideoIdFromCurrentTab(function(videoId) {
-        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId }, function(res) {
+        const ticker = draftTickerInput ? draftTickerInput.value.trim().toUpperCase() : '';
+        sendMessageToContent({ action: 'exportMarkdown', videoId: videoId, ticker: ticker }, function(res) {
           if (res && res.markdown) {
             if (res.count === 0) {
-              showBookmarkStatus('⚠️ 本影片尚無打點記錄', true);
+              showBookmarkStatus('⚠️ 本影片草稿箱尚無打點記錄', true);
               return;
             }
             const blob = new Blob([res.markdown], { type: 'text/markdown;charset=utf-8' });
             const url = URL.createObjectURL(blob);
-            const safeTitle = (res.title || 'video_notes').replace(/[\/\\?%*:|"<>]/g, '_').slice(0, 50);
+            const prefix = res.ticker ? `[${res.ticker}]_` : '';
+            const safeTitle = (res.title || 'video_notes').replace(/[\/\\?%*:|"<>]/g, '_').slice(0, 40);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `${safeTitle}_notes.md`;
+            a.download = `${prefix}${safeTitle}_notes.md`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            showBookmarkStatus(`💾 已下載 ${res.count} 條重點 MD 檔案`);
+            showBookmarkStatus(`💾 已下載 ${res.count} 條重點聚合 MD 檔案`);
           } else {
             showBookmarkStatus('⚠️ 下載失敗，請確認位於影片頁面', true);
           }
@@ -498,26 +583,28 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
 
-  // 清空本片標記
+  // 清空草稿箱
   if (btnClearBookmarks) {
     btnClearBookmarks.addEventListener('click', function() {
       getVideoIdFromCurrentTab(function(videoId) {
-        if (!confirm('確定清空本影片的所有時間戳記重點？')) return;
+        if (!confirm('確定清空本場法說會草稿箱？(本片所有時間戳記重點)')) return;
         sendMessageToContent({ action: 'clearBookmarks', videoId: videoId }, function() {
           loadBookmarks();
-          showBookmarkStatus('已清空本片所有標記');
+          showBookmarkStatus('已清空本片草稿箱');
         });
       });
     });
   }
 
-  // 初始載入打點列表
+  // 初始載入標的代號與打點列表
+  loadDraftTicker();
   loadBookmarks();
 
   // 暴露全域輔助以供後續 UI 綁定
   window.__videoSpeedPlus = {
     sendMessageToContent: sendMessageToContent,
     pingScrumClock: pingScrumClock,
-    loadBookmarks: loadBookmarks
+    loadBookmarks: loadBookmarks,
+    loadDraftTicker: loadDraftTicker
   };
 }); 

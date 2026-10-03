@@ -180,6 +180,7 @@ export const ProjectManagementDemo: React.FC = () => {
             onScheduleTimebox={pm.handleScheduleTimebox}
             isSchedulingCalendar={pm.isSchedulingCalendar}
             onUpdatePomodoroEstimate={pm.handleUpdatePomodoroEstimate}
+            onUpdateChecklist={pm.handleUpdateChecklist}
           />
         )}
 

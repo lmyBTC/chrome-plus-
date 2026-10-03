@@ -172,9 +172,9 @@ quadrantChart
 | **Clean TSV / Markdown 一鍵複製** | FinanceClipper (報表/對比/估值) | **High**：徹底消除千分位逗號與負號錯位，直貼 Excel 零跑版 | **Low**：純字串清洗與剪貼簿操作（0.5 人天） | **P0** | 階段一 (已完成 ✅) |
 | **鍵盤盲打標記與步進調速** | VideoSpeedPlus (Content Script) | **High**：全螢幕極速快篩免喚出彈窗，手感大幅提升 | **Low**：全域鍵盤監聽與 step 調速（0.5 人天） | **P0** | 階段一 (已完成 ✅) |
 | **雙向反查 Deep-Link 串接** | 跨插件協約 / ScrumClock / VSP | **Medium-High**：點擊卡片直接跳轉秒數反查，消除查找摩擦 | **Low-Medium**：URL 攜帶秒數與 Tab 喚起（1 人天） | **P0** | 階段一 (已完成 ✅) |
-| **同一影片/標的筆記聚合容器** | VideoSpeedPlus / ScrumClock | **High**：避免單場法說會 10+ 散落卡片，收斂為單一草稿箱 | **Medium**：草稿箱狀態維護與聚合格式化（2 人天） | **P1** | 階段二 (Core Enabler) |
-| **調研任務 Checklist 子項目** | ScrumClock (Task Component) | **High**：投研任務標準化（三表比對、估值驗證清單化） | **Medium**：卡片支援 Checklist 陣列（1.5 人天） | **P1** | 階段二 (Core Enabler) |
-| **Google Sheets 財務模型直套** | FinanceClipper / GAS Webhook | **Critical**：自動產出三表底稿與估值公式，投研完全體 | **Medium-High**：GAS 範本建立與 API 批次寫入（3 人天） | **P2** | 階段三 (Strategic) |
+| **同一影片/標的筆記聚合容器** | VideoSpeedPlus / ScrumClock | **High**：避免單場法說會 10+ 散落卡片，收斂為單一草稿箱 | **Medium**：草稿箱狀態維護與聚合格式化（2 人天） | **P1** | 階段二 (已完成 ✅) |
+| **調研任務 Checklist 子項目** | ScrumClock (Task Component) | **High**：投研任務標準化（三表比對、估值驗證清單化） | **Medium**：卡片支援 Checklist 陣列（1.5 人天） | **P1** | 階段二 (已完成 ✅) |
+| **Google Sheets 財務模型直套** | FinanceClipper / GAS Webhook | **Critical**：自動產出三表底稿與估值公式，投研完全體 | **Medium-High**：GAS 範本建立與 API 批次寫入（3 人天） | **P2** | 階段三 (已完成 ✅) |
 | **自選組合批次巡檢 (Portfolio)** | FinanceClipper (Background) | **High**：背景自動輪詢 20 檔標的並發出異動告警 | **High**：SPA 背景隊列調度與防風控（3~4 人天） | **P2** | 階段三 (Strategic) |
 | **無字幕法說會語音轉文字 (ASR)** | VideoSpeedPlus / AI 模組 | **Medium**：解決冷門無字幕影片，提供備援文字 | **High**：Web Speech 或外部 API 連接成本（4 人天） | **P3** | 階段四 (Advanced) |
 
@@ -183,14 +183,14 @@ quadrantChart
 - **VideoSpeedPlus**: 實作全螢幕鍵盤快捷鍵（`Alt+[` / `Alt+]` 步進微調 0.25x；`Alt+M` 快速標記精華時間戳至本地書籤）。
 - **通訊契約**: 跨插件卡片推播支援 `deepLinkUrl`（帶秒數與標的參數），支援在 ScrumClock 一鍵反向喚起原視窗。
 
-### 階段二：結構化草稿容器聚合 (P1 - 消除拼裝摩擦力)
-- **跨插件中介草稿容器**: 建立以 `Ticker + Date` 為鍵值的臨時調研草稿箱，`Alt+S` 擷取字幕時自動追加至當前標的草稿箱，而非散落發送獨立待辦。
-- **ScrumClock 支援調研子清單 (Checklist)**：轉入戰役時自動產生「法說重點、三表比對、估值敏感度驗證」等標記子項目。
+### 階段二：結構化草稿容器聚合 (P1 - 消除拼裝摩擦力) `[已完成 ✅]`
+- **跨插件中介草稿容器**: 建立以 `Ticker + Date` / 影片維度的臨時調研草稿箱，`Alt+S` 擷取字幕時可於 Popup 聚合管理，支援一鍵複製聚合 Markdown 與一鍵打包轉入 ScrumClock 建立單一任務。
+- **ScrumClock 支援調研子清單 (Checklist)**：卡片模型與 UI 完整支援 Checklist 子項目（新增、勾選、刪除、進度指示），轉入戰役時自動結構化帶入。
 
-### 階段三：雲端生態系直推 (P2 - Google Workspace 深度整合)
+### 階段三：雲端生態系直推 (P2 - Google Workspace 深度整合) `[已完成 ✅]`
 - **落實 `google_ecosystem_integration_spec.md`**：
-  - 財務比率一鍵直寫 Google Sheets 專業財務底稿範本。
-  - 法說會逐字稿與研報精華一鍵產出 Google Docs 投資備忘錄 (Research Memo)。
+  - 估值沙盒支援 3-Statement & DCF 財務模型底稿直套（含動態 Excel/Sheets 折現公式）一鍵透過 GAS Webhook 輸出或 Clean TSV 匯出。
+  - 法說會逐字稿與研報精華支援結構化產出投資備忘錄 (Research Memo)。
 
 ### 階段四：自選股批次與進階 AI 語音 (P3 - 進階演進)
 - **背景批次巡檢**: 自選股異動掃描與目標價變動通知。

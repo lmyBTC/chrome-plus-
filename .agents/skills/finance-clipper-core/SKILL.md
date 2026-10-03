@@ -132,6 +132,6 @@ FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (I
 * **投研底稿直連管線 (Direct-to-Sheets Pipeline，P0 已實作)**：儀表板各項表格（損益表、同業對比、估值沙盒）已完整支援「Clean TSV 一鍵複製」（自動清理千分位逗號、括號負數符號、前綴貨幣符號，直貼 Excel/Sheets 零錯位）。
 * **作戰任務雙向回寫 (P0 已實作)**：推播至 ScrumClock 的戰役任務保證攜帶 `deepLinkUrl` 參數（含個股 Ticker），支援自 ScrumClock 待辦卡片反向喚起儀表板自動定位標的。
 * **自選投資組合批次巡檢 (Portfolio Watcher，規劃中)**：規劃背景走訪多檔自選股批次更新，提供共識評級變動與目標價階梯警報。
-* **估值模型動態公式化 (規劃中)**：估值沙盒支援導出完整 Excel/Sheets 動態折現公式，強化模型可審計性。
+* **估值模型動態公式化 (已實作)**：估值沙盒支援導出完整 Excel/Sheets 財務模型底稿（包含 3-Statement、DCF 折現動態公式與情境敏感度分析），支援 GAS Webhook 一鍵產生雲端底稿或 Clean TSV 匯出。
 
 

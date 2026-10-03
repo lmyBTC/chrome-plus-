@@ -141,6 +141,7 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
      estimatedPomodoros?: number;
      priority?: 'P1' | 'P2' | 'P3';
      gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked';
+     checklist?: Array<{ id: string; text: string; completed: boolean }>; // 調研任務 Checklist 子項目
      notes?: string;
      url?: string;
      createdAt?: string;

@@ -398,9 +398,36 @@ function handleMessage(request, sender, sendResponse) {
     case 'exportMarkdown':
       getStoredBookmarks(request.videoId).then(bms => {
         const meta = getVideoMetadata();
-        const md = generateMarkdownNotes(bms, meta.title, meta.url);
-        sendResponse({ success: true, markdown: md, title: meta.title, count: bms.length });
+        const vId = request.videoId || getVideoId(meta.url);
+        chrome.storage.local.get(`vsp_ticker_${vId}`, (store) => {
+          const ticker = (store && store[`vsp_ticker_${vId}`]) || request.ticker || '';
+          const md = generateMarkdownNotes(bms, meta.title, meta.url, ticker);
+          sendResponse({ success: true, markdown: md, title: meta.title, count: bms.length, ticker: ticker });
+        });
       });
+      return true;
+
+    case 'packageSessionToScrumClock':
+      packageSessionToScrumClock(request.options || {}).then(res => sendResponse(res));
+      return true;
+
+    case 'getDraftTicker':
+      {
+        const vId = request.videoId || getVideoId();
+        chrome.storage.local.get(`vsp_ticker_${vId}`, (store) => {
+          sendResponse({ success: true, ticker: (store && store[`vsp_ticker_${vId}`]) || '' });
+        });
+      }
+      return true;
+
+    case 'setDraftTicker':
+      {
+        const vId = request.videoId || getVideoId();
+        const ticker = (request.ticker || '').trim().toUpperCase();
+        chrome.storage.local.set({ [`vsp_ticker_${vId}`]: ticker }, () => {
+          sendResponse({ success: true, ticker: ticker });
+        });
+      }
       return true;
       
     default:
@@ -1388,6 +1415,13 @@ function createShadowControlPanel() {
   const bookmarkBtnRow = document.createElement('div');
   bookmarkBtnRow.className = 'bookmark-btn-row';
 
+  const batchSessionBtn = document.createElement('button');
+  batchSessionBtn.className = 'collector-btn batch-to-scrum-panel-btn';
+  batchSessionBtn.style.background = 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)';
+  const batchSpan = document.createElement('span');
+  batchSpan.textContent = '📦 打包草稿箱至 ScrumClock';
+  batchSessionBtn.appendChild(batchSpan);
+
   const addBookmarkBtn = document.createElement('button');
   addBookmarkBtn.className = 'collector-btn add-bookmark-panel-btn';
   const addBookmarkSpan = document.createElement('span');
@@ -1398,7 +1432,7 @@ function createShadowControlPanel() {
   copyMdBtn.className = 'bookmark-copy-md-btn copy-markdown-panel-btn';
   copyMdBtn.textContent = '📋 複製本片 Markdown 筆記';
 
-  bookmarkBtnRow.append(addBookmarkBtn, copyMdBtn);
+  bookmarkBtnRow.append(batchSessionBtn, addBookmarkBtn, copyMdBtn);
   bookmarkSection.append(bookmarkHeader, bookmarkBtnRow);
 
   panel.append(header, speedControls, customSpeed, statusDisplay, loopControls, collectorSection, bookmarkSection);
@@ -1583,7 +1617,25 @@ function bindShadowPanelEvents() {
     });
   }
 
-  // 法說會打點面板與對話框事件
+  // 法說會草稿箱浮動面板與對話框事件
+  const batchToScrumPanelBtn = shadowRoot.querySelector('.batch-to-scrum-panel-btn');
+  if (batchToScrumPanelBtn) {
+    batchToScrumPanelBtn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      const defaultText = '📦 打包草稿箱至 ScrumClock';
+      batchToScrumPanelBtn.textContent = '⏳ 打包傳送中...';
+      const res = await packageSessionToScrumClock();
+      if (res && res.success) {
+        batchToScrumPanelBtn.textContent = '✅ 已成功整包匯出！';
+      } else {
+        batchToScrumPanelBtn.textContent = '⚠️ 打包未完成';
+      }
+      setTimeout(() => {
+        batchToScrumPanelBtn.textContent = defaultText;
+      }, 2500);
+    });
+  }
+
   const addBookmarkPanelBtn = shadowRoot.querySelector('.add-bookmark-panel-btn');
   if (addBookmarkPanelBtn) {
     addBookmarkPanelBtn.addEventListener('click', function(e) {
@@ -1600,16 +1652,19 @@ function bindShadowPanelEvents() {
       const vId = getVideoId(meta.url);
       const bookmarks = await getStoredBookmarks(vId);
       if (!bookmarks || bookmarks.length === 0) {
-        showNotification('⚠️ 本影片尚無時間標記筆記，請先使用 Alt + B 記錄');
+        showNotification('⚠️ 本影片草稿箱尚無打點記錄，請先按 Alt + B 記錄');
         return;
       }
-      const md = generateMarkdownNotes(bookmarks, meta.title, meta.url);
-      try {
-        await navigator.clipboard.writeText(md);
-        showNotification(`📋 已複製 ${bookmarks.length} 則時間標記至剪貼簿！`);
-      } catch (_) {
-        showNotification('⚠️ 剪貼簿存取受限，請改用擴充功能 Popup 匯出');
-      }
+      chrome.storage.local.get(`vsp_ticker_${vId}`, async (store) => {
+        const ticker = (store && store[`vsp_ticker_${vId}`]) || '';
+        const md = generateMarkdownNotes(bookmarks, meta.title, meta.url, ticker);
+        try {
+          await navigator.clipboard.writeText(md);
+          showNotification(`📋 已複製 ${bookmarks.length} 則聚合草稿 Markdown！`);
+        } catch (_) {
+          showNotification('⚠️ 剪貼簿存取受限，請改用擴充功能 Popup 匯出');
+        }
+      });
     });
   }
 
@@ -1925,6 +1980,15 @@ function sanitizeCollectorPayload(rawPayload) {
     tags.push(`#${safeCurrentTime}`);
   }
 
+  let safeChecklist = undefined;
+  if (Array.isArray(rawPayload.checklist)) {
+    safeChecklist = rawPayload.checklist.map((item, idx) => ({
+      id: String(item.id || `ck_${Date.now()}_${idx}`),
+      text: String(item.text || '').trim().slice(0, 300),
+      completed: Boolean(item.completed)
+    }));
+  }
+
   return {
     source: 'video_speed_plus',
     title: safeTitle,
@@ -1932,7 +1996,8 @@ function sanitizeCollectorPayload(rawPayload) {
     currentTime: safeCurrentTime,
     text: safeText,
     tags: tags,
-    type: safeType
+    type: safeType,
+    checklist: safeChecklist
   };
 }
 
@@ -2093,24 +2158,32 @@ async function clearBookmarksForVideo(videoId) {
   }
 }
 
-function generateMarkdownNotes(bookmarks, videoTitle, videoUrl) {
-  const title = videoTitle || '法說會/影音筆記';
+function generateMarkdownNotes(bookmarks, videoTitle, videoUrl, ticker = '') {
+  const cleanTicker = (ticker || '').trim().toUpperCase();
+  const rawTitle = videoTitle || '法說會/影音筆記';
+  const title = cleanTicker ? `[${cleanTicker}] ${rawTitle}` : rawTitle;
   const cleanUrl = videoUrl ? videoUrl.split('&t=')[0] : '';
   const nowStr = new Date().toISOString().split('T')[0];
+
+  const tagList = ['投研筆記', '法說會', '影音打點'];
+  if (cleanTicker) {
+    tagList.push(`$${cleanTicker}`);
+  }
+  const yamlTags = tagList.map(t => `  - ${t}`).join('\n');
 
   let md = `---
 title: "法說會/影音筆記：${title}"
 source_url: "${cleanUrl}"
+ticker: "${cleanTicker}"
 created: "${nowStr}"
 tags:
-  - 投研筆記
-  - 法說會
-  - 影音打點
+${yamlTags}
 ---
 
 # 🎬 法說會/影音投研筆記：${title}
 
-- **影片來源**：[${title}](${cleanUrl})
+- **影片來源**：[${rawTitle}](${cleanUrl})
+- **研究標的**：${cleanTicker || '未指定'}
 - **筆記總數**：${bookmarks.length} 個重點打點
 - **匯出日期**：${new Date().toLocaleString('zh-TW')}
 
@@ -2129,6 +2202,16 @@ tags:
 
   md += `\n---
 
+## 📋 追蹤核對清單 (Action Items / Checklist)
+
+`;
+
+  bookmarks.forEach(bm => {
+    md += `- [ ] [${bm.timeFormatted}](${bm.url}) 複核重點：${bm.note}\n`;
+  });
+
+  md += `\n---
+
 ## 📝 逐點筆記清單
 
 `;
@@ -2138,6 +2221,135 @@ tags:
   });
 
   return md;
+}
+
+// 法說會草稿箱整包匯出至 ScrumClock 任務卡 (Session Draft Box Aggregator)
+async function packageSessionToScrumClock(customOptions = {}) {
+  const meta = getVideoMetadata();
+  const vId = getVideoId(meta.url) || 'general_video';
+  const bookmarks = await getStoredBookmarks(vId);
+  
+  if (!bookmarks || bookmarks.length === 0) {
+    showNotification('⚠️ 草稿箱尚無記錄，請先新增時間戳重點');
+    return { success: false, error: 'NO_BOOKMARKS' };
+  }
+
+  // 取得標的代號 (優先使用傳入參數，次之 storage)
+  let ticker = (customOptions.ticker || '').trim().toUpperCase();
+  if (!ticker) {
+    try {
+      const stored = await chrome.storage.local.get(`vsp_ticker_${vId}`);
+      ticker = (stored && stored[`vsp_ticker_${vId}`]) ? stored[`vsp_ticker_${vId}`].trim().toUpperCase() : '';
+    } catch (_) {}
+  }
+
+  const notesMd = generateMarkdownNotes(bookmarks, meta.title, meta.url, ticker);
+  const prefix = ticker ? `【法說會/調研 $${ticker}】` : '【法說會/調研】';
+  const safeTitle = `${prefix}${meta.title.slice(0, 60)} (${bookmarks.length} 個要點)`;
+
+  const tags = ['#法說會', '#影音調研', '@Focus'];
+  if (ticker) {
+    tags.push(`$${ticker}`);
+  }
+
+  const checklistItems = bookmarks.map((bm, idx) => ({
+    id: `ck_${bm.id || (Date.now() + '_' + idx)}`,
+    text: `[${bm.timeFormatted}] ${bm.note}`,
+    completed: false
+  }));
+
+  const taskPayload = {
+    title: safeTitle,
+    ticker: ticker,
+    notes: notesMd,
+    tags: tags,
+    estimatedPomodoros: Math.max(1, Math.min(8, Math.ceil(bookmarks.length / 3))),
+    url: meta.url,
+    deepLinkUrl: bookmarks.length > 0 ? bookmarks[0].url : meta.url,
+    gtdContext: '@Focus',
+    priority: 'P1',
+    sourcePlugin: 'VIDEO_SPEED_PLUS',
+    checklist: checklistItems,
+    createdAt: Date.now()
+  };
+
+  const extId = await getScrumClockExtensionId();
+  if (!extId) {
+    showNotification('⚠️ 請先在設定中配置 ScrumClock Extension ID');
+    return { success: false, error: 'NO_EXT_ID' };
+  }
+
+  return new Promise((resolve) => {
+    let responded = false;
+    const timeoutTimer = setTimeout(() => {
+      if (!responded) {
+        responded = true;
+        showNotification('⏱️ 打包拋送超時，請確認 ScrumClock 已啟動');
+        resolve({ success: false, error: 'TIMEOUT' });
+      }
+    }, 6000);
+
+    // 1. 優先嘗試發送 CREATE_TASK 建立結構化任務
+    const messageTask = {
+      protocolVersion: 2,
+      type: 'CREATE_TASK',
+      payload: taskPayload
+    };
+
+    try {
+      chrome.runtime.sendMessage(extId, messageTask, (response) => {
+        if (responded) return;
+
+        if (!chrome.runtime.lastError && response && response.success) {
+          clearTimeout(timeoutTimer);
+          responded = true;
+          showNotification(`📦 已成功將 ${bookmarks.length} 條草稿打包建立 ScrumClock 任務卡！`);
+          resolve({ success: true, mode: 'CREATE_TASK', taskId: response.taskId, count: bookmarks.length });
+          return;
+        }
+
+        // 2. 降級嘗試 COLLECT_NOTE (支援未知欄位忽略，text 完整包含 Checklist 條列)
+        console.warn('[VideoSpeedPlus] CREATE_TASK 響應異常，降級嘗試 COLLECT_NOTE:', chrome.runtime.lastError?.message || response?.error);
+        const notePayload = sanitizeCollectorPayload({
+          title: safeTitle,
+          url: meta.url,
+          currentTime: bookmarks[0] ? bookmarks[0].timeFormatted : '00:00',
+          seconds: bookmarks[0] ? bookmarks[0].timeSeconds : 0,
+          text: notesMd,
+          tags: tags,
+          type: 'session_draft',
+          checklist: checklistItems
+        });
+
+        chrome.runtime.sendMessage(extId, { protocolVersion: 2, type: 'COLLECT_NOTE', payload: notePayload }, (noteRes) => {
+          if (responded) return;
+          clearTimeout(timeoutTimer);
+          responded = true;
+
+          if (chrome.runtime.lastError) {
+            showNotification('⚠️ 打包發送失敗: 無法連線至 ScrumClock');
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+            return;
+          }
+
+          if (noteRes && noteRes.success) {
+            showNotification(`📦 已成功將 ${bookmarks.length} 條草稿收集至 ScrumClock！`);
+            resolve({ success: true, mode: 'COLLECT_NOTE', noteId: noteRes.noteId, count: bookmarks.length });
+          } else {
+            showNotification(`⚠️ 打包失敗: ${noteRes?.error || '未知錯誤'}`);
+            resolve({ success: false, error: noteRes?.error });
+          }
+        });
+      });
+    } catch (err) {
+      if (!responded) {
+        clearTimeout(timeoutTimer);
+        responded = true;
+        showNotification('⚠️ 打包異常: ' + err.message);
+        resolve({ success: false, error: err.message });
+      }
+    }
+  });
 }
 
 function openBookmarkModal() {

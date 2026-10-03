@@ -161,6 +161,18 @@
   transform: translateY(-1px);
 }
 
+.btn-action.btn-template {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: #fff;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.btn-action.btn-template:hover {
+  background: linear-gradient(135deg, #0369a1, #1d4ed8);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
+}
+
 /* 2. 三種情境核心卡片網格 (Scenario Cards) */
 .sandbox-scenario-grid {
   display: grid;

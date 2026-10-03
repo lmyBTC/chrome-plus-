@@ -55,6 +55,7 @@
   const btnCopyMarkdown = document.getElementById('btn-copy-markdown');
   const btnDownloadCsv = document.getElementById('btn-download-csv');
   const btnSendGas = document.getElementById('btn-send-gas');
+  const btnExportFinancialModel = document.getElementById('btn-export-financial-model');
   const btnBatchSendGas = document.getElementById('btn-batch-send-gas');
   const btnAddToScrum = document.getElementById('btn-add-to-scrum');
   const btnCopyFinancialsTsv = document.getElementById('btn-copy-financials-tsv');
@@ -549,6 +550,12 @@
     btnCopyMarkdown.addEventListener('click', () => { window.DashboardActions.exportMarkdown(currentStock, noteInput); toggleExportPanel(false); });
     btnDownloadCsv.addEventListener('click', () => { window.DashboardActions.exportCsv(currentStock); toggleExportPanel(false); });
     btnSendGas.addEventListener('click', () => { window.DashboardActions.sendToGas(currentStock, noteInput); toggleExportPanel(false); });
+    if (btnExportFinancialModel) {
+      btnExportFinancialModel.addEventListener('click', () => {
+        window.DashboardActions.exportFinancialModel(currentStock, btnExportFinancialModel, settingsModal);
+        toggleExportPanel(false);
+      });
+    }
     if (btnBatchSendGas) btnBatchSendGas.addEventListener('click', () => { window.DashboardActions.batchSendToGas(historyList, window.DashboardTabs.getActiveCategoryId()); toggleExportPanel(false); });
     if (btnAddToScrum) btnAddToScrum.addEventListener('click', () => { window.DashboardActions.addStockToScrumTask(currentStock, noteInput); toggleExportPanel(false); });
 

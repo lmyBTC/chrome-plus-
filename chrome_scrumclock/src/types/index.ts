@@ -27,6 +27,31 @@ export interface NorthStarGoal {
 
 export type GTDStatus = 'inbox' | 'next-action' | 'in-progress' | 'done' | 'someday';
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+/**
+ * 計算 Checklist 統計資訊與完成百分比
+ */
+export function calculateChecklistProgress(checklist?: ChecklistItem[]): {
+  total: number;
+  completed: number;
+  percent: number;
+  summary: string;
+} {
+  if (!checklist || checklist.length === 0) {
+    return { total: 0, completed: 0, percent: 0, summary: '' };
+  }
+  const total = checklist.length;
+  const completed = checklist.filter((item) => item.completed).length;
+  const percent = Math.round((completed / total) * 100);
+  const summary = `${completed}/${total}`;
+  return { total, completed, percent, summary };
+}
+
 export interface WeeklyMission {
   id: string;
   text: string;
@@ -46,6 +71,7 @@ export interface WeeklyMission {
   deepLinkUrl?: string; // 跨插件反向喚起 Deep-Link (例如研報儀表板或影音秒數)
   estimatedPomodoros?: number; // 預估番茄鐘數
   gtdContext?: '@Focus' | '@Meeting' | '@Review' | '@Waiting-For' | '@Blocked'; // GTD 情境分類
+  checklist?: ChecklistItem[]; // 任務 Checklist 子項目（支援勾選狀態與進度計算）
   workspaceSync?: {
     googleTaskId?: string;
     googleCalendarEventId?: string;

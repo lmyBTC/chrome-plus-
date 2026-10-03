@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { WeeklyMission } from '../../../../types';
+import { WeeklyMission, ChecklistItem, calculateChecklistProgress } from '../../../../types';
 
 export interface TaskDetailDrawerProps {
   task: WeeklyMission | null;
@@ -22,6 +22,7 @@ export interface TaskDetailDrawerProps {
   onDismissSubtasks: (id: string) => void;
   onScheduleTimebox?: (taskId: string, startTime: string | number | Date, durationMinutes: number) => Promise<boolean>;
   isSchedulingCalendar?: boolean;
+  onUpdateChecklist?: (id: string, checklist: ChecklistItem[]) => Promise<void>;
 }
 
 export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
@@ -45,8 +46,11 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   onDismissSubtasks,
   onScheduleTimebox,
   isSchedulingCalendar,
+  onUpdateChecklist,
 }) => {
   const [localTitle, setLocalTitle] = useState('');
+  const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
+  const [newChecklistText, setNewChecklistText] = useState('');
   const [timeboxDate, setTimeboxDate] = useState<string>(() => {
     const d = new Date();
     d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
@@ -58,12 +62,77 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const [copiedId, setCopiedId] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // 當選取的 task 變更時，同步本地標題
+  // 當選取的 task 變更時，同步本地標題與 Checklist
   useEffect(() => {
     if (task) {
       setLocalTitle(task.text);
+      setChecklistItems(task.checklist || []);
     }
-  }, [task?.id, task?.text]);
+  }, [task?.id, task?.text, task?.checklist]);
+
+  const handleToggleChecklistItem = async (itemId: string) => {
+    if (!task) return;
+    const updated = checklistItems.map((item) =>
+      item.id === itemId ? { ...item, completed: !item.completed } : item
+    );
+    setChecklistItems(updated);
+    if (onUpdateChecklist) {
+      await onUpdateChecklist(task.id, updated);
+    }
+  };
+
+  const handleDeleteChecklistItem = async (itemId: string) => {
+    if (!task) return;
+    const updated = checklistItems.filter((item) => item.id !== itemId);
+    setChecklistItems(updated);
+    if (onUpdateChecklist) {
+      await onUpdateChecklist(task.id, updated);
+    }
+  };
+
+  const handleAddChecklistItem = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const text = newChecklistText.trim();
+    if (!text || !task) return;
+    const newItem: ChecklistItem = {
+      id: `ck_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      text,
+      completed: false,
+    };
+    const updated = [...checklistItems, newItem];
+    setChecklistItems(updated);
+    setNewChecklistText('');
+    if (onUpdateChecklist) {
+      await onUpdateChecklist(task.id, updated);
+    }
+  };
+
+  const handleLoadAnalystTemplate = async () => {
+    if (!task) return;
+    const defaultTemplates = [
+      '1. 損益表營收與毛利率趨勢比對',
+      '2. 資產負債表流動性與存貨週轉檢視',
+      '3. 現金流量表自由現金流 (FCF) 驗證',
+      '4. DCF / PE 估值模型合理性覆核',
+    ];
+    const existingTexts = new Set(checklistItems.map((i) => i.text));
+    const newItems: ChecklistItem[] = defaultTemplates
+      .filter((t) => !existingTexts.has(t))
+      .map((t, idx) => ({
+        id: `ck_${Date.now()}_${idx}`,
+        text: t,
+        completed: false,
+      }));
+    if (newItems.length === 0) return;
+    const updated = [...checklistItems, ...newItems];
+    setChecklistItems(updated);
+    if (onUpdateChecklist) {
+      await onUpdateChecklist(task.id, updated);
+    }
+  };
+
+  const { total: checklistTotal, completed: checklistCompleted, percent: checklistPercent } =
+    calculateChecklistProgress(checklistItems);
 
   // 監聽鍵盤 Esc 鍵快速關閉抽屜
   useEffect(() => {
@@ -340,6 +409,102 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                 placeholder="記錄執行細節、驗收條件、阻礙或參考連結..."
                 className="w-full px-3.5 py-2.5 bg-dark-surface border border-dark-border-default/80 rounded-xl text-sm text-dark-primary placeholder:text-dark-muted outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all leading-relaxed"
               />
+            </div>
+
+            {/* 子任務檢查清單 (Task Checklist Support) */}
+            <div className="p-4 rounded-xl bg-dark-surface/60 border border-dark-border-subtle space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-dark-primary flex items-center gap-1.5">
+                    <span>☑️</span>
+                    <span>子項目檢驗清單 (Checklist)</span>
+                  </span>
+                  {checklistTotal > 0 && (
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800/60">
+                      {checklistCompleted}/{checklistTotal} ({checklistPercent}%)
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLoadAnalystTemplate}
+                  className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
+                  title="一鍵帶入損益表、資產負債表、現金流與估值查核點"
+                >
+                  <span>📊</span>
+                  <span>載入投研查核點</span>
+                </button>
+              </div>
+
+              {/* 即時進度條 */}
+              {checklistTotal > 0 && (
+                <div className="w-full bg-dark-base rounded-full h-1.5 overflow-hidden border border-dark-border-subtle/40">
+                  <div
+                    className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                    style={{ width: `${checklistPercent}%` }}
+                  />
+                </div>
+              )}
+
+              {/* 子任務條目列表 */}
+              {checklistItems.length > 0 ? (
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                  {checklistItems.map((item) => (
+                    <div
+                      key={item.id}
+                      className="group flex items-start gap-2.5 p-2 rounded-lg bg-dark-card/70 hover:bg-dark-card border border-dark-border-subtle/50 transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={item.completed}
+                        onChange={() => handleToggleChecklistItem(item.id)}
+                        className="mt-0.5 rounded border-dark-border-default bg-dark-base text-emerald-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                      />
+                      <span
+                        onClick={() => handleToggleChecklistItem(item.id)}
+                        className={`flex-1 text-xs leading-relaxed cursor-pointer select-none transition-colors ${
+                          item.completed
+                            ? 'line-through text-dark-muted/80'
+                            : 'text-dark-primary'
+                        }`}
+                      >
+                        {item.text}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteChecklistItem(item.id)}
+                        className="opacity-0 group-hover:opacity-100 text-xs text-dark-muted hover:text-rose-400 transition-opacity p-0.5 cursor-pointer"
+                        title="刪除此檢查項"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-dark-muted leading-relaxed">
+                  尚未建立子檢驗項目。可手動新增，或點擊右上角「載入投研查核點」標準化三表與估值檢視流程。
+                </p>
+              )}
+
+              {/* 新增子任務輸入框 */}
+              <form onSubmit={handleAddChecklistItem} className="flex items-center gap-2 pt-1">
+                <input
+                  type="text"
+                  value={newChecklistText}
+                  onChange={(e) => setNewChecklistText(e.target.value)}
+                  placeholder="新增子項目 (Enter 儲存)..."
+                  className="flex-1 px-3 py-1.5 bg-dark-base border border-dark-border-default/80 rounded-lg text-xs text-dark-primary placeholder:text-dark-muted/60 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!newChecklistText.trim()}
+                  className="px-3 py-1.5 bg-dark-card hover:bg-dark-hover border border-dark-border-subtle disabled:opacity-40 disabled:cursor-not-allowed text-dark-primary text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                >
+                  ＋ 新增
+                </button>
+              </form>
             </div>
 
             {/* Google Calendar 時間箱排程 (Timeboxing) */}
