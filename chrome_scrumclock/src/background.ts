@@ -98,10 +98,10 @@ export async function captureToInbox(rawText: string, url?: string, sourceTitle?
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Power Kit 已安裝');
   
-  // 設定點擊 Action 圖標時開啟側邊欄
+  // 確保點擊 Action 圖標時預設開啟 Popup（不自動開啟側邊欄）
   if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.setPanelBehavior) {
     chrome.sidePanel
-      .setPanelBehavior({ openPanelOnActionClick: true })
+      .setPanelBehavior({ openPanelOnActionClick: false })
       .catch((error) => console.error("設定側欄行為失敗:", error));
   }
   

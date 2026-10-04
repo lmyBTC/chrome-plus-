@@ -51,7 +51,8 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Power Kit"
+    "default_title": "Power Kit",
+    "default_popup": "src/entries/popup/index.html"
   },
   "side_panel": {
     "default_path": "src/entries/sidebar/index.html"

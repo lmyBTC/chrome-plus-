@@ -38,6 +38,20 @@ const PopupApp: React.FC = () => {
     window.close();
   };
 
+  const handleOpenSidePanel = async () => {
+    try {
+      if (typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
+        const currentWindow = await chrome.windows.getCurrent();
+        if (currentWindow.id) {
+          await (chrome.sidePanel as any).open({ windowId: currentWindow.id });
+        }
+      }
+    } catch (error) {
+      console.error('開啟側邊欄失敗:', error);
+    }
+    window.close();
+  };
+
   const handleOpenOptions = () => {
     chrome.runtime.openOptionsPage();
     window.close();
@@ -61,6 +75,13 @@ const PopupApp: React.FC = () => {
           className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-md shadow-blue-950/40 transition-all flex items-center justify-center gap-2 text-sm"
         >
           <span>🖥️</span> 打開儀表板
+        </button>
+
+        <button
+          onClick={handleOpenSidePanel}
+          className="w-full py-2.5 px-4 bg-dark-surface hover:bg-dark-hover text-dark-primary border border-dark-border-default font-semibold rounded-xl transition-all flex items-center justify-center gap-2 text-sm"
+        >
+          <span>📑</span> 開啟工作側欄
         </button>
 
         <button
