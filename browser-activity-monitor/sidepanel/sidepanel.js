@@ -15,6 +15,7 @@ import {
   sanitizeTimeStats,
   sanitizeData
 } from '../scripts/privacy-sanitizer.js';
+import { INTERCEPTOR_STORAGE_KEYS } from '../scripts/tab-interceptor.js';
 
 /**
  * Browser Activity Monitor - Side Panel 控制腳本
@@ -61,6 +62,13 @@ let timeStatsPollingTimer = null;
 let isProfilerExpanded = false;
 let profilerUpdateTimer = null;
 let latestBackgroundSummary = null;
+
+// AM-04 分頁攔截器 (Tab Trap) 狀態管理
+let isTabTrapExpanded = true;
+let tabTrapConfig = { enabled: true, blockOpenerTabs: true, maxLogsCount: 100 };
+let tabTrapRules = [];
+let tabTrapStats = { totalBlocked: 0, todayBlocked: 0 };
+let tabTrapLogs = [];
 
 // DOM 元素快取
 const dom = {
@@ -170,7 +178,26 @@ const dom = {
   profilerTotalTime: document.getElementById('profiler-total-time'),
   profilerModulesList: document.getElementById('profiler-modules-list'),
   profilerRecBadge: document.getElementById('profiler-rec-badge'),
-  profilerRecommendationsList: document.getElementById('profiler-recommendations-list')
+  profilerRecommendationsList: document.getElementById('profiler-recommendations-list'),
+
+  // AM-04 分頁攔截器 (Tab Trap) 專區 DOM
+  tabTrapSection: document.getElementById('tab-trap-section'),
+  btnToggleTabTrap: document.getElementById('btn-toggle-tab-trap'),
+  tabTrapCollapseIcon: document.getElementById('tab-trap-collapse-icon'),
+  tabTrapStatusPill: document.getElementById('tab-trap-status-pill'),
+  tabTrapMasterToggle: document.getElementById('tab-trap-master-toggle'),
+  tabTrapBody: document.getElementById('tab-trap-body'),
+  trapKpiToday: document.getElementById('trap-kpi-today'),
+  trapKpiTotal: document.getElementById('trap-kpi-total'),
+  trapKpiRulesCount: document.getElementById('trap-kpi-rules-count'),
+  trapInputDomain: document.getElementById('trap-input-domain'),
+  trapSelectMode: document.getElementById('trap-select-mode'),
+  trapInputNotes: document.getElementById('trap-input-notes'),
+  btnTrapAddRule: document.getElementById('btn-trap-add-rule'),
+  tabTrapFormError: document.getElementById('tab-trap-form-error'),
+  tabTrapRulesList: document.getElementById('tab-trap-rules-list'),
+  btnTrapClearLogs: document.getElementById('btn-trap-clear-logs'),
+  tabTrapLogsList: document.getElementById('tab-trap-logs-list')
 };
 
 // 格式化工具函數
@@ -361,6 +388,21 @@ function handlePortMessage(msg) {
       currentTimeStats = null;
       currentActiveTabSnapshot = null;
       renderTimeTrackerUI(null, null);
+      break;
+
+    // AM-04 分頁攔截器即時攔截廣播
+    case 'TAB_INTERCEPTED':
+      if (msg.stats) {
+        tabTrapStats = { ...tabTrapStats, ...msg.stats };
+      } else {
+        tabTrapStats.totalBlocked = (tabTrapStats.totalBlocked || 0) + 1;
+        tabTrapStats.todayBlocked = (tabTrapStats.todayBlocked || 0) + 1;
+      }
+      if (msg.log) {
+        tabTrapLogs.unshift(msg.log);
+        if (tabTrapLogs.length > 50) tabTrapLogs = tabTrapLogs.slice(0, 50);
+      }
+      renderTabTrap();
       break;
 
     default:
@@ -1391,6 +1433,327 @@ function renderProfilerPanel() {
   }
 }
 
+// ==========================================================================
+// AM-04: 自動跳出新開分頁攔截器 (Tab Trap) Sidepanel 控制邏輯
+// ==========================================================================
+
+async function loadTabTrapState() {
+  try {
+    const res = await chrome.runtime.sendMessage({ type: 'INTERCEPTOR_GET_SNAPSHOT' }).catch(() => null);
+    if (res && res.rules) {
+      tabTrapConfig = res.config || tabTrapConfig;
+      tabTrapRules = Array.isArray(res.rules) ? res.rules : [];
+      tabTrapStats = res.stats || tabTrapStats;
+      tabTrapLogs = Array.isArray(res.logs) ? res.logs : [];
+    } else {
+      const data = await chrome.storage.local.get([
+        INTERCEPTOR_STORAGE_KEYS.CONFIG,
+        INTERCEPTOR_STORAGE_KEYS.RULES,
+        INTERCEPTOR_STORAGE_KEYS.STATS,
+        INTERCEPTOR_STORAGE_KEYS.LOGS
+      ]);
+      if (data[INTERCEPTOR_STORAGE_KEYS.CONFIG]) tabTrapConfig = { ...tabTrapConfig, ...data[INTERCEPTOR_STORAGE_KEYS.CONFIG] };
+      if (Array.isArray(data[INTERCEPTOR_STORAGE_KEYS.RULES])) tabTrapRules = data[INTERCEPTOR_STORAGE_KEYS.RULES];
+      if (data[INTERCEPTOR_STORAGE_KEYS.STATS]) tabTrapStats = { ...tabTrapStats, ...data[INTERCEPTOR_STORAGE_KEYS.STATS] };
+      if (Array.isArray(data[INTERCEPTOR_STORAGE_KEYS.LOGS])) tabTrapLogs = data[INTERCEPTOR_STORAGE_KEYS.LOGS];
+    }
+  } catch (err) {
+    console.warn('[BAM Sidepanel] 載入 Tab Trap 狀態失敗:', err);
+  }
+  renderTabTrap();
+}
+
+function initTabTrapStorageListener() {
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local') return;
+    let shouldRender = false;
+
+    if (changes[INTERCEPTOR_STORAGE_KEYS.CONFIG]) {
+      tabTrapConfig = { ...tabTrapConfig, ...(changes[INTERCEPTOR_STORAGE_KEYS.CONFIG].newValue || {}) };
+      shouldRender = true;
+    }
+    if (changes[INTERCEPTOR_STORAGE_KEYS.RULES]) {
+      tabTrapRules = Array.isArray(changes[INTERCEPTOR_STORAGE_KEYS.RULES].newValue)
+        ? changes[INTERCEPTOR_STORAGE_KEYS.RULES].newValue
+        : [];
+      shouldRender = true;
+    }
+    if (changes[INTERCEPTOR_STORAGE_KEYS.STATS]) {
+      tabTrapStats = { ...tabTrapStats, ...(changes[INTERCEPTOR_STORAGE_KEYS.STATS].newValue || {}) };
+      shouldRender = true;
+    }
+    if (changes[INTERCEPTOR_STORAGE_KEYS.LOGS]) {
+      tabTrapLogs = Array.isArray(changes[INTERCEPTOR_STORAGE_KEYS.LOGS].newValue)
+        ? changes[INTERCEPTOR_STORAGE_KEYS.LOGS].newValue
+        : [];
+      shouldRender = true;
+    }
+
+    if (shouldRender) {
+      renderTabTrap();
+    }
+  });
+}
+
+function renderTabTrap() {
+  if (!dom.tabTrapSection) return;
+
+  // 1. 總開關與狀態 Pill
+  const isEnabled = Boolean(tabTrapConfig.enabled);
+  if (dom.tabTrapMasterToggle) {
+    dom.tabTrapMasterToggle.checked = isEnabled;
+  }
+  if (dom.tabTrapStatusPill) {
+    if (isEnabled) {
+      dom.tabTrapStatusPill.className = 'trap-status-pill trap-active';
+      dom.tabTrapStatusPill.textContent = '🛡️ 防護中';
+      dom.tabTrapStatusPill.title = '攔截器正常運行中，攔截惡意跳窗與命中黑名單分頁';
+    } else {
+      dom.tabTrapStatusPill.className = 'trap-status-pill trap-disabled';
+      dom.tabTrapStatusPill.textContent = '⚠️ 已停用';
+      dom.tabTrapStatusPill.title = '攔截器已關閉，將不進行分頁攔截';
+    }
+  }
+
+  // 2. 核心 KPI 摘要
+  if (dom.trapKpiToday) dom.trapKpiToday.textContent = tabTrapStats.todayBlocked || 0;
+  if (dom.trapKpiTotal) dom.trapKpiTotal.textContent = tabTrapStats.totalBlocked || 0;
+  if (dom.trapKpiRulesCount) dom.trapKpiRulesCount.textContent = tabTrapRules.length;
+
+  // 3. 渲染黑名單規則
+  renderTabTrapRules();
+
+  // 4. 渲染攔截審計紀錄
+  renderTabTrapLogs();
+}
+
+function renderTabTrapRules() {
+  if (!dom.tabTrapRulesList) return;
+
+  if (!tabTrapRules || tabTrapRules.length === 0) {
+    dom.tabTrapRulesList.innerHTML = '<div class="trap-empty-hint">尚未設定黑名單規則 (請於上方新增)</div>';
+    return;
+  }
+
+  dom.tabTrapRulesList.innerHTML = tabTrapRules.map((rule) => {
+    const isWildcard = (rule.matchMode || 'wildcard') === 'wildcard';
+    const modeBadge = isWildcard
+      ? '<span class="trap-rule-mode-tag mode-wildcard" title="萬用字元比對">*. 萬用</span>'
+      : '<span class="trap-rule-mode-tag mode-exact" title="完全匹配">完全</span>';
+    const notesHtml = rule.notes ? `<span class="trap-rule-notes" title="${sanitizeText(rule.notes)}">(${sanitizeText(rule.notes)})</span>` : '';
+    const disabledClass = !rule.enabled ? 'disabled' : '';
+
+    return `
+      <div class="trap-rule-item ${disabledClass}" data-rule-id="${rule.id}">
+        <div class="trap-rule-left">
+          ${modeBadge}
+          <span class="trap-rule-domain" title="${sanitizeText(rule.domain)}">${sanitizeText(rule.domain)}</span>
+          ${notesHtml}
+        </div>
+        <div class="trap-rule-actions">
+          <input type="checkbox" class="trap-rule-switch" data-action="toggle" ${rule.enabled ? 'checked' : ''} title="${rule.enabled ? '點擊停用此規則' : '點擊啟用此規則'}" />
+          <button class="btn-rule-delete" data-action="delete" title="刪除規則">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 6h18"></path>
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // 綁定規則項目內部點擊事件
+  dom.tabTrapRulesList.querySelectorAll('.trap-rule-item').forEach((item) => {
+    const ruleId = item.getAttribute('data-rule-id');
+    const toggleEl = item.querySelector('[data-action="toggle"]');
+    const deleteBtn = item.querySelector('[data-action="delete"]');
+
+    if (toggleEl) {
+      toggleEl.addEventListener('change', (e) => {
+        e.stopPropagation();
+        toggleTabTrapRule(ruleId, e.target.checked);
+      });
+    }
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteTabTrapRule(ruleId);
+      });
+    }
+  });
+}
+
+function renderTabTrapLogs() {
+  if (!dom.tabTrapLogsList) return;
+
+  if (!tabTrapLogs || tabTrapLogs.length === 0) {
+    dom.tabTrapLogsList.innerHTML = '<div class="trap-empty-hint">尚無攔截紀錄</div>';
+    return;
+  }
+
+  const isSanitize = dom.sanitizeCheckbox ? dom.sanitizeCheckbox.checked : true;
+  const displayLogs = tabTrapLogs.slice(0, 15);
+
+  dom.tabTrapLogsList.innerHTML = displayLogs.map((log) => {
+    const actionLabel = log.action === 'CONTENT_PREVENTED' ? '阻斷開窗' : '秒關分頁';
+    const targetUrlDisplay = isSanitize ? sanitizeUrl(log.targetUrl) : log.targetUrl;
+    const openerDisplay = log.openerUrl
+      ? `來源: ${isSanitize ? sanitizeUrl(log.openerUrl) : log.openerUrl}`
+      : '觸發: 直接開窗 / 背景導航';
+    const timeFormatted = formatTime(log.timestamp);
+    const ruleDisplay = log.matchedRule ? `命中: ${sanitizeText(log.matchedRule)}` : '';
+
+    return `
+      <div class="trap-log-item">
+        <div class="trap-log-header">
+          <span class="trap-log-action-tag">${actionLabel}</span>
+          <span class="trap-log-time">${timeFormatted}</span>
+        </div>
+        <div class="trap-log-url" title="${targetUrlDisplay}">目標: ${targetUrlDisplay}</div>
+        <div class="trap-log-meta">
+          <span title="${openerDisplay}">${openerDisplay}</span>
+          ${ruleDisplay ? `<span title="${ruleDisplay}">| ${ruleDisplay}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function handleTabTrapAddRule() {
+  if (!dom.trapInputDomain) return;
+  const rawDomain = dom.trapInputDomain.value.trim();
+  const mode = dom.trapSelectMode ? dom.trapSelectMode.value : 'wildcard';
+  const notes = dom.trapInputNotes ? dom.trapInputNotes.value.trim() : '';
+
+  if (!rawDomain) {
+    showTrapFormError('請輸入有效網域模式 (例如: *.popunder.com)');
+    dom.trapInputDomain.focus();
+    return;
+  }
+
+  let cleanDomain = rawDomain.toLowerCase().replace(/^[a-zA-Z]+:\/\//, '').split('/')[0].split(':')[0];
+  if (!cleanDomain) {
+    showTrapFormError('網域格式不正確');
+    return;
+  }
+
+  const exists = tabTrapRules.some((r) => r.domain === cleanDomain && r.matchMode === mode);
+  if (exists) {
+    showTrapFormError('此網域與模式已存在於黑名單中');
+    return;
+  }
+
+  hideTrapFormError();
+
+  try {
+    const res = await chrome.runtime.sendMessage({
+      type: 'INTERCEPTOR_ADD_RULE',
+      domain: cleanDomain,
+      matchMode: mode,
+      notes
+    });
+
+    if (res && res.success) {
+      dom.trapInputDomain.value = '';
+      if (dom.trapInputNotes) dom.trapInputNotes.value = '';
+      if (res.rule) {
+        tabTrapRules.unshift(res.rule);
+      }
+      renderTabTrap();
+    } else {
+      showTrapFormError(res?.error || '新增規則失敗');
+    }
+  } catch (err) {
+    showTrapFormError(err.message || '通訊失敗');
+  }
+}
+
+async function toggleTabTrapRule(id, enabled) {
+  try {
+    const rule = tabTrapRules.find((r) => r.id === id);
+    if (rule) {
+      rule.enabled = enabled;
+      renderTabTrapRules();
+    }
+
+    await chrome.runtime.sendMessage({
+      type: 'INTERCEPTOR_TOGGLE_RULE',
+      id,
+      enabled
+    });
+  } catch (err) {
+    console.warn('[BAM Sidepanel] 切換規則失敗:', err);
+    loadTabTrapState();
+  }
+}
+
+async function deleteTabTrapRule(id) {
+  try {
+    tabTrapRules = tabTrapRules.filter((r) => r.id !== id);
+    renderTabTrap();
+
+    await chrome.runtime.sendMessage({
+      type: 'INTERCEPTOR_DELETE_RULE',
+      id
+    });
+  } catch (err) {
+    console.warn('[BAM Sidepanel] 刪除規則失敗:', err);
+    loadTabTrapState();
+  }
+}
+
+async function handleTabTrapMasterToggle(enabled) {
+  try {
+    tabTrapConfig.enabled = enabled;
+    renderTabTrap();
+
+    await chrome.runtime.sendMessage({
+      type: 'INTERCEPTOR_UPDATE_CONFIG',
+      config: { enabled }
+    });
+  } catch (err) {
+    console.warn('[BAM Sidepanel] 更新總開關失敗:', err);
+    loadTabTrapState();
+  }
+}
+
+async function clearTabTrapLogs() {
+  if (!confirm('確定要清空所有攔截紀錄日誌嗎？')) return;
+  try {
+    tabTrapLogs = [];
+    renderTabTrapLogs();
+    await chrome.runtime.sendMessage({ type: 'INTERCEPTOR_CLEAR_LOGS' });
+  } catch (err) {
+    console.warn('[BAM Sidepanel] 清空日誌失敗:', err);
+  }
+}
+
+function toggleTabTrapExpand() {
+  isTabTrapExpanded = !isTabTrapExpanded;
+  if (dom.tabTrapBody) {
+    dom.tabTrapBody.style.display = isTabTrapExpanded ? 'flex' : 'none';
+  }
+  if (dom.tabTrapSection) {
+    dom.tabTrapSection.classList.toggle('collapsed', !isTabTrapExpanded);
+  }
+}
+
+function showTrapFormError(msg) {
+  if (dom.tabTrapFormError) {
+    dom.tabTrapFormError.textContent = msg;
+    dom.tabTrapFormError.style.display = 'block';
+  }
+}
+
+function hideTrapFormError() {
+  if (dom.tabTrapFormError) {
+    dom.tabTrapFormError.textContent = '';
+    dom.tabTrapFormError.style.display = 'none';
+  }
+}
+
 // 初始化事件綁定
 function initEvents() {
   // 分頁切換與更新
@@ -1588,6 +1951,41 @@ function initEvents() {
       resetProfilerStats();
     });
   }
+
+  // AM-04: 分頁攔截器事件綁定
+  if (dom.btnToggleTabTrap) {
+    dom.btnToggleTabTrap.addEventListener('click', toggleTabTrapExpand);
+  }
+
+  if (dom.tabTrapMasterToggle) {
+    dom.tabTrapMasterToggle.addEventListener('change', (e) => {
+      e.stopPropagation();
+      handleTabTrapMasterToggle(e.target.checked);
+    });
+  }
+
+  if (dom.btnTrapAddRule) {
+    dom.btnTrapAddRule.addEventListener('click', (e) => {
+      e.preventDefault();
+      handleTabTrapAddRule();
+    });
+  }
+
+  if (dom.trapInputDomain) {
+    dom.trapInputDomain.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleTabTrapAddRule();
+      }
+    });
+  }
+
+  if (dom.btnTrapClearLogs) {
+    dom.btnTrapClearLogs.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearTabTrapLogs();
+    });
+  }
 }
 
 // 主初始化常式
@@ -1596,6 +1994,9 @@ function init() {
   syncActiveTab();
   initEvents();
   updateCounters();
+  loadTabTrapState();
+  initTabTrapStorageListener();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+

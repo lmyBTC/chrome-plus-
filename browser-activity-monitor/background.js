@@ -2,6 +2,7 @@ import { AuditStorageDB } from './scripts/storage-db.js';
 import { profiler } from './scripts/resource-profiler.js';
 import { ProfilerSession } from './scripts/session-profiler.js';
 import { TabTimeTracker } from './scripts/tab-time-tracker.js';
+import { TabInterceptor } from './scripts/tab-interceptor.js';
 
 /**
  * Browser Activity Monitor - Background Service Worker (MV3)
@@ -30,6 +31,18 @@ const timeTracker = new TabTimeTracker(db, {
   }
 });
 timeTracker.init();
+
+// 初始化自動跳出新開分頁攔截器 (AM-04)
+const tabInterceptor = new TabInterceptor({
+  onBlocked: (log, stats) => {
+    broadcast({
+      type: 'TAB_INTERCEPTED',
+      log,
+      stats
+    });
+  }
+});
+tabInterceptor.init();
 
 // 1. 初始化擴充功能行為：點擊 Action 圖示直接開啟 Side Panel，並註冊排程清理 alarm
 chrome.runtime.onInstalled.addListener(() => {
@@ -136,8 +149,8 @@ chrome.tabs.onRemoved.addListener((tabId) => {
   }
 });
 
-// 監聽分頁刷新或跳轉：頁面重新載入後探針會自動失效，重置追蹤狀態
-chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+// 監聽分頁刷新或跳轉：頁面重新載入後探針會自動失效，重置追蹤狀態；同時檢查是否導向黑名單網域
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo) => {
   if (changeInfo.status === 'loading' && activeInspectorTabs.has(tabId)) {
     activeInspectorTabs.delete(tabId);
     broadcast({
@@ -145,6 +158,75 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
       tabId,
       active: false
     });
+  }
+
+  // 攔截網址更新導向黑名單網域 (AM-04)
+  if (tabInterceptor.isEnabled() && changeInfo.url) {
+    const match = tabInterceptor.matchUrl(changeInfo.url);
+    if (match.matched) {
+      try {
+        await chrome.tabs.remove(tabId);
+        await tabInterceptor.recordBlocked({
+          targetUrl: changeInfo.url,
+          matchedRule: match.rule.domain,
+          action: 'TABS_REMOVE'
+        });
+        console.log(`[BAM Interceptor] 成功攔截更新導向黑名單之分頁 #${tabId} (網址: ${changeInfo.url}, 規則: ${match.rule.domain})`);
+      } catch (err) {
+        console.warn(`[BAM Interceptor] 關閉更新分頁 #${tabId} 失敗:`, err);
+      }
+    }
+  }
+});
+
+// 監聽分頁建立：針對黑名單目標或惡意來源 (Opener Tab) 實施硬封殺秒關 (AM-04)
+chrome.tabs.onCreated.addListener(async (tab) => {
+  if (!tabInterceptor.isEnabled() || !tab || !tab.id) return;
+
+  // 1. 檢查新分頁自身的目標網址 (pendingUrl 或 url)
+  const targetUrl = tab.pendingUrl || tab.url || '';
+  if (targetUrl) {
+    const match = tabInterceptor.matchUrl(targetUrl);
+    if (match.matched) {
+      try {
+        await chrome.tabs.remove(tab.id);
+        await tabInterceptor.recordBlocked({
+          targetUrl,
+          matchedRule: match.rule.domain,
+          action: 'TABS_REMOVE'
+        });
+        console.log(`[BAM Interceptor] 成功攔截並強制秒關黑名單分頁 #${tab.id} (目標: ${targetUrl}, 規則: ${match.rule.domain})`);
+      } catch (err) {
+        console.warn(`[BAM Interceptor] 關閉分頁 #${tab.id} 失敗:`, err);
+      }
+      return;
+    }
+  }
+
+  // 2. 檢查來源分頁 (Opener Tab) 是否命中黑名單
+  if (tabInterceptor.config.blockOpenerTabs && tab.openerTabId) {
+    try {
+      const openerTab = await chrome.tabs.get(tab.openerTabId).catch(() => null);
+      if (openerTab && openerTab.url) {
+        const openerMatch = tabInterceptor.matchUrl(openerTab.url);
+        if (openerMatch.matched) {
+          try {
+            await chrome.tabs.remove(tab.id);
+            await tabInterceptor.recordBlocked({
+              targetUrl: targetUrl || 'about:blank (未授權彈出分頁)',
+              openerUrl: openerTab.url,
+              matchedRule: openerMatch.rule.domain,
+              action: 'TABS_REMOVE'
+            });
+            console.log(`[BAM Interceptor] 成功攔截黑名單來源分頁 #${tab.openerTabId} 觸發之跳出分頁 #${tab.id} (來源: ${openerTab.url}, 規則: ${openerMatch.rule.domain})`);
+          } catch (err) {
+            console.warn(`[BAM Interceptor] 關閉分頁 #${tab.id} 失敗:`, err);
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[BAM Interceptor] 檢查來源分頁失敗:', err);
+    }
   }
 });
 
@@ -651,6 +733,64 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     broadcast({ type: 'ACTIVITY_LOG', log: event });
     sendResponse({ received: true });
     return false;
+  }
+
+  // === 分頁攔截器 (Tab Interceptor AM-04) 相關訊息 ===
+  if (message.type === 'INTERCEPTOR_GET_SNAPSHOT') {
+    sendResponse(tabInterceptor.getSnapshot());
+    return false;
+  }
+
+  if (message.type === 'INTERCEPTOR_UPDATE_CONFIG') {
+    tabInterceptor.updateConfig(message.config)
+      .then((cfg) => sendResponse({ success: true, config: cfg }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_ADD_RULE') {
+    tabInterceptor.addRule(message.domain, message.matchMode, message.notes)
+      .then((rule) => sendResponse({ success: true, rule }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_UPDATE_RULE') {
+    tabInterceptor.updateRule(message.id, message.updates)
+      .then((rule) => sendResponse({ success: true, rule }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_DELETE_RULE') {
+    tabInterceptor.deleteRule(message.id)
+      .then((ok) => sendResponse({ success: ok }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_TOGGLE_RULE') {
+    tabInterceptor.toggleRule(message.id, message.enabled)
+      .then((rule) => sendResponse({ success: true, rule }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_CLEAR_LOGS') {
+    tabInterceptor.clearLogs()
+      .then(() => sendResponse({ success: true }))
+      .catch((err) => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === 'INTERCEPTOR_CONTENT_BLOCKED') {
+    tabInterceptor.recordBlocked({
+      targetUrl: message.targetUrl,
+      openerUrl: sender.tab?.url || message.openerUrl || '',
+      matchedRule: message.matchedRule || 'DOM_OPEN_PREVENTED',
+      action: message.action || 'CONTENT_PREVENTED'
+    }).then((logItem) => sendResponse({ success: true, log: logItem }));
+    return true;
   }
 
   return false;

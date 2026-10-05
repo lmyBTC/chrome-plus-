@@ -19,6 +19,11 @@
 - 🔒 **日誌隱私脫敏匯出與遮蔽開關 (AM-03 Privacy Sanitizer)**：
   - 前端純化管線，在匯出 JSON 或複製日誌時，自動遮蔽機密 Query 參數（`token`、`auth`、`key`、`secret`、`password`、`session` 等）與內部私有 IP（`10.x`、`192.168.x`、`172.16-31.x`、`localhost`）。
   - 側邊欄提供「🔒 脫敏」切換開關，脫敏僅在匯出/複製管道生效，100% 不污染底層 IndexedDB 原始除錯數據。
+- 🚫 **自動跳窗與惡意分頁攔截 (AM-04 Popup & Tab Trap Interceptor)**：
+  - 常態零待命監聽分頁創建事件（`chrome.tabs.onCreated`），結合來源分頁識別 (`openerTabId`) 與暫態手勢時限比對，精準鑑別並自動攔截未經使用者手勢授權之非同步彈窗（Tab Trap）。
+  - **強效網域黑名單（Domain Blacklist / Hard Blocklist）**：支援使用者自訂黑名單網域，一旦命中黑名單來源，全面強制關閉該網域下所有跳出分頁（無視手勢，全面靜音封殺）。
+  - **白名單與關鍵鏈路豁免保護**：預設信任直接使用者手勢，並對常見 OAuth 認證跳轉（Google、GitHub、Apple 等）及金流閘道（Stripe、PayPal 等）提供自動放行豁免，杜絕誤殺。
+  - **透明復原與安全回饋**：提供 Action Badge 即時攔截計數、側邊欄攔截佇列追蹤與一鍵還原分頁（Undo Restore），完全掌握網頁彈窗行為。
 - ⏱️ **雙軌隨選健檢機制 (Dual Profiling Modes)**：
   - **快速定時健檢 (Quick Audit - 60s)**：一鍵開啟 60 秒採樣，時間倒數結束自動結算並卸載監聽。
   - **持續檢測記錄模式 (Continuous Session Mode)**：手動開啟開始追蹤，手動停止、面板關閉或瀏覽器休眠時即刻自動結算並產生結構化「階段檢測報告卡」。
@@ -48,6 +53,9 @@
 | `scripts/tab-time-tracker.js` | **前台分頁焦點時長追蹤器 (AM-01)** | 監聽 `tabs.onActivated`、`windows.onFocusChanged`，秒級計算前台有效停留時長並結算寫入 |
 | `scripts/domain-classifier.js` | **網域智慧分類與統計聚合引擎** | PM 生產力 / 辦公通訊 / 休閒娛樂網域字典、`calculateCategoryStats` 分類時長統計 |
 | `scripts/privacy-sanitizer.js` | **前端日誌隱私脫敏模組 (AM-03)** | 機密 Query 參數遮罩、私有 IP 辨識純化、日誌與時長批次脫敏函式 |
+| `scripts/tab-interceptor.js` | **自動彈窗與惡意分頁攔截核心 (AM-04)** | 監聽 `tabs.onCreated` / `onUpdated`、黑名單引擎、規則 CRUD 與儲存同步 |
+| `scripts/interceptor-content.js` | **Content Script 攔截中繼層 (AM-04)** | ISOLATED 世界，規則雙向同步、Capture 階段攔截 `target="_blank"` 點擊 |
+| `scripts/interceptor-main.js` | **MAIN World 原生攔截探針 (AM-04)** | MAIN 世界，`document_start` 覆寫原生 `window.open` 阻斷惡意彈窗 |
 | `scripts/session-profiler.js` | **Session 彙總分析引擎** | 記憶體輕量統計器 (`ProfilerSession`)、Noise Gate、TOP 分頁分析與優化建議生成 |
 | `scripts/resource-profiler.js` | **組件資源監視與效能診斷核心** | 輕量耗時統計 (`ResourceProfiler`)、記憶體/佇列/DOM 診斷、智慧優化建議引擎 |
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
@@ -141,9 +149,93 @@
      - `timestamp`：紀錄時間戳記
    - **儲存內容**：前台有效活躍停留時長（`url`, `title`, `durationSec`, `category`, `timestamp`），於分頁切換/導航/失焦結算時寫入。
 
+### 擴充功能輕量設定儲存 (chrome.storage.local SSOT)
+- **`bam_tab_blacklist_rules`**: 黑名單規則清單 (`Array<BlacklistRule>`)
+  - 欄位：`id`, `domain` (如 `*.popunder.net`), `matchMode` (`'wildcard'` | `'exact'`), `enabled` (boolean), `createdAt` (timestamp), `notes` (string)
+- **`bam_tab_interceptor_config`**: 攔截器核心配置 (`Object`)
+  - 欄位：`enabled` (總開關), `blockOpenerTabs` (是否封殺黑名單來源分頁之新開窗), `maxLogsCount` (日誌上限 100)
+- **`bam_tab_interceptor_stats`**: 攔截計數統計 (`Object`)
+  - 欄位：`totalBlocked` (累計攔截次數), `todayBlocked` (今日攔截次數), `lastResetDate` (`YYYY-MM-DD` 跨日重置)
+- **`bam_tab_interceptor_logs`**: 攔截審計日誌 (`Array<InterceptLog>`)
+  - 欄位：`id`, `targetUrl`, `openerUrl`, `matchedRule`, `action` (`'TABS_REMOVE'` | `'CONTENT_PREVENTED'`), `timestamp`
+
 ### 資料清理機制 (Alarms & Retention)
 - **零日常磁碟 I/O**：拔除高頻單筆寫入，常態監測時全記憶體統計，僅在 Session 結算時批次寫入報告。
 - **排程過期清除**：整合 `chrome.alarms` 定期（每日）觸發清理，自動刪除超過 3 天之歷史日誌與超過 7 天之檢測報告。
+
+---
+
+## 🚫 自動彈跳分頁攔截架構與決策流程 (Tab Trap & Popup Interceptor Spec)
+
+### 1. 核心定位與防禦目標 (Core Objectives)
+- **抵禦惡意誘餌開窗 (Tab Trap Defense)**：防範內容農場、廣告聯盟或串流盜版網站透過透明 Overlay 遮罩、異步 Timer (`setTimeout`) 或反覆觸發 `window.open` 瘋狂開啟誘導與博弈分頁。
+- **維護零擾動瀏覽體驗**：確保使用者日常正常點擊超連結開分頁、點擊第三方登入 (OAuth) 與結帳金流付款時 100% 不受誤傷。
+- **強效黑名單硬封殺**：針對已列入黑名單之惡意網域，全面杜絕任何衍生彈窗行為（無視手勢，全面靜音關閉）。
+
+### 2. 攔截決策流程 (Decision Engine Flow)
+
+```mermaid
+flowchart TD
+    A["chrome.tabs.onCreated (tab)"] --> B{"是否有 openerTabId？"}
+    B -- "無 (使用者手動開分頁/網址列/書籤)" --> PASS["放行分頁 (PASS)"]
+    B -- "有 (由網頁腳本或連結衍生)" --> C{"查詢 openerTab 網域"}
+    
+    C --> D{"來源網域命中黑名單 (Blacklist)？"}
+    D -- "是 (命中硬封殺名單)" --> BLOCK["強制關閉 (Hard Block) & 記錄"]
+    
+    D -- "否" --> E{"來源/目標命中信任白名單 (Whitelist)？"}
+    E -- "是 (使用者信任網域)" --> PASS
+    
+    E -- "否" --> F{"目標 URL 符合 OAuth / 金流保護 Pattern？"}
+    F -- "是 (Google/GitHub/Stripe 等認證鏈路)" --> PASS
+    
+    F -- "否" --> G{"來源分頁具有近期有效手勢？<br/>(Delta <= 1000ms)"}
+    G -- "是 (使用者直接點擊產生)" --> PASS
+    G -- "否 / 逾時" --> BLOCK
+    
+    BLOCK --> H["調用 chrome.tabs.remove(tab.id)"]
+    H --> I["寫入 tab_intercept_logs (IndexedDB)"]
+    I --> J["推入最新 10 筆記憶體還原佇列"]
+    J --> K["更新擴充圖示 Action Badge 計數 (+1)"]
+```
+
+### 3. 強效網域黑名單機制 (Domain Blacklist / Hard Blocklist)
+- **硬封殺策略 (Zero-Tolerance Hard Kill)**：
+  - 當來源分頁 (`openerTabId`) 之網域名稱精準匹配或萬用字元匹配（如 `*.popads.net`、`ad-redirector.com`）黑名單時，**全面略過手勢比對**。
+  - Service Worker 於毫秒級內立即呼叫 `chrome.tabs.remove(tab.id)`，徹底斬斷惡意分頁載入網路資源與執行腳本的機會。
+- **黑名單配置與存取**：
+  - 儲存於 `chrome.storage.local` 之 `blacklist_domains` 陣列，支援即時響應 `storage.onChanged` 監聽。
+  - 支援格式：完整 Hostname（`bad-ads.com`）、二級萬用字元（`*.popcash.net`）。
+- **側邊欄互動管理**：
+  - 提供快捷按鈕「🚫 將當前分頁網域加入黑名單」。
+  - 支援黑名單清單檢視、手動新增與一鍵移除。
+
+### 4. 信任白名單與認證豁免鏈路 (Whitelist & Safe Passage)
+- **自訂信任白名單 (Custom Whitelist)**：
+  - 使用者明確信任的業務網域（如內部系統、公司 Intranet、特定協作平台），完全豁免彈窗檢測。
+  - 提供「允許此網域本次開啟彈窗 5 分鐘」之暫態豁免機制 (Temporary Bypass)。
+- **OAuth / SSO 認證與金融支付自動豁免規則 (Auto-Exemption Patterns)**：
+  - 預置常見認證端點 Pattern，凡目標網址或來源符合以下規則且存在近期手勢，一律豁免放行：
+    - **OAuth / 社交登入**：`accounts.google.com`、`github.com/login/oauth`、`appleid.apple.com`、`login.microsoftonline.com`、`facebook.com/v*/dialog/oauth`。
+    - **金融結帳**：`checkout.stripe.com`、`www.paypal.com/checkout`、`pay.line.me`、各銀行 3D 驗證閘道 (`*3dsecure*`, `*otp*`)。
+
+### 5. 手勢比對與來源溯源機制 (Gesture Correlation Spec)
+- **手勢捕獲原理**：
+  - 透過輕量 Content Script (`scripts/gesture-beacon.js`) 監聽來源分頁之 `pointerdown` 與 `keydown` 事件（捕獲階段，Passive 監聽，0% 渲染阻斷）。
+  - 當捕獲有效使用者手勢時，更新該分頁的 `lastGestureTimestamp = performance.now()`。
+- **有效時限閾值 (Gesture Window)**：
+  - 閾值預設為 **1000 毫秒 (1.0s)**。
+  - 凡由 `window.open` 或 `<a target="_blank">` 引發的 `tabs.onCreated`，若距離前次手勢超過 1000ms（如延遲 2 秒定時器、背景非同步回調引發），立即判斷為非同步誘餌開窗，予以攔截。
+
+### 6. 使用者透明反饋與安全復原機制 (Action Badge & Undo Action)
+- **Action Badge 警示**：
+  - 成功攔截時，在擴充圖示右上角顯示紅色 Badge（如 `1`、`2`），並更新 Tooltip 為「已攔截來自 [網域] 的未授權彈窗」。
+- **記憶體環形還原佇列 (Restore Ring Buffer)**：
+  - 背景維護容量為 10 筆的 `interceptRestoreQueue`。
+  - 記錄欄位包含：`id`, `url`, `title`, `sourceOrigin`, `timestamp`, `reason`。
+- **側邊欄即時卡片與一鍵復原**：
+  - 側邊欄即時呈現最新攔截事件卡片。
+  - 提供「↩️ 一鍵復原開啟」按鈕：點擊後調用 `chrome.tabs.create({ url, active: true })`，並將記錄標記為 `restored: true`，保障使用者 100% 最終掌控權。
 
 ---
 
@@ -182,4 +274,5 @@
 - **無侵入性保證**：探針注入採嚴格隨選觸發，分頁關閉或刷新後探針自動失效，絕不污染全域日常瀏覽效能。
 - **隱私最小化**：僅收集用於本機安全審查之網路與行為元資料，不記錄使用者鍵入之敏感密碼或表單內容。
 - **前端匯出脫敏 (AM-03)**：匯出或剪貼簿複製紀錄時預設純化 Token、密鑰與私有 IP，防止使用者在分享日誌或截圖時外洩敏感機密。
+- **事件驅動攔截與零待命負擔 (AM-04)**：彈窗攔截完全依託 `chrome.tabs.onCreated` 原生事件驅動，無任何背景常駐 Timer 或主動輪詢；所有攔截日誌僅儲存於本機 IndexedDB，一鍵還原嚴格依賴使用者點擊授權，兼顧極致效能與隱私安全。
 

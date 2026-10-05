@@ -11,10 +11,26 @@
     "contentSettings",
     "scripting",
     "sidePanel",
-    "alarms"
+    "alarms",
+    "storage"
   ],
   "host_permissions": [
     "<all_urls>"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/interceptor-content.js"],
+      "run_at": "document_start",
+      "all_frames": true
+    },
+    {
+      "matches": ["<all_urls>"],
+      "js": ["scripts/interceptor-main.js"],
+      "run_at": "document_start",
+      "world": "MAIN",
+      "all_frames": true
+    }
   ],
   "background": {
     "service_worker": "background.js",

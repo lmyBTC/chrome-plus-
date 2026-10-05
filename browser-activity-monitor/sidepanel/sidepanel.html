@@ -219,6 +219,82 @@
       </div>
     </section>
 
+    <!-- AM-04: 自動跳出新開分頁攔截器 (Tab Trap) -->
+    <section class="card tab-trap-card" id="tab-trap-section">
+      <div class="card-header tab-trap-header" id="btn-toggle-tab-trap" title="點擊展開/收合分頁攔截控制台">
+        <div class="tab-trap-title-group">
+          <span class="collapse-icon" id="tab-trap-collapse-icon">▼</span>
+          <h2 class="card-title">分頁攔截防護 (Tab Trap)</h2>
+          <span class="trap-status-pill trap-active" id="tab-trap-status-pill" title="攔截器狀態">🛡️ 防護中</span>
+        </div>
+        <div class="tab-trap-header-actions">
+          <label class="toggle-switch-compact" title="總防護開關">
+            <input type="checkbox" id="tab-trap-master-toggle" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- 折疊內容區 -->
+      <div class="tab-trap-body" id="tab-trap-body">
+        <!-- 核心統計摘要 -->
+        <div class="tab-trap-kpi-grid">
+          <div class="trap-kpi-item">
+            <span class="trap-kpi-label">今日封殺</span>
+            <span class="trap-kpi-val text-danger" id="trap-kpi-today">0</span>
+          </div>
+          <div class="trap-kpi-item">
+            <span class="trap-kpi-label">累計封殺</span>
+            <span class="trap-kpi-val" id="trap-kpi-total">0</span>
+          </div>
+          <div class="trap-kpi-item">
+            <span class="trap-kpi-label">黑名單規則</span>
+            <span class="trap-kpi-val" id="trap-kpi-rules-count">0</span>
+          </div>
+        </div>
+
+        <!-- 新增規則表單 -->
+        <div class="tab-trap-add-section">
+          <div class="tab-trap-form-row">
+            <input type="text" class="input-text trap-input-domain" id="trap-input-domain" placeholder="輸入網域 (例: *.popunder.com 或 badsite.com)" />
+            <select class="input-select trap-select-mode" id="trap-select-mode" title="比對模式">
+              <option value="wildcard">萬用字元 (*.)</option>
+              <option value="exact">完全匹配</option>
+            </select>
+          </div>
+          <div class="tab-trap-form-row">
+            <input type="text" class="input-text trap-input-notes" id="trap-input-notes" placeholder="規則備註 (選填，如: 惡意彈窗廣告)" />
+            <button class="btn btn-primary btn-sm" id="btn-trap-add-rule">
+              <span>➕ 新增</span>
+            </button>
+          </div>
+          <div class="tab-trap-form-error" id="tab-trap-form-error" style="display: none;"></div>
+        </div>
+
+        <!-- 黑名單規則清單 -->
+        <div class="tab-trap-rules-section">
+          <div class="tab-trap-sub-header">
+            <span class="tab-trap-sub-title">封殺黑名單清單</span>
+            <span class="tab-trap-rule-hint">支援 *. 與子網域自動覆蓋</span>
+          </div>
+          <div class="tab-trap-rules-list" id="tab-trap-rules-list">
+            <div class="trap-empty-hint">載入規則中...</div>
+          </div>
+        </div>
+
+        <!-- 最近攔截紀錄區 -->
+        <div class="tab-trap-logs-section">
+          <div class="tab-trap-sub-header">
+            <span class="tab-trap-sub-title">最近攔截審計</span>
+            <button class="btn btn-ghost btn-xs text-danger" id="btn-trap-clear-logs" title="清空攔截歷史紀錄">清空日誌</button>
+          </div>
+          <div class="tab-trap-logs-list" id="tab-trap-logs-list">
+            <div class="trap-empty-hint">尚無攔截紀錄</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- 組件資源監視器 (輕量效能與優化診斷面板) -->
     <section class="card resource-monitor-card" id="resource-monitor-section">
       <div class="card-header resource-monitor-header" id="btn-toggle-profiler" title="點擊展開/收合資源監視器">

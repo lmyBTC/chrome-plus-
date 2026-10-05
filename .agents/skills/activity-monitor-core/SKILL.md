@@ -16,8 +16,11 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 * **核心原則**: 常態零耗能待命（平時不掛載 `webRequest`，0% 觀察者效應）+ 雙軌隨選健檢（60s 快速採樣 / 持續記錄）
 
 ## 2. 關鍵入口架構 (Key Entrypoints)
-* `manifest.json`: Manifest V3 配置宣告 (`sidePanel`, `alarms`, `contentSettings`, `webRequest`, `downloads`)
-* `background.js`: 背景 Service Worker，隨選掛載/卸載網路攔截、Port 長連接管理、調度 TabTimeTracker
+* `manifest.json`: Manifest V3 配置宣告 (`sidePanel`, `alarms`, `contentSettings`, `webRequest`, `downloads`, `storage`)
+* `background.js`: 背景 Service Worker，隨選掛載/卸載網路攔截、Port 長連接管理、調度 TabTimeTracker 與 TabInterceptor 秒關
+* `scripts/tab-interceptor.js`: 自動跳窗分頁攔截器與網域黑名單比對引擎 (AM-04 核心，完全匹配與萬用字元)
+* `scripts/interceptor-content.js`: ISOLATED 隔離環境攔截器（規則快取同步、target="_blank" 點擊阻斷與事件通報）
+* `scripts/interceptor-main.js`: MAIN 世界原生攔截器（document_start 覆寫 window.open 阻斷彈窗）
 * `scripts/tab-time-tracker.js`: 前台分頁焦點與有效停留時長追蹤器（AM-01 核心，秒級結算與焦點生命週期）
 * `scripts/domain-classifier.js`: 網域智慧分類字典與類別時長聚合引擎（生產力 / 通訊 / 娛樂標籤）
 * `scripts/privacy-sanitizer.js`: 前端日誌隱私脫敏模組（AM-03 核心，Token/密鑰遮罩、私有 IP 純化與匯出脫敏開關）
@@ -25,7 +28,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 * `scripts/resource-profiler.js`: 組件資源監視核心（微秒級耗時、DOM/記憶體/佇列診斷，面板收合時 0% 輪詢）
 * `scripts/probe-main.js` & `scripts/probe-isolated.js`: 隨選注入之雙層防禦探針（刷新即失效）
 * `scripts/storage-db.js`: IndexedDB 本機儲存 (`BrowserActivityMonitorDB`: `activity_logs`, `health_reports`, `time_spent_logs`)
-* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`，含停留時長看板、分類標籤過濾與脫敏開關)
+* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`，含停留時長看板、分類過濾、Tab Trap 黑名單管理專區與脫敏開關)
 
 ## 3. 安全與合規底線 (Hard Rules)
 1. **嚴禁 innerHTML 漏洞**: 所有動態渲染文字節點一律使用 `.textContent` 或安全的 DOM 操作，杜絕 XSS。
