@@ -61,9 +61,13 @@
 | `scripts/probe-main.js` | **MAIN 世界原生探針 (Dynamic Injected)** | 原生 API 掛鉤 (Monkey Patch)、`window.postMessage` 安全事件發佈 |
 | `scripts/probe-isolated.js` | **ISOLATED 世界中繼探針 (Dynamic Injected)** | 驗證 `__PROBE_MAIN__` 來源與事件有效性、`chrome.runtime.sendMessage` 安全轉發 |
 | `scripts/storage-db.js` | **IndexedDB 審計儲存層 (Storage Module)** | `AuditStorageDB` 類別、`health_reports`、`time_spent_logs` 儲存集合與聚合查詢 |
-| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 停留時長總覽看板、分類進度條、TOP 5 活躍分頁、雙軌控制卡片、環形串流容器、脫敏開關 |
+| `sidepanel/sidepanel.html` | **側邊監控視圖 UI (HTML)** | 停留時長總覽看板、分類進度條、TOP 5 活躍分頁、雙軌控制卡片、環形串流容器、脫敏開關、管理頁面捷徑 |
 | `sidepanel/sidepanel.css` | **現代深色毛玻璃樣式 (CSS)** | 科技深色主題、彩色分類 Badge、多色停留時間進度條、30筆環形緩衝流、脫敏切換膠囊 |
-| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 停留時長看板即時更新、網域分類過濾、雙軌生命週期控制、環形緩衝區 (30筆)、脫敏匯出與複製 |
+| `sidepanel/sidepanel.js` | **側邊欄控制器邏輯 (Module)** | 停留時長看板即時更新、網域分類過濾、雙軌生命週期控制、環形緩衝區 (30筆)、脫敏匯出、開啟管理頁面 |
+| `management/index.html` | **管理控制台主視圖 (Options Page)** | 獨立新分頁管理中心、側邊功能導航、攔截器總開關、指標統計卡片、黑名單規則表格、CRUD 與匯入彈窗 |
+| `management/css/style.css` | **管理控制台設計系統 (CSS)** | 現代深色科技主題、Glassmorphism 卡片、狀態標籤、自適應響應排版、微動畫 |
+| `management/js/main.js` | **管理中心入口腳本 (Module)** | 頁面初始化、模組導航切換、全域 Toast 通知系統 |
+| `management/js/blacklist.js` | **分頁黑名單管理核心模組 (Module)** | 黑名單規則 CRUD、比對模式切換、搜尋篩選、JSON 匯入匯出、Chrome Storage 雙向同步 |
 | `icons/icon128.png` | **擴充功能圖示** | 128x128 像素擴充功能品牌圖示 |
 
 ---

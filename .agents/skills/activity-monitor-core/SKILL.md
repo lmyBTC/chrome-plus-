@@ -28,7 +28,8 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 * `scripts/resource-profiler.js`: 組件資源監視核心（微秒級耗時、DOM/記憶體/佇列診斷，面板收合時 0% 輪詢）
 * `scripts/probe-main.js` & `scripts/probe-isolated.js`: 隨選注入之雙層防禦探針（刷新即失效）
 * `scripts/storage-db.js`: IndexedDB 本機儲存 (`BrowserActivityMonitorDB`: `activity_logs`, `health_reports`, `time_spent_logs`)
-* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`，含停留時長看板、分類過濾、Tab Trap 黑名單管理專區與脫敏開關)
+* `sidepanel/`: Chrome 原生側邊欄監控視圖 (`sidepanel.html`, `sidepanel.js`, `sidepanel.css`，含停留時長看板、分類過濾、Tab Trap 黑名單管理專區、管理中心捷徑與脫敏開關)
+* `management/`: 獨立管理控制台 (`management/index.html`, `management/js/main.js`, `management/js/blacklist.js`, `management/css/style.css`，提供黑名單 CRUD、比對模式切換、即時搜尋篩選、JSON 匯入匯出與 Chrome Storage 雙向同步)
 
 ## 3. 安全與合規底線 (Hard Rules)
 1. **嚴禁 innerHTML 漏洞**: 所有動態渲染文字節點一律使用 `.textContent` 或安全的 DOM 操作，杜絕 XSS。

@@ -197,7 +197,12 @@ const dom = {
   tabTrapFormError: document.getElementById('tab-trap-form-error'),
   tabTrapRulesList: document.getElementById('tab-trap-rules-list'),
   btnTrapClearLogs: document.getElementById('btn-trap-clear-logs'),
-  tabTrapLogsList: document.getElementById('tab-trap-logs-list')
+  tabTrapLogsList: document.getElementById('tab-trap-logs-list'),
+
+  // 管理中心捷徑入口 DOM
+  btnOpenManagement: document.getElementById('btn-open-management'),
+  btnOpenTabTrapManager: document.getElementById('btn-open-tab-trap-manager'),
+  btnTrapManageLink: document.getElementById('btn-trap-manage-link')
 };
 
 // 格式化工具函數
@@ -1985,6 +1990,28 @@ function initEvents() {
       e.stopPropagation();
       clearTabTrapLogs();
     });
+  }
+
+  // 開啟管理中心捷徑事件綁定
+  if (dom.btnOpenManagement) {
+    dom.btnOpenManagement.addEventListener('click', openOptionsPage);
+  }
+  if (dom.btnOpenTabTrapManager) {
+    dom.btnOpenTabTrapManager.addEventListener('click', openOptionsPage);
+  }
+  if (dom.btnTrapManageLink) {
+    dom.btnTrapManageLink.addEventListener('click', openOptionsPage);
+  }
+}
+
+/**
+ * 開啟獨立 Options / Management 控制台頁面
+ */
+function openOptionsPage() {
+  if (chrome.runtime && chrome.runtime.openOptionsPage) {
+    chrome.runtime.openOptionsPage();
+  } else {
+    window.open(chrome.runtime.getURL('management/index.html'));
   }
 }
 

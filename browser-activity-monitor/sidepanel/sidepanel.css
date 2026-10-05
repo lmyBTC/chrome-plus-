@@ -68,6 +68,12 @@ body {
 .header-brand {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+}
+
+.header-brand-main {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
@@ -2231,6 +2237,20 @@ body {
 .tab-trap-rule-hint {
   font-size: 10px;
   color: var(--text-dim);
+}
+
+.tab-trap-sub-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.text-accent {
+  color: #38bdf8 !important;
+}
+
+.text-danger {
+  color: #f87171 !important;
 }
 
 /* 規則清單容器 */

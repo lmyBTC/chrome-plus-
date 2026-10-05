@@ -11,9 +11,17 @@
     <!-- 頂部標題與狀態列 -->
     <header class="header">
       <div class="header-brand">
-        <div class="status-indicator" id="connection-status" title="背景服務連接正常"></div>
-        <h1 class="app-title">Activity Monitor</h1>
-        <span class="badge badge-version">v1.0.0</span>
+        <div class="header-brand-main">
+          <div class="status-indicator" id="connection-status" title="背景服務連接正常"></div>
+          <h1 class="app-title">Activity Monitor</h1>
+          <span class="badge badge-version">v1.0.0</span>
+        </div>
+        <button class="btn btn-icon btn-xs" id="btn-open-management" title="開啟管理中心 (黑名單與進階設定)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
       </div>
       <div class="tab-context">
         <div class="tab-origin" id="current-origin" title="當前作用中分頁網址">載入中...</div>
@@ -228,6 +236,13 @@
           <span class="trap-status-pill trap-active" id="tab-trap-status-pill" title="攔截器狀態">🛡️ 防護中</span>
         </div>
         <div class="tab-trap-header-actions">
+          <button class="btn btn-icon btn-xs" id="btn-open-tab-trap-manager" title="開啟黑名單管理中心 (自訂規則/匯入匯出)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
           <label class="toggle-switch-compact" title="總防護開關">
             <input type="checkbox" id="tab-trap-master-toggle" checked>
             <span class="toggle-slider"></span>
@@ -275,7 +290,10 @@
         <div class="tab-trap-rules-section">
           <div class="tab-trap-sub-header">
             <span class="tab-trap-sub-title">封殺黑名單清單</span>
-            <span class="tab-trap-rule-hint">支援 *. 與子網域自動覆蓋</span>
+            <div class="tab-trap-sub-actions">
+              <span class="tab-trap-rule-hint">支援 *. 與子網域自動覆蓋</span>
+              <button class="btn btn-ghost btn-xs text-accent" id="btn-trap-manage-link" title="前往黑名單管理中心 (支援搜尋/匯入匯出)">管理中心 ↗</button>
+            </div>
           </div>
           <div class="tab-trap-rules-list" id="tab-trap-rules-list">
             <div class="trap-empty-hint">載入規則中...</div>
