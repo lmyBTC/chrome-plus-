@@ -11,7 +11,7 @@ export function getAICore(): any {
   if (typeof chrome !== 'undefined' && (chrome as any).aiLanguageModel) {
     return (chrome as any).aiLanguageModel;
   }
-  if (typeof (self as any).LanguageModel !== 'undefined') {
+  if (typeof self !== 'undefined' && typeof (self as any).LanguageModel !== 'undefined') {
     return (self as any).LanguageModel;
   }
   return null;

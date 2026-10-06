@@ -8,7 +8,10 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "watch": "vite build --watch",
-    "test:prompt": "tsx tests/prompt-eval.ts"
+    "test:prompt": "tsx tests/prompt-eval.ts",
+    "test:nano-mock": "tsx tests/nano-mock-eval.ts",
+    "test:contract": "tsx tests/contract-cross-plugin-eval.ts",
+    "test:e2e-live": "tsx tests/e2e-nano-live-eval.ts"
   },
   "dependencies": {
     "chart.js": "^4.4.0",

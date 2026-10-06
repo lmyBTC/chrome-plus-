@@ -45,6 +45,7 @@
 | **FinanceClipper** | `finance-research-clipper-oss/` | `imnnkgiglcbjknfbkdfocdhoookkipji` | 財務投研採集子插件 (Spoke) |
 | **VideoSpeedPlus** | `chrome_video speed plus/` | `dhdnogmjajghbdcgdccicpkfljmcoieg` | 影片倍速與字幕採集子插件 (Spoke) |
 | **ActivityMonitor** | `browser-activity-monitor/` | `kjnoegggihncdaimlgfccccogghjapgn` | 瀏覽器行為監控子插件 (Spoke) |
+| **GeminiNano** | `chrome_gemini_nano/` | `(選用直連/外部動態對接)` | 本機 AI 邊緣推論與社群分發子插件 (Spoke) |
 
 *金鑰定義檔集中管理於 `0.doc_mg/keys/manifest_keys.json`。*
 
@@ -384,6 +385,50 @@
 3. **超時與降級熔斷 (Circuit Breaker & Fallback)**：
    - 跨插件請求與對外 Google 呼叫均受嚴格 6 秒超時保護。
    - 若發生逾時或網路中斷，發送端立即捕獲並返回 `TIMEOUT_FALLBACK`，並自動將匯出內容降級儲存為本地 JSON/CSV 快照，保證使用者資料零遺失、前端介面零卡頓。
+
+### 6.8 社群分發與研報轉發協定 (`DISPATCH_SOCIAL_POST` / `UniversalSocialDraftPayload` v2.0)
+- **發送端**：ScrumClock、FinanceClipper 或 VideoSpeedPlus 等子插件
+- **接收端**：GeminiNano 插件或 ScrumClock Hub 轉發代理
+- **請求格式**：
+```json
+{
+  "protocolVersion": 2,
+  "type": "DISPATCH_SOCIAL_POST",
+  "payload": {
+    "x_en": "Concise post for X (max 280 chars)...",
+    "threads_zh": "Threads 繁體中文分享內容...",
+    "originalTitle": "NVDA 深度投研與估值評估報告",
+    "originalSummary": "核心論點與財務數據摘要...",
+    "sourceUrl": "https://finance.yahoo.com/...",
+    "ticker": "NVDA",
+    "tags": ["#投資研究", "#美股", "$NVDA"],
+    "sourcePlugin": "FINANCE_CLIPPER",
+    "createdAt": 1727856000000
+  }
+}
+```
+- **欄位規範**：
+  - `x_en`（選填）：X 英文貼文草稿，上限 280 字元或 Thread 鏈。
+  - `threads_zh`（選填）：Threads 繁中貼文草稿。
+  - `originalTitle`（必填）：原始來源標題（上限 200 字元）。
+  - `originalSummary`（選填）：原始內容或摘要（上限 1500 字元）。
+  - `sourceUrl`（選填）：來源 URL（上限 500 字元）。
+  - `ticker`（選填）：關聯股票代碼（上限 20 字元）。
+  - `tags`（選填）：標籤字串陣列（最多 10 個）。
+  - `sourcePlugin`（選填）：發起來源插件代號（如 `FINANCE_CLIPPER`, `SCRUMCLOCK`）。
+- **響應格式**：
+```json
+{
+  "success": true,
+  "ack": true,
+  "draftId": "draft-1726567890123",
+  "message": "社群貼文草稿已成功接收並寫入待發布佇列"
+}
+```
+- **防腐層 (Anticorruption Sanitizer) 與容錯保護**：
+  - 發送前過濾所有內部私有欄位（`__*`、DOM 節點、未序列化函數）。
+  - 對端未安裝（`chrome.runtime.lastError`）時自動靜默降級，回傳 `{ success: false, ack: false, error: ... }`，不中斷操作。
+  - 雙向交握標準化日誌：僅在開發模式（非 Production）輸出結構化日誌 `[Contract Debug][DISPATCH_SOCIAL_POST]`。
 
 ---
 

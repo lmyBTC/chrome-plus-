@@ -53,3 +53,39 @@
 4. `POST /api/archive/markdown`
    - **Payload**: `{ "title": string, "content": string, "tags": string[], "source_url": string }`
    - **Response**: `{ "success": boolean, "file_path": string }`
+
+---
+
+## 4. 跨插件黑盒訊息契約與測試驗證說明
+
+### 4.1 社群貼文分發與研報轉發協定 (`DISPATCH_SOCIAL_POST`)
+遵循 `0.doc_mg/docs/cross_plugin_contract.md` 規範：
+- **發送端/接收端**：支援由 ScrumClock Hub 或 FinanceClipper/VideoSpeedPlus 發送草稿至 Gemini Nano 進行分發或調音。
+- **Payload 結構**：
+  ```json
+  {
+    "protocolVersion": 2,
+    "type": "DISPATCH_SOCIAL_POST",
+    "payload": {
+      "x_en": "string (max 1000 chars)",
+      "threads_zh": "string (max 2000 chars)",
+      "originalTitle": "string (max 200 chars)",
+      "originalSummary": "string (max 1500 chars)",
+      "sourceUrl": "string (max 500 chars)",
+      "ticker": "string (max 20 chars, uppercase)",
+      "tags": ["#tag1", "#tag2"],
+      "sourcePlugin": "SCRUMCLOCK | FINANCE_CLIPPER",
+      "createdAt": 1727856000000
+    }
+  }
+  ```
+- **容錯與降級機制**：
+  1. **防腐層 (Anticorruption Sanitizer)**：發送前主動剔除 `__internal*` 私有狀態與 DOM 節點，截斷超長字串。
+  2. **靜默降級 (Fault Sandbox)**：若對端插件未安裝（`chrome.runtime.lastError`），發送端捕獲異常並回傳失敗，絕不阻斷前端 UI 操作。
+  3. **超時保險絲 (Timeout Guard)**：直連調用預設 4 秒超時熔斷保護。
+  4. **日誌清理規範**：僅在非生產環境（Dev）輸出標準化 `[Contract Debug]` 日誌。
+
+### 4.2 自動化驗證工模
+- **測試命令**：`npm run test:contract` (執行 `chrome_scrumclock/tests/contract-cross-plugin-eval.ts`)
+- **覆蓋指標**：涵蓋防腐層截斷過濾、`lastError` 攔截、逾時熔斷、寬容讀者未知欄位忽略與 Dev 日誌格式檢驗。
+

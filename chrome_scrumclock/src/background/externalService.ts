@@ -1,7 +1,7 @@
 import { executeNanoInference, parseFinanceSummary } from '../utils/ai-helper';
 import { buildFinanceSummaryPrompt, FINANCE_SUMMARY_SYSTEM_PROMPT } from '../utils/ai-prompts';
 import { getUserSettings } from './alarmHandlers';
-import { sendDirectMessage } from '../shared/messaging/outboxQueue';
+import { sendDirectMessage, logContractDebug } from '../shared/messaging/outboxQueue';
 
 export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
 export const DEFAULT_ACTIVITY_MONITOR_ID = 'kjnoegggihncdaimlgfccccogghjapgn';
@@ -41,7 +41,7 @@ export async function saveGeminiConversation(conversation: any) {
  * 跨插件外部通訊處理器 (externally_connectable)
  */
 export function handleExternalMessage(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): boolean {
-  console.log('[ScrumClock External Service] 收到外部插件請求:', message?.type, '來自:', sender.id);
+  logContractDebug('RECV', message?.type || 'UNKNOWN', sender.id || 'unknown', message?.payload);
 
   // 0. 輕量存活確認 (可選 Ping / Ack，極簡同步回覆，零非同步負擔)
   if (message?.type === 'PING' || message?.type === 'PING_HUB' || message?.type === 'AI_PING') {
@@ -53,7 +53,7 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
     return false;
   }
 
-  // 2. 財務研報智能摘要生成
+  // 2. 財務研報智能摘要生成 (轉發調用本地 Gemini Nano 推論)
   if (message?.type === 'AI_GENERATE_FINANCE_SUMMARY') {
     (async () => {
       try {
@@ -63,7 +63,6 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
           return;
         }
 
-        console.log(`[ScrumClock AI Service] 開始為 ${payload.ticker} 進行本地 Gemini Nano 推論...`);
         const prompt = buildFinanceSummaryPrompt(payload);
         const rawOutput = await executeNanoInference(prompt, FINANCE_SUMMARY_SYSTEM_PROMPT, 30000);
         const summary = parseFinanceSummary(rawOutput, payload.ticker);
@@ -77,7 +76,7 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
           }
         });
       } catch (err: any) {
-        console.error('[ScrumClock AI Service] AI 研報生成失敗:', err);
+        logContractDebug('FALLBACK', 'AI_GENERATE_FINANCE_SUMMARY', sender.id || 'unknown', err?.message);
         sendResponse({
           success: false,
           error: err?.message || '本地 AI 推論失敗或超時'
@@ -94,7 +93,7 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
         const result = await handleCreateTaskExternal(message.payload);
         sendResponse(result);
       } catch (err: any) {
-        console.error('[ScrumClock Task Service] 建立任務失敗:', err);
+        logContractDebug('FALLBACK', 'CREATE_TASK', sender.id || 'unknown', err?.message);
         sendResponse({
           success: false,
           error: err?.message || '建立任務時發生未預期錯誤'
@@ -111,10 +110,27 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
         const result = await handleCollectNoteExternal(message.payload);
         sendResponse(result);
       } catch (err: any) {
-        console.error('[ScrumClock Collector Service] 收集筆記失敗:', err);
+        logContractDebug('FALLBACK', 'COLLECT_NOTE', sender.id || 'unknown', err?.message);
         sendResponse({
           success: false,
           error: err?.message || '收集筆記時發生未預期錯誤'
+        });
+      }
+    })();
+    return true;
+  }
+
+  // 5. 社群貼文草稿分發/轉發 (DISPATCH_SOCIAL_POST)
+  if (message?.type === 'DISPATCH_SOCIAL_POST') {
+    (async () => {
+      try {
+        const result = await handleDispatchSocialPostExternal(message.payload, sender.id);
+        sendResponse(result);
+      } catch (err: any) {
+        logContractDebug('FALLBACK', 'DISPATCH_SOCIAL_POST', sender.id || 'unknown', err?.message);
+        sendResponse({
+          success: false,
+          error: err?.message || '接收社群草稿時發生未預期錯誤'
         });
       }
     })();
@@ -469,5 +485,75 @@ export async function broadcastSprintStopToActivityMonitor(payload?: any) {
   } catch (err) {
     console.warn('[ScrumClock -> BAM] 廣播衝刺停止失敗 (可優雅降級):', err);
   }
+}
+
+/**
+ * 處理來自外部插件的社群貼文分發請求 (DISPATCH_SOCIAL_POST)
+ * 遵循 Tolerant Reader Pattern 與資料防腐過濾，寫入待發布佇列並發送系統通知
+ */
+export async function handleDispatchSocialPostExternal(payload: any, senderId?: string) {
+  if (!payload || typeof payload !== 'object') {
+    return { success: false, error: '缺少有效的社群貼文資料 (payload)' };
+  }
+
+  const rawTitle = typeof payload.originalTitle === 'string' ? payload.originalTitle.trim() : '';
+  const safeTitle = (rawTitle || '未命名社群草稿').slice(0, 200);
+  const safeSummary = typeof payload.originalSummary === 'string' ? payload.originalSummary.slice(0, 1500) : '';
+  const safeXEn = typeof payload.x_en === 'string' ? payload.x_en.slice(0, 1000) : '';
+  const safeThreadsZh = typeof payload.threads_zh === 'string' ? payload.threads_zh.slice(0, 2000) : '';
+  const safeUrl = typeof payload.sourceUrl === 'string' ? payload.sourceUrl.slice(0, 500) : '';
+  const safeTicker = typeof payload.ticker === 'string' && payload.ticker.trim()
+    ? payload.ticker.trim().toUpperCase().slice(0, 20)
+    : undefined;
+  const safeSource = typeof payload.sourcePlugin === 'string' && payload.sourcePlugin.trim()
+    ? payload.sourcePlugin.trim().slice(0, 50)
+    : (senderId || 'EXTERNAL');
+  const safeTags = Array.isArray(payload.tags)
+    ? payload.tags.filter((t: any) => typeof t === 'string' && t.trim()).map((t: string) => t.trim().slice(0, 50)).slice(0, 10)
+    : [];
+
+  const draftId = 'draft-' + Date.now();
+  const draftItem = {
+    id: draftId,
+    title: safeTitle,
+    summary: safeSummary,
+    x_en: safeXEn,
+    threads_zh: safeThreadsZh,
+    url: safeUrl,
+    ticker: safeTicker,
+    tags: safeTags,
+    sourcePlugin: safeSource,
+    createdAt: typeof payload.createdAt === 'number' ? payload.createdAt : Date.now()
+  };
+
+  const storageData = await chrome.storage.local.get(['socialDrafts']);
+  const socialDrafts: any[] = storageData.socialDrafts || [];
+  socialDrafts.unshift(draftItem);
+  if (socialDrafts.length > 30) {
+    socialDrafts.pop();
+  }
+
+  await chrome.storage.local.set({
+    socialDrafts: socialDrafts,
+    pendingSocialDraft: draftItem
+  });
+
+  try {
+    if (typeof chrome.notifications !== 'undefined') {
+      chrome.notifications.create({
+        type: 'basic',
+        iconUrl: 'icons/icon128.png',
+        title: '📢 收到社群貼文草稿',
+        message: safeTitle
+      });
+    }
+  } catch (_) {}
+
+  return {
+    success: true,
+    ack: true,
+    draftId: draftId,
+    message: '社群貼文草稿已成功接收並寫入待發布佇列'
+  };
 }
 
