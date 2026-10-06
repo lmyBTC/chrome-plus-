@@ -47,7 +47,7 @@
 | **ActivityMonitor** | `browser-activity-monitor/` | `kjnoegggihncdaimlgfccccogghjapgn` | 瀏覽器行為監控子插件 (Spoke) |
 | **GeminiNano** | `chrome_gemini_nano/` | `(選用直連/外部動態對接)` | 本機 AI 邊緣推論與社群分發子插件 (Spoke) |
 
-*金鑰定義檔集中管理於 `0.doc_mg/keys/manifest_keys.json`。*
+*金鑰定義檔集中管理於 `1.devtools/keys/manifest_keys.json`。*
 
 ---
 
@@ -445,44 +445,44 @@
 
 ---
 
-## 8. 0.doc_mg 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
+## 8. 1.devtools 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
 
-工作區於 `0.doc_mg/tools/` 提供無外部依賴之 Python 自動化管線工具：
+工作區於 `1.devtools/tools/` 提供無外部依賴之 Python 自動化管線工具：
 
 ### 8.1 合約與快照 JSON Schema 校驗器 (`validate_contract.py`)
-- **檔案路徑**：`0.doc_mg/tools/validate_contract.py`
+- **檔案路徑**：`1.devtools/tools/validate_contract.py`
 - **使用指令**：
   ```bash
   # 校驗單一快照或合約 JSON
-  python 0.doc_mg/tools/validate_contract.py snapshot.json
+  python 1.devtools/tools/validate_contract.py snapshot.json
 
   # 批次校驗目錄內所有 JSON
-  python 0.doc_mg/tools/validate_contract.py --dir path/to/dir/
+  python 1.devtools/tools/validate_contract.py --dir path/to/dir/
 
   # 啟用嚴格欄位檢查
-  python 0.doc_mg/tools/validate_contract.py snapshot.json --strict
+  python 1.devtools/tools/validate_contract.py snapshot.json --strict
   ```
 
 ### 8.2 投研快照多格式匯出轉譯器 (`export_converter.py`)
-- **檔案路徑**：`0.doc_mg/tools/export_converter.py`
+- **檔案路徑**：`1.devtools/tools/export_converter.py`
 - **功能**：
   1. **Obsidian Markdown**：自動解析快照生成相容 YAML Frontmatter、Dataview 與完整估值/獲利分析表格之筆記。
   2. **量化 CSV**：扁平化匯出包含現價、共識目標價、離散係數 (CV)、Beta、EPS 與 YoY 之數值分析表。
 - **使用指令**：
   ```bash
   # 同步轉譯為 Obsidian Markdown 與 CSV
-  python 0.doc_mg/tools/export_converter.py snapshot.json --format all
+  python 1.devtools/tools/export_converter.py snapshot.json --format all
 
   # 僅轉譯為 Obsidian Markdown 筆記
-  python 0.doc_mg/tools/export_converter.py snapshot.json --format markdown
+  python 1.devtools/tools/export_converter.py snapshot.json --format markdown
 
   # 批次將目錄內多份快照合併為單一彙總量化 CSV
-  python 0.doc_mg/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
+  python 1.devtools/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
   ```
 
 ### 8.3 自動化回歸測試
-- **檔案路徑**：`0.doc_mg/tests/run_tests.py`
-- **執行指令**：`python 0.doc_mg/tests/run_tests.py`
+- **檔案路徑**：`1.devtools/tests/run_tests.py`
+- **執行指令**：`python 1.devtools/tests/run_tests.py`
 
 ---
 

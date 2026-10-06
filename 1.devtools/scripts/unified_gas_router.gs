@@ -1,7 +1,7 @@
 /**
  * ============================================================================
  * Chrome Plus - 統一 Google Apps Script (GAS) 雲端數據匯流智慧路由
- * 檔案：0.doc_mg/scripts/unified_gas_router.gs
+ * 檔案：1.devtools/scripts/unified_gas_router.gs
  * 版本：v1.0.0 (Unified Protocol v1)
  * ============================================================================
  * 

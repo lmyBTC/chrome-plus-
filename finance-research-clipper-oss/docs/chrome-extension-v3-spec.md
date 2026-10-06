@@ -117,7 +117,7 @@ interface ClipperPayload {
 | **擴充或修正 Google Finance 新分頁/指標** | [`crawler.js`](../crawler.js) | 在 `runFullStockScraper()` 的 `tabs` 陣列新增分頁項目，實作對應之 `scrapeXxx()` 函式。 |
 | **調整彈出視窗按鈕、預覽排版** | [`popup.html`](../popup.html)<br>[`popup.js`](../popup.js#L260-L330) | 在 `executeFullStockCrawler()` 調整 `previewHtml` 模板，注意所有文字輸出必須經過 `escapeHtml()`。 |
 | **增加匯出欄位 (Markdown / CSV / GAS)** | [`popup.js`](../popup.js#L460-L640) | 在 `buildStockPayload()`、`copyMarkdownBtn` 與 `downloadCsvBtn` 事件監聽中同步擴充欄位映射。 |
-| **安全檢查與合規性驗收** | 終端執行 | `npm run audit:manifests` 或 `python 0.doc_mg/tools/audit_manifests.py`。 |
+| **安全檢查與合規性驗收** | 終端執行 | `npm run audit:manifests` 或 `python 1.devtools/tools/audit_manifests.py`。 |
 
 ---
 

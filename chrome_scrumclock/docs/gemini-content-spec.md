@@ -131,7 +131,7 @@ const widgetState = {
      ```
    - 打包會將代碼編譯並輸出至 `dist/geminiContent.js`。
 2. **上架合規審查**：
-   - 每次修改完後，必須執行 `python 0.doc_mg/tools/audit_manifests.py` 進行代碼安全與合規審計。
+   - 每次修改完後，必須執行 `python 1.devtools/tools/audit_manifests.py` 進行代碼安全與合規審計。
    - `geminiContent.ts` 中讀取 `innerHTML` 用以擷取富文本是符合規範的無害檢出，但應注意不可在 UI 上盲目渲染不受信任的外部來源 innerHTML。
 
 ---

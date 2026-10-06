@@ -56,7 +56,7 @@ LLM Agent 在執行開發與除錯時，可以採用以下幾點技術來減少 
   * 對於測試報告，使用過濾參數（如 `jest --silent` 或 `eslint --quiet`）以避免輸出大量無關通過的測試細節。
 
 ### 2.3. 自動化審計工具的整合 (Static Compliance Check)
-* **快速健康診斷**：與其讓 Agent 通讀所有代碼尋找安全漏洞與路徑拼寫錯誤，不如執行自動化靜態檢查指令（如 `python 0.doc_mg/tools/audit_manifests.py`）。
+* **快速健康診斷**：與其讓 Agent 通讀所有代碼尋找安全漏洞與路徑拼寫錯誤，不如執行自動化靜態檢查指令（如 `python 1.devtools/tools/audit_manifests.py`）。
 * **技巧**：
   * 每次修改 Manifest 或程式碼後，由 Agent 主動執行此工具，直接取得包含安全警示的結構化摘要報告，從而免除漫長的手動檢查流程。
 

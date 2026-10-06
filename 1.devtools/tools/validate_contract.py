@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-0.doc_mg/tools/validate_contract.py
+1.devtools/tools/validate_contract.py
 Chrome 多插件工作區：跨插件通訊合約與快照 JSON Schema 自動校驗器 (SSOT Validator)
 
 規範來源: 0.doc_mg/docs/cross_plugin_contract.md

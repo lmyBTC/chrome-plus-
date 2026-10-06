@@ -38,7 +38,7 @@ ssot_dependencies: []
 - **徹底釋放 Context**：開啟新對話能徹底卸除 Gate 1 探勘佔用之歷史 Tool Outputs，省下 70%~90% 輸入 Token，並確保注意力高度集中於 Gate 2 實作。
 
 ## 4. 自動化審計優先 (Automated Tooling First)
-- 代碼修改或 Manifest 調整後，優先透過自動化腳本審查（如 `python 0.doc_mg/tools/audit_manifests.py` 或 `npm run audit:manifests`），切勿透過多輪手動 scan 或逐檔人工排查。
+- 代碼修改或 Manifest 調整後，優先透過自動化腳本審查（如 `python 1.devtools/tools/audit_manifests.py` 或 `npm run audit:manifests`），切勿透過多輪手動 scan 或逐檔人工排查。
 
 ## 5. 效益回報
 - 任務結束輸出 `walkthrough.md` 時，可執行 `rtk gain` 取得 Token 節省統計。

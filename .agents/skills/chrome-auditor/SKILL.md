@@ -23,7 +23,7 @@ ssot_dependencies: ["0.doc_mg/docs/dev_standards.md", "0.doc_mg/docs/chrome_agen
 ### Step 2: 執行自動化檢查
 * 在專案根目錄下，使用 `run_command` 執行審計指令：
   ```bash
-  python 0.doc_mg/tools/audit_manifests.py
+  python 1.devtools/tools/audit_manifests.py
   ```
   或者（如果使用 npm）：
   ```bash

@@ -18,7 +18,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 def discover_plugins(base_dir):
     """動態搜尋工作區內含有 manifest.json 的有效插件目錄"""
     plugins = []
-    ignored_dirs = {'.git', '.agents', '0.doc_mg', 'node_modules', 'dist', 'scratch'}
+    ignored_dirs = {'.git', '.agents', '0.doc_mg', '1.devtools', 'node_modules', 'dist', 'scratch'}
     for item in os.listdir(base_dir):
         if item in ignored_dirs or item.startswith('.'):
             continue

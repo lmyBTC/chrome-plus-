@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-0.doc_mg/tests/test_cross_plugin_e2e.py
+1.devtools/tests/test_cross_plugin_e2e.py
 跨插件通訊、UniversalTaskPayload v2.3 與 Service Worker 休眠 Outbox 佇列端對端模擬驗證
 """
 

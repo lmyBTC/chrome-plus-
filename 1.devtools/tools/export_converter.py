@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-0.doc_mg/tools/export_converter.py
+1.devtools/tools/export_converter.py
 Chrome 多插件工作區：投研快照多格式匯出轉譯器 (Export Converter)
 
 功能:

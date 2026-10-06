@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-0.doc_mg/tests/run_tests.py
+1.devtools/tests/run_tests.py
 自動化整合測試套件：驗證 validate_contract.py 與 export_converter.py
 """
 
@@ -83,7 +83,7 @@ def test_cross_plugin_e2e():
     print("  -> 跨插件端對端通訊與 Outbox 重試驗證 PASS")
 
 def main():
-    print("================ 開始執行 0.doc_mg 自動化測試 ================")
+    print("================ 開始執行 1.devtools 自動化測試 ================")
     test_validator()
     test_converter()
     test_cross_plugin_e2e()

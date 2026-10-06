@@ -6,9 +6,9 @@
   "scripts": {
     "dev:scrumclock": "npm --prefix chrome_scrumclock run dev",
     "build:scrumclock": "npm --prefix chrome_scrumclock run build",
-    "audit:manifests": "py 0.doc_mg/tools/audit_manifests.py || python 0.doc_mg/tools/audit_manifests.py",
-    "task:archive": "py 0.doc_mg/tools/task_cli.py archive || python 0.doc_mg/tools/task_cli.py archive",
-    "task:init": "py 0.doc_mg/tools/task_cli.py init || python 0.doc_mg/tools/task_cli.py init"
+    "audit:manifests": "py 1.devtools/tools/audit_manifests.py || python 1.devtools/tools/audit_manifests.py",
+    "task:archive": "py 1.devtools/tools/task_cli.py archive || python 1.devtools/tools/task_cli.py archive",
+    "task:init": "py 1.devtools/tools/task_cli.py init || python 1.devtools/tools/task_cli.py init"
   },
   "keywords": [
     "chrome-extension",
