@@ -45,3 +45,16 @@ npx tsc --noEmit       # 純型別校驗 (超快速，不產出檔案)
 6. **查表與技能優先，嚴禁盲目目錄遍歷**：
    - 開發特定功能時，先載入對應專屬 Skill 或查閱專屬前綴手冊，直接以 `view_file` (指定 `StartLine`/`EndLine`) 讀取目標檔案，切勿使用全域 grep 或重複列出目錄。
 
+---
+
+## 📢 專案公開聲明與權利定義 (Public Repository & Agent Notice)
+
+1. **公開用途定位 (Collaboration Purpose Only)**：
+   - 本儲存庫設為公開（Public），主要目的在於方便多代理人（AI Agents）跨環境協作、檢索、維護與自動化測試，**並非對外公開發布或開源散布之商業/消費型專案**。
+2. **權利與授權聲明 (Rights & Restrictions)**：
+   - 本工作區中之專屬演算法、業務邏輯及擴充功能原始碼版權所有（All Rights Reserved）。
+   - 未經授權，嚴禁任何第三方進行商業化再授權、重新打包上架（Chrome Web Store 等市集）或非協作目的之二度散布。
+3. **Agent 協作與規範遵從 (Agent Guidelines)**：
+   - 任何讀取或協作本工作區之 AI Agent，必須嚴格遵守專案最高憲法 `GEMINI.md` 與 `.agents/rules.md`。
+   - 嚴格遵守「三階段守門門禁 (3-Gate Protocol)」、「多插件邊界隔離」與「Token 節省協議 (RTK / 探勘窄化)」。
+
