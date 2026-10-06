@@ -4,7 +4,7 @@ Markdown Archiver - 本地研報與網頁剪藏歸檔器
 將 Gemini Nano 或前端傳入的標題、內文、標籤與來源 URL
 自動格式化為帶有 YAML Frontmatter 的標準 Markdown 筆記，落盤儲存至指定目錄
 
-@related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 3.2)
+@related ../chrome_gemini_nano_README.md  (核心模組導航)
 @related ./main_dispatcher.py            (上游: 路由閘道 save_markdown)
 """
 
@@ -15,7 +15,7 @@ from pathlib import Path
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 DEFAULT_VAULT_DIR = BASE_DIR / "data" / "clippings"
 
 logger = logging.getLogger("MarkdownArchiver")

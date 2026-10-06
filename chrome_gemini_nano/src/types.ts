@@ -1,9 +1,9 @@
 /**
  * 社群分發器資料模型與狀態型別宣告
  *
- * @related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 2.2)
- * @related ./toneShifter.ts                (消費者: ToneShiftMode)
- * @related ./SocialDispatcher.tsx           (消費者: SocialPostDraft)
+ * @related ../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ./services/toneShifter.ts       (消費者: ToneShiftMode)
+ * @related ./components/SocialDispatcher.tsx (消費者: SocialPostDraft)
  */
 
 export interface SocialPostDraft {

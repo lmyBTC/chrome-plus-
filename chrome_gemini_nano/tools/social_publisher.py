@@ -3,7 +3,7 @@
 Social Publisher - X (Twitter) API v2 與 Meta Threads Graph API 發布代理
 支援本機環境變數配置、發布防護、憑證不足時自動降級 Dry-Run 以及歷史發文自動存證
 
-@related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 3.1)
+@related ../chrome_gemini_nano_README.md  (核心模組導航)
 @related ./main_dispatcher.py            (上游: 路由閘道 publish_x / publish_threads)
 @related ./local_dedup.py                (協作: 發布前防重比對)
 """

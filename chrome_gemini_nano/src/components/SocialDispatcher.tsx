@@ -2,19 +2,19 @@
  * SocialDispatcher - 側邊欄 Human-in-the-Loop (HITL) 社群分發與調音介面
  * 整合 Gemini Nano 邊緣推論、調音算子與本地 Python 8765 執行閘道
  *
- * @related ./chrome_plus_x_gemini_nano.md       (核心任務看板 Phase 2.3)
- * @related ./nanoService.ts                      (上游: AI 推論引擎)
- * @related ./toneShifter.ts                      (上游: 調音算子)
- * @related ./types.ts                            (型別定義)
- * @related ./pulseExtractor.ts                   (上游: DOM 提取資料來源)
- * @related ./main_dispatcher.py                  (後端: 127.0.0.1:8765 閘道)
- * @related ../../docs/cross_plugin_contract.md   (契約: DISPATCH_SOCIAL_POST)
+ * @related ../../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ../services/nanoService.ts         (上游: AI 推論引擎)
+ * @related ../services/toneShifter.ts         (上游: 調音算子)
+ * @related ../types.ts                        (型別定義)
+ * @related ../services/pulseExtractor.ts      (上游: DOM 提取資料來源)
+ * @related ../../tools/main_dispatcher.py     (後端: 127.0.0.1:8765 閘道)
+ * @related ../../0.doc_mg/docs/cross_plugin_contract.md (契約: DISPATCH_SOCIAL_POST)
  */
 
 import React, { useState, useEffect } from 'react';
-import { NanoService, NanoAvailability } from '@/core/ai/nanoService';
-import { ToneShifter } from './toneShifter';
-import { SocialPostDraft, ToneShiftMode, DedupCheckResult } from './types';
+import { NanoService, NanoAvailability } from '../services/nanoService';
+import { ToneShifter } from '../services/toneShifter';
+import { SocialPostDraft, ToneShiftMode, DedupCheckResult } from '../types';
 
 const LOCAL_GATEWAY = 'http://127.0.0.1:8765/exec';
 

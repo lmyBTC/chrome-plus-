@@ -4,10 +4,10 @@ Local Deduplication Checker - 本機歷史貼文語意防重比對器
 讀取 data/social_history.json，利用 SequenceMatcher 計算與近 50 篇發文的重合度
 門檻 >= 0.65 時判定為重複並發出預警
 
-@related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 2.5)
+@related ../chrome_gemini_nano_README.md  (核心模組導航)
 @related ./main_dispatcher.py            (上游: 路由閘道 check_dedup)
 @related ./social_publisher.py           (協作: 發布前調用防重)
-@related ./SocialDispatcher.tsx           (前端: UI 顯示防重結果)
+@related ../src/components/SocialDispatcher.tsx (前端: UI 顯示防重結果)
 """
 
 import json

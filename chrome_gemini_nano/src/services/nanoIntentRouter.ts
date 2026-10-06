@@ -3,9 +3,9 @@
  * 藉由本地 Gemini Nano (Prompt API) 實施極速 (150ms)、零延遲、極低溫的意圖分類與複合動作解構
  * 支援 Cmd+K 命令列、側邊欄口語對話與快速鍵觸發
  *
- * @related ./chrome_plus_x_gemini_nano.md       (核心任務看板 Phase 4.1)
- * @related ./nanoService.ts                      (上游: AI 會話生命週期提供者)
- * @related ../../docs/cross_plugin_contract.md   (契約: EXECUTE_ROUTER_ACTION)
+ * @related ../../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ./nanoService.ts                   (上游: AI 會話生命週期提供者)
+ * @related ../../0.doc_mg/docs/cross_plugin_contract.md (契約: EXECUTE_ROUTER_ACTION)
  */
 
 import { NanoService } from './nanoService';

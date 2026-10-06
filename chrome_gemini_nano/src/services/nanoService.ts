@@ -2,10 +2,10 @@
  * Chrome 內建 Gemini Nano (Prompt API) 服務封裝
  * 遵循 Chrome 128+ 標準 Draft 規範，具備降級適配與記憶體生命週期防護 (VRAM)
  *
- * @related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 1.1)
- * @related ./nanoIntentRouter.ts            (下游: 萬能路由器消費者)
- * @related ./toneShifter.ts                 (下游: 調音算子消費者)
- * @related ./SocialDispatcher.tsx           (下游: 側邊欄 UI 消費者)
+ * @related ../../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ./nanoIntentRouter.ts                (下游: 萬能路由器消費者)
+ * @related ./toneShifter.ts                     (下游: 調音算子消費者)
+ * @related ../components/SocialDispatcher.tsx   (下游: 側邊欄 UI 消費者)
  */
 
 export type NanoAvailability = 'readily' | 'after-download' | 'no' | 'unsupported';

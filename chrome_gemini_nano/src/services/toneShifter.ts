@@ -2,14 +2,14 @@
  * toneShifter.ts - 專屬 Gemini Nano 調音算子庫
  * 針對社群草稿提供 4 大極速、零延遲的局部文案打磨算子
  *
- * @related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 2.2)
- * @related ./nanoService.ts                (上游: AI 推論引擎)
- * @related ./types.ts                      (型別: ToneShiftMode, ToneShiftResult)
- * @related ./SocialDispatcher.tsx           (下游: UI 消費者)
+ * @related ../../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ./nanoService.ts                   (上游: AI 推論引擎)
+ * @related ../types.ts                        (型別: ToneShiftMode, ToneShiftResult)
+ * @related ../components/SocialDispatcher.tsx (下游: UI 消費者)
  */
 
-import { NanoService } from '@/core/ai/nanoService';
-import { ToneShiftMode, ToneShiftResult } from './types';
+import { NanoService } from './nanoService';
+import { ToneShiftMode, ToneShiftResult } from '../types';
 
 export class ToneShifter {
   private static instance: ToneShifter;

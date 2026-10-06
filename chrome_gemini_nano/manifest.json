@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "Chrome Plus - Gemini Nano",
+  "version": "1.0.0",
+  "description": "Chrome 內建 Gemini Nano Prompt API 本地推論、社群調音與本機自動化中樞",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*"
+  ],
+  "action": {
+    "default_title": "開啟 Gemini Nano 調音中樞"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "minimum_chrome_version": "128"
+}

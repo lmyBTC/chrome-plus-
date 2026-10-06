@@ -3,7 +3,7 @@
 RSS Generator - 部落格 feed.xml 自動追加與滾動維護器
 接收文章標題、摘要與 URL，寫入標準 RSS 2.0 格式並保持最新 30 則滾動淘汰
 
-@related ./chrome_plus_x_gemini_nano.md  (核心任務看板 Phase 2.4)
+@related ../chrome_gemini_nano_README.md  (核心模組導航)
 @related ./main_dispatcher.py            (上游: 路由閘道 append_rss)
 """
 
@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any
 
-# 定義部落格輸出路徑 (預設為當前專案或上層 dist 目錄)
+# 定義部落格輸出路徑 (預設為專案根目錄之 dist/feed.xml)
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 RSS_PATH = BASE_DIR / "dist" / "feed.xml"
 

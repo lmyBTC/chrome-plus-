@@ -3,9 +3,9 @@
  * 專為 masonyang-blog.github.io/pulse.html 與研報卡片設計的結構化 DOM 抽取器
  * 監聽來自 SidePanel 的 GET_ACTIVE_PULSE_ITEM 請求，並安全截斷正文至 1500 字元防範爆框
  *
- * @related ./chrome_plus_x_gemini_nano.md       (核心任務看板 Phase 2.1)
- * @related ../../docs/cross_plugin_contract.md   (契約: GET_ACTIVE_PULSE_ITEM)
- * @related ./SocialDispatcher.tsx                (下游: 擷取資料消費者)
+ * @related ../../chrome_gemini_nano_README.md  (核心模組導航)
+ * @related ../../0.doc_mg/docs/cross_plugin_contract.md (契約: GET_ACTIVE_PULSE_ITEM)
+ * @related ../components/SocialDispatcher.tsx (下游: 擷取資料消費者)
  */
 
 (function () {
@@ -97,6 +97,4 @@
     }
     return true; // 維持非同步連線
   });
-
-  console.log('✅ [PulseExtractor] Content script loaded and listening for GET_ACTIVE_PULSE_ITEM.');
 })();

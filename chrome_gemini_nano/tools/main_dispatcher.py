@@ -3,12 +3,12 @@
 Local Nano Tool Hub - 本地輕量微服務調度閘道
 常駐於 127.0.0.1:8765，為 Chrome 擴充功能中台提供系統層執行肌肉 (檔案 I/O、RSS、API 分發)
 
-@related ./chrome_plus_x_gemini_nano.md       (核心任務看板 Phase 1.2)
+@related ../chrome_gemini_nano_README.md       (核心模組導航)
 @related ./rss_generator.py                    (下游工具: append_rss)
 @related ./local_dedup.py                      (下游工具: check_dedup)
 @related ./social_publisher.py                 (下游工具: publish_x / publish_threads)
 @related ./markdown_archiver.py                (下游工具: save_markdown)
-@related ../../docs/cross_plugin_contract.md   (契約: LOCAL_TOOL_PROXY)
+@related ../../0.doc_mg/docs/cross_plugin_contract.md (契約: LOCAL_TOOL_PROXY)
 """
 
 import sys
