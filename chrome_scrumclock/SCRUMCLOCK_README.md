@@ -57,6 +57,7 @@
 | **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗、初次安裝指引手冊 |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
 | **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | OAuth2 最小權限授權、Google Tasks 雙向同步引擎（支援主看板一鍵拉取今日待辦與勾選狀態自動回寫）、Google Calendar 時間箱預約與番茄鐘實績回填 |
+| **Google 雙軌生態同步 (GAS Webhook)** | `src/services/googleSyncService.ts` | 零審核雙軌架構（GAS Web App 直連與 Local Hub 退避）：支援日終戰報 Sheets 覆蓋寫入 (`DailyLogs`)、看板焦點卡片 Tasks 雙向推播與行動端 Google Tasks 逆向匯入 Inbox（經由 TaskAIEngine 語意強化） |
 | **Web AI 防崩潰引擎** | `src/core/ai/nanoPromptGuard.ts` | Gemini Nano 端側小模型四層防禦中介（饑餓偵測、Few-shot 錨定、退化正則審查、瞬時 Fallback 兜底） |
 
 ---

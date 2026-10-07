@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { WeeklyMission, GTDStatus } from '../../types';
 import { storage } from '../../core/chrome/storage';
 import { googleTasksSync } from '../../shared/google/googleTasksSync';
+import { googleSyncService } from '../../services/googleSyncService';
 import { TaskCard } from './TaskCard';
 
 export interface BoardViewProps {
@@ -147,6 +148,28 @@ export const BoardView: React.FC<BoardViewProps> = ({
           localStorage.setItem('scrumclock_last_google_sync', String(now));
         } catch {}
       } else {
+        const settings = await storage.getUserSettings();
+        if (settings.appsScriptUrl && settings.enableGoogleSync !== false) {
+          const importRes = await googleSyncService.importGoogleTasksToInbox({ autoTriage: true });
+          if (importRes.success) {
+            const now = Date.now();
+            setLastSyncTime(now);
+            try {
+              localStorage.setItem('scrumclock_last_google_sync', String(now));
+            } catch {}
+            setSyncFeedback({
+              type: 'success',
+              text: importRes.importedCount > 0
+                ? `雙軌同步成功：自 Google Tasks 逆向匯入 ${importRes.importedCount} 個靈感至收件匣（經 AI 語意強化）`
+                : '雙軌同步成功：Google Tasks 與看板收件匣皆為最新狀態',
+            });
+            if (onReloadMissions) {
+              await onReloadMissions();
+            }
+            return;
+          }
+        }
+
         const result = await googleTasksSync.pullAndMergeTasks();
         if (result.success) {
           const now = Date.now();
@@ -267,12 +290,39 @@ export const BoardView: React.FC<BoardViewProps> = ({
     setInboxInput('');
   };
 
+  // 看板狀態轉移事件處理與 Google Tasks 雙向推播 (Phase 3 任務 3.1 & 3.2)
+  const handleStatusChange = async (taskId: string, targetCol: GTDStatus) => {
+    // 1. 執行本地狀態更新
+    await onUpdateStatus(taskId, targetCol);
+
+    // 2. 當卡片移入 in-progress (焦點推進) 或標記完成 done 時，觸發 Tasks 雲端推播
+    if (targetCol === 'in-progress' || targetCol === 'done') {
+      const targetTask = weeklyMissions.find((m) => m.id === taskId);
+      if (targetTask) {
+        // 非同步在背景執行，不阻斷前端 UI 流程
+        googleSyncService.syncMissionToGoogleTasks(targetTask, targetCol).then((res) => {
+          if (res.success && res.mode === 'gas_direct') {
+            setSyncFeedback({
+              type: 'success',
+              text: targetCol === 'done'
+                ? `✅ 已同步完成狀態至 Google Tasks`
+                : `🚀 已推播衝刺焦點至 Google Tasks [@ScrumClock-Today]`,
+            });
+            setTimeout(() => setSyncFeedback(null), 3500);
+          }
+        }).catch(() => {
+          // 靜默捕獲，不干擾使用者
+        });
+      }
+    }
+  };
+
   // 一鍵釐清所有 Inbox 任務至 Next Action (Inbox Zero)
   const handleClarifyAllInbox = async () => {
     const inboxTasks = tasksByColumn.inbox;
     if (inboxTasks.length === 0) return;
     for (const t of inboxTasks) {
-      await onUpdateStatus(t.id, 'next-action');
+      await handleStatusChange(t.id, 'next-action');
     }
   };
 
@@ -313,7 +363,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
       }
     }
 
-    await onUpdateStatus(taskId, targetCol);
+    await handleStatusChange(taskId, targetCol);
   };
 
   return (
@@ -581,7 +631,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       task={task}
                       isFocused={inProgressIds.includes(task.id)}
                       currentStatus={col.id}
-                      onUpdateStatus={onUpdateStatus}
+                      onUpdateStatus={handleStatusChange}
                       onToggleFocus={onToggleFocus}
                       onDeleteTask={onDeleteTask}
                       onSelectTask={onSelectTask}
@@ -632,7 +682,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   task={task}
                   isFocused={inProgressIds.includes(task.id)}
                   currentStatus="someday"
-                  onUpdateStatus={onUpdateStatus}
+                  onUpdateStatus={handleStatusChange}
                   onToggleFocus={onToggleFocus}
                   onDeleteTask={onDeleteTask}
                   onSelectTask={onSelectTask}
@@ -727,7 +777,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 onClick={async () => {
                   const id = wipConflictTask.id;
                   setWipConflictTask(null);
-                  await onUpdateStatus(id, 'next-action');
+                  await handleStatusChange(id, 'next-action');
                 }}
                 className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-dark-card hover:bg-dark-hover border border-dark-border-subtle text-blue-300 hover:text-blue-200 transition-colors cursor-pointer"
               >
@@ -738,7 +788,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 onClick={async () => {
                   const id = wipConflictTask.id;
                   setWipConflictTask(null);
-                  await onUpdateStatus(id, 'in-progress');
+                  await handleStatusChange(id, 'in-progress');
                 }}
                 className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
               >

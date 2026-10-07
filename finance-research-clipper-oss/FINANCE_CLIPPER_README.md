@@ -75,6 +75,7 @@
 | `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染、標的即時廣播 (`lastCapturedStock`)、攜帶參數跳轉儀表板與雲端設定雙鍵同步 | `#open-dashboard-btn`, `broadcastCapturedStock()`, `handleOpenDashboard()` |
 | `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
 | `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |
+| `googleSheetsExporter.js`<br>`options.html`<br>`options.js` | **[雲端] Google Sheets 雙軌匯出**：直連 GAS Web App 與 Local Hub 退避重試，將個股代碼、現價、P/E、殖利率、目標價與 Nano 反常識觀點寫入試算表 (`Portfolio_Tracking`) | `window.GoogleSheetsExporter.exportPortfolioItem()` |
 
 ---
 

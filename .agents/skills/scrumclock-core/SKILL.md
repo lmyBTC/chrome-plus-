@@ -23,7 +23,8 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "chrome_scrumclock
 * `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎（饑餓偵測、Few-shot 錨定路線、輸出退化正則審查、結構化 Fallback）
 * `src/features/project-management/services/`: 專案管理 AI 服務層 (`taskAIEngine.ts` 語意釐清、原子拆解與心流衝突審查 / `kanbanAuditor.ts` 看板健康度與閒置巡檢)
 * `src/features/scrumclock/components/SprintPomodoro.tsx`: 番茄鐘 25 分鐘衝刺計時面板
-* `src/features/scrumclock/components/EndOfDayReview.tsx`: 日終反思（對接 Web AI 戰報生成與 Markdown YAML 筆記匯出）
+* `src/features/scrumclock/components/EndOfDayReview.tsx`: 日終反思（對接 Web AI 戰報生成、Sheets 雲端匯出與 Markdown YAML 筆記匯出）
+* `src/services/googleSyncService.ts`: Google 生態雙軌同步服務（GAS Web App 直連與 Local Hub 退避；支援日終戰報 Sheets 覆蓋、看板焦點 Tasks 推播及逆向抓取至收件匣）
 * `src/shared/google/`: Google 原生生態引擎 (`googleAuthClient.ts`, `googleTasksSync.ts`, `googleCalendarService.ts`)
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)

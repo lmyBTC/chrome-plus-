@@ -3,6 +3,7 @@ import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
 import { googleTasksSync } from '../../../shared/google/googleTasksSync';
 import { googleCalendarService } from '../../../shared/google/googleCalendarService';
+import { googleSyncService } from '../../../services/googleSyncService';
 import { WeeklyMission, InboxItem, GTDStatus, ChecklistItem } from '../../../types';
 import { DashboardColumns, SprintLogWithMission } from '../components/tabs/types';
 import { TaskAIEngine, SubtaskProposal, TaskTriageProposal } from '../services/taskAIEngine';
@@ -48,6 +49,26 @@ export const useProjectManagement = () => {
 
   useEffect(() => {
     loadData();
+
+    // Phase 5 任務 5.1: 輕量巡檢 Google Tasks 雲端新增項目 (10 分鐘節流)
+    const checkGoogleTasksInbox = async () => {
+      try {
+        const settings = await storage.getUserSettings();
+        if (!settings.appsScriptUrl || settings.enableGoogleSync === false) return;
+        const lastCheck = parseInt(localStorage.getItem('scrumclock_last_inbox_poll') || '0', 10);
+        const now = Date.now();
+        if (now - lastCheck < 10 * 60 * 1000) return;
+        localStorage.setItem('scrumclock_last_inbox_poll', String(now));
+
+        const res = await googleSyncService.importGoogleTasksToInbox({ autoTriage: true });
+        if (res.success && res.importedCount > 0) {
+          await loadData();
+        }
+      } catch {
+        // 巡檢失敗靜默略過，不干擾使用者操作
+      }
+    };
+    checkGoogleTasksInbox();
 
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, namespace: string) => {
       if (namespace === 'local' && (changes.weeklyMissions || changes.inboxItems || changes.dailyLogs)) {
@@ -150,6 +171,24 @@ export const useProjectManagement = () => {
   const handleSyncGoogleTasks = async () => {
     setIsGoogleSyncing(true);
     try {
+      const settings = await storage.getUserSettings();
+
+      // 雙軌模式：若使用者已設定 GAS Web App URL，優先執行無審核之逆向匯入 (經由 TaskAIEngine 語意強化)
+      if (settings.appsScriptUrl && settings.enableGoogleSync !== false) {
+        const importRes = await googleSyncService.importGoogleTasksToInbox({ autoTriage: true });
+        if (importRes.success) {
+          setSyncFeedback({
+            type: 'success',
+            text: importRes.importedCount > 0
+              ? `雙軌同步成功：自 Google Tasks 逆向匯入 ${importRes.importedCount} 個靈感至收件匣（經 AI 語意強化）`
+              : '雙軌同步成功：Google Tasks 與看板收件匣皆為最新狀態',
+          });
+          await loadData();
+          return;
+        }
+      }
+
+      // 降級退避至原有 OAuth 同步模式
       const result = await googleTasksSync.pullAndMergeTasks();
       if (result.success) {
         setSyncFeedback({
@@ -166,7 +205,7 @@ export const useProjectManagement = () => {
     } catch (e: any) {
       setSyncFeedback({
         type: 'error',
-        text: e?.message || 'Google Tasks 連動失敗 (請確認授權)',
+        text: e?.message || 'Google Tasks 連動失敗',
       });
     } finally {
       setIsGoogleSyncing(false);

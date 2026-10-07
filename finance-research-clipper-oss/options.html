@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Research Clipper - 設定 (Options)</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-main: #f8fafc;
+      --text-sub: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --border-color: #334155;
+      --input-bg: #0f172a;
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 32px 20px;
+      display: flex;
+      justify-content: center;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    .header {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .badge {
+      font-size: 11px;
+      background-color: rgba(59, 130, 246, 0.2);
+      color: var(--primary);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #e2e8f0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 4px;
+    }
+
+    input[type="text"], input[type="password"] {
+      width: 100%;
+      padding: 10px 12px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-size: 13px;
+      transition: border-color 0.15s ease;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 12px;
+      cursor: pointer;
+    }
+
+    .checkbox-group input {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .checkbox-group label {
+      cursor: pointer;
+      margin-bottom: 0;
+      font-size: 13px;
+      color: #e2e8f0;
+    }
+
+    .btn-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s ease, opacity 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--primary-hover);
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    .status-bar {
+      margin-top: 16px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .status-bar.success {
+      display: block;
+      background-color: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--success);
+      color: #34d399;
+    }
+
+    .status-bar.error {
+      display: block;
+      background-color: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--error);
+      color: #f87171;
+    }
+
+    .status-bar.info {
+      display: block;
+      background-color: rgba(59, 130, 246, 0.15);
+      border: 1px solid var(--primary);
+      color: #60a5fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <span>📈</span>
+      <h1>Finance Research Clipper - 設定</h1>
+      <span class="badge">Google Ecosystem v2</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>☁️</span>
+        <span>Google Apps Script (GAS) 雙軌同步中樞</span>
+      </div>
+
+      <div class="form-group">
+        <label for="gas-url">Apps Script 網頁應用程式 URL (Web App URL)</label>
+        <input type="text" id="gas-url" placeholder="https://script.google.com/macros/s/.../exec">
+        <div class="hint">部署自 <code>0.doc_mg/tools/gas/google_sync_hub.gs</code> 之 Web App 網址。</div>
+      </div>
+
+      <div class="form-group">
+        <label for="secret-token">Webhook 驗證金鑰 (Secret Token)</label>
+        <input type="password" id="secret-token" placeholder="選填，需與 Apps Script 指令碼屬性一致">
+        <div class="hint">若 GAS 設定了 <code>ECOSYSTEM_SECRET</code>，請在此輸入以進行授權。</div>
+      </div>
+
+      <div class="form-group">
+        <label for="sheets-url">個人 Google 試算表 URL (Spreadsheet URL)</label>
+        <input type="text" id="sheets-url" placeholder="https://docs.google.com/spreadsheets/d/.../edit">
+        <div class="hint">供點擊直接前往查看同步沉澱之投研沙盒 ("Portfolio_Tracking")。</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span>⚙️</span>
+        <span>投研沙盒同步偏好</span>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="auto-append-ai" checked>
+        <label for="auto-append-ai">同步時自動萃取並寫入 Gemini Nano 反常識論點與多空研報精要</label>
+      </div>
+
+      <div class="checkbox-group">
+        <input type="checkbox" id="upsert-by-ticker" checked>
+        <label for="upsert-by-ticker">依據股票代碼 (Ticker) 智慧比對更新，杜絕重複行堆疊</label>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="btn-ping" class="btn btn-secondary" type="button">
+        <span>⚡</span>
+        <span>測試連線 (Health Check)</span>
+      </button>
+
+      <button id="btn-save" class="btn btn-primary" type="button">
+        <span>💾</span>
+        <span>儲存設定</span>
+      </button>
+    </div>
+
+    <div id="status-message" class="status-bar"></div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

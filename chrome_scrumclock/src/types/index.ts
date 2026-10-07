@@ -18,6 +18,8 @@ export interface UserSettings {
   enableGtdCapture?: boolean; // GTD 全域快捷捕捉開關 (Alt+Q / 右鍵)
   enableWipLimit?: boolean; // 看板 In Progress 在製品限制開關
   maxWipLimit?: number; // In Progress WIP 卡片上限 (預設 3)
+  enableGoogleSync?: boolean; // Google 生態系自動同步開關 (日終 Sheets / 看板 Tasks)
+  googleSyncLocalHubFallback?: boolean; // 當 GAS Webhook 逾時或失敗時，是否退避轉發至本機 Local Hub 佇列
 }
 
 export interface NorthStarGoal {

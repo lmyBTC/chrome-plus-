@@ -109,3 +109,53 @@ Chrome 判定擴充功能持久化的另一要件為 **Extension ID 是否固定
    - 完全關閉 Chrome 瀏覽器（確認系統背景工作管理員無殘留 chrome 程序）。
    - 重新啟動 Chrome 瀏覽器，打開 `chrome://extensions/`。
    - **驗證成果**：ScrumClock 插件依舊常駐，開箱即用，無需重新載入！
+
+---
+
+## 🌐 四、 外部環境干擾排查：Chrome Sync 帳號同步覆蓋與多實例互踢衝突
+
+### 1. 常見情境與痛點現象
+在本機同時運行多個 Chrome 實例（例如 **Chrome 正式版** 與 **Chrome Canary**），或在不同電腦上登入同一個 Google 帳號時：
+* 在 Chrome Canary 載入未封裝插件後，重新啟動或切換到 Chrome 正式版，插件突然消失或被禁用；
+* 反之在正式版載入，Canary 啟動後又把插件沖掉，兩邊出現**反覆互踢、自動解除安裝或消失**的怪現象。
+
+### 2. 核心根本原因剖析 (Root Cause)
+1. **Chrome Sync 的擴充功能狀態雙向覆蓋**：
+   * 當開啟 Google 帳號的「同步所有內容」或「擴充功能同步」時，雲端會維護該帳號的已安裝商店擴充功能清單與狀態。
+   * **未封裝擴充功能（Unpacked）不支援雲端同步**（只存在於本機特定資料夾指標）。
+   * 當另一個 Chrome 實例（如 Canary）啟動並向雲端拉取/推送狀態時，雲端若判定該 Extension ID 不在同步白名單中、或狀態不一致，Chrome 就會依據雲端清單覆蓋並重置本機的 Profile Preferences，導致本地未封裝項目被靜默卸載。
+2. **Extension ID 未固定導致衝突識別**：
+   * 未封裝插件若未在 `manifest.json` 宣告固定 `"key"`，不同 Chrome 實例或不同目錄計算出的 Extension ID 可能不同，容易觸發 Chrome 同步機制判定為無效或重複實例而遭到剔除。
+3. **使用者設定檔 (Profile) 狀態競態**：
+   * 多實例同步時，`Preferences` 內的擴充功能狀態 (`extensions.toolbar`、啟用狀態等) 發生雲端競態覆蓋。
+
+### 3. 解決方案與防禦策略
+
+#### 解法 1：關閉 Chrome Sync 中的「擴充功能」同步（⭐️ 最推薦，根本解法）
+開發環境通常不需要將未發布的擴充功能同步至雲端，關閉擴充同步是最乾淨俐落的做法：
+1. 開啟 Chrome（以及 Chrome Canary）。
+2. 前往網址：`chrome://settings/syncSetup/advanced`（或點選右上角頭像 ➔「同步功能和 Google 服務」➔「管理同步項」）。
+3. 將同步選項設定為 **「自訂同步 (Customize sync)」**。
+4. **取消勾選「擴充功能 (Extensions)」**。
+5. 在所有並存的 Chrome 實例（正式版與 Canary）皆完成此項關閉。
+
+#### 解法 2：在 `manifest.json` 中配置固定公鑰 (`key`)
+宣告固定的 Public Key，確保在所有 Chrome 分支（Stable / Beta / Dev / Canary）與不同路徑載入時，計算出的 Extension ID 永遠維持一致：
+
+```json
+{
+  "manifest_version": 3,
+  "name": "Your Extension",
+  "version": "1.0",
+  "key": "<你的固定 Base64 公鑰字串>"
+}
+```
+
+> 💡 **公鑰產生方式**：
+> 1. 在 `chrome://extensions` 點選「打包擴充功能 (Pack extension)」產生一次 `.crx` 與 `.pem` 私鑰。
+> 2. 使用 OpenSSL 導出公鑰：`openssl rsa -in key.pem -pubout -outform DER | openssl base64 -A`。
+> 3. 將輸出的 base64 字串填入 `manifest.json` 的 `"key"` 欄位。
+
+#### 解法 3：開發環境使用獨立 Profile（環境物理隔離）
+* 在專門用於開發測試的 Chrome 實例（如 Canary）建立**獨立本機 Profile**（不登入主力 Google 帳號，或登入專用的開發者測試帳號）。
+* 杜絕個人主力帳號的日常書籤與擴充同步流程干擾本機代碼偵錯。

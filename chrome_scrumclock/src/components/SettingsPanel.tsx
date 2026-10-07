@@ -32,6 +32,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   // AI & Sync States
   const [appsScriptUrl, setAppsScriptUrl] = useState('');
   const [spreadsheetUrl, setSpreadsheetUrl] = useState('');
+  const [enableGoogleSync, setEnableGoogleSync] = useState(true);
+  const [googleSyncLocalHubFallback, setGoogleSyncLocalHubFallback] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState('');
   const [lastSyncTime, setLastSyncTime] = useState('載入中...');
   const [enableWebhook, setEnableWebhook] = useState(false);
@@ -76,6 +78,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       // AI & Cloud Sync
       setAppsScriptUrl(data.userSettings.appsScriptUrl || '');
       setSpreadsheetUrl(data.userSettings.spreadsheetUrl || '');
+      setEnableGoogleSync(data.userSettings.enableGoogleSync !== false);
+      setGoogleSyncLocalHubFallback(data.userSettings.googleSyncLocalHubFallback !== false);
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
       setEnableWebhook(data.userSettings.enableWebhook || false);
       setWebhookUrl(data.userSettings.webhookUrl || '');
@@ -165,6 +169,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         endOfDayReviewTime: endOfDayReviewTime || '21:00',
         appsScriptUrl: appsScriptUrl.trim(),
         spreadsheetUrl: spreadsheetUrl.trim(),
+        enableGoogleSync: enableGoogleSync,
+        googleSyncLocalHubFallback: googleSyncLocalHubFallback,
         geminiApiKey: geminiApiKey.trim(),
         distractionSites: blockSites,
         enableWebhook: enableWebhook,
@@ -507,6 +513,45 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                   placeholder="https://docs.google.com/spreadsheets/d/.../edit"
                   className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-dark-primary text-sm shadow-sm"
                 />
+              </div>
+
+              {/* Google 生態雙軌同步細部設定開關 */}
+              <div className="mt-4 pt-4 border-t border-blue-900/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-semibold text-blue-200 block">📊 日終戰報與看板自動同步</label>
+                    <p className="text-xs text-blue-300/70">
+                      日終回顧送出時自動沉澱戰報至 Google Sheets，看板焦點切換時同步 Google Tasks。
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={enableGoogleSync}
+                      onChange={(e) => setEnableGoogleSync(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-semibold text-blue-200 block">🛡️ 本機 Local Hub 離線重試備援</label>
+                    <p className="text-xs text-blue-300/70">
+                      當網路斷線或 GAS Webhook 請求逾時 (10s) 時，自動轉發至本機 Dispatcher (Port 8765) 暫存重試。
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                    <input
+                      type="checkbox"
+                      checked={googleSyncLocalHubFallback}
+                      onChange={(e) => setGoogleSyncLocalHubFallback(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                  </label>
+                </div>
               </div>
 
               {/* GAS Cloud Sync Actions */}

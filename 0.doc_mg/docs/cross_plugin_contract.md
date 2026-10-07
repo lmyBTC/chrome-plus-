@@ -442,6 +442,16 @@
 3. **會話生命週期統一防護 (VRAM Safety)**：
    - 所有矩陣模組由 `WebAIGateway` 統一調度，提供 `destroyAll()` 集中釋放所有底層會話資源，防止背景或頁面殘留 GPU VRAM。
 
+### 6.10 Google 生態雙軌同步標準 Webhook 合約 (GAS Web App & Local Hub v1.0)
+為規避 Chrome Extension Web Store OAuth 審核瓶頸，插件生態採用「GAS Web App 直連 + 本機 Local Hub 退避」雙軌標準合約：
+1. **呼叫方式**：HTTP POST JSON 至使用者的 Apps Script Web App URL，外層統一封裝 `{ action: string, payload: object }`。
+2. **四大標準 Action**：
+   - `SYNC_DAILY_LOG`: ScrumClock 日終戰報寫入 Google Sheets (`DailyLogs`)，同日資料自動冪等覆蓋 (Upsert)。
+   - `CREATE_GOOGLE_TASK`: 焦點戰役推播或狀態更新至 Google Tasks (`@ScrumClock-Today`)，支援番茄鐘標籤 `[1🍅]`、備註與到期日對齊。
+   - `SYNC_PORTFOLIO`: FinanceClipper 個股估值沙盒、P/E、殖利率、目標價與 Nano 反常識觀點寫入 Google Sheets (`Portfolio_Tracking`)。
+   - `FETCH_INBOX_TASKS`: 逆向拉取 Google Tasks 未完成項目，經由 `TaskAIEngine` 語意強化後寫入看板收件匣。
+3. **安全與逾時底線**：全端強制 10 秒 `AbortController` 逾時控制，失敗時可自動降級至本機微服務 `127.0.0.1:8765/sync_google` 離線佇列退避重試。
+
 ---
 
 ## 7. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)

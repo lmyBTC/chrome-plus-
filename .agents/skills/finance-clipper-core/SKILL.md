@@ -22,6 +22,7 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 * `dashboard.html` / `dashboard.js`: 獨立分頁大螢幕儀表板（個股主視圖、同業對比矩陣、估值敏感度沙盒）
 * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄常駐快捷工具箱（支援剪貼簿秒爬與當前頁面提取）
 * `popup.html` / `popup.js`: 工具列彈窗主控（模式切換、標的廣播與雙鍵設定同步）
+* `googleSheetsExporter.js`: Google Sheets 雙軌匯出模組（支援個股估值沙盒、P/E、殖利率與 Nano 觀點直連 GAS Web App 與 Local Hub 退避）
 * `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)

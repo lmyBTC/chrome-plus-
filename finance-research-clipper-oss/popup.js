@@ -714,6 +714,24 @@ document.addEventListener('DOMContentLoaded', async () => {
           console.error("Screenshot Error:", e);
         }
       }
+
+      // 對齊 Google Sync Hub 之 SYNC_PORTFOLIO 合約
+      payload.action = "SYNC_PORTFOLIO";
+      payload.type = "SYNC_PORTFOLIO";
+      payload.yield = capturedKeyStats['殖利率'] || capturedKeyStats['股息殖利率'] || capturedKeyStats['Dividend yield'] || '';
+      payload.targetPrice = payload.target_price_median || payload.target_price_mean || '';
+      payload.notes = payload.note;
+      payload.aiDigest = payload.note;
+      payload.payload = {
+        ticker: payload.ticker,
+        name: payload.ticker,
+        price: payload.price,
+        pe: payload.pe,
+        yield: payload.yield,
+        targetPrice: payload.targetPrice,
+        notes: payload.notes,
+        aiDigest: payload.aiDigest
+      };
     } else {
       const checks = document.querySelectorAll('.ai-item-check');
       const selectedDialogue = Array.from(checks)

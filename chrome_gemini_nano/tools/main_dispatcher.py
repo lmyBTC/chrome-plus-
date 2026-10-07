@@ -57,7 +57,9 @@ async def health_check():
             "check_dedup",
             "publish_x",
             "publish_threads",
-            "save_markdown"
+            "save_markdown",
+            "sync_google",
+            "flush_google_queue"
         ]
     }
 
@@ -99,6 +101,19 @@ async def execute_tool(req: ToolRequest):
                 url=data.get("url", ""),
                 tags=data.get("tags", [])
             )
+
+        elif name == "sync_google":
+            from google_sync_worker import sync_to_google
+            gas_url = data.get("gas_webhook_url", "")
+            action = data.get("action", "")
+            payload = data.get("payload", {})
+            auto_flush = data.get("auto_flush", True)
+            return sync_to_google(gas_url, action, payload, auto_flush=auto_flush)
+
+        elif name == "flush_google_queue":
+            from google_sync_worker import flush_offline_queue
+            gas_url = data.get("gas_webhook_url", "")
+            return flush_offline_queue(gas_url)
 
         else:
             logger.warning(f"⚠️ 未知的工具指令: {name}")

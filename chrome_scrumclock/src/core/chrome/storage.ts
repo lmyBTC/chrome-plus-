@@ -19,7 +19,9 @@ const DEFAULT_SETTINGS: UserSettings = {
   webhookSecretToken: '',
   enableGtdCapture: true,
   enableWipLimit: true,
-  maxWipLimit: 3
+  maxWipLimit: 3,
+  enableGoogleSync: true,
+  googleSyncLocalHubFallback: true
 };
 
 const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {

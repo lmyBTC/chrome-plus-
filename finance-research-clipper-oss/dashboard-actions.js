@@ -247,8 +247,38 @@
     /**
      * 送出至 Google Sheets (GAS Webhook Envelope)
      */
-    sendToGas: function (currentStock, note, btnSendGas, settingsModal) {
+    sendToGas: async function (currentStock, note, btnSendGas, settingsModal) {
       if (!currentStock) return;
+
+      if (window.GoogleSheetsExporter) {
+        if (btnSendGas) {
+          btnSendGas.disabled = true;
+          btnSendGas.textContent = '傳送中...';
+        }
+
+        const res = await window.GoogleSheetsExporter.syncSingleStock(currentStock, {
+          userNote: note
+        });
+
+        if (btnSendGas) {
+          btnSendGas.disabled = false;
+          btnSendGas.textContent = '☁️ 發送至 Google Sheets (GAS)';
+        }
+
+        if (res.success) {
+          showToast(`🎉 成功同步 [${res.ticker || currentStock.ticker}] 至 Google Sheets 投研沙盒！`);
+        } else {
+          if (res.error === 'MISSING_GAS_URL') {
+            showToast('⚠️ 尚未設定 Google Apps Script URL，請先至設定面板配置！');
+            if (settingsModal) settingsModal.style.display = 'flex';
+          } else {
+            showToast(`❌ 同步失敗: ${res.message || res.error}`);
+          }
+        }
+        return;
+      }
+
+      // 保底退避處理 (若尚未載入 Exporter 模組)
       chrome.storage.local.get(['gasUrl', 'gasSecretToken', 'appsScriptUrl'], (res) => {
         const gasUrl = res.gasUrl || res.appsScriptUrl;
         if (!gasUrl) {
@@ -263,23 +293,19 @@
         }
 
         const payload = {
-          protocolVersion: 1,
-          action: 'finance_clip',
+          protocolVersion: 2,
+          action: 'SYNC_PORTFOLIO',
+          type: 'SYNC_PORTFOLIO',
           secretToken: res.gasSecretToken || undefined,
           timestamp: Date.now(),
-          data: {
+          payload: {
             ticker: currentStock.ticker,
             name: currentStock.name || currentStock.companyName || currentStock.ticker,
             price: currentStock.price,
-            sentiment: currentStock.sentiment || (currentStock.note ? analyzeClientSentiment(currentStock.note) : '😐 中性'),
-            note: (note || '').trim(),
             pe: currentStock.stats ? (currentStock.stats['本益比'] || currentStock.stats['P/E ratio'] || '') : '',
-            mktcap: currentStock.stats ? (currentStock.stats['市值'] || currentStock.stats['Market cap'] || '') : '',
-            sp500: currentStock.stats ? (currentStock.stats['sp500'] || '') : '',
-            nasdaq: currentStock.stats ? (currentStock.stats['nasdaq'] || '') : '',
-            analystRating: currentStock.analyst ? (currentStock.analyst.consensus || '') : '',
-            analystTargetPrice: currentStock.analyst ? (currentStock.analyst.targetMedian || '') : '',
-            sourceUrl: currentStock.url || `https://www.google.com/finance/quote/${currentStock.ticker}`
+            yield: currentStock.stats ? (currentStock.stats['殖利率'] || currentStock.stats['股息殖利率'] || '') : '',
+            targetPrice: currentStock.analyst ? (currentStock.analyst.targetMedian || '') : '',
+            notes: (note || '').trim()
           }
         };
 
@@ -312,12 +338,39 @@
     /**
      * 批次同步全部歷史標的至 Google Sheets
      */
-    batchSendToGas: function (historyList, btnBatchSendGas, settingsModal) {
+    batchSendToGas: async function (historyList, btnBatchSendGas, settingsModal) {
       if (!historyList || historyList.length === 0) {
         showToast('⚠️ 歷史追蹤清單為空，無資料可同步');
         return;
       }
 
+      if (window.GoogleSheetsExporter) {
+        if (btnBatchSendGas) {
+          btnBatchSendGas.disabled = true;
+          btnBatchSendGas.textContent = `批次同步中 (${historyList.length} 筆)...`;
+        }
+
+        const res = await window.GoogleSheetsExporter.syncBatchStocks(historyList);
+
+        if (btnBatchSendGas) {
+          btnBatchSendGas.disabled = false;
+          btnBatchSendGas.textContent = '📦 批次同步全部標的';
+        }
+
+        if (res.success) {
+          showToast(`🎉 ${res.message}`);
+        } else {
+          if (res.error === 'MISSING_GAS_URL') {
+            showToast('⚠️ 尚未設定 Google Apps Script URL，請先至設定面板配置！');
+            if (settingsModal) settingsModal.style.display = 'flex';
+          } else {
+            showToast(`⚠️ ${res.message}`);
+          }
+        }
+        return;
+      }
+
+      // 保底退避處理
       chrome.storage.local.get(['gasUrl', 'gasSecretToken', 'appsScriptUrl'], (res) => {
         const gasUrl = res.gasUrl || res.appsScriptUrl;
         if (!gasUrl) {
@@ -345,7 +398,7 @@
         }));
 
         const payload = {
-          protocolVersion: 1,
+          protocolVersion: 2,
           action: 'batch_finance_clip',
           secretToken: res.gasSecretToken || undefined,
           timestamp: Date.now(),
@@ -368,14 +421,14 @@
           if (resp.ok) {
             showToast(`🎉 成功批次匯流 ${items.length} 檔個股至 Google Sheets！`);
           } else {
-            showToast(`⚠️ 批次同步失敗，HTTP: ${resp.status}`);
+            showToast(`⚠️ 批次傳送失敗，狀態碼: ${resp.status}`);
           }
         }).catch((err) => {
           if (btnBatchSendGas) {
             btnBatchSendGas.disabled = false;
             btnBatchSendGas.textContent = '📦 批次同步全部標的';
           }
-          showToast(`❌ 批次連線錯誤: ${err.message}`);
+          showToast(`❌ 連線錯誤: ${err.message}`);
         });
       });
     },

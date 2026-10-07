@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
-import { DailyLog, SprintLog, CoreBattle, WeeklyMission, DailyReview } from '../../../types';
+import { googleSyncService } from '../../../services/googleSyncService';
+import { DailyLog, SprintLog, CoreBattle, WeeklyMission, DailyReview, UserSettings } from '../../../types';
 import { TaskAIEngine } from '../../project-management/services/taskAIEngine';
 
 interface EndOfDayReviewProps {
@@ -11,6 +12,7 @@ interface EndOfDayReviewProps {
 export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) => {
   const [todayLog, setTodayLog] = useState<DailyLog | null>(null);
   const [weeklyMissions, setWeeklyMissions] = useState<WeeklyMission[]>([]);
+  const [userSettings, setUserSettings] = useState<UserSettings | null>(null);
   const [review, setReview] = useState<DailyReview>({
     highlight: '',
     lesson: '',
@@ -23,6 +25,9 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
   const [isGeneratingAI, setIsGeneratingAI] = useState(false);
   const [aiSummary, setAiSummary] = useState<string>('');
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const [syncToSheets, setSyncToSheets] = useState(true);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -30,14 +35,17 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
 
   const loadData = async () => {
     try {
-      const [log, missions, savedTomorrow] = await Promise.all([
+      const [log, missions, savedTomorrow, settings] = await Promise.all([
         storage.getTodayLog(),
         storage.getWeeklyMissions(),
-        storage.getTomorrowBattles()
+        storage.getTomorrowBattles(),
+        storage.getUserSettings()
       ]);
       setTodayLog(log);
       setWeeklyMissions(missions);
       setTomorrowBattles(savedTomorrow);
+      setUserSettings(settings);
+      setSyncToSheets(settings.enableGoogleSync !== false && !!settings.appsScriptUrl);
     } catch (error) {
       console.error('載入資料失敗:', error);
     } finally {
@@ -179,6 +187,54 @@ ${aiSummary ? `## 🤖 Gemini Nano 智慧戰報\n${aiSummary}\n` : ''}
     }
   };
 
+  const executeGoogleSheetsSync = async (interactive = true): Promise<boolean> => {
+    if (!review.highlight.trim() && !review.lesson.trim()) {
+      if (interactive) {
+        setSyncFeedback('⚠️ 請先填寫至少一項回顧亮點或教訓後再執行同步');
+        setSyncState('error');
+      }
+      return false;
+    }
+
+    setSyncState('syncing');
+    setSyncFeedback('正在同步戰報至 Google Sheets...');
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const spentPomodoros = todayLog?.sprintLogs?.length || 0;
+    const completedTasksCount = completedMissionIds.length;
+    const pomodoroMins = userSettings?.pomodoroDuration || 25;
+    const focusMinutes = spentPomodoros * pomodoroMins;
+
+    try {
+      const res = await googleSyncService.syncDailyLogToSheets({
+        date: dateStr,
+        spentPomodoros,
+        completedTasksCount,
+        focusMinutes,
+        highlights: review.highlight.trim(),
+        lessons: review.lesson.trim(),
+        aiDigest: aiSummary.trim() || undefined
+      });
+
+      if (res.success) {
+        setSyncState('success');
+        setSyncFeedback(`🎉 ${res.message}`);
+        setTimeout(() => {
+          setSyncFeedback(null);
+        }, 5000);
+        return true;
+      } else {
+        setSyncState('error');
+        setSyncFeedback(`❌ ${res.message}`);
+        return false;
+      }
+    } catch (err: any) {
+      setSyncState('error');
+      setSyncFeedback(`❌ 同步發生錯誤: ${err.message || err}`);
+      return false;
+    }
+  };
+
   const handleSubmit = async () => {
     if (!review.highlight.trim() || !review.lesson.trim() || !review.nextAction.trim()) {
       alert('請填寫所有回顧問題');
@@ -207,7 +263,12 @@ ${aiSummary ? `## 🤖 Gemini Nano 智慧戰報\n${aiSummary}\n` : ''}
         todayLog.review = review;
         await storage.saveTodayLog(todayLog);
         
-        // 背景同步至 Google Sheets
+        // Google 生態系雙軌同步 (P0: Sheets 戰報數據湖沉澱)
+        if (syncToSheets && userSettings?.appsScriptUrl) {
+          executeGoogleSheetsSync(false).catch(err => console.error('Google Sheets 同步失敗:', err));
+        }
+
+        // 背景同步至既有日誌相容通道
         sync.pushReviewLog(review).catch(err => console.error(err));
       }
       
@@ -440,6 +501,71 @@ ${aiSummary ? `## 🤖 Gemini Nano 智慧戰報\n${aiSummary}\n` : ''}
       {copyFeedback && (
         <div className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-semibold border backdrop-blur-md bg-emerald-900/90 border-emerald-600/50 text-emerald-200">
           {copyFeedback}
+        </div>
+      )}
+
+      {/* Google Sheets 同步控制與狀態反饋 */}
+      <div className="bg-dark-card rounded-lg p-4 mb-6 border border-dark-border-subtle shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="sync-sheets-toggle"
+            checked={syncToSheets}
+            disabled={!userSettings?.appsScriptUrl}
+            onChange={(e) => setSyncToSheets(e.target.checked)}
+            className="w-4 h-4 text-blue-600 border-dark-border-default rounded focus:ring-blue-500 bg-dark-card cursor-pointer disabled:opacity-40"
+          />
+          <label htmlFor="sync-sheets-toggle" className="text-sm font-medium text-dark-primary cursor-pointer select-none">
+            📊 同步日終戰報至 Google Sheets (DailyLogs 數據湖)
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {userSettings?.appsScriptUrl ? (
+            <button
+              type="button"
+              disabled={syncState === 'syncing'}
+              onClick={() => executeGoogleSheetsSync(true)}
+              className="text-xs px-3 py-1.5 bg-blue-950/40 hover:bg-blue-900/50 text-blue-300 border border-blue-800/50 rounded-lg transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {syncState === 'syncing' ? (
+                <>
+                  <span className="animate-spin inline-block w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full"></span>
+                  <span>同步中...</span>
+                </>
+              ) : (
+                <>
+                  <span>🚀</span>
+                  <span>立即測試同步</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <span className="text-xs text-dark-muted">
+              💡 尚未設定 GAS Webhook，可至設定頁填寫
+            </span>
+          )}
+        </div>
+      </div>
+
+      {syncFeedback && (
+        <div className={`p-3 mb-6 rounded-lg text-sm flex items-center justify-between border ${
+          syncState === 'success'
+            ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300'
+            : syncState === 'error'
+            ? 'bg-rose-950/30 border-rose-800/50 text-rose-300'
+            : 'bg-blue-950/30 border-blue-800/50 text-blue-300'
+        }`}>
+          <span>{syncFeedback}</span>
+          {syncState === 'error' && (
+            <button
+              type="button"
+              onClick={() => executeGoogleSheetsSync(true)}
+              className="text-xs underline font-semibold ml-3 hover:text-white"
+            >
+              重試同步
+            </button>
+          )}
         </div>
       )}
 
