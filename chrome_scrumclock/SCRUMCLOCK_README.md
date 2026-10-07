@@ -57,6 +57,7 @@
 | **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗、初次安裝指引手冊 |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
 | **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | OAuth2 最小權限授權、Google Tasks 雙向同步引擎（支援主看板一鍵拉取今日待辦與勾選狀態自動回寫）、Google Calendar 時間箱預約與番茄鐘實績回填 |
+| **Web AI 防崩潰引擎** | `src/core/ai/nanoPromptGuard.ts` | Gemini Nano 端側小模型四層防禦中介（饑餓偵測、Few-shot 錨定、退化正則審查、瞬時 Fallback 兜底） |
 
 ---
 
@@ -84,6 +85,7 @@
 | **工作流流程圖** | `docs/workflow-flowchart.md` | Mermaid 繪製之整體數據流與狀態機轉移圖 |
 | **活動監控技術規格書** | `docs/activity-monitor-spec.md` | 80% 原生監控 + 20% 隨選探針混合架構、IndexedDB 儲存模型、通訊協議與 React 視覺化面板 |
 | **Google 生態系整合規格書** | `0.doc_mg/docs/google_ecosystem_integration_spec.md` | Google Sheets/Docs/Calendar/Tasks 雙軌對接架構、Schema 與跨插件轉發合約 SSOT |
+| **Web AI 防崩潰規格書** | `docs/web-ai-guard-spec.md` | 端側小模型四層防禦體系、退化特徵正則庫與業務場景 Fallback 策略規格 |
 
 ---
 

@@ -68,4 +68,7 @@ scratch/
 .agents/**/scratch/
 **/.system_generated/
 
+# Repo Radar Index Cache
+.repo_index.json
+
 

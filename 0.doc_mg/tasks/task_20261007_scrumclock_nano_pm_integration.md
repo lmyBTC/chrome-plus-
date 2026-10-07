@@ -15,8 +15,8 @@ deadline: "2026-10-14"
 - **任務啟動摩擦趨近於零**：原子化敏捷拆解 (Task Decomposition)
 
 **SSOT 草稿來源**：
-- 設計規格：`0.doc_mg/draft/Nano 賦能 ScrumClock 敏捷專案管理/Gemini Nano 賦能 ScrumClock 敏捷專案管理深度優化方案.md`
-- 實作計畫：`0.doc_mg/draft/Nano 賦能 ScrumClock 敏捷專案管理/實作計畫.md`
+- 設計規格：`0.doc_mg/draft/archive/Nano 賦能 ScrumClock 敏捷專案管理/Gemini Nano 賦能 ScrumClock 敏捷專案管理深度優化方案.md`
+- 實作計畫：`0.doc_mg/draft/archive/Nano 賦能 ScrumClock 敏捷專案管理/實作計畫.md`
 
 ---
 

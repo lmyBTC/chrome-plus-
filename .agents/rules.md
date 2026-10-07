@@ -16,6 +16,7 @@
 |**ScrumClock 規格字典**|`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|`.agents/skills/scrumclock-core/SKILL.md`|
 |**FinanceClipper 研報字典**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`|`.agents/skills/finance-clipper-core/SKILL.md`|
 |**VideoSpeedPlus 倍速字典**|`video speed`,`影片倍速`,`youtube倍速`,`videospeedplus`|`.agents/skills/video-speed-core/SKILL.md`|
+|**專案情報雷達**|`repo radar`,`符號查詢`,`檢索代碼`,`查型別`,`查文檔`,`專案地圖`|`.agents/skills/repo-radar/SKILL.md`|
 <!-- SKILL_TREE_END -->
 
 ---
