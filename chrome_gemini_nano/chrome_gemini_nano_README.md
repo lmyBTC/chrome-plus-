@@ -15,12 +15,14 @@
 | 功能模組 | 核心職責 | 檔案路徑 | 專屬型別 / 依賴 | 備註 / 規格關聯 |
 | :--- | :--- | :--- | :--- | :--- |
 | **門面出口** | 集中導出 UI 元件、AI 服務與資料型別 | `src/index.ts` | `src/types.ts` | Barrel Export 統一入口 |
-| **型別定義** | 社群草稿、調音算子狀態、社群發布酬載定義 | `src/types.ts` | - | `SocialPostDraft`, `ToneVariant` |
-| **社群分發介面** | 側邊欄雙欄發布介面 (HITL)，支援 X 與 Threads 即時預覽、調音與直發 | `src/components/SocialDispatcher.tsx` | `lucide-react`, `src/services/` | 支援一鍵套用 4 大調音算子並派發本機 |
-| **Gemini Nano 服務** | Chrome 內建 Prompt API 適配層、VRAM 生命週期管理、Temperature 溫控 | `src/services/nanoService.ts` | `window.ai` / `chrome.aiOriginTrial` | 自動相容新舊 API 介面規範 |
+| **型別定義** | 社群草稿、調音算子狀態、Web AI 矩陣型別定義 | `src/types.ts` | `src/services/adapters/types.ts` | `SocialPostDraft`, `WebAIMatrixCapabilities` |
+| **Web AI 矩陣閘道** | Chrome 130+ 多模型動態探測、分流排程與統一 VRAM 釋放 | `src/services/webAIGateway.ts` | `src/services/adapters/` | 單例中樞，管理所有原生會話 |
+| **專用模型適配器** | 原生 summarizer / writer / rewriter / translation 封裝 | `src/services/adapters/` | `src/services/webAIGateway.ts` | 具備 Prompt API (NanoService) 透明降級 |
+| **社群分發介面** | 側邊欄雙欄發布介面 (HITL)，支援 X 與 Threads 即時預覽、調音與直發 | `src/components/SocialDispatcher.tsx` | `lucide-react`, `src/services/` | 串接 WebAIGateway 分流產出雙語草稿 |
+| **Gemini Nano 服務** | Chrome 內建 Prompt API 適配層、VRAM 生命週期管理、Temperature 溫控 | `src/services/nanoService.ts` | `window.ai` / `chrome.aiOriginTrial` | 矩陣降級通用 Prompt API 底座 |
 | **萬能意圖路由器** | 自然語言指令解析器 (Cmd+K 路由)，將口語指令拆解為具體 Actions | `src/services/nanoIntentRouter.ts` | `src/services/nanoService.ts` | 支援番茄鐘、GTD、社群分發與筆記動作 |
 | **內容卡片擷取器** | 網頁卡片 DOM 提取與 1500 字元截斷防爆保護 | `src/services/pulseExtractor.ts` | DOM API | 針對研報卡片與長文內容提取重點 |
-| **社群調音算子** | 4 大社群調音變換：銳化觀點、壓線字數、去油去官腔、拆切 Threads | `src/services/toneShifter.ts` | `src/services/nanoService.ts` | 透過本機 Nano Prompt 進行風格重寫 |
+| **社群調音算子** | 4 大社群調音變換：銳化觀點、壓線字數、去油去官腔、拆切 Threads | `src/services/toneShifter.ts` | `src/services/adapters/rewriterAdapter.ts` | 透過原生 RewriterAdapter 進行風格重寫 |
 
 ---
 
@@ -44,12 +46,17 @@
 [使用者 / 網頁內容 (DOM)]
           │
           ▼
-  pulseExtractor.ts (卡片擷取 & 字數截斷)
+   pulseExtractor.ts (卡片擷取 & 字數截斷)
           │
           ▼
-   nanoService.ts (Gemini Nano 本地推論)
+   webAIGateway.ts (動態檢測 & 矩陣分流調度)
+   ├── summarizerAdapter (重點提取)
+   ├── writerAdapter (X 英文撰稿)
+   ├── rewriterAdapter / translatorAdapter (Threads 繁中轉譯)
+   └── nanoService.ts (透明降級兜底)
           │
-   toneShifter.ts (銳化 / 壓線 / 去油 / 拆串)
+          ▼
+ toneShifter.ts (銳化 / 壓線 / 去油 / 拆串 ── 接入 RewriterAdapter)
           │
           ▼
 SocialDispatcher.tsx (HITL 人機協同檢視與調整)

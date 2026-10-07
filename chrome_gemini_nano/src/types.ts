@@ -46,3 +46,5 @@ export interface ToneShiftResult {
   original: string;
   shifted: string;
 }
+
+export * from './services/adapters/types';

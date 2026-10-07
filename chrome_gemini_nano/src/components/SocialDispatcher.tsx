@@ -12,7 +12,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { NanoService, NanoAvailability } from '../services/nanoService';
+import { NanoAvailability } from '../services/nanoService';
+import { WebAIGateway } from '../services/webAIGateway';
 import { ToneShifter } from '../services/toneShifter';
 import { SocialPostDraft, ToneShiftMode, DedupCheckResult } from '../types';
 
@@ -37,16 +38,16 @@ export const SocialDispatcher: React.FC = () => {
   // 調音處理中狀態
   const [shiftingMode, setShiftingMode] = useState<ToneShiftMode | null>(null);
 
-  const nano = NanoService.getInstance();
+  const gateway = WebAIGateway.getInstance();
   const toneShifter = ToneShifter.getInstance();
 
   useEffect(() => {
-    nano.checkAvailability().then((status) => {
-      setNanoStatus(status);
+    gateway.capabilities().then((caps) => {
+      setNanoStatus(caps.languageModel);
     });
 
     return () => {
-      nano.destroySession();
+      gateway.destroyAll();
     };
   }, []);
 
@@ -90,8 +91,8 @@ export const SocialDispatcher: React.FC = () => {
         throw new Error('未能在目前頁面擷取到有效文字');
       }
 
-      setActionMessage('⚡ Gemini Nano 本地邊緣推論中 (X & Threads)...');
-      const posts = await nano.generateSocialPosts(pageData.title, pageData.summary, pageData.url);
+      setActionMessage('⚡ Web AI 矩陣推論中 (專用模型/Prompt API)...');
+      const posts = await gateway.generateSocialPosts(pageData.title, pageData.summary, pageData.url);
 
       const newDraft: SocialPostDraft = {
         x_en: posts.x_en,

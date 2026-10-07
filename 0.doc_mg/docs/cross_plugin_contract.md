@@ -430,6 +430,18 @@
   - 對端未安裝（`chrome.runtime.lastError`）時自動靜默降級，回傳 `{ success: false, ack: false, error: ... }`，不中斷操作。
   - 雙向交握標準化日誌：僅在開發模式（非 Production）輸出結構化日誌 `[Contract Debug][DISPATCH_SOCIAL_POST]`。
 
+### 6.9 Web AI 原生專用小模型矩陣調度與降級規範 (Web AI Matrix Routing & Fallback v2.0)
+為降低推論延遲 50%+ 並減少顯存佔用，GeminiNano 模組支援 Chrome 130+ 原生專用蒸餾模型矩陣：
+1. **專用優先原則 (Specialized First)**：
+   - 摘要與重點提煉優先調用 `ai.summarizer` 原生 API；
+   - 貼文擴寫與初稿生成優先調用 `ai.writer` 原生 API；
+   - 語氣調音（銳化、壓線、去油）優先調用 `ai.rewriter` 原生 API；
+   - 跨語言轉換優先調用 `translation` 原生神經離線翻譯 API。
+2. **透明降級底線 (Prompt API Fallback)**：
+   - 當專用 API 狀態為 `'no'`、`'unsupported'` 或調用異常時，內部自動回退至通用 `ai.languageModel` (Prompt API) 執行，對外保持完全一致的純資料契約格式與行為。
+3. **會話生命週期統一防護 (VRAM Safety)**：
+   - 所有矩陣模組由 `WebAIGateway` 統一調度，提供 `destroyAll()` 集中釋放所有底層會話資源，防止背景或頁面殘留 GPU VRAM。
+
 ---
 
 ## 7. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)
