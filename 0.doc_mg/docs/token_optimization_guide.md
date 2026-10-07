@@ -77,10 +77,39 @@
 
 ---
 
-## 5. 相關參照與 SSOT 導航
+## 5. Gate 1 探勘期武器庫強制鏈條 (Gate 1 Weaponized Exploration Protocol)
+
+在專案之「三階段守門門禁 (3-Gate Protocol)」體系中，**Gate 1（脈絡勘查與任務藍圖）** 是 Token 消耗與 Context Rot 最容易失控的高危險期。為杜絕上下文退化，憲法級規範要求強制調用武器庫工具鏈：
+
+### 5.1 探勘硬窄化三部曲 (3-Step Exploration Chain)
+1. **第一防線：骨架掏空優先（Skeleton First）**
+   * 目標代碼檔案逾 100 行者，**嚴禁直接調用原生 `view_file`** 或盲目全局 `grep`。
+   * 強制優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo_radar.py` 提取介面骨架與符號大綱。
+2. **第二防線：微量採集與簽名沉澱（Micro-Sampling）**
+   * 取得骨架與目標函式精準行號後，僅允許針對目標函式/介面簽名執行微量局部 `view_file`。
+   * 單次讀取嚴格限制 **≤ 30 行**，僅確認簽名、型別與參數，函式內部實作細節一律留待 Gate 2 原子執行時再讀。
+   * 關鍵介面簽名與型別直接沉澱至 `task.md` 藍圖中。
+3. **第三防線：藍圖停步與會話接力（Handover Halt）**
+   * 於 `task.md` 清理註解並完成 Target SSOTs 宣告後，**嚴禁在 Gate 1 修改任何原始碼**。
+   * 必須輸出「跨會話接力指令（Session Reset Handover）」，讓使用者能透過開啟新對話釋放 Gate 1 龐大探索上下文（節省 70%~90% 輸入 Token），等待明確執行授權。
+
+### 5.2 典型防呆與實戰案例 (Anti-Patterns vs Best Practices)
+
+| 維度 | ❌ 違規高消耗模式 (Anti-Pattern) | ✅ 標準武器庫鏈條模式 (Best Practice) | 實測 Token 效益 |
+| :--- | :--- | :--- | :--- |
+| **檔案初探** | 對 600 行的 `background.ts` 直接使用 `view_file(StartLine=1, EndLine=600)` 通讀全檔 | 先執行 `python 1.devtools/tools/code_skeleton.py background.ts` 取得 35 行介面骨架 | 從 ~4,000 tokens 降至 ~200 tokens (**-95%**) |
+| **介面探查** | 讀取整段 80 行之模組實作細節來理解參數 | 依骨架行號僅調用 `view_file` 讀取該函式前 15 行簽名與 JSDoc，實作留待 Gate 2 | 從 ~600 tokens 降至 ~100 tokens (**-83%**) |
+| **跨檔修改** | 在同一檔案中分成 3 次 `replace_file_content`，造成 3 輪對話與冗餘回傳 | 同檔案多點修改強制優先調用 `multi_replace_file_content` 一次性完成 | 工具呼叫與對話回合縮減 66% (**-65%**) |
+| **藍圖收尾** | Gate 1 探勘完畢後直接接著改代碼，歷史探索上下文伴隨整個開發週期 | 產出 `task.md` 後停步並輸出「跨會話接力指令」，新會話以 `task.md` 為唯一真理源 | 輸入 Token 節省 **70%~90%**，根除 Context Rot |
+
+---
+
+## 6. 相關參照與 SSOT 導航
 
 * **最高行為準則**：`GEMINI.md`
 * **Agent 執行法規**：`.agents/rules.md`
 * **專家技能**：`.agents/skills/token-saver/SKILL.md`
+* **任務協議技能**：`.agents/skills/task-protocol/SKILL.md`
 * **情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`
 * **開發工具目錄**：`1.devtools/README.md`
+

@@ -24,7 +24,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 2. **Step 0: 讀取範本/既有文件**：
    - 若無相關主題：呼叫 `view_file` 讀取 `0.doc_mg/task_template_v2.md`。
    - 若有相關主題：讀取該既有任務檔案。
-3. **Step 1: 精準唯讀掃描（探勘硬窄化）**：僅針對目標插件或相依檔案進行最小化上下文探索（嚴禁全盤無效掃描或跨插件污染）。**嚴禁全檔 dump**：單次 `view_file` 嚴格限制 ≤ 30 行介面簽名，實作細節留待 Gate 2；關鍵介面簽名與型別直接沉澱至 `task.md`。
+3. **Step 1: 精準唯讀掃描（探勘硬窄化與武器庫鏈條）**：僅針對目標插件或相依檔案進行最小化上下文探索（嚴禁全盤無效掃描或跨插件污染）。**強制武器庫鏈條**：代碼檔案逾 100 行者，嚴禁直接使用 `view_file`，強制優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo-radar` 提取大綱骨架；僅在取得骨架行號後，始得針對目標函式介面簽名進行局部 `view_file` 採集（單次嚴格限制 ≤ 30 行），實作細節留待 Gate 2；關鍵介面簽名與型別直接沉澱至 `task.md`。
 4. **Step 2: 建立/更新實體文件與 SSOT 衝擊評估**：
    - 建立 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`（`plugin` 填寫插件名稱或 `global`/`agents`）。
    - 填寫目標、鎖定檔案、具體 Phase 與驗收標準。
@@ -44,7 +44,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 - **依賴截斷 (Context Pruning)**: Gate 2 嚴格以實體 `task.md` 為唯一真理源（SSOT），切斷對上文探勘歷史之依賴，禁止回顧先前探勘輸出。
 - **原子化執行**: 每回合對話/工具呼叫僅限處理一個原子任務，防範品質劣化與幻覺。
 - **Phase 嚴格限制**: 嚴禁在單一對話回合中跨越執行多個 Phase。
-- **局部讀取與精準寫入**: 對於超過 100 行之原始碼或文檔，嚴禁通讀全檔。必須先以 `grep_search` 精準定位關鍵行號，再使用 `view_file` 指定範圍（`StartLine`/`EndLine`）局部讀取；修改時必須使用 `replace_file_content` 進行單點替換，禁止覆寫全檔。
+- **局部讀取與精準寫入**: 對於超過 100 行之原始碼或文檔，嚴禁通讀全檔。必須先以 `grep_search` 或骨架工具精準定位關鍵行號，再使用 `view_file` 指定範圍（`StartLine`/`EndLine`）局部讀取；修改時單點變更使用 `replace_file_content`，若同檔案有多處修改則強制優先調用 `multi_replace_file_content` 一次性完成，避免多輪工具呼叫與冗餘上下文回傳，嚴禁覆寫全檔。
 - **物理同步義務**: 每完成一個原子任務或 Phase，必須立即在實體 `task.md` 中打勾 `[x]`。
 - **狀態收斂 (Dynamic Condensation)**: 當 Phase 內所有原子任務完成，進入下一 Phase 前，**必須刪除已完成 Phase 的細部原子任務**，僅保留：
   ```markdown
@@ -79,11 +79,11 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 
 ## 3. 驗收防呆
 - [ ] **Gate 0 守門**: 是否在未呼叫任何掃描工具前先取得方向授權？
-- [ ] **Gate 1 探勘硬窄化**: 是否單次讀取 ≤ 30 行介面簽名且未 dump 全文？
+- [ ] **Gate 1 探勘硬窄化與武器庫鏈條**: 逾 100 行檔案是否優先調用 code_skeleton.py 或 repo-radar 提取骨架，且單次讀取 ≤ 30 行介面簽名？
 - [ ] **Gate 1 藍圖停步與接力**: 是否建立實體 `task.md`、輸出跨會話接力指令並等待授權？
 - [ ] **Gate 1 SSOT 衝擊宣告**: 是否在 `Target SSOTs` 區塊前置宣告 L1~L4 回寫清單？
 - [ ] **Gate 2 依賴截斷**: 是否純粹以實體 `task.md` 為 SSOT 執行？
-- [ ] **局部讀寫規範**: 超過 100 行檔案是否採用 grep + 區段 view + 精準 replace？
+- [ ] **局部讀寫與多點修改規範**: 超過 100 行檔案是否採用 grep/骨架 + 區段 view，單點修改使用 replace，多處修改優先調用 multi_replace？
 - [ ] **說明註解清理**: `task.md` 中所有 `<!-- ... -->` 範本提示是否已徹底刪除？
 - [ ] **四層 SSOT 閉環**: 若架構或檔案結構有變，L1 專家技能、L2 導航 README、L3 業務規格、L4 封存歸檔是否皆已同步完成？
 - [ ] **狀態收斂**: 完成之 Phase 是否已執行細節收斂以最大化節省 Token？

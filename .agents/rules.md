@@ -35,8 +35,8 @@
 ---
 
 ## 2. Token 優化與開發工程 (Efficiency & Token Saving)
-- **局部讀寫**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file` + `replace_file_content` 單點替換。
-- **骨架提煉**：跨模組介面理解優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>`，掏空實作省下 90% 上下文。
+- **局部讀寫與多點修改**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file`；單點替換用 `replace_file_content`，同檔多處修改強制調用 `multi_replace_file_content`。
+- **武器庫強制鏈條（骨架提煉）**：未知或大型模組（逾 100 行）探勘嚴禁直接盲讀原始碼，**強制優先調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo-radar` 提取大綱骨架（單次局部讀取限制 ≤ 30 行），掏空實作省下 90% 上下文。
 - **終端壓縮與脫水**：終端高輸出指令優先包裝 `rtk`，編譯/測試長堆疊串接 `python 1.devtools/tools/compact_log.py` 脫水。
 - **會話重置**：Gate 1 完成後建議開新視窗傳入接力令，釋放 70%~90% 上下文負擔。
 - *完整規範詳見*：`.agents/skills/token-saver/SKILL.md` 與 `0.doc_mg/docs/token_optimization_guide.md`。

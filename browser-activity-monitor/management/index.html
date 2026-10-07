@@ -25,7 +25,18 @@
 
       <!-- 導航模組選單 (支援未來功能擴充) -->
       <nav class="sidebar-nav">
-        <a class="nav-item active" data-tab="tab-blacklist" id="navTabBlacklist">
+        <a class="nav-item active" data-tab="tab-dashboard" id="navTabDashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9" rx="1"/>
+            <rect x="14" y="3" width="7" height="5" rx="1"/>
+            <rect x="14" y="12" width="7" height="9" rx="1"/>
+            <rect x="3" y="16" width="7" height="5" rx="1"/>
+          </svg>
+          <span>總覽儀表板</span>
+          <span class="badge" id="sidebarDashboardFocus">--%</span>
+        </a>
+
+        <a class="nav-item" data-tab="tab-blacklist" id="navTabBlacklist">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="10"/>
             <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
@@ -72,172 +83,377 @@
 
     <!-- 主工作區 (Main View) -->
     <main class="console-main">
-      <!-- 頂部資訊列 (Header Bar) -->
-      <header class="main-header">
-        <div class="header-title-box">
-          <h1>分頁黑名單管理</h1>
-          <p class="header-subtitle">集中控管網域黑名單規則，自訂萬用字元比對與自動攔截處置行為</p>
-        </div>
-
-        <div class="header-actions">
-          <div class="global-toggle-wrapper">
-            <span class="global-toggle-label">攔截器總開關</span>
-            <label class="toggle-switch">
-              <input type="checkbox" id="globalInterceptorToggle" checked>
-              <span class="toggle-slider"></span>
-            </label>
+      <!-- 總覽儀表板視圖 (Dashboard View) -->
+      <div class="view-panel active" id="viewDashboard">
+        <header class="main-header">
+          <div class="header-title-box">
+            <h1>總覽儀表板</h1>
+            <p class="header-subtitle">即時監控分頁有效停留時長、生產力專注度分佈與活躍網站排行</p>
           </div>
-        </div>
-      </header>
 
-      <!-- 滾動內容容器 (Scrollable Workspace) -->
-      <div class="main-content">
-        <!-- 數據指標卡片群 -->
-        <section class="metrics-grid">
-          <div class="metric-card">
-            <div class="metric-icon-box cyan">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                <line x1="9" y1="9" x2="15" y2="15"/>
-                <line x1="15" y1="9" x2="9" y2="15"/>
+          <div class="header-actions">
+            <!-- 專注度得分大膠囊 -->
+            <div class="focus-pill-dashboard" id="dashFocusPill" title="PM 專注度得分 (工作與通訊時長加權佔比)">
+              <span class="focus-pill-label">專注度</span>
+              <span class="focus-pill-val" id="dashFocusScore">--%</span>
+            </div>
+
+            <button type="button" id="btnDashRefresh" class="btn btn-secondary" title="立即刷新今日停留時長">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
               </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-value" id="statTotalRules">0</span>
-              <span class="metric-label">總攔截規則</span>
-            </div>
-          </div>
+              <span>刷新數據</span>
+            </button>
 
-          <div class="metric-card">
-            <div class="metric-icon-box emerald">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                <polyline points="22 4 12 14.01 9 11.01"/>
+            <button type="button" id="btnDashExport" class="btn btn-secondary" title="匯出停留時長與網域排行 JSON">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-value" id="statActiveRules">0</span>
-              <span class="metric-label">啟用中規則</span>
-            </div>
-          </div>
+              <span>匯出報表</span>
+            </button>
 
-          <div class="metric-card">
-            <div class="metric-icon-box amber">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="12" y1="8" x2="12" y2="12"/>
-                <line x1="12" y1="16" x2="12.01" y2="16"/>
+            <button type="button" id="btnDashClear" class="btn btn-secondary text-danger" title="清空今日停留記錄">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
               </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-value" id="statTotalBlocked">0</span>
-              <span class="metric-label">累計成功攔截</span>
-            </div>
+              <span>清空記錄</span>
+            </button>
           </div>
+        </header>
 
-          <div class="metric-card">
-            <div class="metric-icon-box indigo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 2 7 12 12 22 7 12 2"/>
-                <polyline points="2 17 12 22 22 17"/>
-                <polyline points="2 12 12 17 22 12"/>
-              </svg>
-            </div>
-            <div class="metric-info">
-              <span class="metric-value" id="statDefaultAction">關閉分頁</span>
-              <span class="metric-label">預設處置動作</span>
-            </div>
-          </div>
-        </section>
-
-        <!-- 主要黑名單管理控制卡片 -->
-        <section class="section-card">
-          <!-- 工具列 -->
-          <div class="section-toolbar">
-            <div class="toolbar-left">
-              <div class="search-box">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <circle cx="11" cy="11" r="8"/>
-                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        <div class="main-content">
+          <!-- 核心停留時長 KPI 卡片群 (四宮格) -->
+          <section class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-box cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <polyline points="12 6 12 12 16 14"></polyline>
                 </svg>
-                <input type="text" id="searchInput" class="search-input" placeholder="搜尋網域、樣式或備註...">
-                <button type="button" id="searchClearBtn" class="search-clear-btn" title="清除搜尋">✕</button>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value" id="dashKpiTotal">0s</span>
+                <span class="metric-label">今日累計活躍時長</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value text-emerald" id="dashKpiWork">0s</span>
+                <span class="metric-label">💼 工作與生產力時長</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                  <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                  <line x1="6" y1="1" x2="6" y2="4"></line>
+                  <line x1="10" y1="1" x2="10" y2="4"></line>
+                  <line x1="14" y1="1" x2="14" y2="4"></line>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value text-amber" id="dashKpiLeisure">0s</span>
+                <span class="metric-label">☕ 休閒與娛樂時長</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box indigo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value text-secondary" id="dashKpiOther">0s</span>
+                <span class="metric-label">🌐 其他與未分類時長</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 看板雙欄佈局：左側類別佔比分析，右側 Top 5 排行榜 -->
+          <div class="dashboard-grid">
+            <!-- 類別佔比分析卡片 -->
+            <section class="section-card dashboard-chart-card">
+              <div class="section-header-compact">
+                <div class="section-title-wrap">
+                  <h3>分類時長佔比與專注度分佈</h3>
+                  <span class="section-subtitle">依照網域分類引擎自動聚合計算</span>
+                </div>
               </div>
 
-              <select id="filterMatchType" class="filter-select" title="比對模式篩選">
-                <option value="all">所有比對模式</option>
-                <option value="wildcard">萬用字元 (Wildcard)</option>
-                <option value="exact">完整網域 (Exact)</option>
-                <option value="regex">正規表達式 (Regex)</option>
-              </select>
+              <div class="dash-progress-wrapper">
+                <div class="dash-stacked-bar" id="dashStackedBar">
+                  <div class="dash-seg seg-prod" id="dashSegProd" style="width: 0%;" title="生產力: 0%"></div>
+                  <div class="dash-seg seg-comm" id="dashSegComm" style="width: 0%;" title="辦公通訊: 0%"></div>
+                  <div class="dash-seg seg-leisure" id="dashSegLeisure" style="width: 0%;" title="休閒娛樂: 0%"></div>
+                  <div class="dash-seg seg-other" id="dashSegOther" style="width: 0%;" title="其他: 0%"></div>
+                </div>
+                
+                <div class="dash-legend-grid">
+                  <div class="dash-legend-card legend-prod">
+                    <div class="legend-header">
+                      <span class="legend-dot dot-prod"></span>
+                      <span class="legend-name">生產力 (Productivity)</span>
+                    </div>
+                    <div class="legend-values">
+                      <span class="legend-pct" id="dashLegendPctProd">0%</span>
+                      <span class="legend-time" id="dashLegendTimeProd">0s</span>
+                    </div>
+                  </div>
 
-              <select id="filterStatus" class="filter-select" title="狀態篩選">
-                <option value="all">所有狀態</option>
-                <option value="enabled">僅顯示啟用</option>
-                <option value="disabled">僅顯示停用</option>
-              </select>
-            </div>
+                  <div class="dash-legend-card legend-comm">
+                    <div class="legend-header">
+                      <span class="legend-dot dot-comm"></span>
+                      <span class="legend-name">辦公通訊 (Communication)</span>
+                    </div>
+                    <div class="legend-values">
+                      <span class="legend-pct" id="dashLegendPctComm">0%</span>
+                      <span class="legend-time" id="dashLegendTimeComm">0s</span>
+                    </div>
+                  </div>
 
-            <div class="toolbar-right">
-              <button type="button" id="btnExportJson" class="btn btn-secondary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="7 10 12 15 17 10"/>
-                  <line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                <span>匯出 JSON</span>
-              </button>
+                  <div class="dash-legend-card legend-leisure">
+                    <div class="legend-header">
+                      <span class="legend-dot dot-leisure"></span>
+                      <span class="legend-name">休閒娛樂 (Leisure)</span>
+                    </div>
+                    <div class="legend-values">
+                      <span class="legend-pct" id="dashLegendPctLeisure">0%</span>
+                      <span class="legend-time" id="dashLegendTimeLeisure">0s</span>
+                    </div>
+                  </div>
 
-              <button type="button" id="btnImportJson" class="btn btn-secondary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" y1="3" x2="12" y2="15"/>
-                </svg>
-                <span>匯入規則</span>
-              </button>
+                  <div class="dash-legend-card legend-other">
+                    <div class="legend-header">
+                      <span class="legend-dot dot-other"></span>
+                      <span class="legend-name">其他與靜態 (Other)</span>
+                    </div>
+                    <div class="legend-values">
+                      <span class="legend-pct" id="dashLegendPctOther">0%</span>
+                      <span class="legend-time" id="dashLegendTimeOther">0s</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
 
-              <button type="button" id="btnOpenAddModal" class="btn btn-primary">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/>
-                  <line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-                <span>新增規則</span>
-              </button>
-            </div>
+              <!-- 當前作用中分頁即時監控小卡 -->
+              <div class="current-active-tab-banner" id="dashActiveTabBanner">
+                <div class="active-tab-icon-wrap">
+                  <span class="live-pulse-dot-large"></span>
+                </div>
+                <div class="active-tab-info">
+                  <span class="active-tab-label">當前作用中分頁即時監聽</span>
+                  <span class="active-tab-domain" id="dashActiveTabDomain">查詢中...</span>
+                </div>
+                <div class="active-tab-timer" id="dashActiveTabDuration">
+                  0s
+                </div>
+              </div>
+            </section>
+
+            <!-- Top 5 活躍停留網站排行榜 -->
+            <section class="section-card dashboard-ranking-card">
+              <div class="section-header-compact">
+                <div class="section-title-wrap">
+                  <h3>Top 5 活躍停留網站排行榜</h3>
+                  <span class="section-subtitle" id="dashTopDomainsSubtitle">今日活躍網域累計</span>
+                </div>
+                <span class="badge" id="dashTopDomainsCount">0 個網域</span>
+              </div>
+
+              <div class="dash-domains-list" id="dashTopDomainsList">
+                <div class="domains-empty-hint">今日尚無分頁停留記錄</div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+
+      <!-- 分頁黑名單管理視圖 (Blacklist View) -->
+      <div class="view-panel" id="viewBlacklist">
+        <!-- 頂部資訊列 (Header Bar) -->
+        <header class="main-header">
+          <div class="header-title-box">
+            <h1>分頁黑名單管理</h1>
+            <p class="header-subtitle">集中控管網域黑名單規則，自訂萬用字元比對與自動攔截處置行為</p>
           </div>
 
-          <!-- 規則資料表格 -->
-          <div class="table-container">
-            <table class="data-table">
-              <thead>
-                <tr>
-                  <th style="width: 70px; text-align: center;">啟用</th>
-                  <th style="width: 320px;">比對網域 / 樣式</th>
-                  <th style="width: 140px;">比對模式</th>
-                  <th style="width: 140px;">攔截動作</th>
-                  <th>備註說明</th>
-                  <th style="width: 160px;">更新時間</th>
-                  <th style="width: 110px; text-align: right;">操作</th>
-                </tr>
-              </thead>
-              <tbody id="ruleTableBody">
-                <!-- 動態注入規則列 -->
-              </tbody>
-            </table>
-
-            <!-- 空狀態 (Empty State) -->
-            <div id="tableEmptyState" class="empty-state" style="display: none;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"/>
-                <line x1="8" y1="12" x2="16" y2="12"/>
-              </svg>
-              <h3 class="empty-title">查無符合的黑名單規則</h3>
-              <p class="empty-desc">您可以嘗試修改搜尋關鍵字、調整篩選條件，或點擊「新增規則」建立第一條攔截規則。</p>
-              <button type="button" id="btnEmptyAdd" class="btn btn-primary">立即新增規則</button>
+          <div class="header-actions">
+            <div class="global-toggle-wrapper">
+              <span class="global-toggle-label">攔截器總開關</span>
+              <label class="toggle-switch">
+                <input type="checkbox" id="globalInterceptorToggle" checked>
+                <span class="toggle-slider"></span>
+              </label>
             </div>
           </div>
-        </section>
+        </header>
+
+        <!-- 滾動內容容器 (Scrollable Workspace) -->
+        <div class="main-content">
+          <!-- 數據指標卡片群 -->
+          <section class="metrics-grid">
+            <div class="metric-card">
+              <div class="metric-icon-box cyan">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value" id="statTotalRules">0</span>
+                <span class="metric-label">總攔截規則</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box emerald">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value" id="statActiveRules">0</span>
+                <span class="metric-label">啟用中規則</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="12" y1="8" x2="12" y2="12"/>
+                  <line x1="12" y1="16" x2="12.01" y2="16"/>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value" id="statTotalBlocked">0</span>
+                <span class="metric-label">累計成功攔截</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-icon-box indigo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                  <polyline points="22 17 12 22 2 17"/>
+                  <polyline points="2 12 12 17 22 12"/>
+                </svg>
+              </div>
+              <div class="metric-info">
+                <span class="metric-value" id="statDefaultAction">關閉分頁</span>
+                <span class="metric-label">預設處置動作</span>
+              </div>
+            </div>
+          </section>
+
+          <!-- 主要黑名單管理控制卡片 -->
+          <section class="section-card">
+            <!-- 工具列 -->
+            <div class="section-toolbar">
+              <div class="toolbar-left">
+                <div class="search-box">
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input type="text" id="searchInput" class="search-input" placeholder="搜尋網域、樣式或備註...">
+                  <button type="button" id="searchClearBtn" class="search-clear-btn" title="清除搜尋">✕</button>
+                </div>
+
+                <select id="filterMatchType" class="filter-select" title="比對模式篩選">
+                  <option value="all">所有比對模式</option>
+                  <option value="wildcard">萬用字元 (Wildcard)</option>
+                  <option value="exact">完整網域 (Exact)</option>
+                  <option value="regex">正規表達式 (Regex)</option>
+                </select>
+
+                <select id="filterStatus" class="filter-select" title="狀態篩選">
+                  <option value="all">所有狀態</option>
+                  <option value="enabled">僅顯示啟用</option>
+                  <option value="disabled">僅顯示停用</option>
+                </select>
+              </div>
+
+              <div class="toolbar-right">
+                <button type="button" id="btnExportJson" class="btn btn-secondary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/>
+                    <line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  <span>匯出 JSON</span>
+                </button>
+
+                <button type="button" id="btnImportJson" class="btn btn-secondary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                  <span>匯入規則</span>
+                </button>
+
+                <button type="button" id="btnOpenAddModal" class="btn btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                  <span>新增規則</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 規則資料表格 -->
+            <div class="table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width: 70px; text-align: center;">啟用</th>
+                    <th style="width: 320px;">比對網域 / 樣式</th>
+                    <th style="width: 140px;">比對模式</th>
+                    <th style="width: 140px;">攔截動作</th>
+                    <th>備註說明</th>
+                    <th style="width: 160px;">更新時間</th>
+                    <th style="width: 110px; text-align: right;">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="ruleTableBody">
+                  <!-- 動態注入規則列 -->
+                </tbody>
+              </table>
+
+              <!-- 空狀態 (Empty State) -->
+              <div id="tableEmptyState" class="empty-state" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                <h3 class="empty-title">查無符合的黑名單規則</h3>
+                <p class="empty-desc">您可以嘗試修改搜尋關鍵字、調整篩選條件，或點擊「新增規則」建立第一條攔截規則。</p>
+                <button type="button" id="btnEmptyAdd" class="btn btn-primary">立即新增規則</button>
+              </div>
+            </div>
+          </section>
+        </div>
       </div>
     </main>
   </div>
