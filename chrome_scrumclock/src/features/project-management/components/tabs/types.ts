@@ -49,6 +49,8 @@ export interface TaskPoolTabProps {
   isSchedulingCalendar?: boolean;
   onUpdatePomodoroEstimate?: (id: string, estimate: number) => Promise<void>;
   onUpdateChecklist?: (id: string, checklist: ChecklistItem[]) => Promise<void>;
+  onTriageInbox?: () => Promise<void>;
+  isTriagingInbox?: boolean;
 }
 
 export interface InboxTabProps {

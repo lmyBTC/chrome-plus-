@@ -19,8 +19,10 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "0.doc_mg/docs/cro
 * `src/background.ts`: Service Worker 背景路由、Alarms、跨插件分流
 * `src/entries/sidebar/`: 側邊欄工作區 (`ToolboxHub` 工具箱 / `AIAssistantView` PK+ 助理)
 * `src/entries/newtab/`: 新分頁儀表板視圖
-* `src/dashboard/components/BoardView.tsx`: 極簡 4 欄 GTD 敏捷看板（整合 Google Tasks 一鍵雙向同步拉取與狀態連動）
+* `src/dashboard/components/BoardView.tsx`: 極簡 4 欄 GTD 敏捷看板（整合 Google Tasks 一鍵雙向同步、一鍵 Inbox Zero 與語意 WIP 防禦）
+* `src/features/project-management/services/`: 專案管理 AI 服務層 (`taskAIEngine.ts` 語意釐清與原子拆解 / `kanbanAuditor.ts` 看板健康度與閒置巡檢)
 * `src/features/scrumclock/components/SprintPomodoro.tsx`: 番茄鐘 25 分鐘衝刺計時面板
+* `src/features/scrumclock/components/EndOfDayReview.tsx`: 日終反思（對接 Web AI 戰報生成與 Markdown YAML 筆記匯出）
 * `src/shared/google/`: Google 原生生態引擎 (`googleAuthClient.ts`, `googleTasksSync.ts`, `googleCalendarService.ts`)
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)

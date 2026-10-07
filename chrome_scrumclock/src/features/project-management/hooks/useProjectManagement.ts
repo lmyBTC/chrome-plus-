@@ -5,6 +5,7 @@ import { googleTasksSync } from '../../../shared/google/googleTasksSync';
 import { googleCalendarService } from '../../../shared/google/googleCalendarService';
 import { WeeklyMission, InboxItem, GTDStatus, ChecklistItem } from '../../../types';
 import { DashboardColumns, SprintLogWithMission } from '../components/tabs/types';
+import { TaskAIEngine, SubtaskProposal, TaskTriageProposal } from '../services/taskAIEngine';
 
 declare const chrome: any;
 
@@ -24,6 +25,12 @@ export const useProjectManagement = () => {
   const [notesInputs, setNotesInputs] = useState<Record<string, string>>({});
   const [breakingDownId, setBreakingDownId] = useState<string | null>(null);
   const [subtasks, setSubtasks] = useState<Record<string, string[]>>({});
+  // Phase 2 新增：結構化 SubtaskProposals（含預估番茄鐘）
+  const [subtaskProposals, setSubtaskProposals] = useState<Record<string, SubtaskProposal[]>>({});
+  // Phase 2 新增：Inbox 語意釐清 triage 狀態
+  const [isTriagingInbox, setIsTriagingInbox] = useState(false);
+  const [triageProposals, setTriageProposals] = useState<TaskTriageProposal[]>([]);
+  const [isTriageModalOpen, setIsTriageModalOpen] = useState(false);
 
   const [visibleColumns, setVisibleColumns] = useState<DashboardColumns>(() => {
     try {
@@ -432,11 +439,29 @@ export const useProjectManagement = () => {
   const handleBreakdownTask = async (missionId: string) => {
     setBreakingDownId(missionId);
     try {
-      const breakdownResult = await sync.breakdownTask(missionId);
-      if (breakdownResult && breakdownResult.length > 0) {
-        setSubtasks((prev) => ({ ...prev, [missionId]: breakdownResult }));
+      const missions = await storage.getWeeklyMissions();
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) throw new Error('任務不存在');
+
+      // 優先使用 TaskAIEngine（本機 Nano），回退至雲端 sync
+      let proposals: SubtaskProposal[] = [];
+      try {
+        const engine = TaskAIEngine.getInstance();
+        proposals = await engine.decomposeTask(mission.text, mission.notes);
+      } catch {
+        // Nano 不可用時回退至舊版雲端拆解
+        const cloudResult = await sync.breakdownTask(missionId);
+        if (cloudResult && cloudResult.length > 0) {
+          proposals = cloudResult.map((t: string) => ({ title: t, estimatedPomodoros: 1 }));
+        }
+      }
+
+      if (proposals.length > 0) {
+        setSubtaskProposals((prev) => ({ ...prev, [missionId]: proposals }));
+        // 向下相容：同步更新舊版 subtasks string[] 供 TaskDetailDrawer 顯示
+        setSubtasks((prev) => ({ ...prev, [missionId]: proposals.map((p) => `${p.title} (🍅×${p.estimatedPomodoros})`) }));
       } else {
-        alert('AI 拆解失敗或未產生建議，請確認連線設定。');
+        alert('AI 拆解未產生建議，請稍後再試。');
       }
     } catch (e) {
       console.error('AI 任務拆解失敗:', e);
@@ -446,38 +471,92 @@ export const useProjectManagement = () => {
     }
   };
 
+  /**
+   * 升級版：將 SubtaskProposal 批次寫入 WeeklyMission.checklist，
+   * 並同步更新 progressPercent，不再建立獨立子任務。
+   */
   const handleApplySubtasks = async (missionId: string) => {
-    const tasks = subtasks[missionId];
-    if (!tasks || tasks.length === 0) return;
+    const proposals = subtaskProposals[missionId];
+    if (!proposals || proposals.length === 0) return;
     try {
       const missions = await storage.getWeeklyMissions();
-      const original = missions.find((m) => m.id === missionId);
-      const newMissions: WeeklyMission[] = tasks.map((text, idx) => ({
-        id: `task-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 5)}`,
-        text: text.replace(/^[-*•\d.]+\s*/, ''),
-        isCompleted: false,
-        priority: original?.priority || 'P2',
-        notes: `衍生自母任務: ${original?.text || ''}`,
-        createdAt: new Date().toISOString().replace('T', ' ').substring(0, 16),
+      const mission = missions.find((m) => m.id === missionId);
+      if (!mission) return;
+
+      const newChecklistItems: ChecklistItem[] = proposals.map((p, idx) => ({
+        id: `ck_nano_${Date.now()}_${idx}`,
+        text: `${p.title} (🍅×${p.estimatedPomodoros})`,
+        completed: false,
       }));
-      await storage.saveWeeklyMissions([...missions, ...newMissions]);
-      setSubtasks((prev) => {
-        const next = { ...prev };
-        delete next[missionId];
-        return next;
-      });
+
+      // 合併至現有 checklist（不覆蓋已有項目）
+      mission.checklist = [...(mission.checklist || []), ...newChecklistItems];
+      mission.progressPercent = 0; // 新增後重置進度
+      await storage.saveWeeklyMissions(missions);
+
+      // 清除提案暫存
+      setSubtaskProposals((prev) => { const next = { ...prev }; delete next[missionId]; return next; });
+      setSubtasks((prev) => { const next = { ...prev }; delete next[missionId]; return next; });
       await loadData();
     } catch (e) {
-      console.error('匯入子任務失敗:', e);
+      console.error('匯入子任務至 Checklist 失敗:', e);
     }
   };
 
   const handleDismissSubtasks = (missionId: string) => {
-    setSubtasks((prev) => {
-      const next = { ...prev };
-      delete next[missionId];
-      return next;
-    });
+    setSubtaskProposals((prev) => { const next = { ...prev }; delete next[missionId]; return next; });
+    setSubtasks((prev) => { const next = { ...prev }; delete next[missionId]; return next; });
+  };
+
+  /**
+   * Phase 2 Task 2.1：呼叫 TaskAIEngine 批次語意釐清 Inbox 卡片，
+   * 回傳 TaskTriageProposal[] 並開啟 InboxTriageModal。
+   */
+  const handleTriageInbox = async () => {
+    const inboxTasks = weeklyMissions.filter((m) => m.status === 'inbox' && !m.isCompleted);
+    if (inboxTasks.length === 0) return;
+    setIsTriagingInbox(true);
+    try {
+      const engine = TaskAIEngine.getInstance();
+      const proposals = await engine.triageInboxItems(inboxTasks);
+      if (proposals.length > 0) {
+        setTriageProposals(proposals);
+        setIsTriageModalOpen(true);
+      } else {
+        alert('Nano 無法產生釐清建議，請稍後再試。');
+      }
+    } catch (e) {
+      console.error('Inbox Triage 失敗:', e);
+      alert('Inbox 語意釐清失敗');
+    } finally {
+      setIsTriagingInbox(false);
+    }
+  };
+
+  /**
+   * Phase 2 Task 2.1：將使用者確認後的 TaskTriageProposal[] 批次套用至 Storage。
+   * 以 StorageQueue 循序寫入（for...of 保證順序，不並行）。
+   */
+  const handleApplyTriageProposals = async (confirmedProposals: TaskTriageProposal[]) => {
+    try {
+      for (const proposal of confirmedProposals) {
+        const missions = await storage.getWeeklyMissions();
+        const mission = missions.find((m) => m.id === proposal.id);
+        if (!mission) continue;
+        mission.status = proposal.recommendedStatus;
+        mission.estimatedPomodoros = proposal.recommendedPomodoros;
+        if (proposal.tags && proposal.tags.length > 0) {
+          const tagNote = `[標籤: ${proposal.tags.join(', ')}]`;
+          mission.notes = mission.notes ? `${mission.notes}\n${tagNote}` : tagNote;
+        }
+        await storage.saveWeeklyMissions(missions);
+      }
+      setIsTriageModalOpen(false);
+      setTriageProposals([]);
+      await loadData();
+    } catch (e) {
+      console.error('批次套用 Triage 建議失敗:', e);
+    }
   };
 
   const handleSync = async () => {
@@ -615,6 +694,11 @@ export const useProjectManagement = () => {
     notesInputs,
     breakingDownId,
     subtasks,
+    subtaskProposals,
+    isTriagingInbox,
+    triageProposals,
+    isTriageModalOpen,
+    setIsTriageModalOpen,
     visibleColumns,
     setVisibleColumns,
     handleAddTask,
@@ -633,6 +717,8 @@ export const useProjectManagement = () => {
     handleBreakdownTask,
     handleApplySubtasks,
     handleDismissSubtasks,
+    handleTriageInbox,
+    handleApplyTriageProposals,
     handleSync,
     handleSyncGoogleTasks,
     doSmartMerge,

@@ -19,6 +19,8 @@ export interface BoardViewProps {
   onSyncGoogleTasks?: () => Promise<void>;
   isGoogleSyncing?: boolean;
   onReloadMissions?: () => Promise<void>;
+  onTriageInbox?: () => Promise<void>;
+  isTriagingInbox?: boolean;
 }
 
 interface ColumnConfig {
@@ -80,6 +82,8 @@ export const BoardView: React.FC<BoardViewProps> = ({
   onSyncGoogleTasks,
   isGoogleSyncing,
   onReloadMissions,
+  onTriageInbox,
+  isTriagingInbox = false,
 }) => {
   const [activeDropColumn, setActiveDropColumn] = useState<GTDStatus | null>(null);
   const [inboxInput, setInboxInput] = useState('');
@@ -87,6 +91,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [wipEnabled, setWipEnabled] = useState<boolean>(enableWipLimit ?? true);
   const [currentWipLimit, setCurrentWipLimit] = useState(maxWipLimit);
+  const [wipConflictTask, setWipConflictTask] = useState<{ id: string; title: string } | null>(null);
 
   // Google Tasks 同步狀態管理
   const [internalSyncing, setInternalSyncing] = useState(false);
@@ -105,6 +110,18 @@ export const BoardView: React.FC<BoardViewProps> = ({
   });
   const [showAuthGuideModal, setShowAuthGuideModal] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState('');
+  const [idleAuditBanner, setIdleAuditBanner] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['pendingIdleAuditNotification'], (result: any) => {
+        if (result && result.pendingIdleAuditNotification && result.pendingIdleAuditNotification.message) {
+          setIdleAuditBanner(result.pendingIdleAuditNotification.message);
+          chrome.storage.local.remove(['pendingIdleAuditNotification']);
+        }
+      });
+    }
+  }, []);
 
   const formatLastSync = (timestamp: number | null): string => {
     if (!timestamp) return '尚未同步';
@@ -287,11 +304,36 @@ export const BoardView: React.FC<BoardViewProps> = ({
     const currentStatus = getTaskStatus(task);
     if (currentStatus === targetCol) return;
 
+    // Phase 2 Task 2.3: 語意 WIP 衝突提醒（當拖入 In Progress 且已達或超過 WIP 上限時觸發攔截）
+    if (targetCol === 'in-progress' && wipEnabled) {
+      const inProgressCount = tasksByColumn['in-progress'].length;
+      if (inProgressCount >= currentWipLimit) {
+        setWipConflictTask({ id: taskId, title: task.text });
+        return;
+      }
+    }
+
     await onUpdateStatus(taskId, targetCol);
   };
 
   return (
     <div className="flex flex-col h-full space-y-4">
+      {/* 🧹 Nano 閒置巡檢自動整理通知橫幅 */}
+      {idleAuditBanner && (
+        <div className="flex items-center justify-between p-3.5 bg-gradient-to-r from-purple-950/60 to-indigo-950/60 border border-purple-500/40 rounded-xl text-purple-200 text-xs shadow-lg shadow-purple-950/30">
+          <div className="flex items-center gap-2">
+            <span className="text-base">✨</span>
+            <span className="font-medium">{idleAuditBanner}</span>
+          </div>
+          <button
+            onClick={() => setIdleAuditBanner(null)}
+            className="text-purple-300 hover:text-white px-2 py-0.5 rounded hover:bg-purple-800/40 transition-colors"
+          >
+            ✕ 知道了
+          </button>
+        </div>
+      )}
+
       {/* 頂部看板操作與統計列 */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-dark-surface p-3 rounded-xl border border-dark-border-subtle">
         {/* 左側：快速檢索與 WIP 說明 */}
@@ -483,14 +525,35 @@ export const BoardView: React.FC<BoardViewProps> = ({
                     </button>
                   </form>
                   {tasks.length > 0 && (
-                    <button
-                      onClick={handleClarifyAllInbox}
-                      className="w-full py-1 bg-purple-950/30 hover:bg-purple-900/40 text-purple-300 border border-purple-800/40 rounded text-[11px] font-medium transition-colors cursor-pointer flex items-center justify-center gap-1"
-                      title="一鍵將所有收件匣任務移至下一步行動"
-                    >
-                      <span>⚡</span>
-                      <span>一鍵釐清全部 (Inbox Zero)</span>
-                    </button>
+                    <div className="flex flex-col gap-1.5">
+                      {onTriageInbox && (
+                        <button
+                          onClick={onTriageInbox}
+                          disabled={isTriagingInbox}
+                          className="w-full py-1.5 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/50 hover:to-indigo-600/50 text-purple-200 border border-purple-500/40 rounded text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                          title="調用 Gemini Nano 本機模型批次判定任務 GTD 狀態、番茄鐘預估與情境標籤"
+                        >
+                          {isTriagingInbox ? (
+                            <>
+                              <span className="animate-spin block h-3 w-3 border-2 border-purple-300 border-t-transparent rounded-full" />
+                              <span>Nano 批次釐清中...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>✨</span>
+                              <span>Nano 一鍵釐清 (Inbox Zero)</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={handleClarifyAllInbox}
+                        className="w-full py-1 bg-dark-surface/80 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle rounded text-[10px] transition-colors cursor-pointer flex items-center justify-center gap-1"
+                        title="直接將所有收件匣任務移至下一步行動"
+                      >
+                        <span>⚡ 快速轉為下一步行動</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
@@ -626,6 +689,60 @@ export const BoardView: React.FC<BoardViewProps> = ({
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold cursor-pointer transition-colors"
               >
                 了解並關閉
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 語意 WIP 衝突提醒彈窗 (Phase 2 Task 2.3) */}
+      {wipConflictTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="bg-dark-surface border border-red-500/60 rounded-2xl p-6 max-w-md w-full shadow-2xl text-dark-primary space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-600/20 border border-red-500/40 text-red-400 flex items-center justify-center text-xl shrink-0">
+                ⚠️
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">語意 WIP 在製品衝突提醒</h3>
+                <p className="text-xs text-red-300">
+                  進行中任務已達上限 ({tasksByColumn['in-progress'].length}/{currentWipLimit})
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 bg-dark-card rounded-xl border border-dark-border-subtle text-xs space-y-1">
+              <span className="text-dark-muted">即將推入之任務：</span>
+              <p className="font-semibold text-white break-words">{wipConflictTask.title}</p>
+            </div>
+
+            <p className="text-xs text-dark-secondary leading-relaxed">
+              根據看板精實原則 (Lean Kanban)，同時並行過多任務將大幅增加大腦認知負荷與上下文切換成本。
+              建議先專注完成既有任務，或將此任務暫存於「下一步行動」。
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-dark-border-subtle/60">
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = wipConflictTask.id;
+                  setWipConflictTask(null);
+                  await onUpdateStatus(id, 'next-action');
+                }}
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-dark-card hover:bg-dark-hover border border-dark-border-subtle text-blue-300 hover:text-blue-200 transition-colors cursor-pointer"
+              >
+                暫緩至下一步行動 (建議)
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const id = wipConflictTask.id;
+                  setWipConflictTask(null);
+                  await onUpdateStatus(id, 'in-progress');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-bold bg-red-600/80 hover:bg-red-600 text-white transition-colors cursor-pointer"
+              >
+                確認強行推入
               </button>
             </div>
           </div>

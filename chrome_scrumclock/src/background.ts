@@ -14,6 +14,7 @@ import {
 } from './background/externalService';
 import { monitorService } from './features/activity-monitor/services/monitorService';
 import { WeeklyMission, InboxItem } from './types';
+import { KanbanAuditor } from './features/project-management/services/kanbanAuditor';
 // 初始化活動監控服務
 monitorService.initialize();
 
@@ -238,4 +239,65 @@ chrome.alarms.onAlarm.addListener((alarm) => {
 });
 
 // 跨插件 AI 服務化協議監聽器 (externally_connectable)
-chrome.runtime.onMessageExternal.addListener(handleExternalMessage);
+chrome.runtime.onMessageExternal.addListener(handleExternalMessage);
+
+// ── 閒置理牌監聽器 (Kanban Idle Auditor) ──────────────────────────────────
+if (typeof chrome.idle !== 'undefined') {
+  // 設定閒置判定門檻為 15 分鐘 (900 秒)
+  chrome.idle.setDetectionInterval(15 * 60);
+
+  chrome.idle.onStateChanged.addListener(async (newState: string) => {
+    if (newState === 'idle' || newState === 'locked') {
+      try {
+        const storageData = await chrome.storage.local.get(['weeklyMissions']);
+        const weeklyMissions: WeeklyMission[] = storageData.weeklyMissions || [];
+        if (!weeklyMissions.length) return;
+
+        const auditor = KanbanAuditor.getInstance();
+        // 篩選超過 5 天未推進的 in-progress 與 next-action 任務
+        const staleCards = auditor.getStaleMissions(weeklyMissions, 5);
+
+        if (staleCards.length > 0) {
+          let downgradedCount = 0;
+          const updatedMissions = weeklyMissions.map((m) => {
+            const isStale = staleCards.some((s) => s.id === m.id);
+            if (isStale && (m.status === 'in-progress' || m.status === 'next-action')) {
+              downgradedCount++;
+              return {
+                ...m,
+                status: 'someday' as const,
+                notes: (m.notes ? m.notes + '\n' : '') +
+                  `[看板閒置巡檢] 於 ${new Date().toLocaleDateString('zh-TW')} 因停滯超過 5 天自動移至 Someday`
+              };
+            }
+            return m;
+          });
+
+          if (downgradedCount > 0) {
+            const notificationMessage = `✨ Nano 已自動將 ${downgradedCount} 則過期任務移至 Someday，今日看板焦點清晰！`;
+            await chrome.storage.local.set({
+              weeklyMissions: updatedMissions,
+              pendingIdleAuditNotification: {
+                staleCount: downgradedCount,
+                message: notificationMessage,
+                timestamp: Date.now()
+              }
+            });
+
+            if (typeof chrome.notifications !== 'undefined') {
+              chrome.notifications.create({
+                type: 'basic',
+                iconUrl: 'icons/icon128.png',
+                title: '🧹 看板自動整理完成',
+                message: `已將 ${downgradedCount} 則超過 5 天未推進的停滯任務移至 Someday`
+              });
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[KanbanAuditor] 閒置巡檢執行失敗:', err);
+      }
+    }
+  });
+}
+

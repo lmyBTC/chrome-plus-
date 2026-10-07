@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../../../core/chrome/storage';
 import { sync } from '../../../core/api/sync';
 import { DailyLog, SprintLog, CoreBattle, WeeklyMission, DailyReview } from '../../../types';
+import { TaskAIEngine } from '../../project-management/services/taskAIEngine';
 
 interface EndOfDayReviewProps {
   onComplete: () => void;
@@ -19,6 +20,9 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
   const [tomorrowBattles, setTomorrowBattles] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string>('');
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -70,6 +74,109 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
         return [...prev, missionId];
       }
     });
+  };
+
+  const handleGenerateAISummary = async () => {
+    setIsGeneratingAI(true);
+    try {
+      const aiEngine = TaskAIEngine.getInstance();
+      // 收集今日完成或參與衝刺的任務
+      const completedTasks = weeklyMissions.filter(
+        m => completedMissionIds.includes(m.id) || m.isCompleted
+      );
+      const targetTasks = completedTasks.length > 0
+        ? completedTasks
+        : (todayLog?.sprintLogs?.map(s => {
+            const m = weeklyMissions.find(w => w.id === s.missionId);
+            return m || {
+              id: s.missionId,
+              text: getMissionText(s.missionId),
+              isCompleted: false,
+              spentPomodoros: 1
+            } as WeeklyMission;
+          }) || []);
+
+      const spentPomodoros = todayLog?.sprintLogs?.length || 1;
+      const summary = await aiEngine.generateDailyReviewSummary(targetTasks, spentPomodoros);
+      setAiSummary(summary);
+    } catch (error) {
+      console.error('生成日終戰報失敗:', error);
+      alert('AI 戰報生成失敗，請確認已啟用 Web AI API');
+    } finally {
+      setIsGeneratingAI(false);
+    }
+  };
+
+  const handleApplyAISummaryToFields = () => {
+    if (!aiSummary) return;
+    setReview(prev => ({
+      highlight: prev.highlight || `今日核心衝刺成效：\n${aiSummary.slice(0, 150)}...`,
+      lesson: prev.lesson || '專注於高槓桿目標，減少非預期中斷與切換損耗。',
+      nextAction: prev.nextAction || '早晨第一時間直接啟動明日第一優先之預排戰役。'
+    }));
+  };
+
+  const generateMarkdownContent = (): string => {
+    const dateStr = new Date().toISOString().split('T')[0];
+    const spentPomodoros = todayLog?.sprintLogs?.length || 0;
+    const completedCount = completedMissionIds.length;
+    const tomorrowList = tomorrowBattles
+      .map(id => getMissionText(id))
+      .filter(Boolean);
+
+    return `---
+title: "日終回顧 - ${dateStr}"
+date: ${dateStr}
+type: daily-review
+pomodoros: ${spentPomodoros}
+completed_tasks: ${completedCount}
+tags: [daily-review, scrumclock, productivity]
+---
+
+# 🎯 今日日終戰報與反思 (${dateStr})
+
+## 📊 數據統計
+- **總投入番茄鐘**：${spentPomodoros} 🍅
+- **完成任務數**：${completedCount} 項
+
+## 🏆 今日高光時刻
+${review.highlight.trim() || '（無）'}
+
+## 💡 最大教訓與洞見
+${review.lesson.trim() || '（無）'}
+
+## 🚀 明日關鍵行動
+${review.nextAction.trim() || '（無）'}
+
+## 🌙 明日預排戰役
+${tomorrowList.length > 0 ? tomorrowList.map(t => `- ${t}`).join('\n') : '- （無預排戰役）'}
+
+${aiSummary ? `## 🤖 Gemini Nano 智慧戰報\n${aiSummary}\n` : ''}
+`;
+  };
+
+  const handleExportMarkdown = () => {
+    const content = generateMarkdownContent();
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `daily-review-${new Date().toISOString().split('T')[0]}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopyMarkdown = async () => {
+    const content = generateMarkdownContent();
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopyFeedback('已複製 Markdown 筆記（含 YAML Frontmatter）至剪貼簿！');
+      setTimeout(() => setCopyFeedback(null), 3000);
+    } catch (err) {
+      console.error('複製失敗:', err);
+    }
   };
 
   const handleSubmit = async () => {
@@ -208,6 +315,57 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
         </div>
       )}
 
+      {/* ✨ Gemini Nano 智慧日終戰報 */}
+      <div className="bg-gradient-to-r from-purple-950/30 to-indigo-950/30 border border-purple-800/40 rounded-xl p-6 mb-6 shadow-lg shadow-purple-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-xl font-bold text-purple-300 flex items-center gap-2">
+              <span>🤖</span> Gemini Nano 今日智慧戰報
+            </h2>
+            <p className="text-xs text-purple-400/80 mt-1">
+              調用本機邊緣 Nano 模型（ai.summarizer），自動萃取今日戰功、潛在延宕與明日洞見
+            </p>
+          </div>
+          <button
+            onClick={handleGenerateAISummary}
+            disabled={isGeneratingAI}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 border shadow-md ${
+              isGeneratingAI
+                ? 'bg-purple-950/60 border-purple-800 text-purple-400 cursor-not-allowed'
+                : 'bg-purple-600 hover:bg-purple-500 text-white border-purple-500 hover:shadow-purple-500/25'
+            }`}
+          >
+            {isGeneratingAI ? (
+              <>
+                <span className="animate-spin inline-block h-4 w-4 border-2 border-purple-200 border-t-transparent rounded-full"></span>
+                <span>Nano 邊緣提煉中...</span>
+              </>
+            ) : (
+              <>
+                <span>✨ 一鍵產生今日戰報</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {aiSummary && (
+          <div className="mt-4 p-4 rounded-lg bg-dark-card/80 border border-purple-900/50 space-y-3">
+            <div className="text-sm text-dark-primary whitespace-pre-wrap leading-relaxed font-sans">
+              {aiSummary}
+            </div>
+            <div className="flex justify-end pt-2 border-t border-purple-900/30">
+              <button
+                onClick={handleApplyAISummaryToFields}
+                className="px-3 py-1.5 text-xs font-medium rounded-md bg-purple-950/80 hover:bg-purple-900 border border-purple-700/50 text-purple-200 hover:text-white transition-all flex items-center gap-1.5"
+              >
+                <span>🪄</span>
+                <span>帶入下方提煉洞見欄位</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* 回顧問題 */}
       <div className="bg-dark-card border border-dark-border-subtle rounded-lg shadow-lg p-6 mb-6 shadow-slate-950/40">
         <h2 className="text-xl font-semibold mb-4 text-dark-primary">提煉洞見</h2>
@@ -279,11 +437,36 @@ export const EndOfDayReview: React.FC<EndOfDayReviewProps> = ({ onComplete }) =>
         </div>
       </div>
 
-      <div className="text-center">
+      {copyFeedback && (
+        <div className="fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-semibold border backdrop-blur-md bg-emerald-900/90 border-emerald-600/50 text-emerald-200">
+          {copyFeedback}
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
         <button
+          type="button"
+          onClick={handleExportMarkdown}
+          className="w-full sm:w-auto px-5 py-3 bg-dark-card border border-dark-border-subtle hover:border-dark-border-default text-dark-secondary hover:text-dark-primary rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2 shadow-sm"
+          title="匯出包含 YAML Frontmatter 的 Markdown 格式筆記"
+        >
+          <span>📥</span> 匯出 Markdown 筆記
+        </button>
+
+        <button
+          type="button"
+          onClick={handleCopyMarkdown}
+          className="w-full sm:w-auto px-5 py-3 bg-dark-card border border-dark-border-subtle hover:border-dark-border-default text-dark-secondary hover:text-dark-primary rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2 shadow-sm"
+          title="複製 Markdown 格式筆記至剪貼簿"
+        >
+          <span>📋</span> 複製筆記至剪貼簿
+        </button>
+
+        <button
+          type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/20"
+          className="w-full sm:w-auto px-8 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-500 disabled:opacity-50 transition-colors shadow-lg shadow-blue-500/20"
         >
           {isSubmitting ? '儲存中...' : '完成回顧'}
         </button>

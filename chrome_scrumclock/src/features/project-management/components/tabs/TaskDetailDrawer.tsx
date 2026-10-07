@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { WeeklyMission, ChecklistItem, calculateChecklistProgress } from '../../../../types';
+import { TaskAIEngine } from '../../services/taskAIEngine';
 
 export interface TaskDetailDrawerProps {
   task: WeeklyMission | null;
@@ -51,6 +52,8 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
   const [localTitle, setLocalTitle] = useState('');
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [newChecklistText, setNewChecklistText] = useState('');
+  const [isNanoDecomposing, setIsNanoDecomposing] = useState(false);
+  const [nanoFeedback, setNanoFeedback] = useState<string | null>(null);
   const [timeboxDate, setTimeboxDate] = useState<string>(() => {
     const d = new Date();
     d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0);
@@ -128,6 +131,55 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
     setChecklistItems(updated);
     if (onUpdateChecklist) {
       await onUpdateChecklist(task.id, updated);
+    }
+  };
+
+  /**
+   * Phase 2 Task 2.2：調用 TaskAIEngine.decomposeTask，將大型目標自動拆解為
+   * 3~4 個具體原子 Checklist 步驟並更新預估番茄鐘。
+   */
+  const handleNanoDecomposeToSprintPlan = async () => {
+    if (!task) return;
+    setIsNanoDecomposing(true);
+    setNanoFeedback(null);
+    try {
+      const proposals = await TaskAIEngine.getInstance().decomposeTask(
+        task.text,
+        task.notes ? `備忘: ${task.notes}` : undefined
+      );
+
+      if (proposals.length === 0) {
+        alert('Nano 無法產出原子拆解，請稍後重試。');
+        return;
+      }
+
+      const newChecklist: ChecklistItem[] = proposals.map((p, idx) => ({
+        id: `nano_ck_${Date.now()}_${idx}`,
+        text: `${p.title} (${p.estimatedPomodoros}🍅)`,
+        completed: false,
+      }));
+
+      const mergedChecklist = [...checklistItems, ...newChecklist];
+      setChecklistItems(mergedChecklist);
+
+      if (onUpdateChecklist) {
+        await onUpdateChecklist(task.id, mergedChecklist);
+      }
+
+      // 同步微調累加預估番茄鐘
+      const totalPomos = proposals.reduce((sum, p) => sum + p.estimatedPomodoros, 0);
+      if (onUpdateEstimatedPomodoros && totalPomos > 0) {
+        const nextEst = (task.estimatedPomodoros || 0) + totalPomos;
+        await onUpdateEstimatedPomodoros(task.id, nextEst);
+      }
+
+      setNanoFeedback(`⚡ 已成功拆解出 ${proposals.length} 個番茄作戰計畫並寫入 Checklist！`);
+      setTimeout(() => setNanoFeedback(null), 4000);
+    } catch (err) {
+      console.error('Nano 拆解番茄作戰計畫失敗:', err);
+      alert('Nano 任務拆解失敗');
+    } finally {
+      setIsNanoDecomposing(false);
     }
   };
 
@@ -426,16 +478,45 @@ export const TaskDetailDrawer: React.FC<TaskDetailDrawerProps> = ({
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleLoadAnalystTemplate}
-                  className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
-                  title="一鍵帶入損益表、資產負債表、現金流與估值查核點"
-                >
-                  <span>📊</span>
-                  <span>載入投研查核點</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleNanoDecomposeToSprintPlan}
+                    disabled={isNanoDecomposing || task.isCompleted}
+                    className="text-[11px] px-2.5 py-1 bg-gradient-to-r from-indigo-600/30 to-purple-600/30 hover:from-indigo-600/50 hover:to-purple-600/50 border border-indigo-500/40 text-indigo-200 rounded-lg transition-all flex items-center gap-1 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                    title="調用 Gemini Nano 將目標智能拆解為原子番茄作戰計畫並直接寫入 Checklist"
+                  >
+                    {isNanoDecomposing ? (
+                      <>
+                        <span className="animate-spin block h-3 w-3 border-2 border-indigo-300 border-t-transparent rounded-full" />
+                        <span>Nano 拆解中...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span>
+                        <span>Nano 拆解為番茄作戰計畫</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLoadAnalystTemplate}
+                    className="text-[11px] text-blue-400 hover:text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
+                    title="一鍵帶入損益表、資產負債表、現金流與估值查核點"
+                  >
+                    <span>📊</span>
+                    <span>載入投研查核點</span>
+                  </button>
+                </div>
               </div>
+
+              {nanoFeedback && (
+                <div className="px-3 py-1.5 rounded-lg bg-emerald-950/70 border border-emerald-800/60 text-emerald-300 text-xs flex items-center gap-2 animate-in fade-in">
+                  <span>✨</span>
+                  <span>{nanoFeedback}</span>
+                </div>
+              )}
 
               {/* 即時進度條 */}
               {checklistTotal > 0 && (

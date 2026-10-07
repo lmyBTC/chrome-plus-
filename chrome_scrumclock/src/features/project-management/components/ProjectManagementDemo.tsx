@@ -4,6 +4,7 @@ import { InboxTab } from './tabs/InboxTab';
 import { SprintLogsTab } from './tabs/SprintLogsTab';
 import { SyncSettingsModal } from './modals/SyncSettingsModal';
 import { StandupModal } from './modals/StandupModal';
+import { InboxTriageModal } from './modals/InboxTriageModal';
 import { useProjectManagement } from '../hooks/useProjectManagement';
 
 type Tab = 'taskPool' | 'inbox' | 'sprintLogs';
@@ -15,6 +16,14 @@ export const ProjectManagementDemo: React.FC = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-8 font-sans">
+      <InboxTriageModal
+        isOpen={pm.isTriageModalOpen}
+        onClose={() => pm.setIsTriageModalOpen(false)}
+        proposals={pm.triageProposals}
+        weeklyMissions={pm.weeklyMissions}
+        onApply={pm.handleApplyTriageProposals}
+      />
+
       <SyncSettingsModal
         isOpen={pm.syncModal.open}
         onClose={() => pm.setSyncModal({ open: false })}
@@ -181,6 +190,8 @@ export const ProjectManagementDemo: React.FC = () => {
             isSchedulingCalendar={pm.isSchedulingCalendar}
             onUpdatePomodoroEstimate={pm.handleUpdatePomodoroEstimate}
             onUpdateChecklist={pm.handleUpdateChecklist}
+            onTriageInbox={pm.handleTriageInbox}
+            isTriagingInbox={pm.isTriagingInbox}
           />
         )}
 
