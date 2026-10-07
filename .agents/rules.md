@@ -11,7 +11,7 @@
 |:---|:---|:---|
 |**網頁開發與技術規範**|`插件開發`,`MV3規範`,`樣式隔離`,`shadow-dom`,`CSP/XSS`|`.agents/skills/dev-standards/SKILL.md`|
 |**任務協議管理**|`建立任務`,`開始開發`,`任務拆解`,`動態收斂`,`3-Gate`|`.agents/skills/task-protocol/SKILL.md`|
-|**Token 節省器**|`節省Token`,`rtk指令`,`局部讀取`,`精準寫入`,`會話重置`|`.agents/skills/token-saver/SKILL.md`|
+|**Token 節省器**|`節省Token`,`代碼骨架`,`日誌脫水`,`rtk指令`,`局部讀寫`|`.agents/skills/token-saver/SKILL.md`|
 |**Chrome 插件合規審計**|`安全審查`,`合規檢查`,`manifest審計`,`上架檢查`|`.agents/skills/chrome-auditor/SKILL.md`|
 |**ScrumClock 規格字典**|`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|`.agents/skills/scrumclock-core/SKILL.md`|
 |**FinanceClipper 研報字典**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`|`.agents/skills/finance-clipper-core/SKILL.md`|
@@ -36,9 +36,10 @@
 
 ## 2. Token 優化與開發工程 (Efficiency & Token Saving)
 - **局部讀寫**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file` + `replace_file_content` 單點替換。
-- **終端壓縮**：終端高輸出指令優先包裝 `rtk`（如 `rtk git diff`, `rtk rg`）。
+- **骨架提煉**：跨模組介面理解優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>`，掏空實作省下 90% 上下文。
+- **終端壓縮與脫水**：終端高輸出指令優先包裝 `rtk`，編譯/測試長堆疊串接 `python 1.devtools/tools/compact_log.py` 脫水。
 - **會話重置**：Gate 1 完成後建議開新視窗傳入接力令，釋放 70%~90% 上下文負擔。
-- *完整規範詳見*：`.agents/skills/token-saver/SKILL.md`。
+- *完整規範詳見*：`.agents/skills/token-saver/SKILL.md` 與 `0.doc_mg/docs/token_optimization_guide.md`。
 
 ---
 

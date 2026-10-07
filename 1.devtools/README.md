@@ -11,6 +11,8 @@
 
 | 工具腳本 | 主要職責 | 常用指令範例 |
 |:---|:---|:---|
+| **`code_skeleton.py`** | 掏空程式碼內部實作，提煉介面、型別與簽名骨架（省 85%~95% Token） | `python 1.devtools/tools/code_skeleton.py chrome_scrumclock/src/background.ts` |
+| **`compact_log.py`** | 終端編譯、型別檢查與測試日誌精簡過濾器（剔除冗餘堆疊） | `npm run build 2>&1 \| python 1.devtools/tools/compact_log.py` |
 | **`repo_radar.py`** | 極低 Token 專案情報檢索（大綱、章節切片、符號秒查、安全搜尋） | `python 1.devtools/tools/repo_radar.py map`<br/>`python 1.devtools/tools/repo_radar.py symbol <Name>` |
 | **`generate_symbol_index.py`** | 專案全域符號與文檔導航快取生成器（產出 `.repo_index.json`） | `python 1.devtools/tools/generate_symbol_index.py` |
 | **`audit_manifests.py`** | Chrome 插件 Manifest V3 合規性與安全性自動審計器 | `python 1.devtools/tools/audit_manifests.py` |
@@ -26,4 +28,5 @@
 - **專案情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`
 - **檢索決策樹指引**：`0.doc_mg/docs/repo_radar_ai_prompt_instructions.md`
 - **Manifest 合規審計技能**：`.agents/skills/chrome-auditor/SKILL.md`
-- **Token 節省工程**：`.agents/skills/token-saver/SKILL.md`
+- **Token 節省工程技能**：`.agents/skills/token-saver/SKILL.md`
+- **Token 節省工程指南**：`0.doc_mg/docs/token_optimization_guide.md`
