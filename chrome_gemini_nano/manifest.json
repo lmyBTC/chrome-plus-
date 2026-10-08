@@ -1,5 +1,6 @@
 {
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAwaKxgJdPzLKBtD0a5+C23FhFeiFO8SJmgpGSGBqINLP/2QGKYHXC9wseLvEqGkcBLfRO4ku1QRpP73J+R3LC7agzAWxmKt464Fumzg+ATjseK9ib+ZIESMyS3haYRTHU0dckywNkDL7AAZ3KyXluTxno2mUxaWbUqIjZWoDXgHdqx7tQG7IS48ZBub0QqCVLRW+r7Dv84sZDP1ZnsGG0QzIf1PKVscOS6rI0quhENc6S+NLJBxmYlhinMpesOJerAKs4GHFpCbUONxd9ddYz0DPIr2QH5jJSPEuKfS+6yvxtgJxRop/+ceXr80tpB71cbZkLJhUQNC6K2ptGbzA5uQIDAQAB",
   "name": "Chrome Plus - Gemini Nano",
   "version": "1.0.0",
   "description": "Chrome 內建 Gemini Nano Prompt API 本地推論、社群調音與本機自動化中樞",
