@@ -168,46 +168,48 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
     <div className="p-6">
       {/* 核心職責引導橫幅 (可收合) */}
       {showBanner ? (
-        <div className="mb-5 bg-blue-950/20 border border-blue-800/40 rounded-xl p-3.5 flex items-center justify-between gap-4 transition-all">
-          <div className="flex items-center gap-2.5 text-xs text-blue-200">
-            <span className="text-base">💡</span>
-            <div>
-              <span className="font-semibold text-white">規劃態核心中樞 (Backlog SSOT)：</span>
-              <span className="text-blue-300/90 ml-1">
-                在此整理每週任務與排程。點擊「🎯 推入今日」即可一鍵派送至番茄鐘作為今日焦點戰役；點擊「✨ AI 拆解」可細化大型任務。
+        <div className="mb-5 bg-gradient-to-r from-indigo-950/30 via-slate-900/40 to-blue-950/20 backdrop-blur-md border border-indigo-500/20 rounded-xl p-3 px-4 flex items-center justify-between gap-4 transition-all shadow-sm">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs shrink-0 shadow-inner">
+              💡
+            </span>
+            <div className="leading-relaxed">
+              <span className="font-semibold text-slate-100 tracking-wide">規劃態核心中樞 (Backlog SSOT)：</span>
+              <span className="text-slate-300 ml-1">
+                在此整理每週任務與排程。點擊「<span className="text-indigo-300 font-medium">🎯 推入今日</span>」一鍵派送至番茄鐘作為今日焦點戰役；點擊「<span className="text-indigo-300 font-medium">✨ AI 拆解</span>」可細化大型任務。
               </span>
             </div>
           </div>
           <button
             onClick={handleDismissBanner}
-            className="text-blue-400/80 hover:text-blue-200 text-xs px-2 py-1 rounded hover:bg-blue-900/30 transition-colors flex items-center gap-1 shrink-0 cursor-pointer"
+            className="text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 border border-transparent hover:border-slate-700/60 text-xs px-2.5 py-1 rounded-lg transition-all flex items-center gap-1 shrink-0 cursor-pointer active:scale-95"
             title="收合說明橫幅以釋放畫面空間"
           >
-            <span>✕</span>
+            <span className="text-[11px]">✕</span>
             <span>收起</span>
           </button>
         </div>
       ) : null}
 
       {/* 整合式快速新增與視圖工具列 */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-dark-surface p-2.5 rounded-xl border border-dark-border-subtle shadow-sm">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-dark-surface/90 backdrop-blur-sm p-2.5 px-3 rounded-xl border border-dark-border-subtle/80 shadow-sm">
         {/* 左側：快速新增任務表單 */}
         <div className="flex-1 min-w-[300px] flex items-center gap-2">
-          <div className="relative flex-1">
+          <div className="relative flex-1 group">
             <input
               type="text"
               placeholder="輸入新任務名稱，按下 Enter 快速新增..."
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onAddTask()}
-              className="w-full pl-3.5 pr-14 py-2 bg-dark-card border border-dark-border-default/70 rounded-lg text-sm text-dark-primary outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-dark-muted"
+              className="w-full pl-3.5 pr-14 py-2 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-sm text-dark-primary outline-none transition-all placeholder:text-dark-muted shadow-inner"
             />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-muted bg-dark-base px-1.5 py-0.5 rounded border border-dark-border-subtle select-none pointer-events-none">
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-muted bg-dark-base/80 px-1.5 py-0.5 rounded border border-dark-border-subtle select-none pointer-events-none group-focus-within:border-indigo-500/30 transition-colors">
               ↵ Enter
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2 py-1.5 bg-dark-card border border-dark-border-default/70 rounded-lg">
+          <div className="flex items-center gap-1.5 px-2.5 py-2 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus-within:border-indigo-500/50 rounded-xl transition-all shadow-inner">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 newPriority === 'P0' ? 'bg-rose-500 animate-pulse' : newPriority === 'P1' ? 'bg-red-500' : newPriority === 'P2' ? 'bg-amber-500' : 'bg-blue-400'
@@ -227,7 +229,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
 
           <button
             onClick={onAddTask}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm shadow-blue-950/40 active:scale-95 cursor-pointer shrink-0"
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md shadow-indigo-950/30 active:scale-95 cursor-pointer shrink-0"
           >
             <span>➕</span>
             <span>新增</span>
@@ -237,13 +239,13 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         {/* 右側：視圖切換、欄位設定與說明開關 */}
         <div className="flex items-center gap-2 shrink-0">
           {/* 看板 / 表格 切換 */}
-          <div className="flex items-center bg-dark-card border border-dark-border-default/70 rounded-lg p-0.5">
+          <div className="flex items-center bg-dark-card/90 border border-dark-border-subtle p-0.5 rounded-xl shadow-inner">
             <button
               onClick={() => handleSetViewMode('kanban')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'kanban'
                   ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-dark-secondary hover:text-dark-primary'
+                  : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-surface/50'
               }`}
               title="切換至 GTD 敏捷看板檢視"
             >
@@ -252,10 +254,10 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
             </button>
             <button
               onClick={() => handleSetViewMode('table')}
-              className={`px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-blue-600 text-white shadow-sm'
-                  : 'text-dark-secondary hover:text-dark-primary'
+                  : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-surface/50'
               }`}
               title="切換至清單表格檢視"
             >
@@ -264,11 +266,12 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
             </button>
           </div>
 
-          {onSyncGoogleTasks && (
+          {/* 表格專屬：Google Tasks 同步 */}
+          {onSyncGoogleTasks && viewMode === 'table' && (
             <button
               onClick={onSyncGoogleTasks}
               disabled={isGoogleSyncing}
-              className={`px-2.5 py-1.5 bg-dark-card hover:bg-dark-hover border border-dark-border-default/60 rounded-lg text-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
+              className={`px-3 py-1.5 bg-dark-card/90 hover:bg-dark-hover border border-dark-border-subtle rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm ${
                 isGoogleSyncing ? 'text-dark-muted opacity-60' : 'text-emerald-400 hover:text-emerald-300'
               }`}
               title="與 Google Tasks 進行雙向同步"
@@ -281,7 +284,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           {!showBanner && (
             <button
               onClick={handleShowBanner}
-              className="px-2.5 py-1.5 bg-dark-card hover:bg-dark-hover border border-dark-border-default/60 rounded-lg text-xs text-blue-300 hover:text-blue-200 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1.5 bg-dark-card/90 hover:bg-dark-hover border border-dark-border-subtle hover:border-indigo-500/40 rounded-xl text-xs text-blue-300 hover:text-blue-200 transition-colors flex items-center gap-1 cursor-pointer shadow-sm active:scale-95"
               title="展開規劃說明"
             >
               <span>💡</span>
@@ -289,46 +292,48 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
             </button>
           )}
 
-          {/* 欄位顯示下拉選單 */}
-          <div className="relative" ref={columnsDropdownRef}>
-            <button
-              onClick={() => setIsColumnsOpen(!isColumnsOpen)}
-              className="px-3 py-1.5 bg-dark-card hover:bg-dark-hover border border-dark-border-default/70 rounded-lg text-xs font-medium text-dark-secondary hover:text-dark-primary transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <span>⚙️</span>
-              <span>顯示欄位</span>
-              <span className="text-[10px] text-dark-muted">▼</span>
-            </button>
+          {/* 欄位顯示下拉選單 (主要針對表格檢視) */}
+          {viewMode === 'table' && (
+            <div className="relative" ref={columnsDropdownRef}>
+              <button
+                onClick={() => setIsColumnsOpen(!isColumnsOpen)}
+                className="px-3 py-1.5 bg-dark-card/90 hover:bg-dark-hover border border-dark-border-subtle rounded-xl text-xs font-medium text-dark-secondary hover:text-dark-primary transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+              >
+                <span>⚙️</span>
+                <span>顯示欄位</span>
+                <span className="text-[10px] text-dark-muted">▼</span>
+              </button>
 
-            {isColumnsOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-dark-surface border border-dark-border-subtle rounded-xl p-2.5 shadow-xl z-30 flex flex-col gap-1 text-xs">
-                <div className="px-2 py-1 text-[11px] font-semibold text-dark-muted border-b border-dark-border-subtle/50 mb-1">
-                  切換欄位顯示
+              {isColumnsOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 bg-dark-surface border border-dark-border-subtle rounded-xl p-2.5 shadow-xl z-30 flex flex-col gap-1 text-xs backdrop-blur-md">
+                  <div className="px-2 py-1 text-[11px] font-semibold text-dark-muted border-b border-dark-border-subtle/50 mb-1">
+                    切換欄位顯示
+                  </div>
+                  {[
+                    { key: 'taskId' as const, label: 'Task ID' },
+                    { key: 'title' as const, label: 'Title (標題)' },
+                    { key: 'status' as const, label: 'Status (狀態)' },
+                    { key: 'priority' as const, label: 'Priority (優先級)' },
+                    { key: 'notes' as const, label: 'Execution Notes (備忘)' },
+                    { key: 'createdAt' as const, label: 'Created At (建立時間)' },
+                  ].map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-dark-hover/60 rounded-lg cursor-pointer transition-colors text-dark-secondary hover:text-dark-primary"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={visibleColumns[key]}
+                        onChange={(e) => setVisibleColumns({ ...visibleColumns, [key]: e.target.checked })}
+                        className="rounded border-dark-border-default bg-dark-card text-blue-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  ))}
                 </div>
-                {[
-                  { key: 'taskId' as const, label: 'Task ID' },
-                  { key: 'title' as const, label: 'Title (標題)' },
-                  { key: 'status' as const, label: 'Status (狀態)' },
-                  { key: 'priority' as const, label: 'Priority (優先級)' },
-                  { key: 'notes' as const, label: 'Execution Notes (備忘)' },
-                  { key: 'createdAt' as const, label: 'Created At (建立時間)' },
-                ].map(({ key, label }) => (
-                  <label
-                    key={key}
-                    className="flex items-center gap-2 px-2 py-1.5 hover:bg-dark-hover/60 rounded-lg cursor-pointer transition-colors text-dark-secondary hover:text-dark-primary"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={visibleColumns[key]}
-                      onChange={(e) => setVisibleColumns({ ...visibleColumns, [key]: e.target.checked })}
-                      className="rounded border-dark-border-default bg-dark-card text-blue-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                    />
-                    <span>{label}</span>
-                  </label>
-                ))}
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

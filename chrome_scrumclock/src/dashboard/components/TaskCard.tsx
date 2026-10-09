@@ -55,13 +55,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   const getPriorityBadge = (priority?: string) => {
     switch (priority) {
       case 'P0':
-        return 'bg-rose-500/25 text-rose-300 border-rose-500/50 font-extrabold ring-1 ring-rose-500/30';
+        return 'bg-rose-500/20 text-rose-300 border-rose-500/40 font-extrabold ring-1 ring-rose-500/30';
       case 'P1':
-        return 'bg-red-500/20 text-red-400 border-red-500/30';
+        return 'bg-red-500/20 text-red-300 border-red-500/35 font-bold';
       case 'P2':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+        return 'bg-amber-500/20 text-amber-300 border-amber-500/35 font-semibold';
       case 'P3':
-        return 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+        return 'bg-blue-500/20 text-blue-300 border-blue-500/35 font-medium';
       default:
         return 'bg-slate-700/30 text-slate-400 border-slate-600/30';
     }
@@ -75,20 +75,20 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       draggable
       onDragStart={handleDragStart}
       onClick={() => onSelectTask?.(task.id)}
-      className={`group relative p-3.5 bg-dark-card hover:bg-dark-hover/90 border rounded-xl shadow-sm transition-all duration-150 cursor-grab active:cursor-grabbing select-none ${
+      className={`group relative p-3.5 bg-dark-card hover:bg-dark-hover/90 border rounded-xl shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-grab active:cursor-grabbing select-none ${
         isFocused
-          ? 'border-indigo-500/60 ring-1 ring-indigo-500/30 bg-indigo-950/20'
+          ? 'border-indigo-500/70 ring-1 ring-indigo-500/40 bg-gradient-to-br from-indigo-950/25 via-dark-card to-dark-card shadow-indigo-950/20'
           : task.isCompleted || currentStatus === 'done'
-          ? 'border-dark-border-subtle/40 opacity-70 bg-dark-surface/40'
-          : 'border-dark-border-subtle hover:border-dark-border-default'
+          ? 'border-dark-border-subtle/50 opacity-65 hover:opacity-90 bg-dark-surface/40'
+          : 'border-dark-border-subtle/80 hover:border-dark-border-default/90'
       }`}
     >
       {/* 頂部 Meta 列：優先級標籤、情境/來源標籤、番茄鐘計數 */}
-      <div className="flex items-center justify-between gap-1.5 mb-2 text-xs">
+      <div className="flex items-center justify-between gap-1.5 mb-2.5 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">
           {task.priority && (
             <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border tracking-wider ${getPriorityBadge(
+              className={`px-1.5 py-0.5 rounded-md text-[10px] tracking-wider shadow-xs ${getPriorityBadge(
                 task.priority
               )}`}
             >
@@ -96,12 +96,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
           {task.gtdContext && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-950/40 text-purple-300 border border-purple-800/40">
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-medium bg-purple-950/40 text-purple-300 border border-purple-800/40 shadow-xs">
               {task.gtdContext}
             </span>
           )}
           {task.ticker && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950/40 text-emerald-400 border border-emerald-800/40">
+            <span className="px-1.5 py-0.5 rounded-md text-[10px] font-mono font-bold bg-emerald-950/40 text-emerald-400 border border-emerald-800/40 shadow-xs">
               ${task.ticker}
             </span>
           )}
@@ -110,9 +110,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             const totalCount = task.checklist.length;
             return (
               <span
-                className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold border tracking-wider select-none ${
+                className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium border tracking-wider select-none shadow-xs ${
                   completedCount === totalCount
-                    ? 'bg-emerald-950/60 text-emerald-300 border-emerald-800/60'
+                    ? 'bg-emerald-950/50 text-emerald-300 border-emerald-800/50'
                     : 'bg-dark-surface/90 text-blue-300 border-blue-900/40'
                 }`}
                 title={`Checklist 查核進度：${completedCount}/${totalCount}`}
@@ -123,7 +123,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           })()}
           {task.workspaceSync?.googleTaskId && (
             <span
-              className={`px-1.5 py-0.5 rounded text-[10px] font-medium border flex items-center gap-1 select-none tracking-wider ${
+              className={`px-1.5 py-0.5 rounded-md text-[10px] font-medium border flex items-center gap-1 select-none tracking-wider shadow-xs ${
                 task.workspaceSync.syncStatus === 'failed'
                   ? 'bg-rose-950/40 text-rose-300 border-rose-800/50'
                   : 'bg-blue-950/40 text-blue-300 border-blue-800/40'
@@ -147,7 +147,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
         {/* 番茄鐘工時指標 (實際消耗 / 預估) */}
         <div
-          className={`flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded border shrink-0 transition-colors cursor-pointer ${
+          className={`flex items-center gap-1 text-[11px] font-mono px-2 py-0.5 rounded-lg border shrink-0 transition-all hover:scale-105 active:scale-95 cursor-pointer shadow-xs ${
             spentPomodoros >= estimatedPomodoros && spentPomodoros > 0
               ? 'bg-amber-950/30 border-amber-800/50 text-amber-300'
               : spentPomodoros > 0
@@ -178,7 +178,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </div>
 
       {/* 標題與行內編輯 */}
-      <div className="mb-2">
+      <div className="mb-2.5">
         {isEditing ? (
           <input
             type="text"
@@ -188,10 +188,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             onKeyDown={handleKeyDown}
             autoFocus
             onClick={(e) => e.stopPropagation()}
-            className="w-full px-2 py-1 bg-dark-surface border border-indigo-500 rounded text-sm text-dark-primary outline-none"
+            className="w-full px-2.5 py-1 bg-dark-surface border border-indigo-500 rounded-lg text-sm text-dark-primary outline-none focus:ring-1 focus:ring-indigo-500/30"
           />
         ) : (
-          <div className="flex items-start gap-2">
+          <div className="flex items-start gap-2.5">
             {/* 一鍵完成/取消完成 Checkbox */}
             <button
               type="button"
@@ -200,10 +200,10 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                 const isCurrentlyDone = task.isCompleted || currentStatus === 'done';
                 onUpdateStatus(task.id, isCurrentlyDone ? 'next-action' : 'done');
               }}
-              className={`mt-0.5 w-4 h-4 rounded flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
+              className={`mt-0.5 w-4 h-4 rounded-md flex items-center justify-center shrink-0 border transition-all cursor-pointer ${
                 task.isCompleted || currentStatus === 'done'
-                  ? 'bg-emerald-600 border-emerald-500 text-white'
-                  : 'bg-dark-surface/80 border-dark-border-default hover:border-emerald-500/80 text-transparent hover:text-emerald-400/50'
+                  ? 'bg-emerald-600 border-emerald-500 text-white shadow-xs'
+                  : 'bg-dark-surface/90 border-dark-border-default/80 hover:border-emerald-500/80 text-transparent hover:text-emerald-400/50 hover:bg-emerald-500/10'
               }`}
               title={
                 task.isCompleted || currentStatus === 'done'
@@ -235,9 +235,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
       {/* 備忘與網址摘要 (若有) */}
       {(task.notes || task.url || task.deepLinkUrl) && (
-        <div className="flex items-center gap-2 mb-2 text-[11px] text-dark-muted">
+        <div className="flex items-center gap-2 mb-2.5 text-[11px] text-dark-muted flex-wrap">
           {task.notes && (
-            <span className="flex items-center gap-0.5 truncate max-w-[160px]" title={task.notes}>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-dark-surface/70 border border-dark-border-subtle/60 text-[10px] text-dark-muted truncate max-w-[180px]" title={task.notes}>
               <span>📝</span>
               <span className="truncate">{task.notes}</span>
             </span>
@@ -255,7 +255,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   chrome.tabs.create({ url: targetUrl });
                 }
               }}
-              className="text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-0.5 shrink-0"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-950/30 hover:bg-blue-900/40 text-blue-400 hover:text-blue-300 border border-blue-800/40 text-[10px] transition-colors shrink-0"
               title={task.deepLinkUrl || task.url}
             >
               <span>🔗</span>
@@ -267,16 +267,16 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
       {/* 底部 GTD 快速流轉操作按鈕 (Quick Actions) */}
       <div
-        className="mt-2.5 pt-2 border-t border-dark-border-subtle/40 flex items-center justify-between gap-1"
+        className="mt-3 pt-2.5 border-t border-dark-border-subtle/50 flex items-center justify-between gap-1.5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 左側一鍵釐清/推進按鈕 */}
-        <div className="flex items-center gap-1 flex-wrap">
+        <div className="flex items-center gap-1.5 flex-wrap">
           {currentStatus === 'inbox' && (
             <>
               <button
                 onClick={() => onUpdateStatus(task.id, 'next-action')}
-                className="px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 hover:text-blue-200 border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                className="h-6 px-2.5 rounded-lg bg-blue-600/15 hover:bg-blue-600/25 text-blue-300 hover:text-blue-200 border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
                 title="轉入 Next Action (下一步行動池)"
               >
                 <span>⚡</span>
@@ -284,7 +284,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </button>
               <button
                 onClick={() => onUpdateStatus(task.id, 'someday')}
-                className="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] transition-all flex items-center gap-0.5 cursor-pointer"
+                className="h-6 px-2 rounded-lg bg-dark-surface/90 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle/70 text-[10px] transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
                 title="暫存至 Someday (日後也許)"
               >
                 <span>💡</span>
@@ -297,7 +297,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <>
               <button
                 onClick={() => onUpdateStatus(task.id, 'in-progress')}
-                className="px-2 py-1 rounded bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                className="h-6 px-2.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 hover:text-indigo-200 border border-indigo-500/35 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
                 title="推進至 In Progress (今日焦點衝刺)"
               >
                 <span>🎯</span>
@@ -305,7 +305,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </button>
               <button
                 onClick={() => onUpdateStatus(task.id, 'done')}
-                className="px-1.5 py-1 rounded bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 text-[10px] transition-all cursor-pointer"
+                className="h-6 px-2 rounded-lg bg-emerald-600/15 hover:bg-emerald-600/25 text-emerald-400 hover:text-emerald-300 border border-emerald-500/25 text-[10px] transition-all cursor-pointer active:scale-95 shadow-xs"
                 title="直接標記為完成"
               >
                 <span>✅</span>
@@ -317,7 +317,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             <>
               <button
                 onClick={() => onUpdateStatus(task.id, 'done')}
-                className="px-2 py-1 rounded bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
+                className="h-6 px-2.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 hover:text-emerald-200 border border-emerald-500/35 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
                 title="完成此焦點戰役"
               >
                 <span>✅</span>
@@ -325,7 +325,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               </button>
               <button
                 onClick={() => onUpdateStatus(task.id, 'next-action')}
-                className="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 text-[10px] transition-all cursor-pointer"
+                className="h-6 px-2 rounded-lg bg-dark-surface/90 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle/70 text-[10px] transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
                 title="移回下一步行動池"
               >
                 <span>⏸️</span>
@@ -337,7 +337,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {currentStatus === 'someday' && (
             <button
               onClick={() => onUpdateStatus(task.id, 'next-action')}
-              className="px-2 py-1 rounded bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer"
+              className="h-6 px-2.5 rounded-lg bg-blue-600/15 hover:bg-blue-600/25 text-blue-300 hover:text-blue-200 border border-blue-500/30 text-[10px] font-semibold transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
               title="喚醒並轉入 Next Action"
             >
               <span>⚡</span>
@@ -348,7 +348,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
           {currentStatus === 'done' && (
             <button
               onClick={() => onUpdateStatus(task.id, 'next-action')}
-              className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-[10px] transition-all flex items-center gap-1 cursor-pointer"
+              className="h-6 px-2.5 rounded-lg bg-dark-surface/90 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle/70 text-[10px] transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs whitespace-nowrap"
               title="重新啟動為下一步行動"
             >
               <span>↩️</span>
@@ -361,7 +361,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         {onDeleteTask && (
           <button
             onClick={() => onDeleteTask(task.id)}
-            className="p-1 rounded text-dark-muted hover:text-red-400 hover:bg-red-950/20 transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+            className="w-6 h-6 flex items-center justify-center rounded-lg text-dark-muted hover:text-rose-400 hover:bg-rose-950/30 border border-transparent hover:border-rose-900/40 transition-all opacity-0 group-hover:opacity-100 cursor-pointer active:scale-95"
             title="刪除此任務"
           >
             <span className="text-[11px]">🗑️</span>

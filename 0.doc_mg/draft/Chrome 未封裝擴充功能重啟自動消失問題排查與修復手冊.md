@@ -158,4 +158,16 @@ Chrome 判定擴充功能持久化的另一要件為 **Extension ID 是否固定
 
 #### 解法 3：開發環境使用獨立 Profile（環境物理隔離）
 * 在專門用於開發測試的 Chrome 實例（如 Canary）建立**獨立本機 Profile**（不登入主力 Google 帳號，或登入專用的開發者測試帳號）。
-* 杜絕個人主力帳號的日常書籤與擴充同步流程干擾本機代碼偵錯。
+* 杜絕個人主力帳號的日常書籤與擴充流程干擾本機代碼偵錯。
+
+#### 解法 4：終極自動化常駐 — 使用 `--load-extension` 啟動參數 (⭐️ 100% 免疫消失)
+若因系統環境限制無法完全關閉同步，或 Canary 仍偶發性清理未封裝快取，可透過 Chrome 原生 CLI 參數 `--load-extension` 在啟動時強制載入：
+
+1. **原理**：Chrome 支援在啟動捷徑中傳入 `--load-extension="path1,path2,..."`，多個插件路徑以半形逗號（`,`）分隔。Chrome 在每次啟動時均會重新保證這些路徑被掛載為常駐插件。
+2. **本專案 5 款插件之 Canary 一鍵啟動指令範例**：
+   ```cmd
+   start "" "%LOCALAPPDATA%\Google\Chrome SxS\Application\chrome.exe" --load-extension="c:\Users\G1\00.coding workspace\chrome plus project\browser-activity-monitor,c:\Users\G1\00.coding workspace\chrome plus project\chrome_gemini_nano,c:\Users\G1\00.coding workspace\chrome plus project\finance-research-clipper-oss,c:\Users\G1\00.coding workspace\chrome plus project\chrome_scrumclock\dist,c:\Users\G1\00.coding workspace\chrome plus project\chrome_video speed plus"
+   ```
+3. **快捷捷徑設定**：
+   - 在桌面「Chrome Canary」捷徑上按右鍵 ➔ **內容** ➔ **目標 (Target)**。
+   - 在原本路徑後方空一格，貼上 `--load-extension="路徑1,路徑2,..."` 即可。

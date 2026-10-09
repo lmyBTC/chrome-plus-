@@ -15,7 +15,7 @@ export const ProjectManagementDemo: React.FC = () => {
   const pm = useProjectManagement();
 
   return (
-    <div className="max-w-6xl mx-auto p-8 font-sans">
+    <div className="max-w-[1680px] w-full mx-auto px-6 py-6 font-sans">
       <InboxTriageModal
         isOpen={pm.isTriageModalOpen}
         onClose={() => pm.setIsTriageModalOpen(false)}
@@ -52,23 +52,29 @@ export const ProjectManagementDemo: React.FC = () => {
         </div>
       )}
 
-      <div className="mb-8 flex justify-between items-end">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold text-dark-primary tracking-tight">專案管理儀表板</h1>
-          <p className="text-dark-muted mt-2">基於 Chrome Local Storage 與 Google Sheets/Notion 的單一資料庫實時同步</p>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-extrabold text-dark-primary tracking-tight">專案管理儀表板</h1>
+            <div className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm">
+              <span>✨</span>
+              <span>Gemini 大腦已上線</span>
+            </div>
+          </div>
+          <p className="text-dark-muted mt-1.5 text-sm">基於 Chrome Local Storage 與 Google Sheets/Notion 的單一資料庫實時同步</p>
           {pm.northStarText && pm.northStarText !== '設定你的北極星目標' && (
-            <div className="mt-3 flex items-center gap-2 px-4 py-2 bg-indigo-950/50 border border-indigo-800/40 rounded-xl w-fit">
-              <span className="text-lg">🌟</span>
-              <span className="text-sm font-semibold text-indigo-300">{pm.northStarText}</span>
+            <div className="mt-2.5 flex items-center gap-2 px-3 py-1.5 bg-indigo-950/40 border border-indigo-800/40 rounded-lg w-fit text-xs font-medium text-indigo-300">
+              <span className="text-sm">🌟</span>
+              <span>{pm.northStarText}</span>
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
             onClick={pm.handleSyncGoogleTasks}
             disabled={pm.isGoogleSyncing}
-            className={`px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2 shadow-sm ${
               pm.isGoogleSyncing
                 ? 'bg-dark-surface border-dark-border-subtle text-dark-muted cursor-not-allowed'
                 : 'bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-500/30 hover:border-emerald-500/50 text-emerald-400'
@@ -77,7 +83,7 @@ export const ProjectManagementDemo: React.FC = () => {
           >
             {pm.isGoogleSyncing ? (
               <>
-                <span className="animate-spin block h-4 w-4 border-2 border-dark-muted border-t-transparent rounded-full"></span>
+                <span className="animate-spin block h-3.5 w-3.5 border-2 border-dark-muted border-t-transparent rounded-full"></span>
                 <span>Tasks 同步中...</span>
               </>
             ) : (
@@ -90,7 +96,7 @@ export const ProjectManagementDemo: React.FC = () => {
           <button
             onClick={pm.handleSync}
             disabled={pm.isSyncing}
-            className={`px-5 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md ${
+            className={`px-4 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2 shadow-sm ${
               pm.isSyncing
                 ? 'bg-dark-surface border-dark-border-subtle text-dark-muted cursor-not-allowed'
                 : 'bg-blue-600/10 hover:bg-blue-600/20 border-blue-500/30 hover:border-blue-500/50 text-blue-400'
@@ -98,7 +104,7 @@ export const ProjectManagementDemo: React.FC = () => {
           >
             {pm.isSyncing ? (
               <>
-                <span className="animate-spin block h-4 w-4 border-2 border-dark-muted border-t-transparent rounded-full"></span>
+                <span className="animate-spin block h-3.5 w-3.5 border-2 border-dark-muted border-t-transparent rounded-full"></span>
                 <span>同步中...</span>
               </>
             ) : (
@@ -110,49 +116,66 @@ export const ProjectManagementDemo: React.FC = () => {
           </button>
           <button
             onClick={() => setIsStandupOpen(true)}
-            className="px-4 py-2.5 rounded-lg text-sm font-semibold border transition-all flex items-center gap-2 shadow-md bg-purple-600/10 hover:bg-purple-600/20 border-purple-500/30 hover:border-purple-500/50 text-purple-300"
+            className="px-3.5 py-2 rounded-lg text-xs font-semibold border transition-all flex items-center gap-2 shadow-sm bg-purple-600/10 hover:bg-purple-600/20 border-purple-500/30 hover:border-purple-500/50 text-purple-300"
             title="每日站會 Copilot (Markdown / 富文本導出)"
           >
             <span>📢</span>
             <span>站會 Copilot</span>
           </button>
-          <div className="text-xs px-3.5 py-2 bg-indigo-950/40 text-indigo-400 rounded-full font-semibold border border-indigo-900/40 flex items-center gap-1.5 shadow-md">
-            <span>✨</span>
-            <span>Gemini 同步大腦已上線</span>
-          </div>
         </div>
       </div>
 
-      <div className="flex space-x-1 bg-dark-surface p-1 rounded-xl mb-8 w-fit border border-dark-border-subtle">
+      <div className="flex items-center space-x-1.5 bg-dark-surface/80 p-1.5 rounded-xl mb-6 w-fit border border-dark-border-subtle/80 shadow-inner">
         <button
           onClick={() => setActiveTab('taskPool')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
             activeTab === 'taskPool'
-              ? 'bg-dark-card text-dark-primary shadow-md border border-dark-border-subtle/50'
-              : 'text-dark-secondary hover:text-dark-primary'
+              ? 'bg-dark-card text-dark-primary shadow-sm border border-dark-border-subtle'
+              : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-surface/50'
           }`}
         >
-          🗂️ 任務池 (Task Pool) ({pm.weeklyMissions.length})
+          <span>🗂️ 任務池 (Task Pool)</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-mono transition-colors ${
+            activeTab === 'taskPool'
+              ? 'bg-indigo-500/20 text-indigo-300 font-bold'
+              : 'bg-dark-surface text-dark-muted'
+          }`}>
+            {pm.weeklyMissions.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('inbox')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
             activeTab === 'inbox'
-              ? 'bg-dark-card text-dark-primary shadow-md border border-dark-border-subtle/50'
-              : 'text-dark-secondary hover:text-dark-primary'
+              ? 'bg-dark-card text-dark-primary shadow-sm border border-dark-border-subtle'
+              : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-surface/50'
           }`}
         >
-          📥 收件匣 (Inbox) ({pm.inboxItems.length})
+          <span>📥 收件匣 (Inbox)</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-mono transition-colors ${
+            activeTab === 'inbox'
+              ? 'bg-indigo-500/20 text-indigo-300 font-bold'
+              : 'bg-dark-surface text-dark-muted'
+          }`}>
+            {pm.inboxItems.length}
+          </span>
         </button>
         <button
           onClick={() => setActiveTab('sprintLogs')}
-          className={`px-6 py-2.5 rounded-lg text-sm font-semibold transition-all ${
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
             activeTab === 'sprintLogs'
-              ? 'bg-dark-card text-dark-primary shadow-md border border-dark-border-subtle/50'
-              : 'text-dark-secondary hover:text-dark-primary'
+              ? 'bg-dark-card text-dark-primary shadow-sm border border-dark-border-subtle'
+              : 'text-dark-secondary hover:text-dark-primary hover:bg-dark-surface/50'
           }`}
         >
-          ⏱️ 番茄鐘日誌 (Sprint Logs) ({pm.sprintLogs.length})
+          <span>⏱️ 番茄鐘日誌 (Sprint Logs)</span>
+          <span className={`px-2 py-0.5 rounded-full text-xs font-mono transition-colors ${
+            activeTab === 'sprintLogs'
+              ? 'bg-indigo-500/20 text-indigo-300 font-bold'
+              : 'bg-dark-surface text-dark-muted'
+          }`}>
+            {pm.sprintLogs.length}
+          </span>
         </button>
       </div>
 

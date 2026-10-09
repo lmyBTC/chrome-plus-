@@ -68,6 +68,29 @@ const COLUMNS: ColumnConfig[] = [
   },
 ];
 
+const EMPTY_STATES: Record<GTDStatus, { title: string; subtitle: string }> = {
+  inbox: {
+    title: '收件匣已清空 (Inbox Zero)',
+    subtitle: '所有靈感皆已釐清，可隨時快記新點子',
+  },
+  'next-action': {
+    title: '尚無下一步行動',
+    subtitle: '自收件匣釐清任務，或從上方新增具體待辦',
+  },
+  'in-progress': {
+    title: '目前無專注中任務',
+    subtitle: '挑選高優先級任務推進至此開始衝刺',
+  },
+  done: {
+    title: '本輪尚未有完成任務',
+    subtitle: '完成衝刺焦點後將在此留下記錄',
+  },
+  someday: {
+    title: '無暫存延期任務',
+    subtitle: '可將尚未確定排程的遠期構想拖放至此',
+  },
+};
+
 export const BoardView: React.FC<BoardViewProps> = ({
   weeklyMissions,
   inProgressIds,
@@ -385,36 +408,48 @@ export const BoardView: React.FC<BoardViewProps> = ({
       )}
 
       {/* 頂部看板操作與統計列 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-dark-surface p-3 rounded-xl border border-dark-border-subtle">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-dark-surface/90 backdrop-blur-sm p-2.5 px-3.5 rounded-xl border border-dark-border-subtle/80 shadow-sm mb-5">
         {/* 左側：快速檢索與 WIP 說明 */}
         <div className="flex items-center gap-3 flex-1 min-w-[260px]">
-          <div className="relative flex-1 max-w-xs">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-dark-muted">🔍</span>
+          <div className="relative flex-1 max-w-sm group">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-dark-muted group-focus-within:text-indigo-400 transition-colors">🔍</span>
             <input
               type="text"
-              placeholder="搜尋看板任務..."
+              placeholder="搜尋看板任務、備忘或股票代號..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-3 py-1.5 bg-dark-card border border-dark-border-default/60 rounded-lg text-xs text-dark-primary placeholder:text-dark-muted outline-none focus:border-indigo-500/70"
+              className="w-full pl-8 pr-7 py-1.5 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-xs text-dark-primary placeholder:text-dark-muted outline-none transition-all shadow-inner"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-dark-muted hover:text-dark-primary transition-colors cursor-pointer"
+                title="清除搜尋"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-dark-secondary">
-            <span>🛡️ WIP 限制：</span>
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-dark-card/70 border border-dark-border-subtle/80 rounded-xl text-xs text-dark-secondary shadow-inner">
+            <span className="flex items-center gap-1 font-medium">
+              <span>🛡️</span>
+              <span className="hidden sm:inline">WIP 限制：</span>
+            </span>
             {wipEnabled ? (
               <select
                 value={currentWipLimit}
                 onChange={(e) => setCurrentWipLimit(parseInt(e.target.value, 10))}
-                className="px-2 py-1 bg-dark-card border border-dark-border-default/60 rounded text-xs text-dark-primary outline-none cursor-pointer"
+                className="bg-dark-base border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-2 py-0.5 text-xs text-dark-primary outline-none cursor-pointer transition-all"
               >
                 {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
-                  <option key={num} value={num}>
+                  <option key={num} value={num} className="bg-dark-card text-dark-primary">
                     {num} 個
                   </option>
                 ))}
               </select>
             ) : (
-              <span className="text-[11px] text-dark-muted font-mono bg-dark-card px-2 py-0.5 rounded border border-dark-border-subtle">
+              <span className="text-[11px] text-dark-muted font-mono bg-dark-base/60 px-2 py-0.5 rounded border border-dark-border-subtle">
                 未啟用
               </span>
             )}
@@ -427,10 +462,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
           <button
             onClick={handleTriggerSync}
             disabled={isSyncing}
-            className={`px-2.5 py-1.5 rounded-lg border font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm ${
               isSyncing
                 ? 'bg-blue-950/40 border-blue-800/40 text-blue-300 opacity-80 cursor-wait'
-                : 'bg-dark-card hover:bg-dark-hover border-dark-border-default/60 text-emerald-400 hover:text-emerald-300 hover:border-emerald-500/40 shadow-sm'
+                : 'bg-dark-card/90 hover:bg-dark-hover border-dark-border-subtle/80 hover:border-emerald-500/40 text-emerald-400 hover:text-emerald-300 active:scale-95'
             }`}
             title={
               lastSyncTime
@@ -453,7 +488,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
             )}
             <span>{isSyncing ? '同步中...' : 'Google Tasks'}</span>
             {lastSyncTime && !isSyncing && (
-              <span className="text-[10px] text-dark-muted font-mono bg-dark-surface/60 px-1.5 py-0.5 rounded border border-dark-border-subtle">
+              <span className="text-[10px] text-dark-muted font-mono bg-dark-surface/60 px-1.5 py-0.5 rounded-md border border-dark-border-subtle">
                 {formatLastSync(lastSyncTime)}
               </span>
             )}
@@ -461,23 +496,26 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
           <button
             onClick={() => setShowSomeday(!showSomeday)}
-            className={`px-2.5 py-1.5 rounded-lg border font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 ${
               showSomeday
-                ? 'bg-amber-950/40 border-amber-800/40 text-amber-300'
-                : 'bg-dark-card border-dark-border-default/60 text-dark-muted hover:text-dark-primary'
+                ? 'bg-amber-950/40 border-amber-500/40 text-amber-300 shadow-amber-950/30'
+                : 'bg-dark-card/90 border-dark-border-subtle/80 text-dark-muted hover:text-dark-primary hover:border-dark-border-default hover:bg-dark-hover'
             }`}
           >
             <span>💡</span>
-            <span>日後也許 ({tasksByColumn.someday.length})</span>
+            <span>日後也許</span>
+            <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full bg-dark-base/60 border border-dark-border-subtle">
+              {tasksByColumn.someday.length}
+            </span>
           </button>
 
-          <div className="flex items-center gap-2 text-dark-muted font-mono bg-dark-card px-3 py-1 rounded-lg border border-dark-border-subtle">
-            <span>總任務: {filteredMissions.length}</span>
-            <span>•</span>
-            <span className="text-purple-400">Inbox: {tasksByColumn.inbox.length}</span>
-            <span>•</span>
-            <span className={isWipExceeded ? 'text-red-400 font-bold' : 'text-indigo-400'}>
-              Doing: {wipEnabled ? `${inProgressCount}/${currentWipLimit}` : inProgressCount}
+          <div className="flex items-center gap-2 text-xs text-dark-muted font-mono bg-dark-card/80 px-3 py-1.5 rounded-xl border border-dark-border-subtle/80 shadow-inner">
+            <span className="text-dark-secondary">總任務: <strong className="text-dark-primary font-semibold">{filteredMissions.length}</strong></span>
+            <span className="text-dark-border-default">•</span>
+            <span>Inbox: <strong className="text-purple-400 font-semibold">{tasksByColumn.inbox.length}</strong></span>
+            <span className="text-dark-border-default">•</span>
+            <span className={isWipExceeded ? 'text-rose-400 font-bold animate-pulse' : 'text-indigo-400'}>
+              Doing: <strong className="font-semibold">{wipEnabled ? `${inProgressCount}/${currentWipLimit}` : inProgressCount}</strong>
             </span>
           </div>
         </div>
@@ -506,7 +544,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
       )}
 
       {/* 看板核心多欄容器 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 flex-1 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-5 flex-1 items-start">
         {COLUMNS.map((col) => {
           const tasks = tasksByColumn[col.id];
           const isOverWip = wipEnabled && col.id === 'in-progress' && tasks.length > currentWipLimit;
@@ -519,35 +557,40 @@ export const BoardView: React.FC<BoardViewProps> = ({
               onDragEnter={() => handleDragEnter(col.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex flex-col min-h-[520px] max-h-[calc(100vh-280px)] rounded-2xl border transition-all duration-200 overflow-hidden ${
+              className={`flex flex-col min-h-[540px] max-h-[calc(100vh-270px)] rounded-2xl border transition-all duration-200 overflow-hidden shadow-sm ${
                 isOverWip
-                  ? 'border-red-500/80 bg-red-950/15 ring-2 ring-red-500/40'
+                  ? 'border-rose-500/80 bg-gradient-to-b from-rose-950/20 to-dark-surface/50 ring-2 ring-rose-500/40 shadow-rose-950/20'
                   : isTargetDrop
-                  ? 'border-indigo-500 bg-indigo-950/20 ring-2 ring-indigo-500/50'
-                  : 'border-dark-border-subtle bg-dark-surface/50'
+                  ? 'border-indigo-500 bg-gradient-to-b from-indigo-950/30 to-dark-surface/60 ring-2 ring-indigo-500/50 shadow-lg shadow-indigo-950/30'
+                  : 'border-dark-border-subtle/80 bg-gradient-to-b from-dark-surface/75 to-dark-surface/40 hover:border-dark-border-default/70'
               }`}
             >
               {/* 欄位標頭 */}
               <div
-                className={`p-3.5 border-b flex items-center justify-between gap-2 shrink-0 ${
+                className={`p-3.5 px-4 border-b flex items-center justify-between gap-2 shrink-0 ${
                   isOverWip
-                    ? 'bg-red-950/40 border-red-900/50'
-                    : 'bg-dark-surface border-dark-border-subtle/80'
+                    ? 'bg-rose-950/40 border-rose-900/50'
+                    : 'bg-dark-surface/90 border-dark-border-subtle/80 backdrop-blur-xs'
                 }`}
               >
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="text-base">{col.icon}</span>
-                  <span className="font-bold text-sm text-dark-primary truncate">{col.title}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-dark-card/90 border border-dark-border-subtle/60 text-sm shadow-xs shrink-0">
+                    {col.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <span className="font-bold text-sm text-dark-primary truncate block">{col.title}</span>
+                    <span className="text-[10px] text-dark-muted truncate block">{col.description}</span>
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
                   {col.id === 'in-progress' && isOverWip ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-600/30 text-red-300 border border-red-500/50 animate-pulse">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse shadow-xs">
                       WIP 超額 ({tasks.length}/{currentWipLimit})
                     </span>
                   ) : (
                     <span
-                      className={`px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold border ${col.badgeColor}`}
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold border shadow-xs ${col.badgeColor}`}
                     >
                       {col.id === 'in-progress' && wipEnabled ? `${tasks.length}/${currentWipLimit}` : tasks.length}
                     </span>
@@ -557,19 +600,19 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
               {/* Inbox 專屬：快速捕捉輸入框與一鍵釐清 */}
               {col.id === 'inbox' && (
-                <div className="p-2.5 bg-dark-card/60 border-b border-dark-border-subtle/40 space-y-2">
-                  <form onSubmit={handleQuickAddInbox} className="flex gap-1.5">
+                <div className="p-3 bg-dark-card/50 border-b border-dark-border-subtle/60 space-y-2 backdrop-blur-xs">
+                  <form onSubmit={handleQuickAddInbox} className="flex gap-2">
                     <input
                       type="text"
                       placeholder="快記想法 (Enter 存入)..."
                       value={inboxInput}
                       onChange={(e) => setInboxInput(e.target.value)}
-                      className="flex-1 px-2.5 py-1 bg-dark-surface border border-dark-border-default/60 rounded text-xs text-dark-primary placeholder:text-dark-muted outline-none focus:border-purple-500"
+                      className="flex-1 px-3 py-1.5 bg-dark-surface/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/30 rounded-xl text-xs text-dark-primary placeholder:text-dark-muted outline-none transition-all shadow-inner"
                     />
                     <button
                       type="submit"
                       disabled={!inboxInput.trim()}
-                      className="px-2.5 py-1 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded text-xs font-semibold cursor-pointer shrink-0 transition-colors"
+                      className="px-3 py-1.5 bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white rounded-xl text-xs font-semibold cursor-pointer shrink-0 transition-all active:scale-95 shadow-sm"
                     >
                       ＋
                     </button>
@@ -580,7 +623,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                         <button
                           onClick={onTriageInbox}
                           disabled={isTriagingInbox}
-                          className="w-full py-1.5 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/50 hover:to-indigo-600/50 text-purple-200 border border-purple-500/40 rounded text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                          className="w-full py-1.5 bg-gradient-to-r from-purple-600/25 via-indigo-600/25 to-purple-600/25 hover:from-purple-600/40 hover:via-indigo-600/40 hover:to-purple-600/40 text-purple-200 border border-purple-500/30 hover:border-purple-500/50 rounded-xl text-[11px] font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-xs disabled:opacity-50 active:scale-[0.98]"
                           title="調用 Gemini Nano 本機模型批次判定任務 GTD 狀態、番茄鐘預估與情境標籤"
                         >
                           {isTriagingInbox ? (
@@ -598,7 +641,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       )}
                       <button
                         onClick={handleClarifyAllInbox}
-                        className="w-full py-1 bg-dark-surface/80 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle rounded text-[10px] transition-colors cursor-pointer flex items-center justify-center gap-1"
+                        className="w-full py-1.5 bg-dark-surface/70 hover:bg-dark-hover text-dark-muted hover:text-dark-secondary border border-dark-border-subtle/70 rounded-xl text-[10px] font-medium transition-all cursor-pointer flex items-center justify-center gap-1 active:scale-[0.98]"
                         title="直接將所有收件匣任務移至下一步行動"
                       >
                         <span>⚡ 快速轉為下一步行動</span>
@@ -610,19 +653,25 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
               {/* In Progress 專屬：超額警告提示條 */}
               {col.id === 'in-progress' && isOverWip && (
-                <div className="px-3 py-1.5 bg-red-950/60 border-b border-red-900/40 text-[11px] text-red-200 flex items-center gap-1.5">
+                <div className="px-3 py-1.5 bg-rose-950/60 border-b border-rose-900/40 text-[11px] text-rose-200 flex items-center gap-1.5">
                   <span>⚠️</span>
                   <span>已超出在製品限制，請先聚焦完成或暫緩當前任務！</span>
                 </div>
               )}
 
               {/* 任務卡片清單 (垂直滾動) */}
-              <div className="flex-1 p-2.5 overflow-y-auto space-y-2.5">
+              <div className="flex-1 p-3 overflow-y-auto space-y-3">
                 {tasks.length === 0 ? (
-                  <div className="h-32 flex flex-col items-center justify-center text-dark-muted text-xs border border-dashed border-dark-border-subtle/50 rounded-xl">
-                    <span className="text-xl mb-1 opacity-50">{col.icon}</span>
-                    <span>暫無任務</span>
-                    <span className="text-[10px] opacity-60 mt-0.5">拖曳至此處切換</span>
+                  <div className="h-44 flex flex-col items-center justify-center text-center p-4 border border-dashed border-dark-border-subtle/60 rounded-2xl bg-dark-card/20 my-auto">
+                    <div className="w-10 h-10 rounded-xl bg-dark-card/80 border border-dark-border-subtle/60 flex items-center justify-center text-lg mb-2.5 shadow-inner opacity-75">
+                      {col.icon}
+                    </div>
+                    <span className="text-xs font-semibold text-dark-secondary">
+                      {EMPTY_STATES[col.id]?.title || '暫無任務'}
+                    </span>
+                    <span className="text-[10px] text-dark-muted mt-1 leading-relaxed max-w-[210px]">
+                      {EMPTY_STATES[col.id]?.subtitle || '拖曳至此處切換'}
+                    </span>
                   </div>
                 ) : (
                   tasks.map((task) => (
@@ -653,27 +702,33 @@ export const BoardView: React.FC<BoardViewProps> = ({
           onDragEnter={() => handleDragEnter('someday')}
           onDragLeave={handleDragLeave}
           onDrop={(e) => handleDrop(e, 'someday')}
-          className={`p-4 rounded-2xl border transition-all ${
+          className={`p-4 rounded-2xl border transition-all duration-200 shadow-sm ${
             activeDropColumn === 'someday'
-              ? 'border-amber-500 bg-amber-950/20'
-              : 'border-amber-900/30 bg-amber-950/10'
+              ? 'border-amber-500 bg-amber-950/30 ring-2 ring-amber-500/40 shadow-lg shadow-amber-950/20'
+              : 'border-amber-900/40 bg-gradient-to-r from-amber-950/15 via-dark-surface/60 to-amber-950/10 backdrop-blur-xs'
           }`}
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">💡</span>
-              <span className="font-bold text-sm text-amber-200">日後也許 (Someday / Maybe)</span>
-              <span className="text-xs text-amber-400/80">暫時擱置、非當務之急或靈感備份</span>
+          <div className="flex items-center justify-between mb-3.5">
+            <div className="flex items-center gap-2.5">
+              <span className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-950/40 border border-amber-800/50 text-sm shadow-xs">
+                💡
+              </span>
+              <div>
+                <span className="font-bold text-sm text-amber-200 block">日後也許 (Someday / Maybe)</span>
+                <span className="text-[10px] text-amber-400/80 block">暫時擱置、非當務之急或靈感備份</span>
+              </div>
             </div>
-            <span className="text-xs font-mono text-amber-400 bg-amber-950/50 px-2 py-0.5 rounded border border-amber-800/40">
+            <span className="text-xs font-mono font-semibold text-amber-300 bg-amber-950/60 px-2.5 py-0.5 rounded-full border border-amber-700/50 shadow-xs">
               {tasksByColumn.someday.length} 項
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {tasksByColumn.someday.length === 0 ? (
-              <div className="col-span-full py-6 text-center text-xs text-dark-muted border border-dashed border-dark-border-subtle rounded-xl">
-                無暫存任務。可將尚未確定排程的想法拖放至此。
+              <div className="col-span-full py-8 text-center text-xs text-dark-muted border border-dashed border-amber-900/30 rounded-2xl bg-dark-card/20">
+                <span className="text-base block mb-1 opacity-70">💡</span>
+                <span className="font-medium text-dark-secondary">{EMPTY_STATES.someday.title}</span>
+                <span className="text-[10px] text-dark-muted block mt-0.5">{EMPTY_STATES.someday.subtitle}</span>
               </div>
             ) : (
               tasksByColumn.someday.map((task) => (
