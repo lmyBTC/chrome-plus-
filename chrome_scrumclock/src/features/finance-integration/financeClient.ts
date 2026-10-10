@@ -3,6 +3,8 @@ import { StockWatchItem, FinanceClipperResponse, FinanceSnapshotItem } from './t
 
 declare const chrome: any;
 
+export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
+
 const STORAGE_KEY_FC_ID = 'finance_clipper_ext_id';
 const STORAGE_KEY_FC_SNAPSHOTS = 'scrumclock_finance_snapshots';
 const STORAGE_KEY_RESEARCH_LOGS = 'scrumclock_finance_research_logs';
@@ -14,13 +16,13 @@ export const financeClient = {
   async getExtensionId(): Promise<string> {
     try {
       const userSettings = await storage.getUserSettings();
-      if (userSettings.financeClipperExtensionId) {
+      if (userSettings?.financeClipperExtensionId) {
         return userSettings.financeClipperExtensionId;
       }
       const local = await chrome.storage?.local?.get([STORAGE_KEY_FC_ID]);
-      return local?.[STORAGE_KEY_FC_ID] || '';
+      return local?.[STORAGE_KEY_FC_ID] || DEFAULT_FINANCE_CLIPPER_ID;
     } catch {
-      return '';
+      return DEFAULT_FINANCE_CLIPPER_ID;
     }
   },
 
@@ -79,10 +81,17 @@ export const financeClient = {
       try {
         chrome.runtime.sendMessage(id, { type: 'GET_WATCHLIST' }, (response: FinanceClipperResponse) => {
           if (chrome.runtime.lastError) {
+            const rawMsg = chrome.runtime.lastError.message || '';
+            const isInactive = rawMsg.includes('Receiving end does not exist') || rawMsg.includes('Could not establish connection');
+            const isTimeout = rawMsg.toLowerCase().includes('timeout') || rawMsg.includes('逾時');
             resolve({
               success: false,
               watchlist: [],
-              error: chrome.runtime.lastError.message || '無法連線至 FinanceClipper'
+              error: isInactive
+                ? `擴充套件未啟動: 無法連線至 FinanceClipper (ID: ${id})，請確認插件已安裝啟用`
+                : isTimeout
+                ? '目標網址解析逾時，請確認網路連線'
+                : `無法連線至 FinanceClipper: ${rawMsg}`
             });
             return;
           }
@@ -92,15 +101,17 @@ export const financeClient = {
               watchlist: response.watchlist || []
             });
           } else {
+            const errMsg = response?.error || '';
+            const isTimeout = errMsg.toLowerCase().includes('timeout') || errMsg.includes('逾時');
             resolve({
               success: false,
               watchlist: [],
-              error: response?.error || '取得清單失敗'
+              error: isTimeout ? '目標網址解析逾時，請稍後重試' : (errMsg || '取得清單失敗，FinanceClipper 回傳異常')
             });
           }
         });
       } catch (err: any) {
-        resolve({ success: false, watchlist: [], error: err?.message || '通訊例外' });
+        resolve({ success: false, watchlist: [], error: `通訊例外: ${err?.message || '無法連線至 FinanceClipper'}` });
       }
     });
   },
@@ -135,20 +146,39 @@ export const financeClient = {
   async crawlStock(ticker: string): Promise<{ success: boolean; data?: any; error?: string }> {
     const id = await this.getExtensionId();
     if (!id || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
-      return { success: false, error: '未連接 FinanceClipper' };
+      return { success: false, error: '未連接 FinanceClipper: 擴充套件未啟動或未安裝' };
     }
 
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage(id, { type: 'CRAWL_STOCK', ticker }, (res: any) => {
           if (chrome.runtime.lastError) {
-            resolve({ success: false, error: chrome.runtime.lastError.message });
+            const rawMsg = chrome.runtime.lastError.message || '';
+            const isInactive = rawMsg.includes('Receiving end does not exist') || rawMsg.includes('Could not establish connection');
+            const isTimeout = rawMsg.toLowerCase().includes('timeout') || rawMsg.includes('逾時');
+            resolve({
+              success: false,
+              error: isInactive
+                ? `擴充套件未啟動: 無法連線至 FinanceClipper (ID: ${id})，請確認插件已安裝啟用`
+                : isTimeout
+                ? '目標網址解析逾時，請確認網路連線'
+                : `連線至 FinanceClipper 失敗: ${rawMsg}`
+            });
           } else {
-            resolve(res || { success: false });
+            if (res && res.success) {
+              resolve(res);
+            } else {
+              const errMsg = res?.error || '';
+              const isTimeout = errMsg.toLowerCase().includes('timeout') || errMsg.includes('逾時');
+              resolve({
+                success: false,
+                error: isTimeout ? '目標網址解析逾時，請檢查網路或稍後重試' : (errMsg || 'FinanceClipper 未回傳採集結果')
+              });
+            }
           }
         });
       } catch (err: any) {
-        resolve({ success: false, error: err?.message });
+        resolve({ success: false, error: `通訊例外: ${err?.message || '未知錯誤'}` });
       }
     });
   },

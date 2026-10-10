@@ -137,4 +137,27 @@ canvas {
 
 .gemini-html-content th {
   background-color: rgba(255, 255, 255, 0.05);
-} 
+}
+
+/* 3. 全域表單控制元件深色基底防禦 */
+input, select, textarea {
+  color-scheme: dark;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="range"]):not([type="file"]),
+select,
+textarea {
+  background-color: var(--color-bg-card);
+  color: var(--color-text-primary);
+  border-color: var(--color-border-default);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-muted);
+}
+
+select option {
+  background-color: var(--color-bg-surface);
+  color: var(--color-text-primary);
+}

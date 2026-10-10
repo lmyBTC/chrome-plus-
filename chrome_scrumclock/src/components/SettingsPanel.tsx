@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../core/chrome/storage';
 import { syncService } from '../core/chrome/syncService';
 import { UserSettings, NorthStarGoal, WeeklyMission } from '../types';
+import { DEFAULT_FINANCE_CLIPPER_ID } from '../features/finance-integration/financeClient';
 
 // 確保 Chrome API 可用
 declare const chrome: any;
@@ -647,13 +648,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
               <p className="text-xs text-emerald-300/80 mb-3 leading-relaxed">
                 填寫 Finance Research Clipper 擴充功能的 Extension ID（於 <code>chrome://extensions</code> 檢視），即可在 New Tab 即時同步自選股監控、一鍵開啟大螢幕儀表板並觸發背景爬蟲。
               </p>
-              <input
-                type="text"
-                value={financeClipperExtensionId}
-                onChange={(e) => setFinanceClipperExtensionId(e.target.value)}
-                placeholder="例如: abcdefghijklmnopqrstuvwxyz123456"
-                className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-sm shadow-sm"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={financeClipperExtensionId}
+                  onChange={(e) => setFinanceClipperExtensionId(e.target.value)}
+                  placeholder={`預設: ${DEFAULT_FINANCE_CLIPPER_ID} (留空自動套用預設值)`}
+                  className="flex-1 px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-sm shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setFinanceClipperExtensionId(DEFAULT_FINANCE_CLIPPER_ID)}
+                  className="px-3 py-2 bg-emerald-900/40 hover:bg-emerald-900/70 border border-emerald-700/50 text-emerald-300 text-xs rounded-xl font-medium transition-colors shrink-0"
+                  title="帶入合約規範之預設 ID"
+                >
+                  帶入預設 ID
+                </button>
+              </div>
+              <p className="text-[11px] text-emerald-400/80 mt-1.5 font-mono">
+                恆定 ID: {DEFAULT_FINANCE_CLIPPER_ID}
+              </p>
             </div>
           </div>
         )}

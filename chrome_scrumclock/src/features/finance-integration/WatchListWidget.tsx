@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StockWatchItem, FinanceSnapshotItem, ResearchChecklistItem } from './types';
-import { financeClient } from './financeClient';
+import { financeClient, DEFAULT_FINANCE_CLIPPER_ID } from './financeClient';
 import { storage } from '../../core/chrome/storage';
 
 declare const chrome: any;
 
 export interface WatchListWidgetProps {
   isSidebar?: boolean;
+  onOpenSettings?: () => void;
 }
 
 const DEFAULT_CHECKLIST: ResearchChecklistItem[] = [
@@ -16,14 +17,18 @@ const DEFAULT_CHECKLIST: ResearchChecklistItem[] = [
   { id: 'c4', text: '撰寫投研核心總結與操作策略', done: false }
 ];
 
-export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = false }) => {
+export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = false, onOpenSettings }) => {
   // 資料狀態
   const [snapshots, setSnapshots] = useState<FinanceSnapshotItem[]>([]);
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'watchlist' | 'importer' | 'researchLogs'>('watchlist');
 
-  // 連線狀態
+  // 連線狀態與診斷
   const [isConnected, setIsConnected] = useState(false);
+  const [targetExtId, setTargetExtId] = useState<string>(DEFAULT_FINANCE_CLIPPER_ID);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
+  const [showIdModal, setShowIdModal] = useState(false);
+  const [tempExtId, setTempExtId] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isCrawling, setIsCrawling] = useState(false);
   const [newTicker, setNewTicker] = useState('');
@@ -53,6 +58,35 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
     setTimeout(() => setStatusMsg(null), 3500);
   };
 
+  const checkConnection = async (idToCheck?: string, silent = false): Promise<boolean> => {
+    setIsCheckingConnection(true);
+    try {
+      const extId = idToCheck !== undefined ? idToCheck : await financeClient.getExtensionId();
+      setTargetExtId(extId || DEFAULT_FINANCE_CLIPPER_ID);
+      const pingOk = await financeClient.ping(extId);
+      setIsConnected(pingOk);
+      if (!silent) {
+        if (pingOk) {
+          showStatus('已成功連線至 FinanceClipper！', 'success');
+        } else {
+          showStatus(
+            `連線失敗: 擴充套件未啟動 (目標 ID: ${extId || DEFAULT_FINANCE_CLIPPER_ID})，請確認插件已啟用`,
+            'error'
+          );
+        }
+      }
+      return pingOk;
+    } catch {
+      setIsConnected(false);
+      if (!silent) {
+        showStatus('連線檢測發生異常', 'error');
+      }
+      return false;
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  };
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -63,32 +97,30 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
 
       // 檢查 FinanceClipper 連線
       const extId = await financeClient.getExtensionId();
-      if (extId) {
-        const pingOk = await financeClient.ping(extId);
-        setIsConnected(pingOk);
-        if (pingOk && localSnapshots.length === 0) {
-          // 若本地無快照但有連線，自動嘗試同步遠端 Watchlist
-          const res = await financeClient.getWatchlist();
-          if (res.success && res.watchlist && res.watchlist.length > 0) {
-            const mapped: FinanceSnapshotItem[] = res.watchlist.map((w: StockWatchItem) => ({
-              id: `snap-${w.ticker}`,
-              ticker: w.ticker,
-              name: w.name,
-              price: w.price,
-              change: w.change,
-              changePercent: w.changePercent,
-              updatedAt: w.updatedAt || new Date().toLocaleString(),
-              checklist: DEFAULT_CHECKLIST
-            }));
-            await financeClient.saveSnapshots(mapped);
-            setSnapshots(mapped);
-            if (mapped.length > 0) setSelectedTicker(mapped[0].ticker);
-            setIsLoading(false);
-            return;
-          }
+      setTargetExtId(extId || DEFAULT_FINANCE_CLIPPER_ID);
+      const pingOk = await financeClient.ping(extId);
+      setIsConnected(pingOk);
+
+      if (pingOk && localSnapshots.length === 0) {
+        // 若本地無快照但有連線，自動嘗試同步遠端 Watchlist
+        const res = await financeClient.getWatchlist();
+        if (res.success && res.watchlist && res.watchlist.length > 0) {
+          const mapped: FinanceSnapshotItem[] = res.watchlist.map((w: StockWatchItem) => ({
+            id: `snap-${w.ticker}`,
+            ticker: w.ticker,
+            name: w.name,
+            price: w.price,
+            change: w.change,
+            changePercent: w.changePercent,
+            updatedAt: w.updatedAt || new Date().toLocaleString(),
+            checklist: DEFAULT_CHECKLIST
+          }));
+          await financeClient.saveSnapshots(mapped);
+          setSnapshots(mapped);
+          if (mapped.length > 0) setSelectedTicker(mapped[0].ticker);
+          setIsLoading(false);
+          return;
         }
-      } else {
-        setIsConnected(false);
       }
 
       setSnapshots(localSnapshots);
@@ -245,9 +277,27 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
       const updated = Array.from(existingMap.values());
       await financeClient.saveSnapshots(updated);
       setSnapshots(updated);
+      setIsConnected(true);
       showStatus('已同步 FinanceClipper 最新自選行情', 'success');
     } else {
-      showStatus(res.error || '無法同步 FinanceClipper', 'error');
+      const rawError = res.error || '';
+      let errorDesc = rawError;
+      if (
+        rawError.includes('擴充套件未啟動') ||
+        rawError.includes('Receiving end does not exist') ||
+        rawError.includes('未連線') ||
+        rawError.includes('未連接')
+      ) {
+        errorDesc = `擴充套件未啟動 (目標 ID: ${targetExtId})，請確認 FinanceClipper 已安裝啟用`;
+        setIsConnected(false);
+      } else if (
+        rawError.includes('解析逾時') ||
+        rawError.toLowerCase().includes('timeout') ||
+        rawError.includes('逾時')
+      ) {
+        errorDesc = '目標網址解析逾時，請檢查網路連線或稍後再試';
+      }
+      showStatus(`同步失敗: ${errorDesc}`, 'error');
     }
     setIsLoading(false);
   };
@@ -444,6 +494,10 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
     const ticker = newTicker.trim().toUpperCase();
     if (!ticker) return;
 
+    if (!isConnected) {
+      showStatus(`提示: 目前尚未連線至 FinanceClipper (目標 ID: ${targetExtId})，正在嘗試發送採集請求...`, 'info');
+    }
+
     setIsCrawling(true);
     showStatus(`正在爬取 [${ticker}]...`, 'info');
     const res = await financeClient.crawlStock(ticker);
@@ -452,9 +506,26 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
 
     if (res.success) {
       showStatus(`[${ticker}] 採集成功！`, 'success');
+      setIsConnected(true);
       handleSyncFromClipper();
     } else {
-      showStatus(`採集失敗: ${res.error || '請確認網路與代號'}`, 'error');
+      const rawError = res.error || '';
+      let errorDesc = rawError;
+      if (
+        rawError.includes('擴充套件未啟動') ||
+        rawError.includes('Receiving end does not exist') ||
+        rawError.includes('未連接')
+      ) {
+        errorDesc = `擴充套件未啟動 (目標 ID: ${targetExtId})，請確認 FinanceClipper 已安裝啟用`;
+        setIsConnected(false);
+      } else if (
+        rawError.includes('解析逾時') ||
+        rawError.toLowerCase().includes('timeout') ||
+        rawError.includes('逾時')
+      ) {
+        errorDesc = '目標網址解析逾時，請檢查網路連線或稍後再試';
+      }
+      showStatus(`採集失敗: ${errorDesc}`, 'error');
     }
   };
 
@@ -472,10 +543,15 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-sm font-bold tracking-wide text-dark-primary">投研自選看板</h2>
-              <span
-                className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-amber-400'}`}
-                title={isConnected ? '已連線 FinanceClipper' : '離線自治模式 (支援快照匯入與番茄鐘)'}
-              />
+              <div className="flex items-center gap-1">
+                <span
+                  className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-amber-400'}`}
+                  title={isConnected ? `已連線 FinanceClipper (${targetExtId})` : `未連線 FinanceClipper (目標 ID: ${targetExtId})`}
+                />
+                <span className={`text-[10px] font-medium ${isConnected ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {isConnected ? '已連線' : '未連線'}
+                </span>
+              </div>
               <span className="text-[10px] text-dark-muted px-1.5 py-0.5 rounded bg-dark-hover">
                 {snapshots.length} 檔標的
               </span>
@@ -516,6 +592,106 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
           </button>
         </div>
       </div>
+
+      {/* 連線異常診斷與引導橫幅 */}
+      {!isConnected && !isLoading && (
+        <div className="bg-amber-950/30 border border-amber-800/50 rounded-xl px-3.5 py-2.5 text-xs flex flex-wrap items-center justify-between gap-3 text-amber-200">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <span className="text-lg shrink-0">⚠️</span>
+            <div className="min-w-0">
+              <div className="font-semibold flex items-center flex-wrap gap-1.5">
+                <span>未連線至 FinanceClipper 擴充套件</span>
+                <span className="font-mono text-[11px] bg-dark-surface/90 px-1.5 py-0.5 rounded border border-amber-800/40 text-amber-300 select-all">
+                  目標 ID: {targetExtId}
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-300/80 mt-0.5">
+                若尚未安裝或擴充套件未啟動，請確認 FinanceClipper 已啟用；如為獨立開發版可於右側自訂 ID 或重新偵測。
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => checkConnection()}
+              disabled={isCheckingConnection}
+              className="px-2.5 py-1.5 bg-amber-600/30 hover:bg-amber-600/50 disabled:opacity-50 text-amber-200 border border-amber-500/40 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 shadow-sm"
+              title="重新偵測跨插件連線"
+            >
+              <span>{isCheckingConnection ? '⏳' : '🔄'}</span>
+              <span>重新偵測</span>
+            </button>
+            <button
+              onClick={() => {
+                if (onOpenSettings) {
+                  onOpenSettings();
+                } else {
+                  setTempExtId(targetExtId);
+                  setShowIdModal(true);
+                }
+              }}
+              className="px-2.5 py-1.5 bg-dark-card hover:bg-dark-hover text-amber-200 border border-dark-border-subtle rounded-lg text-xs font-medium transition-colors flex items-center gap-1 shadow-sm"
+              title="前往設定或修改 Extension ID"
+            >
+              <span>⚙️</span>
+              <span>{onOpenSettings ? '前往設定' : '設定 ID'}</span>
+            </button>
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText(targetExtId);
+                showStatus('已複製目標 Extension ID 至剪貼簿', 'info');
+              }}
+              className="p-1.5 bg-dark-card hover:bg-dark-hover text-amber-300/80 hover:text-amber-100 border border-dark-border-subtle rounded-lg text-xs"
+              title="複製 Extension ID"
+            >
+              📋
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 快捷 Extension ID 設定卡片 */}
+      {showIdModal && (
+        <div className="bg-dark-card border border-dark-border-default rounded-xl p-3.5 space-y-2 text-xs shadow-lg">
+          <div className="flex items-center justify-between font-bold text-dark-primary">
+            <div className="flex items-center gap-1.5">
+              <span>⚙️</span>
+              <span>FinanceClipper Extension ID 設定</span>
+            </div>
+            <button onClick={() => setShowIdModal(false)} className="text-dark-muted hover:text-white text-xs px-1">✕</button>
+          </div>
+          <p className="text-[11px] text-dark-muted leading-relaxed">
+            系統預設恆定 ID 為 <code className="text-emerald-400 font-mono">{DEFAULT_FINANCE_CLIPPER_ID}</code>。如您使用開發版或自訂 ID，請在此輸入：
+          </p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={tempExtId}
+              onChange={(e) => setTempExtId(e.target.value)}
+              placeholder={`預設: ${DEFAULT_FINANCE_CLIPPER_ID}`}
+              className="flex-1 bg-dark-surface border border-dark-border-subtle rounded-lg px-2.5 py-1.5 text-xs font-mono text-dark-primary focus:outline-none focus:border-blue-500"
+            />
+            <button
+              onClick={async () => {
+                const toSave = tempExtId.trim() || DEFAULT_FINANCE_CLIPPER_ID;
+                await financeClient.setExtensionId(toSave);
+                setTargetExtId(toSave);
+                setShowIdModal(false);
+                await checkConnection(toSave);
+              }}
+              className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-medium text-xs shadow-sm shrink-0"
+            >
+              儲存並連線
+            </button>
+            <button
+              onClick={() => setTempExtId(DEFAULT_FINANCE_CLIPPER_ID)}
+              className="px-2.5 py-1.5 bg-dark-hover text-dark-muted hover:text-dark-primary rounded-lg text-xs shrink-0"
+              title="填入預設 ID"
+            >
+              預設值
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 狀態提示列 */}
       {statusMsg && (
@@ -590,7 +766,7 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
                 </button>
               </form>
 
-              {isConnected && (
+              {isConnected ? (
                 <button
                   onClick={handleSyncFromClipper}
                   disabled={isLoading}
@@ -598,6 +774,15 @@ export const WatchListWidget: React.FC<WatchListWidgetProps> = ({ isSidebar = fa
                   title="同步 Clipper 自選庫"
                 >
                   🔄
+                </button>
+              ) : (
+                <button
+                  onClick={() => checkConnection()}
+                  disabled={isCheckingConnection}
+                  className="p-1.5 bg-amber-950/40 hover:bg-amber-900/50 text-amber-300 border border-amber-800/50 rounded-lg text-xs"
+                  title={`目前離線 (目標 ID: ${targetExtId})，點擊重新連線偵測`}
+                >
+                  {isCheckingConnection ? '⏳' : '⚡'}
                 </button>
               )}
             </div>

@@ -408,22 +408,22 @@ export const BoardView: React.FC<BoardViewProps> = ({
       )}
 
       {/* 頂部看板操作與統計列 */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-dark-surface/90 backdrop-blur-sm p-2.5 px-3.5 rounded-xl border border-dark-border-subtle/80 shadow-sm mb-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 backdrop-blur-md p-2.5 px-3.5 rounded-xl border border-slate-700/60 shadow-sm mb-5">
         {/* 左側：快速檢索與 WIP 說明 */}
         <div className="flex items-center gap-3 flex-1 min-w-[260px]">
           <div className="relative flex-1 max-w-sm group">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-dark-muted group-focus-within:text-indigo-400 transition-colors">🔍</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 group-focus-within:text-indigo-400 transition-colors">🔍</span>
             <input
               type="text"
               placeholder="搜尋看板任務、備忘或股票代號..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-7 py-1.5 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-xs text-dark-primary placeholder:text-dark-muted outline-none transition-all shadow-inner"
+              className="w-full pl-8 pr-7 py-1.5 bg-slate-800/90 border border-slate-700/80 hover:border-slate-600 focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-xs text-slate-100 placeholder:text-slate-400 outline-none transition-all shadow-inner"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-dark-muted hover:text-dark-primary transition-colors cursor-pointer"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
                 title="清除搜尋"
               >
                 ✕
@@ -431,7 +431,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
             )}
           </div>
 
-          <div className="flex items-center gap-2 px-2.5 py-1 bg-dark-card/70 border border-dark-border-subtle/80 rounded-xl text-xs text-dark-secondary shadow-inner">
+          <div className="flex items-center gap-2 px-2.5 py-1 bg-slate-800/70 border border-slate-700/60 rounded-xl text-xs text-slate-300 shadow-inner">
             <span className="flex items-center gap-1 font-medium">
               <span>🛡️</span>
               <span className="hidden sm:inline">WIP 限制：</span>
@@ -440,16 +440,16 @@ export const BoardView: React.FC<BoardViewProps> = ({
               <select
                 value={currentWipLimit}
                 onChange={(e) => setCurrentWipLimit(parseInt(e.target.value, 10))}
-                className="bg-dark-base border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-2 py-0.5 text-xs text-dark-primary outline-none cursor-pointer transition-all"
+                className="bg-slate-900 border border-slate-700/80 hover:border-slate-600 focus:border-indigo-500/80 focus:ring-1 focus:ring-indigo-500/30 rounded-lg px-2 py-0.5 text-xs text-slate-200 outline-none cursor-pointer transition-all"
               >
                 {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
-                  <option key={num} value={num} className="bg-dark-card text-dark-primary">
+                  <option key={num} value={num} className="bg-slate-800 text-slate-200">
                     {num} 個
                   </option>
                 ))}
               </select>
             ) : (
-              <span className="text-[11px] text-dark-muted font-mono bg-dark-base/60 px-2 py-0.5 rounded border border-dark-border-subtle">
+              <span className="text-[11px] text-slate-400 font-mono bg-slate-900/60 px-2 py-0.5 rounded border border-slate-700/60">
                 未啟用
               </span>
             )}
@@ -600,14 +600,14 @@ export const BoardView: React.FC<BoardViewProps> = ({
 
               {/* Inbox 專屬：快速捕捉輸入框與一鍵釐清 */}
               {col.id === 'inbox' && (
-                <div className="p-3 bg-dark-card/50 border-b border-dark-border-subtle/60 space-y-2 backdrop-blur-xs">
+                <div className="p-3 bg-slate-900/60 border-b border-slate-700/60 space-y-2 backdrop-blur-xs">
                   <form onSubmit={handleQuickAddInbox} className="flex gap-2">
                     <input
                       type="text"
                       placeholder="快記想法 (Enter 存入)..."
                       value={inboxInput}
                       onChange={(e) => setInboxInput(e.target.value)}
-                      className="flex-1 px-3 py-1.5 bg-dark-surface/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-purple-500/80 focus:ring-1 focus:ring-purple-500/30 rounded-xl text-xs text-dark-primary placeholder:text-dark-muted outline-none transition-all shadow-inner"
+                      className="flex-1 px-3 py-1.5 bg-slate-800/90 border border-slate-700/80 hover:border-slate-600 focus:border-purple-500/80 focus:ring-2 focus:ring-purple-500/20 rounded-xl text-xs text-slate-100 placeholder:text-slate-400 outline-none transition-all shadow-inner"
                     />
                     <button
                       type="submit"

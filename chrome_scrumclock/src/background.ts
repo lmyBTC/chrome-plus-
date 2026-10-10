@@ -95,16 +95,37 @@ export async function captureToInbox(rawText: string, url?: string, sourceTitle?
   return missionId;
 }
 
-// 初始化
-chrome.runtime.onInstalled.addListener(async () => {
-  console.log('Power Kit 已安裝');
-  
-  // 確保點擊 Action 圖標時預設開啟 Popup（不自動開啟側邊欄）
+// ── 常駐行為防禦 (Action & SidePanel) ──────────────────────────────
+/**
+ * 確保點擊工具列 Action 必定開啟 Popup，且不被 Side Panel 自動接管
+ */
+function enforceActionPopupBehavior(): void {
   if (typeof chrome.sidePanel !== 'undefined' && chrome.sidePanel.setPanelBehavior) {
     chrome.sidePanel
       .setPanelBehavior({ openPanelOnActionClick: false })
       .catch((error) => console.error("設定側欄行為失敗:", error));
   }
+  if (typeof chrome.action !== 'undefined' && chrome.action.setPopup) {
+    chrome.action
+      .setPopup({ popup: 'src/entries/popup/index.html' })
+      .catch((error) => console.error("設定 Action Popup 失敗:", error));
+  }
+}
+
+// SW 啟動頂層立即執行防禦
+enforceActionPopupBehavior();
+
+// 監聽瀏覽器啟動生命週期
+chrome.runtime.onStartup.addListener(() => {
+  enforceActionPopupBehavior();
+});
+
+// 初始化
+chrome.runtime.onInstalled.addListener(async () => {
+  console.log('Power Kit 已安裝');
+  
+  // 確保點擊 Action 圖標時預設開啟 Popup
+  enforceActionPopupBehavior();
   
   // 建立右鍵選單
   if (typeof chrome.contextMenus !== 'undefined') {

@@ -192,7 +192,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
       ) : null}
 
       {/* 整合式快速新增與視圖工具列 */}
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-dark-surface/90 backdrop-blur-sm p-2.5 px-3 rounded-xl border border-dark-border-subtle/80 shadow-sm">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 bg-slate-900/80 backdrop-blur-md p-2.5 px-3 rounded-xl border border-slate-700/60 shadow-sm">
         {/* 左側：快速新增任務表單 */}
         <div className="flex-1 min-w-[300px] flex items-center gap-2">
           <div className="relative flex-1 group">
@@ -202,14 +202,14 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
               value={newTitle}
               onChange={(e) => setNewTitle(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && onAddTask()}
-              className="w-full pl-3.5 pr-14 py-2 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-sm text-dark-primary outline-none transition-all placeholder:text-dark-muted shadow-inner"
+              className="w-full pl-3.5 pr-14 py-2 bg-slate-800/90 border border-slate-700/80 hover:border-slate-600 focus:border-indigo-500/80 focus:ring-2 focus:ring-indigo-500/20 rounded-xl text-sm text-slate-100 outline-none transition-all placeholder:text-slate-400 shadow-inner"
             />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-dark-muted bg-dark-base/80 px-1.5 py-0.5 rounded border border-dark-border-subtle select-none pointer-events-none group-focus-within:border-indigo-500/30 transition-colors">
+            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-700/60 select-none pointer-events-none group-focus-within:border-indigo-500/30 transition-colors">
               ↵ Enter
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-2 bg-dark-card/90 border border-dark-border-subtle hover:border-dark-border-default focus-within:border-indigo-500/50 rounded-xl transition-all shadow-inner">
+          <div className="flex items-center gap-1.5 px-2.5 py-2 bg-slate-800/90 border border-slate-700/80 hover:border-slate-600 focus-within:border-indigo-500/50 rounded-xl transition-all shadow-inner">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${
                 newPriority === 'P0' ? 'bg-rose-500 animate-pulse' : newPriority === 'P1' ? 'bg-red-500' : newPriority === 'P2' ? 'bg-amber-500' : 'bg-blue-400'
@@ -218,12 +218,12 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
             <select
               value={newPriority}
               onChange={(e) => setNewPriority(e.target.value as 'P0' | 'P1' | 'P2' | 'P3')}
-              className="bg-transparent text-xs font-semibold text-dark-primary outline-none cursor-pointer pr-1"
+              className="bg-transparent text-xs font-semibold text-slate-200 outline-none cursor-pointer pr-1"
             >
-              <option value="P0" className="bg-dark-card text-rose-400 font-bold">🚨 P0 (Blocker)</option>
-              <option value="P1" className="bg-dark-card text-dark-primary">P1 (高)</option>
-              <option value="P2" className="bg-dark-card text-dark-primary">P2 (中)</option>
-              <option value="P3" className="bg-dark-card text-dark-primary">P3 (低)</option>
+              <option value="P0" className="bg-slate-800 text-rose-400 font-bold">🚨 P0 (Blocker)</option>
+              <option value="P1" className="bg-slate-800 text-slate-200">P1 (高)</option>
+              <option value="P2" className="bg-slate-800 text-slate-200">P2 (中)</option>
+              <option value="P3" className="bg-slate-800 text-slate-200">P3 (低)</option>
             </select>
           </div>
 
@@ -239,7 +239,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
         {/* 右側：視圖切換、欄位設定與說明開關 */}
         <div className="flex items-center gap-2 shrink-0">
           {/* 看板 / 表格 切換 */}
-          <div className="flex items-center bg-dark-card/90 border border-dark-border-subtle p-0.5 rounded-xl shadow-inner">
+          <div className="flex items-center bg-slate-800/90 border border-slate-700/80 p-0.5 rounded-xl shadow-inner">
             <button
               onClick={() => handleSetViewMode('kanban')}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -436,7 +436,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
                                 if (e.key === 'Escape') setEditingTitleId(null);
                               }}
                               autoFocus
-                              className="w-full px-2.5 py-1 bg-dark-base border border-blue-500 rounded text-sm text-dark-primary outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full px-2.5 py-1 bg-slate-800/95 border border-indigo-500/80 rounded-lg text-sm text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500/30"
                             />
                           </td>
                         ) : (
@@ -575,7 +575,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
                               }}
                               placeholder="輸入執行備忘..."
                               autoFocus
-                              className="w-full bg-dark-base border border-blue-500 rounded text-xs text-dark-primary px-2 py-1 outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-full bg-slate-800/95 border border-indigo-500/80 rounded-lg text-xs text-slate-100 px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500/30"
                             />
                           </td>
                         ) : (
