@@ -26,6 +26,8 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "chrome_scrumclock
 * `src/features/scrumclock/components/EndOfDayReview.tsx`: 日終反思（對接 Web AI 戰報生成、Sheets 雲端匯出與 Markdown YAML 筆記匯出）
 * `src/services/googleSyncService.ts`: Google 生態雙軌同步服務（GAS Web App 直連與 Local Hub 退避；支援日終戰報 Sheets 覆蓋、看板焦點 Tasks 推播及逆向抓取至收件匣）
 * `src/shared/google/`: Google 原生生態引擎 (`googleAuthClient.ts`, `googleTasksSync.ts`, `googleCalendarService.ts`)
+* `src/components/SettingsPanel.tsx`: 全域系統設定視窗（整合 Google Tasks 雙向同步開關/觸發、GAS 備份、跨插件連線健檢 Ping/Pong、錯誤狀態指示與排錯導航）
+* `src/components/InstallDocs.tsx`: 系統安裝說明書與除錯手冊（支援 initialTab 分頁直達：安裝步驟、雙向同步 SOP、排錯指南 Troubleshooting 與常見錯誤代碼表）
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `finance-research-clipper-oss`）之原始碼。

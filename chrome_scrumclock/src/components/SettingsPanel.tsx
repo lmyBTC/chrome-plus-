@@ -2,13 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { storage } from '../core/chrome/storage';
 import { syncService } from '../core/chrome/syncService';
 import { UserSettings, NorthStarGoal, WeeklyMission } from '../types';
-import { DEFAULT_FINANCE_CLIPPER_ID } from '../features/finance-integration/financeClient';
+import {
+  DEFAULT_FINANCE_CLIPPER_ID,
+  DEFAULT_ACTIVITY_MONITOR_ID,
+  financeClient,
+  PingDiagnosticsResult,
+} from '../features/finance-integration/financeClient';
+import { googleTasksSync } from '../shared/google/googleTasksSync';
+import { GoogleSyncResult } from '../shared/google/googleTypes';
 
 // 確保 Chrome API 可用
 declare const chrome: any;
 
 interface SettingsPanelProps {
-  onNavigateToDocs?: () => void;
+  onNavigateToDocs?: (tab?: string) => void;
 }
 
 type TabType = 'basic' | 'focus' | 'ai';
@@ -40,7 +47,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [enableWebhook, setEnableWebhook] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
   const [webhookSecretToken, setWebhookSecretToken] = useState('');
+
+  // Google Tasks 雙向同步狀態
+  const [enableGoogleTasksSync, setEnableGoogleTasksSync] = useState(true);
+  const [isTasksSyncing, setIsTasksSyncing] = useState(false);
+  const [tasksSyncResult, setTasksSyncResult] = useState<GoogleSyncResult | null>(null);
+
+  // 跨插件聯動狀態
   const [financeClipperExtensionId, setFinanceClipperExtensionId] = useState('');
+  const [activityMonitorExtensionId, setActivityMonitorExtensionId] = useState('');
+  const [isTestingFc, setIsTestingFc] = useState(false);
+  const [fcPingResult, setFcPingResult] = useState<PingDiagnosticsResult | null>(null);
+  const [isTestingAm, setIsTestingAm] = useState(false);
+  const [amPingResult, setAmPingResult] = useState<PingDiagnosticsResult | null>(null);
 
   // Focus Blocker State
   const [distractionSites, setDistractionSites] = useState('');
@@ -81,17 +100,75 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       setSpreadsheetUrl(data.userSettings.spreadsheetUrl || '');
       setEnableGoogleSync(data.userSettings.enableGoogleSync !== false);
       setGoogleSyncLocalHubFallback(data.userSettings.googleSyncLocalHubFallback !== false);
+      setEnableGoogleTasksSync(data.userSettings.enableGoogleTasksSync !== false);
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
       setEnableWebhook(data.userSettings.enableWebhook || false);
       setWebhookUrl(data.userSettings.webhookUrl || '');
       setWebhookSecretToken(data.userSettings.webhookSecretToken || '');
-      setFinanceClipperExtensionId(data.userSettings.financeClipperExtensionId || '');
+      setFinanceClipperExtensionId(data.userSettings.financeClipperExtensionId || DEFAULT_FINANCE_CLIPPER_ID);
+      setActivityMonitorExtensionId(data.userSettings.activityMonitorExtensionId || DEFAULT_ACTIVITY_MONITOR_ID);
       
       const time = await syncService.getLastSyncTime();
       setLastSyncTime(time);
+
+      const tasksResult = await googleTasksSync.getLastSyncResult();
+      if (tasksResult) {
+        setTasksSyncResult(tasksResult);
+      }
     } catch (e) {
       console.error('載入設定失敗:', e);
       setMessage({ type: 'error', text: '❌ 載入設定失敗，請確認 LocalStorage 權限。' });
+    }
+  };
+
+  const handleSyncGoogleTasks = async () => {
+    setIsTasksSyncing(true);
+    setMessage(null);
+    try {
+      const res = await googleTasksSync.pullAndMergeTasks();
+      setTasksSyncResult(res);
+      if (res.success) {
+        setMessage({
+          type: 'success',
+          text: `🎉 Google Tasks 雙向智慧合併完成！共同步 ${res.syncedCount} 項任務。`,
+        });
+        await loadSettings();
+      } else {
+        const errMsg = res.errors && res.errors.length > 0 ? res.errors[0] : '未知同步錯誤';
+        setMessage({
+          type: 'error',
+          text: `❌ Google Tasks 同步失敗：${errMsg}`,
+        });
+      }
+    } catch (err: any) {
+      setMessage({
+        type: 'error',
+        text: `❌ Google Tasks 觸發異常：${err?.message || err}`,
+      });
+    } finally {
+      setIsTasksSyncing(false);
+    }
+  };
+
+  const handleTestFinanceClipper = async () => {
+    setIsTestingFc(true);
+    try {
+      const targetId = financeClipperExtensionId.trim() || DEFAULT_FINANCE_CLIPPER_ID;
+      const result = await financeClient.pingWithDiagnostics(targetId);
+      setFcPingResult(result);
+    } finally {
+      setIsTestingFc(false);
+    }
+  };
+
+  const handleTestActivityMonitor = async () => {
+    setIsTestingAm(true);
+    try {
+      const targetId = activityMonitorExtensionId.trim() || DEFAULT_ACTIVITY_MONITOR_ID;
+      const result = await financeClient.pingWithDiagnostics(targetId);
+      setAmPingResult(result);
+    } finally {
+      setIsTestingAm(false);
     }
   };
 
@@ -172,12 +249,14 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         spreadsheetUrl: spreadsheetUrl.trim(),
         enableGoogleSync: enableGoogleSync,
         googleSyncLocalHubFallback: googleSyncLocalHubFallback,
+        enableGoogleTasksSync: enableGoogleTasksSync,
         geminiApiKey: geminiApiKey.trim(),
         distractionSites: blockSites,
         enableWebhook: enableWebhook,
         webhookUrl: webhookUrl.trim(),
         webhookSecretToken: webhookSecretToken.trim(),
         financeClipperExtensionId: financeClipperExtensionId.trim(),
+        activityMonitorExtensionId: activityMonitorExtensionId.trim(),
         enableGtdCapture: enableGtdCapture,
         enableWipLimit: enableWipLimit,
         maxWipLimit: Number(maxWipLimit) || 3
@@ -480,7 +559,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                 </label>
                 {onNavigateToDocs && (
                   <button
-                    onClick={onNavigateToDocs}
+                    onClick={() => onNavigateToDocs?.()}
                     className="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 transition-colors"
                     type="button"
                   >
@@ -552,6 +631,90 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                     />
                     <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                   </label>
+                </div>
+
+                {/* Google Tasks 雙向同步控制模組 */}
+                <div className="p-4 rounded-xl bg-blue-900/25 border border-blue-800/40 space-y-3 mt-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-blue-200">✅ Google Tasks 雙向任務同步</span>
+                        {/* 狀態指示燈 */}
+                        {tasksSyncResult === null ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-800 text-slate-300 border border-slate-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span> 尚未同步
+                          </span>
+                        ) : tasksSyncResult.success ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-green-950/60 text-green-400 border border-green-800/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> 正常連線
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-red-950/60 text-red-400 border border-red-800/60">
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span> 同步異常
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-blue-300/70 mt-1">
+                        與 Google Tasks 官方清單自動合併任務、雙向對齊勾選完成狀態。
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                      <input
+                        type="checkbox"
+                        checked={enableGoogleTasksSync}
+                        onChange={(e) => setEnableGoogleTasksSync(e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                  </div>
+
+                  {/* 狀態資訊列與手動觸發按鈕 */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-blue-900/30">
+                    <div className="text-xs text-dark-muted space-y-0.5">
+                      <div>
+                        最後同步：{tasksSyncResult?.lastSyncedAt
+                          ? new Date(tasksSyncResult.lastSyncedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+                          : '無紀錄'}
+                        {tasksSyncResult?.success && typeof tasksSyncResult.syncedCount === 'number' && (
+                          <span className="ml-2 text-blue-300 font-mono">（共合併 {tasksSyncResult.syncedCount} 筆任務）</span>
+                        )}
+                      </div>
+                      {tasksSyncResult && !tasksSyncResult.success && tasksSyncResult.errors && (
+                        <div className="text-red-400 font-mono text-[11px] truncate max-w-md">
+                          ⚠️ {tasksSyncResult.errors[0]}
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {onNavigateToDocs && (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToDocs('troubleshoot')}
+                          className="px-2.5 py-1.5 text-xs text-blue-300 hover:text-blue-200 hover:bg-blue-900/40 border border-blue-800/40 rounded-lg transition-colors"
+                          title="查看 Google Tasks 配置與排錯說明"
+                        >
+                          📖 排錯指引
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        disabled={isTasksSyncing || !enableGoogleTasksSync}
+                        onClick={handleSyncGoogleTasks}
+                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:bg-dark-surface disabled:text-dark-muted text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+                      >
+                        {isTasksSyncing ? (
+                          <>
+                            <span className="animate-spin text-xs">⏳</span> 同步中...
+                          </>
+                        ) : (
+                          <>
+                            <span>⚡</span> 立即雙向同步 Tasks
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -640,34 +803,177 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
               )}
             </div>
 
-            {/* Finance Research Clipper 聯動設定 */}
-            <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-xl p-5">
-              <label className="block text-sm font-bold text-emerald-300 mb-1 flex items-center gap-1.5">
-                <span>📈</span> Finance Research Clipper 跨插件連線
-              </label>
-              <p className="text-xs text-emerald-300/80 mb-3 leading-relaxed">
-                填寫 Finance Research Clipper 擴充功能的 Extension ID（於 <code>chrome://extensions</code> 檢視），即可在 New Tab 即時同步自選股監控、一鍵開啟大螢幕儀表板並觸發背景爬蟲。
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={financeClipperExtensionId}
-                  onChange={(e) => setFinanceClipperExtensionId(e.target.value)}
-                  placeholder={`預設: ${DEFAULT_FINANCE_CLIPPER_ID} (留空自動套用預設值)`}
-                  className="flex-1 px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-sm shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => setFinanceClipperExtensionId(DEFAULT_FINANCE_CLIPPER_ID)}
-                  className="px-3 py-2 bg-emerald-900/40 hover:bg-emerald-900/70 border border-emerald-700/50 text-emerald-300 text-xs rounded-xl font-medium transition-colors shrink-0"
-                  title="帶入合約規範之預設 ID"
-                >
-                  帶入預設 ID
-                </button>
+            {/* 跨插件協同與連線健檢 (Cross-Plugin Hub) */}
+            <div className="bg-emerald-950/20 border border-emerald-900/50 rounded-xl p-5 space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-emerald-900/40">
+                <div>
+                  <label className="block text-sm font-bold text-emerald-300 flex items-center gap-1.5">
+                    <span>🔌</span> 跨插件協同與連線健檢 (Cross-Plugin Hub)
+                  </label>
+                  <p className="text-xs text-emerald-300/80 mt-0.5">
+                    基於純資料契約 (Protocol v2) 與 2048-bit 恆定 Extension ID，即時觀測跨插件健康狀態。
+                  </p>
+                </div>
+                {onNavigateToDocs && (
+                  <button
+                    type="button"
+                    onClick={() => onNavigateToDocs('troubleshoot')}
+                    className="text-xs text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    📖 查看跨插件 SOP 與排錯手冊
+                  </button>
+                )}
               </div>
-              <p className="text-[11px] text-emerald-400/80 mt-1.5 font-mono">
-                恆定 ID: {DEFAULT_FINANCE_CLIPPER_ID}
-              </p>
+
+              {/* 1. Finance Research Clipper 卡片 */}
+              <div className="p-4 rounded-xl bg-dark-surface/60 border border-emerald-800/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-emerald-200">📈 Finance Research Clipper (投研採集)</span>
+                    {/* 狀態指示標籤 */}
+                    {fcPingResult === null ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span> 尚未測試
+                      </span>
+                    ) : fcPingResult.success ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-green-950/60 text-green-400 border border-green-800/60 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> 在線 ({fcPingResult.latencyMs}ms{fcPingResult.version ? ` · ${fcPingResult.version}` : ''})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-red-950/60 text-red-400 border border-red-800/60 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span> 離線 [{fcPingResult.errorCode || 'ERR'}]
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isTestingFc}
+                    onClick={handleTestFinanceClipper}
+                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                  >
+                    {isTestingFc ? (
+                      <>
+                        <span className="animate-spin text-xs">⏳</span> Ping 測試中...
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span> 測試連線 (Ping)
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={financeClipperExtensionId}
+                    onChange={(e) => setFinanceClipperExtensionId(e.target.value)}
+                    placeholder={`預設: ${DEFAULT_FINANCE_CLIPPER_ID}`}
+                    className="flex-1 px-3 py-2 bg-dark-card border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-xs shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFinanceClipperExtensionId(DEFAULT_FINANCE_CLIPPER_ID)}
+                    className="px-2.5 py-2 bg-emerald-900/40 hover:bg-emerald-900/70 border border-emerald-700/50 text-emerald-300 text-xs rounded-xl font-medium transition-colors shrink-0"
+                    title="帶入合約規範之預設 ID"
+                  >
+                    帶入預設 ID
+                  </button>
+                </div>
+
+                {fcPingResult && !fcPingResult.success && (
+                  <div className="p-2.5 bg-red-950/40 border border-red-800/40 rounded-lg text-xs text-red-300 flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-bold">❌ 連線失敗：</span>
+                      <span className="font-mono">{fcPingResult.error}</span>
+                    </div>
+                    {onNavigateToDocs && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToDocs('troubleshoot')}
+                        className="text-[11px] underline text-red-200 hover:text-white shrink-0"
+                      >
+                        排錯指引
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Browser Activity Monitor 卡片 */}
+              <div className="p-4 rounded-xl bg-dark-surface/60 border border-emerald-800/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-emerald-200">🛡️ Activity Monitor (行為審計)</span>
+                    {/* 狀態指示標籤 */}
+                    {amPingResult === null ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-slate-800 text-slate-300 border border-slate-700">
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span> 尚未測試
+                      </span>
+                    ) : amPingResult.success ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-green-950/60 text-green-400 border border-green-800/60 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span> 在線 ({amPingResult.latencyMs}ms{amPingResult.version ? ` · ${amPingResult.version}` : ''})
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-red-950/60 text-red-400 border border-red-800/60 font-mono">
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span> 離線 [{amPingResult.errorCode || 'ERR'}]
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    disabled={isTestingAm}
+                    onClick={handleTestActivityMonitor}
+                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                  >
+                    {isTestingAm ? (
+                      <>
+                        <span className="animate-spin text-xs">⏳</span> Ping 測試中...
+                      </>
+                    ) : (
+                      <>
+                        <span>⚡</span> 測試連線 (Ping)
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={activityMonitorExtensionId}
+                    onChange={(e) => setActivityMonitorExtensionId(e.target.value)}
+                    placeholder={`預設: ${DEFAULT_ACTIVITY_MONITOR_ID}`}
+                    className="flex-1 px-3 py-2 bg-dark-card border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 text-dark-primary font-mono text-xs shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setActivityMonitorExtensionId(DEFAULT_ACTIVITY_MONITOR_ID)}
+                    className="px-2.5 py-2 bg-emerald-900/40 hover:bg-emerald-900/70 border border-emerald-700/50 text-emerald-300 text-xs rounded-xl font-medium transition-colors shrink-0"
+                    title="帶入合約規範之預設 ID"
+                  >
+                    帶入預設 ID
+                  </button>
+                </div>
+
+                {amPingResult && !amPingResult.success && (
+                  <div className="p-2.5 bg-red-950/40 border border-red-800/40 rounded-lg text-xs text-red-300 flex items-start justify-between gap-2">
+                    <div>
+                      <span className="font-bold">❌ 連線失敗：</span>
+                      <span className="font-mono">{amPingResult.error}</span>
+                    </div>
+                    {onNavigateToDocs && (
+                      <button
+                        type="button"
+                        onClick={() => onNavigateToDocs('troubleshoot')}
+                        className="text-[11px] underline text-red-200 hover:text-white shrink-0"
+                      >
+                        排錯指引
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

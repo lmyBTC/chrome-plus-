@@ -54,7 +54,7 @@
 | **全域版面框架** | `src/core/layout/MainLayout.tsx`<br>`src/core/layout/Sidebar.tsx`<br>`src/core/layout/CommandPalette.tsx` | 應用程式頂部導航、側邊選單、鍵盤快捷命令列 (`Ctrl+P` / `Cmd+K`) |
 | **AI 引擎核心** | `src/utils/ai-helper.ts`<br>`src/utils/ai-prompts.ts`<br>`src/utils/ai-schemas.ts` | Chrome 內建 Gemini Nano Prompt API、外接 Gemini API Key 調用、Prompt 系統提示詞、JSON Action 解析規範 |
 | **文字與標籤解析** | `src/utils/markdown.tsx`<br>`src/utils/task-parser.ts` | 輕量 Markdown 渲染元件、文字自然語言任務時間解析 |
-| **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗、初次安裝指引手冊 |
+| **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗（雲端雙向同步控制、跨插件 Ping/Pong 健檢與錯誤代碼觀測）、系統安裝指引與除錯手冊（支援分頁導向與自我排錯指南） |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
 | **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | OAuth2 最小權限授權、Google Tasks 雙向同步引擎（支援主看板一鍵拉取今日待辦與勾選狀態自動回寫）、Google Calendar 時間箱預約與番茄鐘實績回填 |
 | **Google 雙軌生態同步 (GAS Webhook)** | `src/services/googleSyncService.ts` | 零審核雙軌架構（GAS Web App 直連與 Local Hub 退避）：支援日終戰報 Sheets 覆蓋寫入 (`DailyLogs`)、看板焦點卡片 Tasks 雙向推播與行動端 Google Tasks 逆向匯入 Inbox（經由 TaskAIEngine 語意強化） |
@@ -67,7 +67,8 @@
 以下檔案程式碼行數龐大 (>500 行)。**AI 讀取或修改時，切勿全文載入，必須先用 `grep_search` 定位關鍵行號，再搭配 `view_file` (指定 `StartLine`/`EndLine`) 局部讀取**：
 
 - 🔴 `src/geminiContent.ts` (~569 行) - Gemini 網頁注入 Content Script
-- 🔴 `src/components/InstallDocs.tsx` (~558 行) - 系統安裝說明文檔元件
+- 🔴 `src/components/SettingsPanel.tsx` (~976 行) - 全域系統設定與連線觀測面板
+- 🔴 `src/components/InstallDocs.tsx` (~886 行) - 系統安裝說明與排錯手冊元件
 
 ---
 

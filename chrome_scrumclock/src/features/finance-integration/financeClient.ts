@@ -4,10 +4,19 @@ import { StockWatchItem, FinanceClipperResponse, FinanceSnapshotItem } from './t
 declare const chrome: any;
 
 export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
+export const DEFAULT_ACTIVITY_MONITOR_ID = 'kjnoegggihncdaimlgfccccogghjapgn';
 
 const STORAGE_KEY_FC_ID = 'finance_clipper_ext_id';
 const STORAGE_KEY_FC_SNAPSHOTS = 'scrumclock_finance_snapshots';
 const STORAGE_KEY_RESEARCH_LOGS = 'scrumclock_finance_research_logs';
+
+export interface PingDiagnosticsResult {
+  success: boolean;
+  latencyMs: number;
+  version?: string;
+  error?: string;
+  errorCode?: 'OK' | 'ERR_EXTENSION_NOT_FOUND' | 'ERR_TIMEOUT' | 'ERR_INVALID_ENV' | 'ERR_UNKNOWN';
+}
 
 export const financeClient = {
   /**
@@ -44,23 +53,89 @@ export const financeClient = {
   },
 
   /**
-   * 測試跨插件連線
+   * 測試跨插件連線 (簡易布林)
    */
   async ping(extId?: string): Promise<boolean> {
-    const id = extId || (await this.getExtensionId());
-    if (!id || typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) return false;
+    const res = await this.pingWithDiagnostics(extId);
+    return res.success;
+  },
 
+  /**
+   * 測試跨插件連線並提供完整診斷指標與錯誤代碼
+   */
+  async pingWithDiagnostics(targetExtId?: string): Promise<PingDiagnosticsResult> {
+    const id = targetExtId || (await this.getExtensionId());
+    if (!id || id.trim() === '') {
+      return {
+        success: false,
+        latencyMs: 0,
+        error: '未指定 Extension ID',
+        errorCode: 'ERR_EXTENSION_NOT_FOUND',
+      };
+    }
+    if (typeof chrome === 'undefined' || !chrome.runtime?.sendMessage) {
+      return {
+        success: false,
+        latencyMs: 0,
+        error: '非 Chrome 擴充功能環境',
+        errorCode: 'ERR_INVALID_ENV',
+      };
+    }
+
+    const start = performance.now();
     return new Promise((resolve) => {
       try {
         chrome.runtime.sendMessage(id, { type: 'PING' }, (response: any) => {
-          if (chrome.runtime.lastError || !response || !response.success) {
-            resolve(false);
+          const latencyMs = Math.round(performance.now() - start);
+          if (chrome.runtime.lastError) {
+            const rawMsg = chrome.runtime.lastError.message || '';
+            const isNotFound =
+              rawMsg.includes('Receiving end does not exist') ||
+              rawMsg.includes('Could not establish connection');
+            const isTimeout =
+              rawMsg.toLowerCase().includes('timeout') || rawMsg.includes('逾時');
+
+            resolve({
+              success: false,
+              latencyMs,
+              error: isNotFound
+                ? `擴充套件未啟動或未安裝 (ID: ${id})`
+                : isTimeout
+                ? '連線逾時'
+                : rawMsg,
+              errorCode: isNotFound
+                ? 'ERR_EXTENSION_NOT_FOUND'
+                : isTimeout
+                ? 'ERR_TIMEOUT'
+                : 'ERR_UNKNOWN',
+            });
+            return;
+          }
+
+          if (response && (response.success || response.ack || response.type === 'PONG')) {
+            resolve({
+              success: true,
+              latencyMs,
+              version: response.version || response.protocolVersion ? `v${response.protocolVersion || 2}` : undefined,
+              errorCode: 'OK',
+            });
           } else {
-            resolve(true);
+            resolve({
+              success: false,
+              latencyMs,
+              error: response?.error || '對端回傳未知非成功狀態',
+              errorCode: 'ERR_UNKNOWN',
+            });
           }
         });
-      } catch {
-        resolve(false);
+      } catch (err: any) {
+        const latencyMs = Math.round(performance.now() - start);
+        resolve({
+          success: false,
+          latencyMs,
+          error: err?.message || '發送訊息發生異常',
+          errorCode: 'ERR_UNKNOWN',
+        });
       }
     });
   },

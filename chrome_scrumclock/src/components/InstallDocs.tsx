@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const GAS_CODE = `const SHEET_TASKS = "Tasks";
 const SHEET_LOGS = "Logs";
@@ -210,9 +210,21 @@ const DEBUG_CODE = `(async () => {
   }
 })();`;
 
-export const InstallDocs: React.FC = () => {
+export type InstallDocsTab = 'setup' | 'troubleshoot' | 'guide' | 'debug';
+
+export interface InstallDocsProps {
+  initialTab?: InstallDocsTab;
+}
+
+export const InstallDocs: React.FC<InstallDocsProps> = ({ initialTab = 'setup' }) => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'setup' | 'guide' | 'debug'>('setup');
+  const [activeTab, setActiveTab] = useState<InstallDocsTab>(initialTab);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(GAS_CODE)
@@ -226,14 +238,14 @@ export const InstallDocs: React.FC = () => {
     <div className="max-w-4xl mx-auto p-6 text-sm leading-relaxed text-dark-secondary">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-dark-primary mb-2">📖 安裝與使用說明書</h1>
-        <p className="text-dark-muted">了解如何設定同步後台，以及如何最大化利用此工具提升生產力</p>
+        <p className="text-dark-muted">了解如何設定同步後台，掌握跨插件聯動，並利用自我排錯手冊排除連線障礙</p>
       </div>
 
       {/* Tab 切換選單 */}
-      <div className="flex justify-center gap-4 mb-8 border-b border-dark-border-subtle">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-8 border-b border-dark-border-subtle">
         <button
           onClick={() => setActiveTab('setup')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
+          className={`px-5 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
             activeTab === 'setup'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
@@ -242,8 +254,18 @@ export const InstallDocs: React.FC = () => {
           🔧 後台同步設定
         </button>
         <button
+          onClick={() => setActiveTab('troubleshoot')}
+          className={`px-5 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
+            activeTab === 'troubleshoot'
+              ? 'border-emerald-500 text-emerald-400 font-bold'
+              : 'border-transparent text-dark-muted hover:text-dark-primary'
+          }`}
+        >
+          🔌 跨插件與同步排錯
+        </button>
+        <button
           onClick={() => setActiveTab('guide')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
+          className={`px-5 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
             activeTab === 'guide'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
@@ -253,13 +275,13 @@ export const InstallDocs: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('debug')}
-          className={`px-6 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
+          className={`px-5 py-3 font-semibold text-sm transition-all duration-200 border-b-2 -mb-[2px] flex items-center gap-2 ${
             activeTab === 'debug'
               ? 'border-blue-500 text-blue-400 font-bold'
               : 'border-transparent text-dark-muted hover:text-dark-primary'
           }`}
         >
-          🛠️ 本地 AI 偵測與排錯
+          🤖 本地 AI 偵測與排錯
         </button>
       </div>
 
@@ -269,7 +291,7 @@ export const InstallDocs: React.FC = () => {
           {/* 步驟 1 */}
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
             <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">1</span>
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
               建立 Google 試算表與欄位配置
             </h2>
             <ol className="list-decimal list-inside space-y-3 pl-2">
@@ -368,22 +390,13 @@ export const InstallDocs: React.FC = () => {
                 Timestamp | Date | Type | Mission / Highlight | Result / Lesson | Next Action
               </div>
             </div>
-
-            {/* 常見錯誤避坑提醒 */}
-            <div className="mt-5 p-3.5 bg-amber-950/20 border border-amber-800/40 rounded-xl text-xs text-amber-300/90 space-y-1">
-              <div className="font-bold flex items-center gap-1 text-amber-200">
-                <span>⚠️</span> 常見踩坑提醒：
-              </div>
-              <div>• <strong>切勿把任務填在 A 欄</strong>：若填在 A 欄，插件會抓取不到內容。</div>
-              <div>• <strong>切勿保留預設分頁名稱「工作表1」</strong>：請右鍵分頁重新命名為「Tasks」與「Logs」。</div>
-            </div>
           </div>
 
           {/* 步驟 2 */}
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
             <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">2</span>
-              建立 Apps Script 並貼上程式碼
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+              建立 Apps Script 並貼上後端程式碼
             </h2>
             <ol className="list-decimal list-inside space-y-2 pl-2 mb-4">
               <li>在試算表選單中點擊：<strong className="text-dark-primary">擴充功能 (Extensions) &gt; Apps Script</strong>。</li>
@@ -396,7 +409,7 @@ export const InstallDocs: React.FC = () => {
                 <span className="text-xs font-mono text-dark-muted">Google Apps Script Template (Code.gs)</span>
                 <button
                   onClick={handleCopy}
-                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all \${
+                  className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                     copied 
                       ? 'bg-green-600 text-white' 
                       : 'bg-blue-600 hover:bg-blue-500 text-white'
@@ -411,45 +424,320 @@ export const InstallDocs: React.FC = () => {
             </div>
           </div>
 
-          {/* 步驟 3 */}
+          {/* 步驟 3: 啟用 Google Tasks API 進階服務 */}
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
             <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">3</span>
-              啟用進階服務 API
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+              啟用進階服務 API (Google Tasks API & Calendar)
             </h2>
             <p className="mb-2 pl-2 text-dark-secondary">
-              因為本插件支援了「Google Tasks 同步」與「行事曆事件自動建立」，請在 Apps Script 中啟用服務：
+              本插件整合了「Google Tasks 雙向即時同步」與「行事曆專注事件自動建立」，需在 Apps Script 中啟用相應服務權限：
             </p>
-            <ol className="list-decimal list-inside space-y-2 pl-2">
-              <li>在 Apps Script 編輯器左側選單中，點擊 <strong className="text-dark-primary">「服務 (Services)」</strong> 旁邊的 <strong className="text-dark-primary font-bold">+</strong>。</li>
-              <li>在彈出的服務清單中找到 <strong className="text-dark-primary">Google Tasks API</strong>，點擊 **新增 (Add)**。</li>
+            <ol className="list-decimal list-inside space-y-2 pl-2 mb-4">
+              <li>在 Apps Script 編輯器左側導航選單中，點擊 <strong className="text-dark-primary">「服務 (Services)」</strong> 旁邊的 <strong className="text-blue-400 font-bold">+</strong>。</li>
+              <li>在服務清單中滾動找到 <strong className="text-dark-primary font-mono">Tasks (Google Tasks API)</strong>，確認識別碼為 <code className="text-blue-300 bg-dark-surface px-1.5 py-0.5 rounded font-mono">Tasks</code>，點擊 **新增 (Add)**。</li>
+              <li>確認左側「服務」清單已出現 <code className="text-blue-300 font-mono">Tasks</code> 項目。</li>
             </ol>
+            <div className="p-3 bg-blue-950/30 border border-blue-800/40 rounded-xl text-xs text-blue-200/90 leading-relaxed">
+              💡 <strong>提示</strong>：Google Calendar API 預設已透過 Apps Script 內建的 <code className="font-mono">CalendarApp</code> 直接支援，無需額外新增服務；但 Tasks API 必須在此處點擊啟用。
+            </div>
           </div>
 
-          {/* 步驟 4 */}
+          {/* 步驟 4: Google Tasks 雙向同步機制與欄位對齊 */}
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
             <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
-              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs">4</span>
-              部署為網頁應用程式 (Web App)
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">4</span>
+              Google Tasks 雙向同步生命週期與欄位對齊規則
+            </h2>
+            <p className="text-xs text-dark-muted mb-4 leading-relaxed">
+              ScrumClock 採用非侵入式的雙向資料合併協議，能完美在桌面新分頁、手機 Google Tasks App 與 Google 日曆側欄之間保持任務一致：
+            </p>
+
+            {/* 欄位對齊表格 */}
+            <div className="border border-dark-border-default rounded-xl overflow-hidden mb-4">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-dark-surface text-dark-muted font-mono border-b border-dark-border-default">
+                  <tr>
+                    <th className="py-2.5 px-3 border-r border-dark-border-default">ScrumClock 欄位</th>
+                    <th className="py-2.5 px-3 border-r border-dark-border-default">Google Tasks 欄位</th>
+                    <th className="py-2.5 px-4 text-blue-300 font-bold border-r border-dark-border-default">雙向對齊行為</th>
+                    <th className="py-2.5 px-4 text-dark-muted">說明</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-dark-border-subtle bg-dark-card/60">
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2 px-3 font-mono text-blue-300 border-r border-dark-border-default">id</td>
+                    <td className="py-2 px-3 font-mono text-dark-muted border-r border-dark-border-default">t.id</td>
+                    <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default">
+                      <code className="text-emerald-400 font-mono">gtask-&#123;id&#125;</code> 唯一對齊
+                    </td>
+                    <td className="py-2 px-4 text-dark-muted">避免重複建立，本地任務與雲端任務精準對應。</td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2 px-3 font-mono text-blue-300 border-r border-dark-border-default">text</td>
+                    <td className="py-2 px-3 font-mono text-dark-muted border-r border-dark-border-default">t.title</td>
+                    <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default">雙向合併與標題同步</td>
+                    <td className="py-2 px-4 text-dark-muted">拉取時自動帶入看板；手機建立的任務直接顯示於新分頁。</td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2 px-3 font-mono text-blue-300 border-r border-dark-border-default">isCompleted</td>
+                    <td className="py-2 px-3 font-mono text-dark-muted border-r border-dark-border-default">t.status === 'completed'</td>
+                    <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default">雙向勾選狀態即時回寫</td>
+                    <td className="py-2 px-4 text-dark-muted">新分頁勾選完成，雲端自動標記完成；手機勾選完成，分頁自動同步。</td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2 px-3 font-mono text-blue-300 border-r border-dark-border-default">靈感快速捕獲</td>
+                    <td className="py-2 px-3 font-mono text-dark-muted border-r border-dark-border-default">Tasks.insert()</td>
+                    <td className="py-2 px-4 text-dark-primary font-semibold border-r border-dark-border-default">一鍵自動派發</td>
+                    <td className="py-2 px-4 text-dark-muted">透過側欄靈感收集箱或快速截圖，可一鍵生成 Google Task。</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* 三大生命週期 */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-dark-surface/60 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-blue-400 mb-1">📥 1. 定時與智慧拉取</div>
+                <div className="text-dark-muted leading-relaxed">
+                  每當開啟新分頁或手動點擊「立即雙向同步 Tasks」時，自動拉取預設清單前 20 筆未完成事項，採用 ID 鍵值智慧合併，保留本地排序。
+                </div>
+              </div>
+              <div className="p-3 bg-dark-surface/60 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-emerald-400 mb-1">📤 2. 背景即時回寫 (Patch)</div>
+                <div className="text-dark-muted leading-relaxed">
+                  在看板或任務清單中打勾完成時，系統非同步向 GAS 發送 <code className="font-mono text-emerald-300">complete_task</code> 指令，即時對齊 Google 伺服器狀態。
+                </div>
+              </div>
+              <div className="p-3 bg-dark-surface/60 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-indigo-400 mb-1">🛡️ 3. 離線容錯與重播</div>
+                <div className="text-dark-muted leading-relaxed">
+                  若遇離線或網路中斷，狀態異動會暫存於離線隊列；當網路恢復或 Local Hub 備援就緒時，自動重播回寫，不丟失進度。
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 步驟 5: 部署為 Web App */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span className="bg-blue-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">5</span>
+              部署為網頁應用程式 (Web App) 與權限配置
             </h2>
             <ol className="list-decimal list-inside space-y-2 pl-2">
               <li>點擊右上方的 <strong className="text-dark-primary">「部署 (Deploy)」 &gt; 「新增部署作業 (New deployment)」</strong>。</li>
               <li>點擊齒輪圖示，選取類型為 <strong className="text-dark-primary">「網頁應用程式 (Web App)」</strong>。</li>
-              <li>設定引導參數：
-                <ul className="list-disc list-inside pl-6 mt-1 text-dark-muted">
-                  <li>實施執行身分 (Execute as)：<strong className="text-dark-primary">我 (Me)</strong></li>
-                  <li>誰可以存取 (Who has access)：<strong className="text-dark-primary">所有人 (Anyone)</strong></li>
+              <li>設定引導參數（關鍵步驟！）：
+                <ul className="list-disc list-inside pl-6 mt-1 text-dark-muted space-y-1">
+                  <li>實施執行身分 (Execute as)：<strong className="text-dark-primary">我 (Me)</strong>（代表由您的帳號存取試算表與 Tasks）。</li>
+                  <li>誰可以存取 (Who has access)：<strong className="text-emerald-400 font-bold">所有人 (Anyone)</strong>（避免外掛請求時遭遇 302 重新導向或 Google 登入驗證攔截）。</li>
                 </ul>
               </li>
-              <li>點擊下方 **部署 (Deploy)** 按鈕。過程中如有要求安全性授權核准，請依照提示點擊確認。</li>
+              <li>點擊下方 **部署 (Deploy)** 按鈕。過程中如有要求安全性授權核准，請點選「進階 &gt; 前往 (不安全)」完成一次性授權。</li>
               <li>部署完成後，複製產生的 <strong className="text-dark-primary">網頁應用程式網址 (Web App URL)</strong>。</li>
               <li>回到插件中的「全域設定」，在 **Google Apps Script URL (同步用)** 中貼上此網址並儲存，即完成雙向同步！</li>
             </ol>
+
+            {/* 跨裝置 AppData 備份說明 */}
+            <div className="mt-4 p-3.5 bg-indigo-950/20 border border-indigo-900/50 rounded-xl text-xs text-indigo-200/90 leading-relaxed">
+              <div className="font-bold flex items-center gap-1.5 text-indigo-300 mb-1">
+                <span>🔄</span> 跨裝置 AppData 自動備份機制：
+              </div>
+              <div>
+                當您在設定面板點擊「推送本地到雲端」時，後端 GAS 會在您的個人 Google 雲端硬碟根目錄自動維護一個名為 <code className="font-mono text-indigo-300">power_kit_sync_data.json</code> 的加密備份檔。換電腦或切換 Chrome Profile 時，只需輸入同一個 GAS URL 並點擊「拉取並智慧合併」，即可瞬間無縫還原所有設定、目標與歷史戰報。
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Tab 2: 最大化利用指南 */}
+      {/* Tab 2: 跨插件與同步排錯手冊 */}
+      {activeTab === 'troubleshoot' && (
+        <div className="space-y-6">
+          {/* 區塊 A: 跨插件協同通訊架構 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-emerald-300 mb-3 flex items-center gap-2">
+              <span>🔌</span> 跨插件聯動協同架構 (Cross-Plugin Hub Protocol v2)
+            </h2>
+            <p className="text-dark-muted leading-relaxed mb-4 text-xs sm:text-sm">
+              Chrome Plus 採用「松耦合純資料契約」實現跨擴充功能無縫協同。所有插件皆在完全隔離的沙箱運行，透過 Chrome 原生 <code className="font-mono text-emerald-400">chrome.runtime.sendMessage(targetExtensionId, payload)</code> 進行零信任通訊：
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="p-4 rounded-xl bg-dark-surface/60 border border-emerald-900/40">
+                <div className="font-bold text-emerald-300 text-sm mb-1 flex items-center gap-2">
+                  <span>📈</span> Finance Research Clipper (投研採集)
+                </div>
+                <div className="text-xs text-dark-muted leading-relaxed space-y-1">
+                  <div>• <strong>協同職責</strong>：將網頁研究時標記的自選股與個股速記同步至 ScrumClock 看板。</div>
+                  <div>• <strong>預設 Extension ID</strong>：<code className="text-emerald-300 font-mono text-[11px]">lhghjfnlchdmbghhjjgpeebkocijfdcf</code></div>
+                  <div>• <strong>支援通訊 Action</strong>：<code className="font-mono text-[11px]">PING</code>, <code className="font-mono text-[11px]">WATCHLIST_SYNC</code></div>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-xl bg-dark-surface/60 border border-emerald-900/40">
+                <div className="font-bold text-emerald-300 text-sm mb-1 flex items-center gap-2">
+                  <span>🛡️</span> Browser Activity Monitor (行為審計)
+                </div>
+                <div className="text-xs text-dark-muted leading-relaxed space-y-1">
+                  <div>• <strong>協同職責</strong>：在番茄鐘專注時段觀測網頁活躍度，日終自動計算專注佔比與分心指數。</div>
+                  <div>• <strong>預設 Extension ID</strong>：<code className="text-emerald-300 font-mono text-[11px]">gphjfeapbfkocmbhhjjgpeebkocijfa1</code></div>
+                  <div>• <strong>支援通訊 Action</strong>：<code className="font-mono text-[11px]">PING</code>, <code className="font-mono text-[11px]">GET_STATUS</code>, <code className="font-mono text-[11px]">ACTIVITY_SUMMARY</code></div>
+                </div>
+              </div>
+            </div>
+
+            {/* SOP 指引 */}
+            <div className="p-4 bg-emerald-950/20 border border-emerald-800/40 rounded-xl space-y-2">
+              <div className="font-bold text-emerald-200 text-xs sm:text-sm flex items-center gap-1.5">
+                <span>📋</span> 跨插件連線配置與權限確認 SOP：
+              </div>
+              <ol className="list-decimal list-inside space-y-1.5 text-xs text-emerald-200/80 leading-relaxed pl-1">
+                <li><strong>確認目標插件已載入</strong>：開啟瀏覽器分頁 <code className="font-mono text-white bg-dark-surface px-1.5 py-0.5 rounded">chrome://extensions</code>，確認目標插件已載入且開關為開啟。</li>
+                <li><strong>核對 Extension ID</strong>：若使用官方預先封裝版本，直接在 ScrumClock 設定面板中點擊 <strong className="text-emerald-300">「帶入預設 ID」</strong>；若是本機自建開發版本，請複製延伸模組卡片上的「ID: ...」32 位元字串並貼上。</li>
+                <li><strong>執行連線健檢 (Ping)</strong>：點擊對應卡片右側的 <strong className="text-emerald-300">「⚡ 測試連線 (Ping)」</strong>。若指示燈轉為綠色「在線 (XXms)」，代表雙向握手成功！</li>
+              </ol>
+            </div>
+          </div>
+
+          {/* 區塊 B: 常見跨插件錯誤代碼對照表與自我修復指南 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-dark-primary mb-3 flex items-center gap-2">
+              <span>🩺</span> 常見錯誤代碼對照表與逐步自我修復指南
+            </h2>
+            <p className="text-xs text-dark-muted mb-4 leading-relaxed">
+              當點擊「測試連線 (Ping)」或執行同步時若出現異常指示燈，請查照下表代碼與逐步修復步驟：
+            </p>
+
+            <div className="border border-dark-border-default rounded-xl overflow-hidden mb-5">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-dark-surface text-dark-muted font-mono border-b border-dark-border-default">
+                  <tr>
+                    <th className="py-2.5 px-3 border-r border-dark-border-default w-36">錯誤代碼 / 狀態</th>
+                    <th className="py-2.5 px-4 border-r border-dark-border-default">潛在發生原因</th>
+                    <th className="py-2.5 px-4 text-emerald-300 font-bold border-r border-dark-border-default">逐步自我修復流程 (Action Item)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-dark-border-subtle bg-dark-card/60">
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2.5 px-3 font-mono text-red-400 font-bold border-r border-dark-border-default bg-red-950/10">
+                      ERR_EXTENSION_NOT_FOUND
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-secondary border-r border-dark-border-default">
+                      目標插件未安裝、已被使用者停用，或設定中的 Extension ID 填寫有誤。
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-primary leading-relaxed">
+                      1. 開啟 <code className="font-mono bg-dark-surface px-1 text-blue-300">chrome://extensions</code> 檢查目標插件是否開啟。<br/>
+                      2. 點擊「帶入預設 ID」還原官方 Extension ID。<br/>
+                      3. 若為本地自解壓版本，請確認已複製正確的 32 位 ID。
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2.5 px-3 font-mono text-amber-400 font-bold border-r border-dark-border-default bg-amber-950/10">
+                      TIMEOUT
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-secondary border-r border-dark-border-default">
+                      目標插件背景 Service Worker 閒置休眠 (Inactive) 未及時喚醒，或逾時超過 3000ms。
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-primary leading-relaxed">
+                      1. 點擊瀏覽器工具列上的目標插件圖示，喚醒其背景背景進程。<br/>
+                      2. 回到 ScrumClock 設定面板重新點擊「測試連線 (Ping)」。<br/>
+                      3. 確認電腦未處於極端低功耗節能或凍結背景模式。
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2.5 px-3 font-mono text-rose-400 font-bold border-r border-dark-border-default bg-rose-950/10">
+                      PERMISSION_DENIED
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-secondary border-r border-dark-border-default">
+                      目標插件的 <code className="font-mono text-xs">manifest.json</code> 外部連線白名單 (<code className="font-mono text-[11px]">externally_connectable</code>) 未包含 ScrumClock。
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-primary leading-relaxed">
+                      1. 確認雙邊插件皆更新至 Chrome Plus 最新版本發行包。<br/>
+                      2. 本機開發模式下，確認目標插件 manifest 已允許萬用匹配或加入當前開發版 ID。
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2.5 px-3 font-mono text-indigo-400 font-bold border-r border-dark-border-default bg-indigo-950/10">
+                      ERR_LOCAL_HUB_OFFLINE
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-secondary border-r border-dark-border-default">
+                      啟用本機 Local Hub 離線備援，但本地轉發服務 (Port 8765) 尚未啟動。
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-primary leading-relaxed">
+                      1. 若無需本地轉發，可於設定面板關閉「本機 Local Hub 離線重試備援」。<br/>
+                      2. 若需本機隊列，請在終端機啟動本機轉發代理器。<br/>
+                      3. 系統將自動降級至純雲端 GAS 直連模式。
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-dark-hover/50">
+                    <td className="py-2.5 px-3 font-mono text-yellow-400 font-bold border-r border-dark-border-default bg-yellow-950/10">
+                      INVALID_PAYLOAD
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-secondary border-r border-dark-border-default">
+                      通訊封包格式不合契約或目標插件版本過舊。
+                    </td>
+                    <td className="py-2.5 px-4 text-dark-primary leading-relaxed">
+                      請將兩側插件同步升級至 Protocol v2 相容版本。
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* 區塊 C: 雲端同步與 GAS Webhook 故障診斷指南 */}
+          <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">
+            <h2 className="text-lg font-semibold text-blue-300 mb-3 flex items-center gap-2">
+              <span>☁️</span> 雲端同步與 GAS Webhook 故障診斷手冊
+            </h2>
+
+            <div className="space-y-4">
+              <div className="p-4 bg-dark-surface/50 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-red-400 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                  <span>🚨</span> 故障 1：點擊同步跳出「HTTP 302 重定向」或「回傳 HTML 登入頁面」
+                </div>
+                <div className="text-xs text-dark-secondary space-y-1 pl-4 border-l-2 border-red-500/50">
+                  <div>• <strong>根本原因</strong>：Apps Script 部署權限設定錯誤。若「誰可以存取 (Who has access)」設定為「僅限我」或「機構內所有人」，Google 會強制跳轉 OAuth 登入頁面，外掛 fetch API 因 CORS 跨域政策攔截而拋出錯誤。</div>
+                  <div>• <strong>快速修復</strong>：至 Apps Script 點擊右上角「部署」&gt;「管理部署作業」&gt; 點擊鉛筆圖示編輯，將「誰可以存取」修改為 <strong className="text-emerald-400 font-bold">所有人 (Anyone)</strong>，並點擊「部署」。</div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-dark-surface/50 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-amber-400 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                  <span>🚨</span> 故障 2：Google Tasks 雙向同步顯示「Tasks API 未啟用 (ReferenceError: Tasks is not defined)」
+                </div>
+                <div className="text-xs text-dark-secondary space-y-1 pl-4 border-l-2 border-amber-500/50">
+                  <div>• <strong>根本原因</strong>：未在 Apps Script 左側「服務 (Services)」中手動新增 Google Tasks API。</div>
+                  <div>• <strong>快速修復</strong>：在 Apps Script 編輯器左側「服務」點擊「+」，選取「Google Tasks API」，保留識別碼為「Tasks」並點擊新增。</div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-dark-surface/50 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-blue-400 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                  <span>🚨</span> 故障 3：試算表抓取失敗「找不到工作表 Tasks 或 Logs」
+                </div>
+                <div className="text-xs text-dark-secondary space-y-1 pl-4 border-l-2 border-blue-500/50">
+                  <div>• <strong>根本原因</strong>：工作表名稱仍保留為「工作表1」或命名大小寫不一致。</div>
+                  <div>• <strong>快速修復</strong>：右鍵將第一個工作表重新命名為 <code className="text-blue-300 font-mono">Tasks</code>，第二個工作表重新命名為 <code className="text-blue-300 font-mono">Logs</code>（請確認字首大寫，無多餘空格）。</div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-dark-surface/50 border border-dark-border-default rounded-xl">
+                <div className="font-bold text-indigo-400 text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                  <span>🚨</span> 故障 4：跨瀏覽器備份失敗「DriveApp 授權未核准」
+                </div>
+                <div className="text-xs text-dark-secondary space-y-1 pl-4 border-l-2 border-indigo-500/50">
+                  <div>• <strong>根本原因</strong>：初次部署時尚未授予 Apps Script 存取 Google Drive 建立檔案的授權。</div>
+                  <div>• <strong>快速修復</strong>：在 Apps Script 頂部函式下拉選單選取 <code className="font-mono text-indigo-300">getOrCreateBackupFile</code>，點擊「執行 (Run)」按鈕，在跳出的權限彈窗中完成「進階 &gt; 前往 (不安全)」授權。</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 3: 最大化利用指南 */}
       {activeTab === 'guide' && (
         <div className="space-y-6 text-dark-secondary">
           {/* 核心心法引言 */}
@@ -547,7 +835,7 @@ export const InstallDocs: React.FC = () => {
         </div>
       )}
 
-      {/* Tab 3: 本地 AI 偵測與排錯 */}
+      {/* Tab 4: 本地 AI 偵測與排錯 */}
       {activeTab === 'debug' && (
         <div className="space-y-6">
           <div className="bg-dark-card border border-dark-border-subtle rounded-xl p-6 shadow-lg shadow-slate-950/40">

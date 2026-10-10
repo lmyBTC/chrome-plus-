@@ -20,6 +20,8 @@ export interface UserSettings {
   maxWipLimit?: number; // In Progress WIP 卡片上限 (預設 3)
   enableGoogleSync?: boolean; // Google 生態系自動同步開關 (日終 Sheets / 看板 Tasks)
   googleSyncLocalHubFallback?: boolean; // 當 GAS Webhook 逾時或失敗時，是否退避轉發至本機 Local Hub 佇列
+  enableGoogleTasksSync?: boolean; // Google Tasks 雙向同步開關
+  activityMonitorExtensionId?: string; // Activity Monitor Extension ID (預設 kjnoegggihncdaimlgfccccogghjapgn)
 }
 
 export interface NorthStarGoal {

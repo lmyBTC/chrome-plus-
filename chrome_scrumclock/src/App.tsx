@@ -11,7 +11,7 @@ import { CommandPalette } from './core/layout/CommandPalette';
 import { ToolView } from './core/layout/Sidebar';
 import { AISidebar } from './features/ai-sidebar';
 import { SettingsPanel } from './components/SettingsPanel';
-import { InstallDocs } from './components/InstallDocs';
+import { InstallDocs, InstallDocsTab } from './components/InstallDocs';
 import { GeminiManager } from './features/gemini-exporter';
 import { ToolboxHub } from './features/toolbox';
 import { WatchListWidget } from './features/finance-integration';
@@ -28,6 +28,7 @@ function App() {
   const [currentState, setCurrentState] = useState<AppState>('briefing');
   const [isLoading, setIsLoading] = useState(true);
   const [isAISidebarOpen, setIsAISidebarOpen] = useState(false);
+  const [docsInitialTab, setDocsInitialTab] = useState<InstallDocsTab>('setup');
 
   useEffect(() => {
     checkCurrentState();
@@ -149,8 +150,17 @@ function App() {
                 </div>
               )}
               {currentView === 'gemini' && <GeminiManager />}
-              {currentView === 'settings' && <SettingsPanel onNavigateToDocs={() => setCurrentView('docs')} />}
-              {currentView === 'docs' && <InstallDocs />}
+              {currentView === 'settings' && (
+                <SettingsPanel
+                  onNavigateToDocs={(tab) => {
+                    if (tab === 'setup' || tab === 'guide' || tab === 'troubleshoot' || tab === 'debug') {
+                      setDocsInitialTab(tab);
+                    }
+                    setCurrentView('docs');
+                  }}
+                />
+              )}
+              {currentView === 'docs' && <InstallDocs initialTab={docsInitialTab} />}
             </MainLayout>
           </div>
           <AISidebar isOpen={isAISidebarOpen} onClose={() => setIsAISidebarOpen(false)} />

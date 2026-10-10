@@ -21,7 +21,10 @@ const DEFAULT_SETTINGS: UserSettings = {
   enableWipLimit: true,
   maxWipLimit: 3,
   enableGoogleSync: true,
-  googleSyncLocalHubFallback: true
+  googleSyncLocalHubFallback: true,
+  enableGoogleTasksSync: true,
+  financeClipperExtensionId: 'imnnkgiglcbjknfbkdfocdhoookkipji',
+  activityMonitorExtensionId: 'kjnoegggihncdaimlgfccccogghjapgn'
 };
 
 const DEFAULT_NORTH_STAR_GOAL: NorthStarGoal = {
