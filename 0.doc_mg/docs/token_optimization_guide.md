@@ -28,7 +28,7 @@
 
 ### 機制 1：代碼「骨架化 / 介面化」提煉 (Skeleton Extraction)
 * **原理**：AI 在理解或調用其他模組時，不需要知道函數內部的具體實作，只需要知道 **函數簽名、型別參數與 JSDoc/註解**。
-* **工具**：`1.devtools/tools/code_skeleton.py`
+* **工具**：`1.devtools/tools/code_skeleton.py`（支援 `npm run skeleton -- <路徑>` 或 `py 1.devtools/tools/code_skeleton.py`）
 * **作法**：腳本自動將 `.ts` / `.tsx` / `.js` / `.py` 檔案的實作主體掏空（替換為 `/* ... */` 或 `...`），僅保留型別宣告、介面與函式骨架。
 * **效益**：一個 800 行的 React 元件被壓縮至 40 行骨架，**Token 節省 85%~95%**。
 
@@ -57,7 +57,7 @@
 
 | 工具腳本 | 核心功能 | 常用指令範例 | 預期 Token 節省效益 |
 | :--- | :--- | :--- | :--- |
-| **`code_skeleton.py`** | 掏空程式碼內部實作，提煉介面與型別骨架 | `python 1.devtools/tools/code_skeleton.py chrome_scrumclock/src/background.ts` | 查詢外部依賴節省 **85%~95%** |
+| **`code_skeleton.py`** | 掏空程式碼內部實作，提煉介面與型別骨架 | `npm run skeleton -- chrome_scrumclock/src/background.ts`<br/>`py 1.devtools/tools/code_skeleton.py <路徑>` | 查詢外部依賴節省 **85%~95%** |
 | **`compact_log.py`** | 終端編譯、型別檢查與測試日誌精簡過濾器 | `npm run build 2>&1 \| python 1.devtools/tools/compact_log.py` | 報錯除錯節省 **75%~90%** |
 | **`repo_radar.py`** | 專案情報檢索（大綱、章節切片、符號秒查） | `python 1.devtools/tools/repo_radar.py symbol TaskState`<br/>`python 1.devtools/tools/repo_radar.py section GEMINI.md 1` | 專案探索節省 **80%~92%** |
 

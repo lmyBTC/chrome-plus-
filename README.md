@@ -37,7 +37,9 @@ chrome-plus-/
 │   │   ├── scrumclock_pm_gemini_nano_optimization.md # 敏捷專案管理 Nano 賦能藍圖
 │   │   ├── token_efficient_repo_search_skill_spec.md # 極速精準檢索 Skill 解決方案規格
 │   │   ├── token_saving_engineering_practices.md     # AI 輔助開發極致 Token 節約工程指南
-│   │   └── repo_radar_ai_prompt_instructions.md      # AI 助理高信噪比專案檢索指示規範
+│   │   ├── repo_radar_ai_prompt_instructions.md      # AI 助理高信噪比專案檢索指示規範
+│   │   ├── dev_standards.md                # 網頁與 Chrome 插件開發技術標準 (SSOT)
+│   │   └── versioning_spec.md              # 全專案版本號管理與發布合規規範 (SSOT)
 │   ├── tasks/                              # 實作工作看板 (Kanban)
 │   │   ├── task_gemini_nano_implementation_plan.md   # Nano 基礎與社群分發實作計畫 (100% 完成)
 │   │   ├── task_web_ai_matrix_parallelism.md         # Web AI 專用 API 矩陣並行實作計畫 (100% 完成)
@@ -52,6 +54,11 @@ chrome-plus-/
 │       ├── rss_generator.py                # 靜態 RSS 2.0 (feed.xml) 自動追加與最新 30 則滾動淘汰
 │       ├── social_publisher.py             # X API v2 與 Meta Threads API 直發代理 (含 Dry-Run)
 │       └── markdown_archiver.py            # 本地 Obsidian YAML Frontmatter 剪藏歸檔器
+│
+├── 1.devtools/                             # [自動化工具鏈與發布合規體系]
+│   └── tools/
+│       ├── audit_manifests.py              # 全專案 Manifest V3 合規審計工具
+│       └── version_manager.py              # 全專案版本號自動化管理與同步 CLI 工具
 │
 ├── chrome_scrumclock/                      # [系統中樞] 敏捷專注工作站 (React 18 + TS + Tailwind + Vite)
 │   ├── src/
@@ -147,16 +154,18 @@ chrome-plus-/
 
 ---
 
-## 🛠️ 五、 開發者極致節省 Token 工具鏈 (Repo Radar Suite)
+## 🛠️ 五、 開發者工具鏈、合規審查與版本管理 (Developer Tooling & Compliance)
 
-本專案內建一套專為 AI Assistant 與開發者打造的「確定性（Deterministic）腳本庫」，嚴禁使用 LLM 暴力全文掃描：
+本專案內建一套專為 AI Assistant 與開發者打造的「確定性（Deterministic）腳本庫」，嚴禁使用 LLM 暴力全文掃描，並提供一鍵合規與版本自動化管理工具：
 
-| 工具腳本 | 核心指令 / 用法 | 解決痛點 | 預期減耗效益 |
+| 工具腳本 | 核心指令 / 用法 | 解決痛點 | 效益與職責 |
 | :--- | :--- | :--- | :--- |
 | **`repo_radar.py`** | `python 0.doc_mg/tools/repo_radar.py map`<br>`python 0.doc_mg/tools/repo_radar.py section <file> -H "章節"`<br>`python 0.doc_mg/tools/repo_radar.py symbol <Name>` | 解決盲目全檔讀取與反覆 grep 找檔案的浪費 | 檢索階段節省 **90% ~ 98%** Tokens |
 | **`generate_symbol_index.py`** | `python 0.doc_mg/tools/generate_symbol_index.py` | 產出全專案 `<10KB` 的 `.repo_index.json` 快取地圖 | 代碼定位 **0 毫秒**、不到 20 tokens |
 | **`code_skeleton.py`** | `python 0.doc_mg/tools/code_skeleton.py <file>` | 掏空實作主體，僅保留 TypeScript/Python 介面與簽名 | 查詢依賴時節省 **85% ~ 95%** Tokens |
 | **`compact_log.py`** | `npm run build 2>&1 \| python 0.doc_mg/tools/compact_log.py` | 過濾千行 node_modules 堆疊，僅保留致命報錯行號 | 除錯階段節省 **75% ~ 90%** 上下文 |
+| **`version_manager.py`** | `npm run version:list`<br>`npm run version:bump`<br>`python 1.devtools/tools/version_manager.py bump minor --all` | 多插件版本號不一致、手動改錯 Manifest 格式 | MV3 合規 SemVer 自動遞增與雙向同步 |
+| **`audit_manifests.py`** | `npm run audit:manifests` | Manifest V3 欄位遺漏、CSP 違規、版本號格式錯誤 | Chrome Web Store 上架前合規自動審計 |
 
 ---
 
@@ -184,4 +193,16 @@ npm run build
 ### 3. 建置專案全域符號快取 (開發者推薦)
 ```bash
 python 0.doc_mg/tools/generate_symbol_index.py
+```
+
+### 4. 版本管理與發布審核 (Release Workflow)
+```bash
+# 檢視所有插件版本與同步狀態
+npm run version:list
+
+# 遞增全專案 patch 版本號 (SemVer)
+npm run version:bump
+
+# 執行全體插件 Manifest V3 上架合規審計
+npm run audit:manifests
 ```

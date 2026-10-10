@@ -31,11 +31,14 @@ npm run build 2>&1 | python 1.devtools/tools/compact_log.py
 
 ## 2. 代碼骨架提煉 (Skeleton Extraction)
 理解或調用其他模組介面時，**嚴禁全量讀取包含大量業務實作細節之源碼**：
-- **骨架提煉指令**：
+- **骨架提煉指令**（支援跨平台 npm 與 Windows Python 解釋器防禦）：
   ```bash
-  python 1.devtools/tools/code_skeleton.py <目標檔案路徑>
+  npm run skeleton -- <目標檔案路徑>
+  # 或直接透過 Python / 轉發器執行：
+  py 1.devtools/tools/code_skeleton.py <目標檔案路徑>
+  node 1.devtools/tools/run_py.js 1.devtools/tools/code_skeleton.py <目標檔案路徑>
   ```
-- **核心機制**：自動掏空函式體（保留簽名、參數、返回型別與 JSDoc），將數百行組件壓縮為 30~50 行介面骨架，**節省 85%~95% 上下文 Token**。
+- **核心機制**：自動掏空函式體（保留簽名、參數、返回型別與 JSDoc），將數百行組件壓縮為 30~50 行介面骨架，**節省 85%~95% 上下文 Token**。具備 Windows 跨平台自動偵測、孤兒閉合括號修復與非函式變數安全隔離。
 
 ## 3. 檔案讀取與精準寫入規範
 檔案 I/O 是最常造成上下文爆炸（Context Bloat）的來源，必須遵守：

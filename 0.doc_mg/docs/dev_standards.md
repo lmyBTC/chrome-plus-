@@ -150,3 +150,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 2. **原生專案開發**:
    - 直接在 `chrome://extensions/` 載入插件的根目錄 (例如 `chrome_video speed plus`、`finance-research-clipper-oss` 或 `browser-activity-monitor`)。
    - 修改 `manifest.json` 或 background 腳本後，**必須**在擴充功能管理頁面點擊「重新整理」圖示以套用變更。
+
+---
+
+## 8. 版本號與發布合規規範 (Versioning & Release Standards)
+
+所有擴充功能版本發布必須遵循 `0.doc_mg/docs/versioning_spec.md`：
+- **格式規範**：`manifest.json` 內 `version` 必須由 1 到 4 個以句點分隔的整數（0~65535）組成，嚴禁前導零。
+- **自動化工具**：使用 `npm run version:list` 檢視狀態，使用 `npm run version:bump` 或 `1.devtools/tools/version_manager.py` 進行版本號遞增與 package.json 雙向同步。
+- **合規審查**：發布前必須通過 `npm run audit:manifests` 驗證。
+

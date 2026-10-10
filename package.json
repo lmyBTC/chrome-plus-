@@ -7,8 +7,12 @@
     "dev:scrumclock": "npm --prefix chrome_scrumclock run dev",
     "build:scrumclock": "npm --prefix chrome_scrumclock run build",
     "audit:manifests": "py 1.devtools/tools/audit_manifests.py || python 1.devtools/tools/audit_manifests.py",
+    "version:list": "py 1.devtools/tools/version_manager.py list || python 1.devtools/tools/version_manager.py list",
+    "version:bump": "py 1.devtools/tools/version_manager.py bump || python 1.devtools/tools/version_manager.py bump",
+    "version:set": "py 1.devtools/tools/version_manager.py set || python 1.devtools/tools/version_manager.py set",
     "task:archive": "py 1.devtools/tools/task_cli.py archive || python 1.devtools/tools/task_cli.py archive",
-    "task:init": "py 1.devtools/tools/task_cli.py init || python 1.devtools/tools/task_cli.py init"
+    "task:init": "py 1.devtools/tools/task_cli.py init || python 1.devtools/tools/task_cli.py init",
+    "skeleton": "node 1.devtools/tools/run_py.js 1.devtools/tools/code_skeleton.py"
   },
   "keywords": [
     "chrome-extension",
