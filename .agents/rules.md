@@ -22,7 +22,16 @@
 ---
 
 ## 1. 守門門禁與任務協議 (Gate Protocol)
-- **3-Gate 門禁守則**：**Gate 0** 零工具直覺方向確認（禁掃描）➔ **Gate 1** 窄化勘查、前置宣告 Target SSOTs、產出 `task.md` (`0.doc_mg/tasks/`) 並輸出會話接力指令（禁改碼）➔ **Gate 2** 分段原子執行與動態收斂（物理打勾）。
+- **3-Gate 門禁與工具鏈強制條款**：
+  - **Gate 0: 零工具方向確認 (Zero-Tool, Zero-Scan)**：嚴禁呼叫任何掃描工具或建立實體檔案，僅提 100~200 字方向與權衡，等待授權。
+  - **Gate 1: 物理勘查與建檔 (Tooling-First Grounding & Target Blueprint)**：
+    - **前置工具勘查義務**：探勘大型模組（逾 100 行）**強制調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 提煉骨架（未調用骨架嚴禁直接 read 大檔）；檢索專案拓撲或定位全域符號**強制調用** `python 1.devtools/tools/repo_radar.py`。
+    - **前置宣告 Target Devtools**：於 `task.md` 策略區宣告鎖定工具鏈（探勘骨架、終端脫水、結案審計），並於 Phase 拆解中排入具體執行節點。
+    - **產出 task.md 與接力令**：前置宣告 Target SSOTs，產出任務檔後**強制停步（嚴禁改碼）**，輸出跨會話接力指令。
+  - **Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Tooling Audit)**：
+    - **原子推進與實體打勾**：單輪專注一個 Phase，每步實體打勾，完成後依動態狀態收斂折疊細節。
+    - **終端脫水防禦義務**：執行建置、編譯、打包或測試等長輸出命令時，**強制串接** `python 1.devtools/tools/compact_log.py` 或 `rtk`，嚴禁原始長篇 log 污染對話。
+    - **結案前工具審計義務**：在 `Phase Final` 結案前，**強制調用自動化審計工具**（涉及 Manifest 跑 `python 1.devtools/tools/audit_manifests.py`；涉及文檔/架構跑 `python 1.devtools/tools/doc_cross_ref.py`），驗證零報錯後方可回寫 SSOT 與封存。
 - **四層 SSOT 閉環（90/10 分級與瘦身守則）**：
   - **90% 輕量任務（豁免閉環）**：單純樣式、文字、局部除錯重構，**L1~L3 免讀寫直接跳過**，僅需 L4 歸檔，零額外 Token 損耗。
   - **10% 重大變更（精準回寫）**：僅涉及新增/刪除元件、改動 Storage Schema 或跨插件通訊時，結案前依 Target SSOTs 進行「純骨架（Index）」同步：

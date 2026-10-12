@@ -28,6 +28,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 4. **Step 2: 建立/更新實體文件與 SSOT 衝擊評估**：
    - 建立 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`（`plugin` 填寫插件名稱或 `global`/`agents`）。
    - 填寫目標、鎖定檔案、具體 Phase 與驗收標準。
+   - **Target Devtools 前置宣告**：必須前置鎖定宣告工具鏈清單（探勘骨架/雷達工具、終端脫水工具、自動化審計工具），並將工具鏈實體排入 Phase 拆解之執行步驟中。
    - **SSOT 衝擊評估 (Target SSOTs)**：凡涉及元件新增修改、狀態模型或架構變動，必須在「鎖定 SSOT 回寫清單 (Target SSOTs)」前置宣告四層回寫目標（L1 專家技能、L2 插件導航、L3 業務規格、L4 任務生命週期），嚴禁僅列代碼檔案。
    - 在 AI 簽到區勾選並記錄對話 ID。
    - **[強制] 刪除範本中所有帶有說明性質的 `<!-- ... -->` 註解文字。**
@@ -79,11 +80,14 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 
 ## 3. 驗收防呆
 - [ ] **Gate 0 守門**: 是否在未呼叫任何掃描工具前先取得方向授權？
-- [ ] **Gate 1 探勘硬窄化與武器庫鏈條**: 逾 100 行檔案是否優先調用 code_skeleton.py 或 repo-radar 提取骨架，且單次讀取 ≤ 30 行介面簽名？
+- [ ] **Gate 1 探勘硬窄化與武器庫鏈條**: 逾 100 行檔案是否優先調用 `code_skeleton.py` 或 `repo-radar` 提取骨架，且單次讀取 ≤ 30 行介面簽名？
+- [ ] **Gate 1 Target Devtools 前置宣告**: 是否在 `task.md` 第二節明確宣告探勘、脫水與審計工具鏈，並排入具體 Phase 步驟？
 - [ ] **Gate 1 藍圖停步與接力**: 是否建立實體 `task.md`、輸出跨會話接力指令並等待授權？
 - [ ] **Gate 1 SSOT 衝擊宣告**: 是否在 `Target SSOTs` 區塊前置宣告 L1~L4 回寫清單？
 - [ ] **Gate 2 依賴截斷**: 是否純粹以實體 `task.md` 為 SSOT 執行？
+- [ ] **Gate 2 終端脫水防禦**: 執行建置、測試或型別檢查時，是否已串接 `compact_log.py` 或 `rtk`，杜絕雜訊日誌塞滿 context？
 - [ ] **局部讀寫與多點修改規範**: 超過 100 行檔案是否採用 grep/骨架 + 區段 view，單點修改使用 replace，多處修改優先調用 multi_replace？
+- [ ] **結案自動審計完成**: 是否已調用 `audit_manifests.py`（Manifest/安全）或 `doc_cross_ref.py`（文檔一致性）執行自動檢驗？
 - [ ] **說明註解清理**: `task.md` 中所有 `<!-- ... -->` 範本提示是否已徹底刪除？
 - [ ] **四層 SSOT 閉環**: 若架構或檔案結構有變，L1 專家技能、L2 導航 README、L3 業務規格、L4 封存歸檔是否皆已同步完成？
 - [ ] **狀態收斂**: 完成之 Phase 是否已執行細節收斂以最大化節省 Token？

@@ -27,7 +27,10 @@ let exitCode = 1;
 
 for (const py of interpreters) {
   try {
-    const res = spawnSync(py, [scriptPath, ...scriptArgs], { stdio: 'inherit' });
+    const res = spawnSync(py, [scriptPath, ...scriptArgs], {
+      stdio: 'inherit',
+      env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
+    });
     if (!res.error && res.status !== 9009) { // 9009 是 Windows command not found
       executed = true;
       exitCode = res.status ?? 0;

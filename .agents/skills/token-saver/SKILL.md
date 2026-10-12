@@ -50,9 +50,21 @@ npm run build 2>&1 | python 1.devtools/tools/compact_log.py
 - **Gate 1 結束時接力**：當 Gate 1 產出實體 `task.md` 後，輸出標準化跨會話接力指令（如 `載入 ./0.doc_mg/tasks/task_xxx.md，開始執行 Phase 1`）。
 - **徹底釋放 Context**：開啟新對話能徹底卸除 Gate 1 探勘佔用之歷史 Tool Outputs，省下 70%~90% 輸入 Token，並確保注意力高度集中於 Gate 2 實作。
 
-## 5. 自動化審計優先 (Automated Tooling First)
+## 5. 任務流程工具鏈調用矩陣 (Task Lifecycle Trigger Matrix)
+在執行 3-Gate 開發流程時，各階段強制對應調用專屬工具，杜絕手動掃描與無效 Token 損耗：
+
+| 任務生命週期階段 | 強制門禁條件 | 推薦調用指令範例 | 預期節省效益 |
+|:---|:---|:---|:---|
+| **Gate 1: 專案情報檢索** | 探勘拓撲或跨模組符號 | `python 1.devtools/tools/repo_radar.py map`<br/>`python 1.devtools/tools/repo_radar.py symbol <Name>` | 節省 80%~90% 結構掃描 Token |
+| **Gate 1: 模組介面探勘** | 探勘 >100 行原始碼 | `npm run skeleton -- <路徑>`<br/>`py 1.devtools/tools/code_skeleton.py <路徑>` | 節省 85%~95% 源碼讀取 Token |
+| **Gate 2: 終端編譯/測試** | 執行建置、型別檢查或測試 | `npm run build 2>&1 \| python 1.devtools/tools/compact_log.py`<br/>`rtk npm test` | 節省 70%~95% 堆疊日誌雜訊 |
+| **Gate 2: 程式碼修改** | 超過 100 行之代碼或文檔 | 優先使用 `replace_file_content` 或 `multi_replace_file_content`，嚴禁全檔覆寫 | 避免大檔重複回傳 Context |
+| **結案驗收: Manifest 審計** | 涉及權限、Manifest 或安全變更 | `python 1.devtools/tools/audit_manifests.py`<br/>`npm run audit:manifests` | 零人工審查失誤，單次回傳合規清單 |
+| **結案驗收: 文檔與契約驗證** | 涉及文檔連結或跨插件資料 | `python 1.devtools/tools/doc_cross_ref.py`<br/>`python 1.devtools/tools/validate_contract.py` | 自動檢出死鏈與 Schema 破壞 |
+
+## 6. 自動化審計優先 (Automated Tooling First)
 - 代碼修改或 Manifest 調整後，優先透過自動化腳本審查（如 `python 1.devtools/tools/audit_manifests.py` 或 `npm run audit:manifests`），切勿透過多輪手動 scan 或逐檔人工排查。
 
-## 6. 效益回報
+## 7. 效益回報
 - 任務結束輸出 `walkthrough.md` 時，可執行 `rtk gain` 取得 Token 節省統計。
 - 在給使用者的總結中，主動附上節省數據（如：「本次工作透過 rtk/code_skeleton 節省了約 80%+ 的 Token 傳輸」）。

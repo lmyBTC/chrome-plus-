@@ -24,8 +24,49 @@
 
 ---
 
-## 2. 相關專家技能與業務指引
+## 2. 任務流程調用索引 (Task Lifecycle Workflow Integration)
 
+在遵循 3-Gate 開發協議時，各階段應強制調用對應之 Devtools 工具鏈：
+
+### 階段一：Gate 1 勘查與藍圖 (Grounding & Blueprint)
+- **拓撲與符號勘查**：使用 `repo_radar.py` 查詢目錄結構或全域符號（替代全檔遍歷）：
+  ```bash
+  python 1.devtools/tools/repo_radar.py map
+  python 1.devtools/tools/repo_radar.py symbol <符號名稱>
+  ```
+- **介面骨架提煉**：檔案超過 100 行時，強制優先掏空實作提煉簽名（嚴禁全量讀取）：
+  ```bash
+  npm run skeleton -- <檔案路徑>
+  # 或直接調用
+  py 1.devtools/tools/code_skeleton.py <檔案路徑>
+  ```
+
+### 階段二：Gate 2 分段執行 (Atomic Execution)
+- **終端日誌脫水**：編譯、型別檢查或測試時，過濾 `node_modules` 冗長調用堆疊：
+  ```bash
+  npm run build 2>&1 | python 1.devtools/tools/compact_log.py
+  ```
+
+### 階段三：結案自動審計 (Auditing & Closure)
+- **Manifest V3 安全合規審查**：
+  ```bash
+  python 1.devtools/tools/audit_manifests.py
+  ```
+- **文件交叉引用與路徑一致性驗證**：
+  ```bash
+  python 1.devtools/tools/doc_cross_ref.py
+  ```
+- **跨插件通訊黑盒契約驗證**：
+  ```bash
+  python 1.devtools/tools/validate_contract.py
+  ```
+
+---
+
+## 3. 相關專家技能與業務指引
+
+- **任務協議技能**：`.agents/skills/task-protocol/SKILL.md`
+- **任務管理指引**：`0.doc_mg/docs/task_manager.md`
 - **專案情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`
 - **檢索決策樹指引**：`0.doc_mg/docs/repo_radar_ai_prompt_instructions.md`
 - **Manifest 合規審計技能**：`.agents/skills/chrome-auditor/SKILL.md`
