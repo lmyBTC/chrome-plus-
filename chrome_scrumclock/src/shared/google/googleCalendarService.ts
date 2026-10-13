@@ -24,7 +24,12 @@ class GoogleCalendarService {
    * 封裝帶授權的 fetch 請求，支援 401 自動刷新 Token
    */
   private async fetchWithAuth(url: string, options: RequestInit = {}): Promise<Response> {
-    let token = await googleAuthClient.getAuthToken(false);
+    let token: string;
+    try {
+      token = await googleAuthClient.getAuthToken(false);
+    } catch {
+      token = await googleAuthClient.getAuthToken(true);
+    }
 
     let res = await fetch(url, {
       ...options,

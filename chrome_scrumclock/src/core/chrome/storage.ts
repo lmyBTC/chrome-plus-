@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: UserSettings = {
   enableGoogleSync: true,
   googleSyncLocalHubFallback: true,
   enableGoogleTasksSync: true,
+  googleClientId: '',
   financeClipperExtensionId: 'imnnkgiglcbjknfbkdfocdhoookkipji',
   activityMonitorExtensionId: 'kjnoegggihncdaimlgfccccogghjapgn'
 };

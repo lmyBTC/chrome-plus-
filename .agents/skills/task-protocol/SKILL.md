@@ -1,66 +1,76 @@
 ---
 name: 任務協議管理 (Task Protocol Management)
-description: 強制執行 `task_template_v2.md` 的初始化、物理同步、狀態收斂與封存管理規範。
-triggers: [建立任務, 開始開發, 任務拆解, 狀態更新, 同步進度, 任務歸檔, 歷史任務, 封存任務, 狀態收斂]
+description: 強制執行 `task_template_v2.md` 的初始化、同步、4-Gate 門禁、會話隔離與封存管理規範。
+triggers: [建立任務, 開始開發, 任務拆解, 狀態更新, 同步進度, 任務歸檔, 歷史任務, 封存任務, 狀態收斂, 接力會話]
 dependencies: []
 ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.md"]
 ---
 
-# 技能指令：任務協議守護者 (v3.0 - 3-Gate Protocol)
+# 技能指令：任務協議守護者 (v3.1 - 4-Gate Protocol)
 
-你負責確保專案「任務物理同步」、「三階段守門門禁」與 Token 節省策略 100% 執行。
+你負責確保專案「任務物理同步」、「4-Gate 門禁體系」、多會話隔離（One Phase, One Session）、Token 節省策略與任務檔防護戒律 100% 執行。任務模板真理源為 `0.doc_mg/task_template_v2.md`。
 
-## 1. 任務啟動三階段門禁 (The 3-Gate Bootstrap Protocol)
+## 1. 前置思維底線：編碼前思考 (Think Before Coding)
+- **不要假設**：若有歧義，主動列出權衡並詢問使用者，嚴禁默默替使用者猜測。
+- **禁止以歷史產物為規格 (Artifacts ≠ Specifications)**：探索規範一律讀取 `0.doc_mg/` 或各插件專屬 SSOT/README，**嚴禁抄襲歷史已完成任務檔案**作為當前功能依據。
+- **目標驅動 (Goal-Oriented)**：將指令式任務轉化為可重現、可客觀驗證的 Exit 0 成功標準，並於事前驗屍 (Pre-Mortem) 逆向推演降級方案。
+- **探勘硬窄化 (Outline First & Zero-Full-Read)**：探索與鎖定程式碼時，逾 100 行之代碼檔案**強制調用 `python 1.devtools/tools/code_skeleton.py <path>` 或 `repo-radar` 提取骨架，嚴禁全檔 `view_file`**；局部細讀時單次範圍嚴格限制 ≤ 30 行，防止 Context 膨脹與行號漂移。
 
-### Gate 0: 方案探詢與方向確認 (Zero-Tool, Zero-Scan)
-當使用者提出新需求、架構變更或功能規劃時，**嚴禁呼叫任何檔案掃描工具（如 glob/grep/list_dir/view_file）或建立實體文件**：
-1. **零工具思考**：僅憑現有問題脈絡與常識直覺，輸出 100~200 字的高階架構思考（包含 1~2 種可能作法與權衡取捨）。
-2. **尋求方向授權**：明確詢問：「是否同意此方向？確認後我將開始掃描相關模組並產出 task.md。」
-3. **強制交出控制權**：**停止呼叫任何工具並直接輸出回覆**，等待使用者明確授權（如「同意」、「可行」或提出調整意見）。
+## 2. 任務啟動四階段門禁 (The 4-Gate Protocol)
 
-### Gate 1: 脈絡勘查與任務藍圖 (Grounding & Task Blueprint)
-獲得使用者對 Gate 0 方向的明確確認後，始得進入深度勘查與建檔：
-1. **Step -1: 主題檢索**：呼叫 `list_dir` 檢索 `0.doc_mg/tasks/` 及其 `archive/` 目錄，確認有無同主題或既有任務。
-2. **Step 0: 讀取範本/既有文件**：
-   - 若無相關主題：呼叫 `view_file` 讀取 `0.doc_mg/task_template_v2.md`。
-   - 若有相關主題：讀取該既有任務檔案。
-3. **Step 1: 精準唯讀掃描（探勘硬窄化與武器庫鏈條）**：僅針對目標插件或相依檔案進行最小化上下文探索（嚴禁全盤無效掃描或跨插件污染）。**強制武器庫鏈條**：代碼檔案逾 100 行者，嚴禁直接使用 `view_file`，強制優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo-radar` 提取大綱骨架；僅在取得骨架行號後，始得針對目標函式介面簽名進行局部 `view_file` 採集（單次嚴格限制 ≤ 30 行），實作細節留待 Gate 2；關鍵介面簽名與型別直接沉澱至 `task.md`。
-4. **Step 2: 建立/更新實體文件與 SSOT 衝擊評估**：
-   - 建立 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`（`plugin` 填寫插件名稱或 `global`/`agents`）。
-   - 填寫目標、鎖定檔案、具體 Phase 與驗收標準。
-   - **Target Devtools 前置宣告**：必須前置鎖定宣告工具鏈清單（探勘骨架/雷達工具、終端脫水工具、自動化審計工具），並將工具鏈實體排入 Phase 拆解之執行步驟中。
-   - **SSOT 衝擊評估 (Target SSOTs)**：凡涉及元件新增修改、狀態模型或架構變動，必須在「鎖定 SSOT 回寫清單 (Target SSOTs)」前置宣告四層回寫目標（L1 專家技能、L2 插件導航、L3 業務規格、L4 任務生命週期），嚴禁僅列代碼檔案。
-   - 在 AI 簽到區勾選並記錄對話 ID。
-   - **[強制] 刪除範本中所有帶有說明性質的 `<!-- ... -->` 註解文字。**
-5. **強制停步與會話接力輸出 (Blueprint Halt & Handover)**：
-   - 輸出 `task.md` 的路徑與綱要，**嚴禁在此步驟直接修改任何原始碼**。
-   - **必須輸出「跨會話接力指令（Session Reset Handover）」**：
-     - 提示使用者可開啟新對話視窗並輸入接力指令（例如 `載入 ./0.doc_mg/tasks/task_xxx.md，開始執行 Phase 1`）。
-     - 此舉能徹底釋放 Gate 1 探勘佔用之龐大 Tool Outputs，杜絕注意力退化（Context Rot）並節省 70%~90% 輸入 Token。
-     - 若使用者選擇同會話繼續，亦可回覆「開始執行」或「GO」。
-   - 明確等待使用者下達執行授權。
+專案推行**階段責任隔離 (Phase-Gated Execution)**，實體任務檔案 (`0.doc_mg/tasks/task_*.md`) 為唯一狀態真理源。每階段完成後必須停步交回控制權，嚴禁自動偷跑下一階段。
 
-### Gate 2: 分段原子執行 (Atomic Execution)
-使用者核准 `task.md` 後，始可進入實體程式碼執行階段：
-- **依賴截斷 (Context Pruning)**: Gate 2 嚴格以實體 `task.md` 為唯一真理源（SSOT），切斷對上文探勘歷史之依賴，禁止回顧先前探勘輸出。
-- **原子化執行**: 每回合對話/工具呼叫僅限處理一個原子任務，防範品質劣化與幻覺。
-- **Phase 嚴格限制**: 嚴禁在單一對話回合中跨越執行多個 Phase。
-- **局部讀取與精準寫入**: 對於超過 100 行之原始碼或文檔，嚴禁通讀全檔。必須先以 `grep_search` 或骨架工具精準定位關鍵行號，再使用 `view_file` 指定範圍（`StartLine`/`EndLine`）局部讀取；修改時單點變更使用 `replace_file_content`，若同檔案有多處修改則強制優先調用 `multi_replace_file_content` 一次性完成，避免多輪工具呼叫與冗餘上下文回傳，嚴禁覆寫全檔。
-- **物理同步義務**: 每完成一個原子任務或 Phase，必須立即在實體 `task.md` 中打勾 `[x]`。
-- **狀態收斂 (Dynamic Condensation)**: 當 Phase 內所有原子任務完成，進入下一 Phase 前，**必須刪除已完成 Phase 的細部原子任務**，僅保留：
-  ```markdown
-  ### Phase X: [標題] 狀態：`[已完成]`
-  ```
-- **四層 SSOT 閉環義務 (4-Tier SSOT Closed-Loop - 90/10 分級與瘦身守則)**:
-  - **90% 輕量任務（豁免閉環）**：若屬單純樣式、文字、局部除錯重構，**L1~L3 全面豁免，免讀取免回寫**，直接在 `task.md` 勾選 `[N/A]`，結案僅需執行 L4 任務封存，零額外 Token 損耗。
-  - **10% 重大變更（精準骨架回寫）**：僅當任務涉及「模組元件新增/刪除、Storage 模型變更、跨插件通訊變更」時，在結案前依 Target SSOTs 完成**純骨架（Index）**回寫：
-    - **L1 專家技能**：`.agents/skills/[plugin]-core/SKILL.md` (僅補路徑與職責一句話，嚴禁貼入長篇代碼與易變行數)
-    - **L2 插件導航**：`[PLUGIN]/[PLUGIN]_README.md` (更新模組速查矩陣、入口、架構索引)
-    - **L3 業務規格**：`[PLUGIN]/docs/[feature]-spec.md` (核心業務規則，無則免填)
-    - **L4 封存治理**：移動封存至 `0.doc_mg/tasks/archive/[plugin]/` 歸檔結案。
-- **強制收尾**: 在回報任務完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。
+| 門禁階段 | 准入條件 | 嚴格禁止事項 (Hard Guardrails) | 核心動作、Token 脫水工具與離開標準 (Exit Criteria) |
+| :--- | :--- | :--- | :--- |
+| **Gate 0: 方向探詢**<br>*(Session 0)* | 使用者提出新需求或模糊構想 | **嚴禁呼叫任何工具**、嚴禁讀寫掃描檔案 | 純推理輸出 100~200 字高階思考與權衡，**物理交回控制權**等待授權。 |
+| **Gate 1: 脈絡藍圖**<br>*(Session 1)* | 使用者明確同意 Gate 0 方向 | **嚴禁動程式碼**、嚴禁執行實質 Phase、**嚴禁 >100 行檔案全檔 view_file** | **[Token 探勘硬窄化 & 持久化快取實證]**：<br>1. 主題檢索：`list_dir 0.doc_mg/tasks/` 及歸檔目錄確認有無同主題或既有任務。<br>2. 骨架提煉：逾 100 行檔案強制調用 `python 1.devtools/tools/code_skeleton.py` 或 `repo-radar` 提煉大綱骨架，單次局部讀取 ≤ 30 行介面簽名。<br>3. 讀取 `0.doc_mg/task_template_v2.md` 建立實體 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`，回填**工具調用矩陣實證、探勘快取路徑**，任務拆解落實**行號錨定 (Line Anchor)** 與**事前驗屍 (Pre-Mortem)**。<br>4. 前置宣告 **Target Devtools** 與 **Target SSOTs** 四層閉環清單。<br>5. 徹底清理範本中所有 `<!-- ... -->` 註解。<br>6. **第一時間執行 `git add <task-file>` 納入暫存區受版本防護**。<br>7. **強制停步交權，輸出開立新 Session 接力提示詞代碼塊**，嚴禁同輪改動程式碼。 |
+| **Gate 2: 分段原子執行**<br>*(One Phase, One Session)* | 使用者下達執行指定 Phase 指令 | **嚴禁跨 Phase 自動執行**、單 Bug 重試 > 2 次、**嚴禁重複盲讀原始長檔** | **[Token 執行防衛 & 零探索直接開工]**：<br>1. 依賴截斷：以實體 `task.md` 為唯一真理源，切斷上文探勘歷史依賴。<br>2. 零探索直接開工：優先依賴任務步驟已錨定之行號區間細讀 (≤30 行)；若需重新探勘強制以骨架工具提煉，嚴禁盲讀長檔。<br>3. 單輪專注完成當前 Phase 原子任務。<br>4. 終端脫水：大量除錯/建置/測試強制串接 `2>&1 \| python 1.devtools/tools/compact_log.py` 或 `rtk`。<br>5. 單元驗證通過 (Exit 0)，**實體打勾並動態收斂後強制停步交權，輸出開立新 Session 接力代碼塊**。 |
+| **Gate 3: 知識收斂與自動化審計**<br>*(Final Acceptance)* | 所有 Phase 開發完成且單元驗證通過 | **嚴禁遺留架構漂移**、嚴禁跳過驗證標記完成 | **[Token 審計與閉環收尾]**：<br>1. 執行合規與鏈接審計工具 (`audit_manifests.py`、`doc_cross_ref.py`) 確保 Exit 0。<br>2. 落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）。<br>3. 實體任務檔打勾結案，完成 AI 簽到區與歸檔移動至 `0.doc_mg/tasks/archive/[plugin]/`。<br>4. 更新任務檔為最後一個工具呼叫，更新即刻停步。 |
 
-## 2. 封存協議 (Archiving Protocol)
+## 3. 執行協議與中斷點 (Execution & Halt Protocol)
+1. **原子化執行**：每次工具呼叫僅限處理一個原子任務，避免大區塊覆寫造成內容截斷。
+2. **單一 Phase 物理中斷 (Hard Stop - One Phase, One Session)**：
+   - **完成即停**：完成當前 Phase 後，**必須先更新實體任務檔打勾與歷程簽到**，然後**立即停止呼叫工具，強制交出控制權**。
+   - **嚴禁同會話連續推進**：嚴格落實「One Phase, One Session」物理隔絕，嚴禁 Agent 在同會話自動或手動推進下一個 Phase，亦不得引導在原對話直接回覆。
+   - **強制產出新會話接力代碼塊 (Mandatory Handover Block)**：停步交回控制權時，**最後必須強制產出供使用者直接複製貼上以推進下一階段之接力提示詞代碼塊**，由使用者開立新 Session 繼續執行。
+3. **客觀 Exit 0 連續驗證**：驗收必須以具體指令回傳 Exit code 0 為準，拒絕主觀模糊判定。
+4. **狀態動態收斂 (Dynamic Condensation)**：Phase 完成後，於 `task_*.md` 將該階段標記為 `[已完成]`，刪除已完成的原子任務條目，並在 `## 7. 狀態收斂歷程` 追加單行記錄：`- [YYYY-MM-DD] [Phase X] 摘要成果 (Session N)`。
+5. **四層 SSOT 閉環義務 (4-Tier SSOT Closed-Loop - 90/10 分級守則)**：
+   - **90% 輕量任務（全面豁免）**：樣式調整、文字排版、局部除錯重構，**L1~L3 全面豁免讀寫**，task 檔直標 `[N/A]`，結案僅需 L4 任務收斂與封存。
+   - **10% 重大變更（純骨架回寫）**：僅涉及模組元件增刪、Storage 模型變動、跨插件通訊接口變更時，結案前依 Target SSOTs 完成純骨架（Index）回寫防腐：
+     - **L1 專家技能**：`.agents/skills/[plugin]-core/SKILL.md` (路徑與職責一句話)
+     - **L2 插件導航**：`[PLUGIN]/[PLUGIN]_README.md` (模組速查矩陣、入口索引)
+     - **L3 業務規格**：`[PLUGIN]/docs/[feature]-spec.md` (核心業務規則，無則免填)
+     - **L4 封存治理**：移動封存至 `0.doc_mg/tasks/archive/[plugin]/` 歸檔結案。
+6. **強制收尾協議與安全守護五大戒律 (Mandatory Closure & Safety Guards)**：
+   任務標記完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。若回報完成但實體任務未打勾收斂，視為未完成並違反門禁。
+   - **戒律一：精準局部替換鐵律與零錯誤傳參 (Strict Chunk Replacement ≤ 10 行 & No ArtifactMetadata on Workspace)**：更新實體任務檔時，**嚴格限制使用原生局部替換工具 (`replace_file_content`)，單次替換範圍 ≤ 10 行**（僅替換當前 Phase Checkpoint 與追加單行收斂歷程）。**嚴禁使用 `write_to_file` 進行整檔覆寫或大區塊重寫**，杜絕巨量 Token 輸出及 IDE 底層 Diff 演算法嚴重耗時（逾時阻塞 50+ 秒）引發的使用者端死鎖體感；**對 workspace 專案檔案寫入時嚴禁傳遞 `ArtifactMetadata` 參數**（該參數僅限 `brain/` 之專屬 Artifact），徹底杜絕無效工具調用報錯（Invalid tool call）導致的 50 秒重試延遲。**嚴禁編寫任何 Python/PowerShell 臨時腳本更新任務檔**（必須使用原生檔案替換工具直接原子更新）。
+   - **戒律二：建檔即 Git Add 防護 (Instant Git Tracking Guard)**：新建 `0.doc_mg/tasks/task_*.md` 必須第一時間執行 `git add <task-file>` 納入暫存區，確保受 Git 版本管理與還原防護，杜絕 untracked 狀態下的覆蓋或意外損毀。
+   - **戒律三：更新即停步零冗餘與清理前置 (Update & Immediate Halt & Prior Cleanup)**：暫存檔案（如臨時腳本）之清理必須**完全前置**於任務檔更新之前；更新任務檔**必須是本輪對話的最後一個工具呼叫**。更新完成後**嚴禁**再調用 `view_file`、`run_command` 或任何冗餘工具，必須立即停止工具調用並交回控制權。
+   - **戒律四：驗證正則合併與單次收尾更新 (Regex Batch Verification & Single-Pass Task Update)**：驗收階段嚴禁多輪單詞 Grep 輪巡，必須合併為單次正則表達式；收尾時嚴禁分拆多次替換微調任務檔（打勾、收斂歷程與 frontmatter 狀態必須單次原子替換完成），杜絕重複 Round-trip 造成 Token 與 Context 劇烈膨脹。
+   - **戒律五：全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix Guard)**：嚴格落實四階段門禁工具調用矩陣。在 `task_*.md` 的 `## 2. 上下文探索與依賴` 必須填寫真實工具調用實證（Gate 1 探勘骨架/大綱、Gate 2 執行脫水、Gate 3 驗收審計），嚴禁無證據虛應打勾。
+
+## 4. 2-Strike 熔斷與突發問題隔離機制 (Circuit Breaker & Incident Offloading)
+單一錯誤或驗收失敗**最多僅允許 2 次修復嘗試**。第 2 次失敗嚴禁第 3 次盲試；若遇次生突發問題則提前中斷：
+1. **停止猜測與探索**：立即停止盲目嘗試；嚴禁在原對話展開跨模組深層排查或連續發起大檔閱讀，杜絕 Context 泛洪。
+2. **乾淨復原**：以 Git 還原工作區至變更前乾淨狀態，杜絕半成品污染。
+3. **實體立案回寫**：
+   - 若為當前任務阻礙，於實體 `task_*.md` 對應 Phase 標記 `[BLOCKED: 錯誤摘要]`。
+   - 若為獨立系統 Bug，於任務檔備註或建立新議題任務檔隔離記錄。
+4. **強制停步交權**：停止呼叫工具，輸出診斷報告與新會話接力代碼塊，引導人類開立乾淨 Session 專注處理。
+
+## 5. 多會話接力提示詞代碼塊 (Session Handover Blocks)
+Phase 結束停步或遭遇突發問題中斷時，於回覆末尾附上對應代碼塊供使用者選用：
+
+```markdown
+載入 ./0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md，開始執行 Phase X
+```
+
+```markdown
+載入 ./0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md，專注調查並修復 [BLOCKED: 錯誤摘要] 問題
+```
+
+## 6. 封存協議 (Archiving Protocol)
 當任務完全滿足結案條件時，必須將檔案自 `0.doc_mg/tasks/` 移動至專屬歸檔目錄，嚴禁散落於根目錄：
 1. **結案前置檢核 (Checklist)**：
    - 檔案內所有 Phase 已完成實體打勾並動態收斂細節。
@@ -78,21 +88,20 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
    - 一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的使用者準則。
    - 保持歷史內容與純字串相對路徑不變。
 
-## 3. 驗收防呆
-- [ ] **Gate 0 守門**: 是否在未呼叫任何掃描工具前先取得方向授權？
-- [ ] **Gate 1 探勘硬窄化與武器庫鏈條**: 逾 100 行檔案是否優先調用 `code_skeleton.py` 或 `repo-radar` 提取骨架，且單次讀取 ≤ 30 行介面簽名？
-- [ ] **Gate 1 Target Devtools 前置宣告**: 是否在 `task.md` 第二節明確宣告探勘、脫水與審計工具鏈，並排入具體 Phase 步驟？
-- [ ] **Gate 1 藍圖停步與接力**: 是否建立實體 `task.md`、輸出跨會話接力指令並等待授權？
-- [ ] **Gate 1 SSOT 衝擊宣告**: 是否在 `Target SSOTs` 區塊前置宣告 L1~L4 回寫清單？
-- [ ] **Gate 2 依賴截斷**: 是否純粹以實體 `task.md` 為 SSOT 執行？
-- [ ] **Gate 2 終端脫水防禦**: 執行建置、測試或型別檢查時，是否已串接 `compact_log.py` 或 `rtk`，杜絕雜訊日誌塞滿 context？
-- [ ] **局部讀寫與多點修改規範**: 超過 100 行檔案是否採用 grep/骨架 + 區段 view，單點修改使用 replace，多處修改優先調用 multi_replace？
-- [ ] **結案自動審計完成**: 是否已調用 `audit_manifests.py`（Manifest/安全）或 `doc_cross_ref.py`（文檔一致性）執行自動檢驗？
-- [ ] **說明註解清理**: `task.md` 中所有 `<!-- ... -->` 範本提示是否已徹底刪除？
-- [ ] **四層 SSOT 閉環**: 若架構或檔案結構有變，L1 專家技能、L2 導航 README、L3 業務規格、L4 封存歸檔是否皆已同步完成？
-- [ ] **狀態收斂**: 完成之 Phase 是否已執行細節收斂以最大化節省 Token？
-- [ ] **物理同步**: 實體任務檔案是否已同步最新狀態？
-- [ ] **封存規範**: 若任務結案，是否已正確歸檔至對應插件/全域子目錄且未散落於根目錄？
+## 7. 驗收防呆清單
+在每一回合結束前進行自我檢查：
+- [ ] 物理任務文件 (`0.doc_mg/tasks/task_*.md`) 是否已同步最新進度並打勾？
+- [ ] 是否已刪除完成的原子任務條目，並於 `Condensed History` 追加單行記錄？
+- [ ] 全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix) 是否已於任務檔實證回填（Gate 1 探勘骨架/大綱、Gate 2 執行日誌脫水、Gate 3 驗收審計）？
+- [ ] 四層 SSOT 閉環：90% 輕量任務是否已豁免 L1~L3 讀寫標記 `[N/A]`？10% 重大任務是否僅同步純骨架（Index）？
+- [ ] 強制收尾：更新任務檔是否由原生工具局部替換（嚴禁臨時腳本更新）且為本輪最後一個工具呼叫？
+- [ ] 是否已調用自動化審計工具 (`audit_manifests.py` 或 `doc_cross_ref.py`) 確保全站合規與鏈接零死鏈？
+- [ ] 程式碼探勘是否遵循硬窄化（逾 100 行強制骨架先行，細讀單次限 ≤ 30 行，嚴禁全檔 `view_file`）？
+- [ ] 終端日誌脫水：預期大量輸出的指令，是否已串接 `compact_log.py` 或 `rtk`？
+- [ ] 是否遵守 2-Strike 熔斷與突發問題隔離機制（遇次生非預期 Bug 即刻停止探索、回寫 task、還原髒代碼並停步引導開新 Session）？
+- [ ] 單一 Phase 結束時，是否已停止呼叫工具、交出控制權，並強制產出開立新 Session 接力提示詞代碼塊（落實 One Phase, One Session，嚴禁同會話繼續）？
+- [ ] 任務檔防護：更新實體任務檔是否嚴守 `replace_file_content` ≤ 10 行局部替換？是否杜絕 `write_to_file` 整檔覆寫與 `ArtifactMetadata` 誤傳？是否杜絕中介腳本？建檔是否已第一時間 `git add`？更新後是否立即停步零冗餘工具調用？
 
 > [!CAUTION]
 > **失敗即停**：若發現物理文件結構損壞或遺漏關鍵區塊，應立即停止開發並修復檔案。禁止在未讀取範本的情況下憑記憶生成任務結構。嚴禁跳過 Gate 0 或 Gate 1 直接改動程式碼。
+

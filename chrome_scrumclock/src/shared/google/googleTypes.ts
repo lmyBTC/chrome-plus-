@@ -5,6 +5,8 @@
 export interface GoogleAuthState {
   isAuthenticated: boolean;
   token?: string;
+  expiresAt?: number;
+  clientId?: string;
   userEmail?: string;
   lastAuthTime?: number;
   error?: string;

@@ -43,12 +43,13 @@ class GoogleTasksSyncManager {
     const errors: string[] = [];
     let syncedCount = 0;
 
-    if (!googleAuthClient.isOAuthConfigured()) {
+    const isConfigured = await googleAuthClient.isOAuthConfiguredAsync();
+    if (!isConfigured) {
       const failedResult: GoogleSyncResult = {
         success: false,
         syncedCount: 0,
         errors: [
-          'Google OAuth2 Client ID 尚未完成配置。請在 Google Cloud Console 建立憑證並於 manifest.json 設定有效 client_id。',
+          'Google OAuth2 Client ID 尚未完成配置。請至全域系統設定頁輸入有效的 Client ID，並確保在 GCP 已填入 Redirect URI。',
         ],
         lastSyncedAt: Date.now(),
       };
@@ -156,7 +157,8 @@ class GoogleTasksSyncManager {
     taskListId = '@default',
     onlyIfLinked = true
   ): Promise<boolean> {
-    if (!googleAuthClient.isOAuthConfigured()) {
+    const isConfigured = await googleAuthClient.isOAuthConfiguredAsync();
+    if (!isConfigured) {
       return false;
     }
 

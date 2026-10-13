@@ -10,7 +10,7 @@
 |技能名稱|觸發關鍵字 (Triggers)|指針路徑|
 |:---|:---|:---|
 |**網頁開發與技術規範**|`插件開發`,`MV3規範`,`樣式隔離`,`shadow-dom`,`CSP/XSS`|`.agents/skills/dev-standards/SKILL.md`|
-|**任務協議管理**|`建立任務`,`開始開發`,`任務拆解`,`動態收斂`,`3-Gate`|`.agents/skills/task-protocol/SKILL.md`|
+|**任務協議管理**|`建立任務`,`開始開發`,`任務拆解`,`動態收斂`,`4-Gate`|`.agents/skills/task-protocol/SKILL.md`|
 |**Token 節省器**|`節省Token`,`代碼骨架`,`日誌脫水`,`rtk指令`,`局部讀寫`|`.agents/skills/token-saver/SKILL.md`|
 |**Chrome 插件合規審計**|`安全審查`,`合規檢查`,`manifest審計`,`上架檢查`|`.agents/skills/chrome-auditor/SKILL.md`|
 |**ScrumClock 規格字典**|`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|`.agents/skills/scrumclock-core/SKILL.md`|
@@ -22,16 +22,21 @@
 ---
 
 ## 1. 守門門禁與任務協議 (Gate Protocol)
-- **3-Gate 門禁與工具鏈強制條款**：
-  - **Gate 0: 零工具方向確認 (Zero-Tool, Zero-Scan)**：嚴禁呼叫任何掃描工具或建立實體檔案，僅提 100~200 字方向與權衡，等待授權。
+- **4-Gate 門禁與工具鏈強制條款**：
+  - **Gate 0: 零工具方向確認 (Zero-Tool, Zero-Scan)**：嚴禁呼叫任何掃描工具或建立實體檔案，僅提 100~200 字方向與權衡，物理交出控制權等待授權。
   - **Gate 1: 物理勘查與建檔 (Tooling-First Grounding & Target Blueprint)**：
-    - **前置工具勘查義務**：探勘大型模組（逾 100 行）**強制調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 提煉骨架（未調用骨架嚴禁直接 read 大檔）；檢索專案拓撲或定位全域符號**強制調用** `python 1.devtools/tools/repo_radar.py`。
-    - **前置宣告 Target Devtools**：於 `task.md` 策略區宣告鎖定工具鏈（探勘骨架、終端脫水、結案審計），並於 Phase 拆解中排入具體執行節點。
-    - **產出 task.md 與接力令**：前置宣告 Target SSOTs，產出任務檔後**強制停步（嚴禁改碼）**，輸出跨會話接力指令。
-  - **Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Tooling Audit)**：
-    - **原子推進與實體打勾**：單輪專注一個 Phase，每步實體打勾，完成後依動態狀態收斂折疊細節。
+    - **前置工具勘查與持久化快取**：探勘大型模組（逾 100 行）**強制調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 提煉骨架（未調用骨架嚴禁直接 read 大檔）；檢索專案拓撲或定位全域符號**強制調用** `python 1.devtools/tools/repo_radar.py`；將探索路徑與介面快取於任務檔（Probe Cache），杜絕重複讀取。
+    - **前置宣告 Target Devtools & SSOTs**：於 `task.md` 策略區宣告鎖定工具鏈與四層 SSOT 回寫清單，並於任務拆解排入行號錨定 (Line Anchor) 與事前驗屍 (Pre-Mortem)。
+    - **產出 task.md 與接力令**：建檔第一時間執行 `git add <task-file>` 納入版本防護，清理所有註解後**強制停步（嚴禁改碼）**，輸出跨會話接力指令。
+  - **Gate 2: 分段原子執行與狀態收斂 (Atomic Execution - One Phase, One Session)**：
+    - **會話隔離與原子推進**：嚴格恪守「One Phase, One Session」物理隔絕底線，單輪專注一個 Phase，每步實體打勾，完成後依動態狀態收斂折疊細節。
+    - **零探索開工與依賴截斷**：以 `task.md` 為唯一真理源，切斷上文探勘歷史依賴；優先依賴任務檔錨定之行號 (≤30 行) 直接開工。
     - **終端脫水防禦義務**：執行建置、編譯、打包或測試等長輸出命令時，**強制串接** `python 1.devtools/tools/compact_log.py` 或 `rtk`，嚴禁原始長篇 log 污染對話。
-    - **結案前工具審計義務**：在 `Phase Final` 結案前，**強制調用自動化審計工具**（涉及 Manifest 跑 `python 1.devtools/tools/audit_manifests.py`；涉及文檔/架構跑 `python 1.devtools/tools/doc_cross_ref.py`），驗證零報錯後方可回寫 SSOT 與封存。
+    - **2-Strike 熔斷機制**：單一問題最多修復 2 次，失敗即熔斷停步，乾淨復原後立案隔離，嚴禁同輪盲試。
+    - **任務檔防護五大戒律**：局部替換 `replace_file_content` ≤ 10 行、嚴禁 workspace 傳遞 `ArtifactMetadata`、更新任務檔為最後工具呼叫、完成後強制停步並輸出新會話接力代碼塊。
+  - **Gate 3: 知識收斂與自動化審計 (Knowledge Consolidation & Automated Audit)**：
+    - **自動化工具審計**：在結案前，**強制調用自動化審計工具**（涉及 Manifest 跑 `python 1.devtools/tools/audit_manifests.py`；涉及文檔/架構跑 `python 1.devtools/tools/doc_cross_ref.py`），驗證 Exit 0。
+    - **四層 SSOT 閉環與封存**：90% 輕量任務全面豁免 L1~L3 閉環；10% 重大變更執行純骨架回寫；結案後移動封存至 `0.doc_mg/tasks/archive/[plugin]/`。
 - **四層 SSOT 閉環（90/10 分級與瘦身守則）**：
   - **90% 輕量任務（豁免閉環）**：單純樣式、文字、局部除錯重構，**L1~L3 免讀寫直接跳過**，僅需 L4 歸檔，零額外 Token 損耗。
   - **10% 重大變更（精準回寫）**：僅涉及新增/刪除元件、改動 Storage Schema 或跨插件通訊時，結案前依 Target SSOTs 進行「純骨架（Index）」同步：

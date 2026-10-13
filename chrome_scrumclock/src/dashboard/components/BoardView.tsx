@@ -117,6 +117,49 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const [currentWipLimit, setCurrentWipLimit] = useState(maxWipLimit);
   const [wipConflictTask, setWipConflictTask] = useState<{ id: string; title: string } | null>(null);
 
+  // 看板欄位收折狀態偏好（預設敏捷聚焦：收折 Inbox 與 Done，展開 Backlog 與 Doing）
+  const [collapsedColumns, setCollapsedColumns] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem('scrumclock_board_collapsed_columns');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {}
+    return {
+      inbox: true,
+      'next-action': false,
+      'in-progress': false,
+      done: true,
+    };
+  });
+
+  const toggleColumnCollapse = (columnId: string) => {
+    setCollapsedColumns((prev) => {
+      const next = { ...prev, [columnId]: !prev[columnId] };
+      try {
+        localStorage.setItem('scrumclock_board_collapsed_columns', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleSetFocusMode = (mode: 'agile-focus' | 'all-expanded') => {
+    const next =
+      mode === 'agile-focus'
+        ? { inbox: true, 'next-action': false, 'in-progress': false, done: true }
+        : { inbox: false, 'next-action': false, 'in-progress': false, done: false };
+    setCollapsedColumns(next);
+    try {
+      localStorage.setItem('scrumclock_board_collapsed_columns', JSON.stringify(next));
+    } catch {}
+  };
+
+  const isAgileFocusActive =
+    Boolean(collapsedColumns.inbox) &&
+    !collapsedColumns['next-action'] &&
+    !collapsedColumns['in-progress'] &&
+    Boolean(collapsedColumns.done);
+
   // Google Tasks 同步狀態管理
   const [internalSyncing, setInternalSyncing] = useState(false);
   const isSyncing = isGoogleSyncing !== undefined ? isGoogleSyncing : internalSyncing;
@@ -494,6 +537,34 @@ export const BoardView: React.FC<BoardViewProps> = ({
             )}
           </button>
 
+          {/* 敏捷聚焦 / 全展開 模式切換 */}
+          <div className="flex items-center bg-dark-card/90 border border-dark-border-subtle/80 p-0.5 rounded-xl shadow-inner">
+            <button
+              onClick={() => handleSetFocusMode('agile-focus')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                isAgileFocusActive
+                  ? 'bg-indigo-600 text-white shadow-xs'
+                  : 'text-dark-muted hover:text-dark-secondary'
+              }`}
+              title="敏捷聚焦模式：重點展開 Backlog 與 Doing，收折 Inbox 與 Done，釋放筆電螢幕空間"
+            >
+              <span>🎯</span>
+              <span>敏捷聚焦</span>
+            </button>
+            <button
+              onClick={() => handleSetFocusMode('all-expanded')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
+                !isAgileFocusActive && Object.values(collapsedColumns).every((v) => !v)
+                  ? 'bg-dark-surface text-dark-primary shadow-xs'
+                  : 'text-dark-muted hover:text-dark-secondary'
+              }`}
+              title="展開全部看板欄位"
+            >
+              <span>📂</span>
+              <span>全部展開</span>
+            </button>
+          </div>
+
           <button
             onClick={() => setShowSomeday(!showSomeday)}
             className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 ${
@@ -543,12 +614,62 @@ export const BoardView: React.FC<BoardViewProps> = ({
         </div>
       )}
 
-      {/* 看板核心多欄容器 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-5 flex-1 items-start">
+      {/* 看板核心多欄容器：自適應寬度，支援平滑水平捲動，杜絕筆電螢幕擠壓 */}
+      <div className="flex gap-3.5 xl:gap-4 flex-1 items-start overflow-x-auto pb-3 min-w-0">
         {COLUMNS.map((col) => {
           const tasks = tasksByColumn[col.id];
           const isOverWip = wipEnabled && col.id === 'in-progress' && tasks.length > currentWipLimit;
           const isTargetDrop = activeDropColumn === col.id;
+          const isCollapsed = Boolean(collapsedColumns[col.id]);
+
+          // 收折模式：縱向緊湊導航條
+          if (isCollapsed) {
+            return (
+              <div
+                key={col.id}
+                onClick={() => toggleColumnCollapse(col.id)}
+                onDragOver={handleDragOver}
+                onDragEnter={() => handleDragEnter(col.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col.id)}
+                className={`w-12 sm:w-14 shrink-0 min-h-[540px] max-h-[calc(100vh-270px)] rounded-2xl border transition-all duration-300 flex flex-col items-center py-4 justify-between select-none cursor-pointer group shadow-sm ${
+                  isTargetDrop
+                    ? 'border-indigo-500 bg-gradient-to-b from-indigo-950/40 to-dark-surface ring-2 ring-indigo-500/50 shadow-lg shadow-indigo-950/30'
+                    : 'border-dark-border-subtle/80 bg-gradient-to-b from-dark-surface/75 to-dark-surface/30 hover:border-dark-border-default hover:bg-dark-surface/90'
+                }`}
+                title={`點擊展開「${col.title}」（亦可直接拖曳任務至此放置）`}
+              >
+                {/* 頂部：圖示與徽章 */}
+                <div className="flex flex-col items-center gap-2">
+                  <span className="w-8 h-8 rounded-xl flex items-center justify-center bg-dark-card/90 border border-dark-border-subtle/60 text-base shadow-xs group-hover:scale-110 transition-transform">
+                    {col.icon}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono font-semibold border shadow-xs ${col.badgeColor}`}
+                  >
+                    {tasks.length}
+                  </span>
+                </div>
+
+                {/* 中間：縱向直書標題 */}
+                <div className="flex-1 flex items-center justify-center py-6">
+                  <span
+                    className="text-xs font-bold text-dark-secondary group-hover:text-dark-primary tracking-widest transition-colors select-none"
+                    style={{ writingMode: 'vertical-rl' }}
+                  >
+                    {col.title.split(' ')[0]}
+                  </span>
+                </div>
+
+                {/* 底部：展開提示圖示 */}
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-dark-muted group-hover:text-dark-primary group-hover:bg-dark-hover transition-colors">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 18l6-6-6-6" />
+                  </svg>
+                </div>
+              </div>
+            );
+          }
 
           return (
             <div
@@ -557,7 +678,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
               onDragEnter={() => handleDragEnter(col.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, col.id)}
-              className={`flex flex-col min-h-[540px] max-h-[calc(100vh-270px)] rounded-2xl border transition-all duration-200 overflow-hidden shadow-sm ${
+              className={`flex-1 min-w-[310px] max-w-full flex flex-col min-h-[540px] max-h-[calc(100vh-270px)] rounded-2xl border transition-all duration-200 overflow-hidden shadow-sm ${
                 isOverWip
                   ? 'border-rose-500/80 bg-gradient-to-b from-rose-950/20 to-dark-surface/50 ring-2 ring-rose-500/40 shadow-rose-950/20'
                   : isTargetDrop
@@ -595,6 +716,19 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       {col.id === 'in-progress' && wipEnabled ? `${tasks.length}/${currentWipLimit}` : tasks.length}
                     </span>
                   )}
+                  {/* 收折按鈕 */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleColumnCollapse(col.id);
+                    }}
+                    className="p-1 hover:bg-dark-card text-dark-muted hover:text-dark-primary rounded-lg transition-colors cursor-pointer"
+                    title="收折此欄 (釋放橫向版面空間)"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 12H6" />
+                    </svg>
+                  </button>
                 </div>
               </div>
 

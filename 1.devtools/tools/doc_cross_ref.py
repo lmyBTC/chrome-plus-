@@ -18,6 +18,11 @@ import argparse
 from pathlib import Path
 from collections import defaultdict
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')
+except AttributeError:
+    pass
+
 # ── 關鍵字定義 ──────────────────────────────────────────────
 KEYWORDS = [
     # 模組/類別名

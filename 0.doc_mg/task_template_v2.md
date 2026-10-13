@@ -1,19 +1,48 @@
 ---
 title: "[任務標題]"
-plugin: "[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss]"
+plugin: "[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss | global]"
 status: "規劃中" # 規劃中 | 開發中 | 待審核 | 已完成
 created: "YYYY-MM-DD"
 deadline: "YYYY-MM-DD"
+appetite: "2h" # 人類時間預算
+complexity_budget: "Max 3 Phases, 單一問題最多重試 2 次 (2-Strike 熔斷)" # AI 複雜度約束邊界 (超出則強制停步諮詢)
+current_session: "Session 1 (Gate 1 Blueprint)" # 當前執行會話標記
+related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ---
 
-## 1. 目標
-<!-- 描述本任務的核心功能、問題修正或改進點，填寫完畢後可刪除此說明 -->
+> - [ ] 我已閱讀並承諾遵守「task-protocol」技能中之 4-Gate Multi-Session Protocol (Gate 0 探詢 ➔ Gate 1 藍圖 ➔ Gate 2 原子執行 ➔ Gate 3 知識收斂) 與狀態收斂規範。
+> <!-- AI: 本範本僅在 Gate 0 獲准方向後，方可於 Gate 1 讀取與克隆。建立任務檔必須第一時間執行 git add 納入版本防護；更新任務檔嚴格限制 ≤ 10 行局部替換；建立任務時必須刪除範本內所有 HTML 註解提示。 -->
 
-## 2. 策略與鎖定檔案
-<!-- 說明預計的實作方案與相依架構，填寫完畢後可刪除此說明 -->
+## 1. 目標與驗證指標 (Objective & Metrics)
+<!-- AI: 描述核心挑戰。必須將指令轉化為可客觀物理驗證的成功標準 (如 Exit 0 命令與預期行為)。 -->
+- **用戶原始需求 (True Intent)**：<!-- AI: 基於第一性原理，挖掘用戶提出此任務背後的根本痛點，避免盲從表面解法。 -->
+- **核心目標**：
+- **邊界與假設**：<!-- AI: 思考並列出可能的 Edge cases 與多插件隔離邊界 -->
+
+## 2. 上下文探索與依賴 (Context Grounding)
+<!-- AI: [Gate 1] 獲准進入規劃後，執行最小化唯讀探索，禁止憑空猜測路徑與盲目全域掃描。 -->
+- **SSOT 規範查閱**：已查閱 `.agents/rules.md` 對應技能規範與對應插件 README。
+- [ ] **全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix / Token Guard - 實證制)**：<!-- AI: 必須填寫各階段工具真實調用實證，嚴禁無證據虛應打勾！逾 100 行代碼/長文檔嚴禁直接 view_file -->
+  | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 脫水效益 / 驗收狀態 |
+  | :--- | :--- | :--- | :--- |
+  | **Gate 1: 探勘** | `py 1.devtools/tools/repo_radar.py outline`<br>`py 1.devtools/tools/code_skeleton.py`<br>`py 1.devtools/tools/repo_radar.py section` | `[例如：py 1.devtools/tools/code_skeleton.py <path>]` | `[原始 X 行 ➔ 骨架 Y 行 / 節省 Z% Context]` |
+  | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py`<br>`replace_file_content` | `[填寫終端脫水指令或局部原子編輯實證]` | `[日誌脫水率或 Exit 0]` |
+  | **Gate 3: 驗收** | `py 1.devtools/tools/audit_manifests.py`<br>`py 1.devtools/tools/doc_cross_ref.py` | `[填寫合規與交叉檢查命令結果]` | `[Manifest 合規 / SSOT 零死鏈]` |
+- **Gate 1 探勘持久化快取 (Probe Cache)**：`0.doc_mg/tasks/tmp/tmp_probe_{task_slug}.md`
+  <!-- AI 強制規則：
+       1. Gate 1 探勘工具 (code_skeleton / repo_radar) 產出之骨架或大綱，可落盤至快取路徑或在下方任務中完成行號錨定。
+       2. 後續 Session (Phase 1+) 啟動時，強制優先查閱此快取檔或任務錨定行號，嚴禁重新 view_file 原始長檔案或重新探索！
+       3. 若快取遺失或不存在，優先依賴任務步驟已錨定之行號 (≤30行細讀)；若需重勘強制調用 code_skeleton/repo_radar，嚴禁直接 view_file 原始長檔。 -->
+- **影響範圍地圖 (Entity Map)**：<!-- AI: 列出本次改動牽連的檔案、組件與模組相依性。嚴禁跨目錄讀取非關插件！ -->
+- **前置條件 (Prerequisites)**：<!-- AI: 開發前必須完成的環境或狀態準備 (如 git status 乾淨、npm install 等)。 -->
+
+## 3. 策略與架構防護 (Strategy & Guardrails)
+- **DRY 檢查**：<!-- AI: 說明將重用哪些現有組件，避免重複造輪子 -->
+- **架構策略與 Tree of Thoughts (ToT)**：<!-- AI: 若有高歧義/多重可行解，簡述 2 候選方案與最終選定理由 -->
+- **硬性禁止動作 (Guardrails)**：<!-- AI: 條列本任務明確禁止的誤踩動作 (例如: 嚴禁整檔覆寫任務檔 / 嚴禁傳遞 ArtifactMetadata / 嚴禁更動非關插件代碼 / 2-Strike 熔斷上限重試 2 次 / 終端長日誌強制串接 compact_log.py 脫水) -->
 
 ### 鎖定檔案 (Target Files)
-<!-- 必須一律使用工作區相對路徑，嚴禁寫入本機絕對路徑。探勘大檔 (> 100 行) 強制先跑 code_skeleton.py 提煉骨架，嚴禁盲讀全檔 -->
+<!-- AI: 必須一律使用工作區相對路徑，嚴禁寫入本機絕對路徑。探勘大檔 (> 100 行) 強制先跑 code_skeleton.py 提煉骨架，嚴禁盲讀全檔 -->
 - `./[plugin]/path/to/target_file`
 
 ### 鎖定工具鏈 (Target Devtools)
@@ -23,67 +52,78 @@ deadline: "YYYY-MM-DD"
 - [ ] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
-<!-- 90/10 分級原則：若屬單純樣式/文字/Bugfix 等輕量任務，L1~L3 直接勾選 [N/A] 豁免，結案不讀寫任何文檔；僅重大架構變更才需前置宣告 -->
+<!-- 90/10 分級守則：若屬單純樣式/文字/Bugfix 等輕量任務，L1~L3 直接勾選 [N/A] 豁免，結案不讀寫任何文檔；僅重大架構變更才需前置宣告 -->
 - [ ] [N/A] 輕量任務豁免 (無元件增刪、無 Storage Schema 改動、無跨插件通訊變更)
 - [ ] L1 專家技能：`./.agents/skills/[plugin]-core/SKILL.md` (僅骨架：元件字典、Storage Schema)
 - [ ] L2 插件導航：`./[plugin]/[PLUGIN]_README.md` (模組速查矩陣、入口索引)
 - [ ] L3 業務規格：`./[plugin]/docs/[feature]-spec.md` (業務規格，無則免填)
 - [ ] L4 任務生命週期：`0.doc_mg/tasks/archive/[plugin]/` (結案後移動封存歸檔，必選)
 
-## 3. 任務拆解
-<!--
-【Devtools 工具鏈觸發流程規範】：
-1. [探勘前置]: 目標檔案 > 100 行時，任務第一步必須排入骨架/雷達工具提煉介面。
-2. [執行脫水]: 涉及建置、編譯、打包或測試，指令必須串接脫水工具過濾雜訊。
-3. [審計結案]: 必須包含 Phase Final 作為固定結案階段，執行合規審計與 SSOT 歸檔。
--->
+## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
+<!-- AI: 標註屬性標籤 [Serial] | [Independent] | [Blocker]。落實「One Session, One Phase」物理隔絕：完成單一 Phase 必須即時 Checkpoint、收斂狀態並停步。若執行預期大量日誌指令，管線串接 2>&1 | py 1.devtools/tools/compact_log.py 脫水。遭遇次生突發問題強制停止探索、回寫 [BLOCKED] 實體立案並開新 Session 接力，嚴禁原地滾動 Token 擴散除錯。 -->
 
 ### Phase 1: [階段名稱 - 核心實作] 狀態：`[待辦]`
-- [ ] 任務 1.1: [前置探勘 / 介面鎖定]
-    - [ ] [骨架提煉] 若目標檔案 > 100 行，調用 `py 1.devtools/tools/code_skeleton.py <路徑>` 獲取精簡介面，嚴禁直接盲讀全檔。
-    - [ ] [原子任務] [核心邏輯實作細節]
-- [ ] 任務 1.2: [實作與建置驗證]
-    - [ ] [原子任務] [功能實作與細節]
-    - [ ] [終端脫水] 執行建置/檢查時串接脫水工具 (例: `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` 或 `rtk npm run build`)。
+- [ ] 任務 1.1 `[Blocker]`: [前置探勘 / 介面鎖定]
+    - **動作**: <!-- AI: 具體修改哪個檔案或哪個組件。必須落實「行號錨定 (Line Anchor)」：明確標註目標檔案與精確行號區間 (例如: path/to/file L45-L60)，讓新 Session 0 探索直接開工！若大檔 > 100 行，強制調用 py 1.devtools/tools/code_skeleton.py 提煉骨架。 -->
+    - **驗證 (Exit 0 / 客觀指標)**: <!-- AI: 具體可執行的客觀驗證命令或檢查 (如 npm test, lint 或客觀邏輯判定) -->
+- [ ] 任務 1.2: [核心邏輯實作與驗證]
+    - **動作**: 執行功能改動，嚴格遵守單次局部替換。
+    - **驗證 (Exit 0 / 客觀指標)**: 執行建置驗證，長輸出串接 `compact_log.py` 脫水。
+
+> 🏁 **Phase 1 Checkpoint (狀態收斂區)**：
+> - [ ] 階段所有單元驗證已通過 (Exit 0)。
+> - [ ] 狀態標記為 `[已完成]`（若遇突發阻礙則標記 `[BLOCKED]` 並附錯誤快照，撤回髒代碼後停步開新會話）。
+> - [ ] 將關鍵結果以單行緊湊摘要寫入「7. 狀態收斂歷程」。
+> - [ ] 執行強制收尾（更新任務檔為本輪最後工具呼叫，嚴守 ≤ 10 行局部替換，更新即停步零冗餘呼叫）。
+> - [ ] 遵循「One Phase, One Session」物理隔絕底線：於回覆末尾強制輸出開立新 Session 接力提示詞代碼塊，嚴禁於本會話連續推進下一階段。
 
 <!-- 依需求增加中間 Phase 2, Phase 3... -->
 
 ### Phase Final: 自動化審計與 SSOT 閉環 狀態：`[待辦]`
 - [ ] 任務 F.1: 自動化工具合規審計
-    - [ ] [Manifest 審計] 執行 `py 1.devtools/tools/audit_manifests.py` 驗證權限與 CSP 合規 (無修改則勾選 N/A)。
-    - [ ] [文檔交叉引用] 執行 `py 1.devtools/tools/doc_cross_ref.py` 驗證 SSOT 鏈條無死連結。
+    - **動作**: 執行 `py 1.devtools/tools/audit_manifests.py` (若改動 Manifest) 與 `py 1.devtools/tools/doc_cross_ref.py` 驗證 SSOT 鏈條無死連結。
+    - **驗證 (Exit 0)**: 審計工具回報 0 警告 0 錯誤。
 - [ ] 任務 F.2: SSOT 實體回寫與任務歸檔
-    - [ ] [SSOT 回寫] 依 Target SSOTs 清單回寫 L1~L3 骨架 (若輕量任務則勾選 N/A 豁免)。
-    - [ ] [實體歸檔] 任務完成後依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`。
+    - **動作**: 依 Target SSOTs 清單回寫 L1~L3 骨架 (若輕量任務則勾選 N/A 豁免)；任務完成後依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`。
+    - **驗證 (Exit 0)**: 檔案已正確歸檔，工作區維持乾淨。
 
-## 4. 影響評估
-<!-- 列出此修改是否會影響其他 Chrome API 權限、與其他腳本的通訊、或宿主網頁的相容性，填寫完畢後可刪除此說明 -->
+## 5. 事前驗屍與降級方案 (Pre-Mortem & Fallback)
+<!-- AI: 假設本任務失敗，逆向推理最可能的事故場景與降級/撤退步驟。 -->
+- **最可能失敗場景 (Pre-Mortem)**：<!-- AI: 描述預測的高風險故障點 (如 CSP 阻擋、Shadow DOM 樣式洩漏、Storage 衝突) 與防範措施 -->
+- **降級/回滾方案 (Blast Radius Control)**：<!-- AI: 若驗收失敗如何迅速撤退恢復 (如 Git checkout 局部檔案) -->
+- **熔斷與突發隔離機制 (Circuit Breaker & Incident Offloading)**：單一問題連續嘗試 2 次失敗立即熔斷停步 (2-Strike)，禁止第 3 次盲試；若執行中遇次生非預期錯誤，嚴禁原地展開跨模組深挖探索（杜絕 Token 滾雪球），強制於本 Phase 標記 `[BLOCKED]`、Git 乾淨還原後強制停步，輸出新會話代碼塊由全新 Context 獨立處理。
 
-## 5. 驗收標準
+## 6. 驗收標準 (Acceptance Criteria)
+<!-- AI: 根據任務性質保留適用項目，並自訂至少 2 項具體的客觀驗證步驟 -->
 - [ ] **技術指標**: 若涉及 Content Script 注入，完全符合 Shadow DOM 封裝，無 CSS 洩漏或污染宿主網頁。
 - [ ] **核心規範**: 已確認修改符合 Chrome Extension Manifest V3 規範（包括背景服務 worker 非持續性、訊息傳遞安全）。
 - [ ] **工具鏈合規審查 (Devtools Audit)**:
   - [ ] **探勘階段**: 檔案逾 100 行時已優先調用骨架/雷達工具 (`code_skeleton.py` / `repo_radar.py`)，無直接全檔 dump 行為。
   - [ ] **建置與終端**: 長篇輸出已串接日誌脫水過濾 (`compact_log.py` 或 `rtk`)，無原始長篇 log 污染。
   - [ ] **合規與合約審計**: 若涉及 Manifest 或文檔變更，已執行自動審計腳本 (`audit_manifests.py` / `doc_cross_ref.py`) 確保通過。
+- [ ] **四層 SSOT 閉環 (90/10 分級)**:
+  - [ ] [N/A] 輕量任務豁免 (無結構變動，L1~L3 免比對免回寫)
+  - [ ] 重大架構同步完成 (已精準回寫 Target SSOTs 骨架，未貼入冗餘代碼)
+  - [ ] L4 任務生命週期: 任務結案後已依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`
 - [ ] **除錯清理**: 已確認移除或註解所有測試用的 `console.log()` 與除錯程式碼。
 - [ ] **檔案編碼**: 確認所有修改與新增的檔案皆以 UTF-8 (無 BOM) 編碼保存。
-- [ ] **SSOT 閉環（二選一）**:
-  - [ ] [N/A] 輕量任務豁免（無結構變動，L1~L3 免比對免回寫）
-  - [ ] 重大架構同步完成（已精準回寫 Target SSOTs 骨架，未貼入冗餘代碼）
-- [ ] **L4 任務封存歸檔**: 任務完成後已依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`。
+- [ ] **強制收尾 (Mandatory Closure)**: 回報任務完成或對話結束前，最後一個工具呼叫必須是更新、打勾或收斂本 task 檔案 (嚴格遵守 ≤ 10 行局部替換)。
 - [ ] **插件驗證**: 已在 Chrome 中重新載入插件 (或執行 Vite `npm run build` 後載入 `dist/`)，確認各項功能及背景通訊皆正常無報錯。
 
-## 6. AI 簽到區與會話接力
-> [ ] 我已閱讀並承諾遵守「task-protocol」技能中之「三階段守門門禁 (3-Gate Protocol)」、探勘硬窄化與動態狀態收斂規範。
+## 7. 狀態收斂歷程 (Condensed History)
+<!-- AI: 實體記憶真理源。每完成一個階段或重大操作，追加單行記錄；切換 Session 時以此為唯一歷史索引，嚴禁肉身搬運舊對話。 -->
+- [YYYY-MM-DD] 藍圖建立完成 (Session 1)
+
+## 8. AI 簽到區與會話接力
+> [ ] 我已閱讀並承諾遵守「task-protocol」技能中之 4-Gate Protocol、探勘硬窄化與動態狀態收斂規範。
 > [ ] 探勘逾 100 行代碼時，已強制優先調用骨架/雷達工具提取結構，未直接盲讀原始碼。
 > [ ] 終端建置日誌長篇輸出已串接 `compact_log.py` 或 `rtk` 進行脫水過濾。
 > [ ] 結案前已執行 `audit_manifests.py` / `doc_cross_ref.py` 完成自動化驗證。
 >
 > **Devtools 工具調用紀錄 (工具名稱 / 目標 / 節省效益)**:
-> - `code_skeleton.py`: [範例: 提煉 popup.ts 介面骨架，節省 88% Token]
-> - `compact_log.py`: [範例: 建置錯誤日誌脫水，過濾 120 行堆疊]
-> - `audit_manifests.py`: [範例: Manifest V3 審計通過]
+> - `code_skeleton.py`: [例如: 提煉 popup.ts 介面骨架，節省 88% Token]
+> - `compact_log.py`: [例如: 建置錯誤日誌脫水，過濾 120 行堆疊]
+> - `audit_manifests.py`: [例如: Manifest V3 審計通過]
 >
 > **參與對話 ID 紀錄**:
 > - [YYYY-MM-DD] ID: [當前對話 ID] (初始化)

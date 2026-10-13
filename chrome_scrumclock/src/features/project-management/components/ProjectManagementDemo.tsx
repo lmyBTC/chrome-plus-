@@ -15,7 +15,7 @@ export const ProjectManagementDemo: React.FC = () => {
   const pm = useProjectManagement();
 
   return (
-    <div className="max-w-[1680px] w-full mx-auto px-6 py-6 font-sans">
+    <div className="max-w-[1720px] w-full mx-auto px-3 sm:px-6 py-3 sm:py-6 font-sans">
       <InboxTriageModal
         isOpen={pm.isTriageModalOpen}
         onClose={() => pm.setIsTriageModalOpen(false)}
