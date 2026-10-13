@@ -11,7 +11,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ---
 
 > - [ ] 我已閱讀並承諾遵守「task-protocol」技能中之 4-Gate Multi-Session Protocol (Gate 0 探詢 ➔ Gate 1 藍圖 ➔ Gate 2 原子執行 ➔ Gate 3 知識收斂) 與狀態收斂規範。
-> <!-- AI: 本範本僅在 Gate 0 獲准方向後，方可於 Gate 1 讀取與克隆。建立任務檔必須第一時間執行 git add 納入版本防護；更新任務檔嚴格限制 ≤ 10 行局部替換；建立任務時必須刪除範本內所有 HTML 註解提示。 -->
+> <!-- AI: 本範本僅在 Gate 0 獲准方向後，方可於 Gate 1 讀取與克隆。建立任務檔必須第一時間執行 git add 納入版本防護；更新任務檔局部替換放寬至 ≤ 50~80 行唯一語意區塊，Phase 結尾批次打勾同步；建立任務時必須刪除範本內所有 HTML 註解提示。 -->
 
 ## 1. 目標與驗證指標 (Objective & Metrics)
 <!-- AI: 描述核心挑戰。必須將指令轉化為可客觀物理驗證的成功標準 (如 Exit 0 命令與預期行為)。 -->
@@ -22,17 +22,13 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ## 2. 上下文探索與依賴 (Context Grounding)
 <!-- AI: [Gate 1] 獲准進入規劃後，執行最小化唯讀探索，禁止憑空猜測路徑與盲目全域掃描。 -->
 - **SSOT 規範查閱**：已查閱 `.agents/rules.md` 對應技能規範與對應插件 README。
-- [ ] **全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix / Token Guard - 實證制)**：<!-- AI: 必須填寫各階段工具真實調用實證，嚴禁無證據虛應打勾！逾 100 行代碼/長文檔嚴禁直接 view_file -->
-  | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 脫水效益 / 驗收狀態 |
+- [ ] **全流程工具鏈檢核矩陣 [選填/重大架構適用，常態任務豁免免填]**：
+  | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
-  | **Gate 1: 探勘** | `py 1.devtools/tools/repo_radar.py outline`<br>`py 1.devtools/tools/code_skeleton.py`<br>`py 1.devtools/tools/repo_radar.py section` | `[例如：py 1.devtools/tools/code_skeleton.py <path>]` | `[原始 X 行 ➔ 骨架 Y 行 / 節省 Z% Context]` |
-  | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py`<br>`replace_file_content` | `[填寫終端脫水指令或局部原子編輯實證]` | `[日誌脫水率或 Exit 0]` |
-  | **Gate 3: 驗收** | `py 1.devtools/tools/audit_manifests.py`<br>`py 1.devtools/tools/doc_cross_ref.py` | `[填寫合規與交叉檢查命令結果]` | `[Manifest 合規 / SSOT 零死鏈]` |
-- **Gate 1 探勘持久化快取 (Probe Cache)**：`0.doc_mg/tasks/tmp/tmp_probe_{task_slug}.md`
-  <!-- AI 強制規則：
-       1. Gate 1 探勘工具 (code_skeleton / repo_radar) 產出之骨架或大綱，可落盤至快取路徑或在下方任務中完成行號錨定。
-       2. 後續 Session (Phase 1+) 啟動時，強制優先查閱此快取檔或任務錨定行號，嚴禁重新 view_file 原始長檔案或重新探索！
-       3. 若快取遺失或不存在，優先依賴任務步驟已錨定之行號 (≤30行細讀)；若需重勘強制調用 code_skeleton/repo_radar，嚴禁直接 view_file 原始長檔。 -->
+  | **Gate 1: 探勘** | `py 1.devtools/tools/code_skeleton.py` / `repo_radar.py` | `[例如：code_skeleton 提煉骨架]` | `[節省 Context]` |
+  | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py` / `rtk` | `[終端脫水或原子替換實證]` | `[Exit 0]` |
+  | **Gate 3: 驗收** | `py 1.devtools/tools/audit_manifests.py` / `doc_cross_ref.py` | `[合規與死鏈審計命令結果]` | `[Exit 0]` |
+- **Gate 1 探勘持久化快取 (Probe Cache)**：`[選填]` 0.doc_mg/tasks/tmp/tmp_probe_{task_slug}.md (若無則直接依賴任務步驟錨定)
 - **影響範圍地圖 (Entity Map)**：<!-- AI: 列出本次改動牽連的檔案、組件與模組相依性。嚴禁跨目錄讀取非關插件！ -->
 - **前置條件 (Prerequisites)**：<!-- AI: 開發前必須完成的環境或狀態準備 (如 git status 乾淨、npm install 等)。 -->
 
@@ -64,17 +60,17 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 
 ### Phase 1: [階段名稱 - 核心實作] 狀態：`[待辦]`
 - [ ] 任務 1.1 `[Blocker]`: [前置探勘 / 介面鎖定]
-    - **動作**: <!-- AI: 具體修改哪個檔案或哪個組件。必須落實「行號錨定 (Line Anchor)」：明確標註目標檔案與精確行號區間 (例如: path/to/file L45-L60)，讓新 Session 0 探索直接開工！若大檔 > 100 行，強制調用 py 1.devtools/tools/code_skeleton.py 提煉骨架。 -->
-    - **驗證 (Exit 0 / 客觀指標)**: <!-- AI: 具體可執行的客觀驗證命令或檢查 (如 npm test, lint 或客觀邏輯判定) -->
+    - **動作**: <!-- AI: 具體修改檔案。採語意區塊錨定 (Semantic Block Anchor) 鎖定完整函式/組件 (讀取視窗 80~150 行)。逾 100 行優先提煉骨架。 -->
+    - **驗證 (Exit 0 / 客觀指標)**: <!-- AI: 具體客觀驗證命令 (如 npm test, lint 或客觀邏輯判定) -->
 - [ ] 任務 1.2: [核心邏輯實作與驗證]
-    - **動作**: 執行功能改動，嚴格遵守單次局部替換。
+    - **動作**: 執行功能改動，遵守單次局部替換 (≤ 50~80 行唯一語意區塊)。
     - **驗證 (Exit 0 / 客觀指標)**: 執行建置驗證，長輸出串接 `compact_log.py` 脫水。
 
 > 🏁 **Phase 1 Checkpoint (狀態收斂區)**：
 > - [ ] 階段所有單元驗證已通過 (Exit 0)。
 > - [ ] 狀態標記為 `[已完成]`（若遇突發阻礙則標記 `[BLOCKED]` 並附錯誤快照，撤回髒代碼後停步開新會話）。
 > - [ ] 將關鍵結果以單行緊湊摘要寫入「7. 狀態收斂歷程」。
-> - [ ] 執行強制收尾（更新任務檔為本輪最後工具呼叫，嚴守 ≤ 10 行局部替換，更新即停步零冗餘呼叫）。
+> - [ ] Phase 結尾批次打勾同步任務檔（作為本輪最後工具呼叫，局部替換 ≤ 50~80 行）。
 > - [ ] 遵循「One Phase, One Session」物理隔絕底線：於回覆末尾強制輸出開立新 Session 接力提示詞代碼塊，嚴禁於本會話連續推進下一階段。
 
 <!-- 依需求增加中間 Phase 2, Phase 3... -->
@@ -87,11 +83,10 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
     - **動作**: 依 Target SSOTs 清單回寫 L1~L3 骨架 (若輕量任務則勾選 N/A 豁免)；任務完成後依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`。
     - **驗證 (Exit 0)**: 檔案已正確歸檔，工作區維持乾淨。
 
-## 5. 事前驗屍與降級方案 (Pre-Mortem & Fallback)
-<!-- AI: 假設本任務失敗，逆向推理最可能的事故場景與降級/撤退步驟。 -->
-- **最可能失敗場景 (Pre-Mortem)**：<!-- AI: 描述預測的高風險故障點 (如 CSP 阻擋、Shadow DOM 樣式洩漏、Storage 衝突) 與防範措施 -->
-- **降級/回滾方案 (Blast Radius Control)**：<!-- AI: 若驗收失敗如何迅速撤退恢復 (如 Git checkout 局部檔案) -->
-- **熔斷與突發隔離機制 (Circuit Breaker & Incident Offloading)**：單一問題連續嘗試 2 次失敗立即熔斷停步 (2-Strike)，禁止第 3 次盲試；若執行中遇次生非預期錯誤，嚴禁原地展開跨模組深挖探索（杜絕 Token 滾雪球），強制於本 Phase 標記 `[BLOCKED]`、Git 乾淨還原後強制停步，輸出新會話代碼塊由全新 Context 獨立處理。
+## 5. 事前驗屍與降級方案 (Pre-Mortem & Fallback) [選填/重大架構適用，常態任務豁免]
+- **最可能失敗場景 (Pre-Mortem)**：<!-- AI: 預測高風險故障點 (如 CSP、Shadow DOM 樣式洩漏、Storage 衝突) 與防範措施 -->
+- **降級/回滾方案 (Blast Radius Control)**：<!-- AI: 驗收失敗迅速撤退恢復步驟 (如 Git checkout 局部檔案) -->
+- **熔斷與突發隔離機制**：單一問題重試上限 2 次 (2-Strike 熔斷)；遇次生突發錯誤標記 `[BLOCKED]`、還原髒代碼後強制停步，開立新會話處理。
 
 ## 6. 驗收標準 (Acceptance Criteria)
 <!-- AI: 根據任務性質保留適用項目，並自訂至少 2 項具體的客觀驗證步驟 -->
@@ -107,7 +102,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
   - [ ] L4 任務生命週期: 任務結案後已依封存協議移動至 `0.doc_mg/tasks/archive/[plugin]/`
 - [ ] **除錯清理**: 已確認移除或註解所有測試用的 `console.log()` 與除錯程式碼。
 - [ ] **檔案編碼**: 確認所有修改與新增的檔案皆以 UTF-8 (無 BOM) 編碼保存。
-- [ ] **強制收尾 (Mandatory Closure)**: 回報任務完成或對話結束前，最後一個工具呼叫必須是更新、打勾或收斂本 task 檔案 (嚴格遵守 ≤ 10 行局部替換)。
+- [ ] **強制收尾 (Mandatory Closure)**: 回報任務完成或對話結束前，最後一個工具呼叫必須是更新、打勾或收斂本 task 檔案 (嚴格遵守 ≤ 50~80 行局部替換唯一語意區塊，落實 Phase 結尾批次打勾)。
 - [ ] **插件驗證**: 已在 Chrome 中重新載入插件 (或執行 Vite `npm run build` 後載入 `dist/`)，確認各項功能及背景通訊皆正常無報錯。
 
 ## 7. 狀態收斂歷程 (Condensed History)

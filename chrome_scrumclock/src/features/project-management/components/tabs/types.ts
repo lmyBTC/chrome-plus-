@@ -51,6 +51,7 @@ export interface TaskPoolTabProps {
   onUpdateChecklist?: (id: string, checklist: ChecklistItem[]) => Promise<void>;
   onTriageInbox?: () => Promise<void>;
   isTriagingInbox?: boolean;
+  onReloadMissions?: () => Promise<void>;
 }
 
 export interface InboxTabProps {

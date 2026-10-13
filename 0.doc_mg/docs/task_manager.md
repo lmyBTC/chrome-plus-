@@ -16,9 +16,9 @@
 ### 1.2. Gate 1: 物理勘查與藍圖建檔 (Grounding & Task Blueprint)
 - **前置勘查工具義務 (Tooling-First Grounding)**: 在探勘目標檔案與模組邊界時，**嚴禁直接盲讀原始碼**。凡目標檔案超過 100 行，**必須先調用 `code_skeleton.py` 提取介面骨架**；探索專案拓撲或跨模組符號時，**必須調用 `repo_radar.py`**，杜絕無效上下文膨脹。
 - **探勘持久化快取 (Probe Cache)**: 凡 Gate 1 探勘期間取得之核心關鍵資訊（如目標檔案精確行號、核心函式簽名、資料結構常數、跨插件通訊合約等），**必須以條列方式完整回寫至任務檔第二節「Gate 1 探勘持久化快取 (Probe Cache)」**。此快取為後續執行之唯一真理源，嚴禁後續會話重新全檔探勘。
-- **行號錨定 (Line Anchor)**: 探勘獲取之目標檔案行數或區塊，必須明確標記原始行號（如 `src/service.js:45-80`），後續編輯嚴格鎖定範圍。
+- **語意區塊錨定 (Semantic Block Anchor)**: 探勘獲取之目標檔案函式、組件或介面區塊，以完整語意為單位錨定（細讀視窗放寬至 80~150 行），避免行號漂移與香腸式切片調用。
 - **建檔路徑與命名**: 一律存放在 `0.doc_mg/tasks/` 目錄下，格式為 `task_YYYYMMDD_[plugin]_[topic].md`（例如：`task_20260624_chrome_scrumclock_add_timer.md`）。
-- **乾淨範本初始化 (Clean Template)**: 必須複製 `0.doc_mg/task_template_v2.md` 作為基準，並填入目標、Phase 拆解、驗收標準與 AI 簽到；同時**徹底刪除範本中所有 `<!-- ... -->` 註解說明**，防止無效 Context 膨脹。
+- **乾淨範本初始化 (Clean Template)**: 必須複製 `0.doc_mg/task_template_v2.md` 作為基準，常態任務免除工具矩陣與事前驗屍，並填入目標、Phase 拆解、驗收標準與 AI 簽到；同時**徹底刪除範本中所有 `<!-- ... -->` 註解說明**，防止無效 Context 膨脹。
 - **Target Devtools 前置宣告**: 在任務檔第二節「策略與鎖定檔案」中，除鎖定檔案外，**必須前置鎖定宣告工具鏈清單 (Target Devtools)**（探勘工具、終端脫水工具、結案自動審計工具），並將工具鏈具體排入 Phase 拆解之執行步驟中。
 - **Target SSOTs 前置宣告**: 凡涉及元件、模型或架構變動，必須在建檔時前置列出 L1~L4 回寫清單（L1 專家技能、L2 模組導航、L3 領域規格、L4 任務封存），禁止僅列代碼檔案。
 - **中斷點**: 輸出 `task.md` 綱要後**強制停步**，**嚴禁在此時修改原始碼**，等待開發者下達「開始執行」或核准指令。
@@ -29,7 +29,7 @@
   * 單一會話僅專注於一個 Phase 的原子目標與驗收。
   * 當完成當前 Phase 驗收 (Exit 0) 後，立即更新實體任務檔狀態為 `[已完成]`，並在收斂歷程追加單行記錄。
   * **強制停步交權**：完成 Checkpoint 後，AI 必須強制停止一切後續工具調用，嚴禁在同一會話自動推進下一階段；回覆末尾強制輸出開立新 Session 的接力代碼塊。
-- **物理同步打勾**: 每完成一個原子任務，AI **必須立即**在實體任務檔案中打勾 `[x]`。
+- **Phase 結尾批次打勾同步**: 禁止每執行一步即刻修改任務檔，改為在 Phase 單元驗證通過後於 Checkpoint 收尾時批次打勾同步任務檔（≤ 50~80 行局部替換唯一語意區塊），消除頻繁 I/O 往返與干擾。
 - **狀態收斂 (Dynamic Condensation)**: 當某個 Phase 裡的所有原子任務皆完成，進入下一 Phase 前，AI **必須刪除該 Phase 內已完成的細節**，僅保留狀態為 `[已完成]` 與 Checkpoint 驗證記錄，避免冗長歷史步驟塞滿對話 context。
 - **2-Strike 熔斷與突發隔離協議 (Circuit Breaker & Incident Offloading SOP)**:
   * 單一錯誤或阻礙嘗試上限為 **2 次**。若連續 2 次嘗試未果，立即觸發熔斷停步。
@@ -123,7 +123,7 @@
 | **Gate 1: 模組介面探勘** | 目標檔案 > 100 行時，嚴禁直接盲讀原始碼 | `py 1.devtools/tools/code_skeleton.py <目標檔案>` | `npm run skeleton -- <檔案>`<br/>`node 1.devtools/tools/run_py.js ...` | 掏空實作提煉簽名，節省 85%~95% 源碼 Token |
 | **Gate 1: 藍圖建檔** | 宣告 Target Devtools、Target SSOTs 與快取 | `py 1.devtools/tools/task_cli.py init --plugin <plugin> --title "<標題>"` | 手動複製並徹底刪除註解 | 確保任務結構一致並前置鎖定工具鏈與快取 |
 | **Gate 2: 終端脫水防禦** | 執行建置、打包、型別檢查或測試 | `<command> 2>&1 \| py 1.devtools/tools/compact_log.py` | `rtk <command>` | 過濾冗長堆疊雜訊，節省 70%~95% 終端 log Token |
-| **Gate 2: 程式碼修改** | 超過 100 行之代碼或文檔局部替換 | `replace_file_content`<br/>`multi_replace_file_content` | *(嚴禁無故使用全檔覆寫)* | 避免全量覆寫帶來的重覆上下文膨脹 |
+| **Gate 2: 程式碼修改** | 超過 100 行之代碼或文檔局部替換 (放寬至 ≤ 50~80 行唯一語意區塊) | `replace_file_content`<br/>`multi_replace_file_content` | *(嚴禁無故使用全檔覆寫)* | 避免全量覆寫帶來的重覆上下文膨脹 |
 | **Gate 3: Manifest 審計** | 涉及 Chrome 插件清單與安全設定 | `py 1.devtools/tools/audit_manifests.py` | `npm run audit:manifests` | MV3 與安全合規零遺漏 |
 | **Gate 3: 文檔與契約驗證** | 跨插件契約或文檔交叉引用一致性 | `py 1.devtools/tools/doc_cross_ref.py`<br/>`py 1.devtools/tools/validate_contract.py` | *(手動檢查前必跑)* | 自動檢出死鏈與 JSON Schema 破壞 |
 | **Gate 3: 任務自動歸檔** | 驗收通過且無死鏈後執行歷史收納 | `py 1.devtools/tools/task_cli.py archive --dry-run`<br/>`py 1.devtools/tools/task_cli.py archive` | 手動安全搬移 | 自動歸類至各插件封存目錄，工作區常保純淨 |

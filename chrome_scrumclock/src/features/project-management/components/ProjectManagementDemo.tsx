@@ -215,6 +215,7 @@ export const ProjectManagementDemo: React.FC = () => {
             onUpdateChecklist={pm.handleUpdateChecklist}
             onTriageInbox={pm.handleTriageInbox}
             isTriagingInbox={pm.isTriagingInbox}
+            onReloadMissions={pm.loadData}
           />
         )}
 

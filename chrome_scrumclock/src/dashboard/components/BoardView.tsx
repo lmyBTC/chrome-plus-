@@ -4,6 +4,7 @@ import { storage } from '../../core/chrome/storage';
 import { googleTasksSync } from '../../shared/google/googleTasksSync';
 import { googleSyncService } from '../../services/googleSyncService';
 import { TaskCard } from './TaskCard';
+import { MergeTaskModal } from './MergeTaskModal';
 
 export interface BoardViewProps {
   weeklyMissions: WeeklyMission[];
@@ -178,6 +179,10 @@ export const BoardView: React.FC<BoardViewProps> = ({
   const [showAuthGuideModal, setShowAuthGuideModal] = useState(false);
   const [authErrorMessage, setAuthErrorMessage] = useState('');
   const [idleAuditBanner, setIdleAuditBanner] = useState<string | null>(null);
+  const [mergeModalCandidate, setMergeModalCandidate] = useState<{
+    sourceTask: WeeklyMission;
+    targetTask: WeeklyMission;
+  } | null>(null);
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
@@ -430,6 +435,66 @@ export const BoardView: React.FC<BoardViewProps> = ({
     }
 
     await handleStatusChange(taskId, targetCol);
+  };
+
+  // 拖曳卡片至目標卡片上：開啟合併確認視窗
+  const handleDropOnCard = (sourceTaskId: string, targetTask: WeeklyMission) => {
+    if (sourceTaskId === targetTask.id) return;
+    const sourceTask = weeklyMissions.find((m) => m.id === sourceTaskId);
+    if (!sourceTask) return;
+    setMergeModalCandidate({ sourceTask, targetTask });
+  };
+
+  // 確認執行任務合併
+  const handleConfirmMerge = async (mergedMission: WeeklyMission, sourceTaskId: string) => {
+    try {
+      // 1. 從 storage 讀取所有任務並進行取代與清理
+      const missions = await storage.getWeeklyMissions();
+      const updatedMissions = missions
+        .map((m) => (m.id === mergedMission.id ? mergedMission : m))
+        .filter((m) => m.id !== sourceTaskId);
+      await storage.saveWeeklyMissions(updatedMissions);
+
+      // 2. 同步 TodayLog (若來源卡片在今日日誌中則清理，若目標卡片在今日日誌中則同步標題)
+      try {
+        const todayLog = await storage.getTodayLog();
+        let changed = false;
+        if (todayLog.coreBattles.some((b) => b.missionId === sourceTaskId)) {
+          todayLog.coreBattles = todayLog.coreBattles.filter((b) => b.missionId !== sourceTaskId);
+          changed = true;
+        }
+        if (todayLog.coreBattles.some((b) => b.missionId === mergedMission.id)) {
+          todayLog.coreBattles = todayLog.coreBattles.map((b) =>
+            b.missionId === mergedMission.id ? { ...b, title: mergedMission.text } : b
+          );
+          changed = true;
+        }
+        if (changed) {
+          await storage.saveTodayLog(todayLog);
+        }
+      } catch {
+        // 今日日誌更新失敗不影響主流程
+      }
+
+      // 3. 呼叫外部重整回調 (若有)
+      if (onReloadMissions) {
+        await onReloadMissions();
+      }
+
+      setSyncFeedback({
+        type: 'success',
+        text: `✅ 已成功合併任務「${mergedMission.text}」`,
+      });
+      setTimeout(() => setSyncFeedback(null), 3500);
+      setMergeModalCandidate(null);
+    } catch (err: any) {
+      console.error('合併任務失敗:', err);
+      setSyncFeedback({
+        type: 'error',
+        text: `❌ 合併任務失敗：${err?.message || '未知錯誤'}`,
+      });
+      setTimeout(() => setSyncFeedback(null), 4000);
+    }
   };
 
   return (
@@ -820,6 +885,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                       onSelectTask={onSelectTask}
                       onUpdateTitle={onUpdateTitle}
                       onUpdatePomodoroEstimate={onUpdatePomodoroEstimate}
+                      onDropOnCard={handleDropOnCard}
                     />
                   ))
                 )}
@@ -877,6 +943,7 @@ export const BoardView: React.FC<BoardViewProps> = ({
                   onSelectTask={onSelectTask}
                   onUpdateTitle={onUpdateTitle}
                   onUpdatePomodoroEstimate={onUpdatePomodoroEstimate}
+                  onDropOnCard={handleDropOnCard}
                 />
               ))
             )}
@@ -987,6 +1054,15 @@ export const BoardView: React.FC<BoardViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* 拖曳卡片合併確認 Modal */}
+      <MergeTaskModal
+        isOpen={Boolean(mergeModalCandidate)}
+        sourceTask={mergeModalCandidate?.sourceTask || null}
+        targetTask={mergeModalCandidate?.targetTask || null}
+        onClose={() => setMergeModalCandidate(null)}
+        onConfirmMerge={handleConfirmMerge}
+      />
     </div>
   );
 };

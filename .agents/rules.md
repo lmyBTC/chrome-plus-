@@ -25,15 +25,15 @@
 - **4-Gate 門禁與工具鏈強制條款**：
   - **Gate 0: 零工具方向確認 (Zero-Tool, Zero-Scan)**：嚴禁呼叫任何掃描工具或建立實體檔案，僅提 100~200 字方向與權衡，物理交出控制權等待授權。
   - **Gate 1: 物理勘查與建檔 (Tooling-First Grounding & Target Blueprint)**：
-    - **前置工具勘查與持久化快取**：探勘大型模組（逾 100 行）**強制調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 提煉骨架（未調用骨架嚴禁直接 read 大檔）；檢索專案拓撲或定位全域符號**強制調用** `python 1.devtools/tools/repo_radar.py`；將探索路徑與介面快取於任務檔（Probe Cache），杜絕重複讀取。
-    - **前置宣告 Target Devtools & SSOTs**：於 `task.md` 策略區宣告鎖定工具鏈與四層 SSOT 回寫清單，並於任務拆解排入行號錨定 (Line Anchor) 與事前驗屍 (Pre-Mortem)。
+    - **前置工具勘查與持久化快取**：探勘大型模組（逾 100 行）優先調用 `python 1.devtools/tools/code_skeleton.py <路徑>` 提煉骨架（常態讀取支援 80~150 行完整語意區塊，消除微觀碎片調用）；檢索專案拓撲或定位全域符號可調用 `python 1.devtools/tools/repo_radar.py`；將探索路徑與介面快取於任務檔（Probe Cache），杜絕重複讀取。
+    - **前置宣告 Target Devtools & SSOTs**：於 `task.md` 策略區宣告鎖定工具鏈與四層 SSOT 回寫清單；採「語意區塊錨定」；工具檢核矩陣與事前驗屍常態豁免（僅重大架構變更選填）。
     - **產出 task.md 與接力令**：建檔第一時間執行 `git add <task-file>` 納入版本防護，清理所有註解後**強制停步（嚴禁改碼）**，輸出跨會話接力指令。
   - **Gate 2: 分段原子執行與狀態收斂 (Atomic Execution - One Phase, One Session)**：
-    - **會話隔離與原子推進**：嚴格恪守「One Phase, One Session」物理隔絕底線，單輪專注一個 Phase，每步實體打勾，完成後依動態狀態收斂折疊細節。
-    - **零探索開工與依賴截斷**：以 `task.md` 為唯一真理源，切斷上文探勘歷史依賴；優先依賴任務檔錨定之行號 (≤30 行) 直接開工。
+    - **會話隔離與原子推進**：嚴格恪守「One Phase, One Session」物理隔絕底線，單輪專注一個 Phase。**實施 Phase 結尾批次打勾同步**（代碼修改確認完成後，於會話結束前一次打勾更新任務檔，杜絕頻繁 I/O），完成後依動態狀態收斂折疊細節。
+    - **零探索開工與依賴截斷**：以 `task.md` 為唯一真理源，切斷上文探勘歷史依賴；優先依賴任務檔語意區塊錨定直接開工。
     - **終端脫水防禦義務**：執行建置、編譯、打包或測試等長輸出命令時，**強制串接** `python 1.devtools/tools/compact_log.py` 或 `rtk`，嚴禁原始長篇 log 污染對話。
     - **2-Strike 熔斷機制**：單一問題最多修復 2 次，失敗即熔斷停步，乾淨復原後立案隔離，嚴禁同輪盲試。
-    - **任務檔防護五大戒律**：局部替換 `replace_file_content` ≤ 10 行、嚴禁 workspace 傳遞 `ArtifactMetadata`、更新任務檔為最後工具呼叫、完成後強制停步並輸出新會話接力代碼塊。
+    - **任務檔防護五大戒律**：局部替換 `replace_file_content` 放寬至 ≤ 50~80 行（唯一語意區塊替換，杜絕微片段碎片化）、嚴禁 workspace 傳遞 `ArtifactMetadata`、Phase 結尾批次更新任務檔為最後工具呼叫、完成後強制停步並輸出新會話接力代碼塊。
   - **Gate 3: 知識收斂與自動化審計 (Knowledge Consolidation & Automated Audit)**：
     - **自動化工具審計**：在結案前，**強制調用自動化審計工具**（涉及 Manifest 跑 `python 1.devtools/tools/audit_manifests.py`；涉及文檔/架構跑 `python 1.devtools/tools/doc_cross_ref.py`），驗證 Exit 0。
     - **四層 SSOT 閉環與封存**：90% 輕量任務全面豁免 L1~L3 閉環；10% 重大變更執行純骨架回寫；結案後移動封存至 `0.doc_mg/tasks/archive/[plugin]/`。
@@ -49,8 +49,8 @@
 ---
 
 ## 2. Token 優化與開發工程 (Efficiency & Token Saving)
-- **局部讀寫與多點修改**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file`；單點替換用 `replace_file_content`，同檔多處修改強制調用 `multi_replace_file_content`。
-- **武器庫強制鏈條（骨架提煉）**：未知或大型模組（逾 100 行）探勘嚴禁直接盲讀原始碼，**強制優先調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo-radar` 提取大綱骨架（單次局部讀取限制 ≤ 30 行），掏空實作省下 90% 上下文。
+- **局部讀寫與多點修改**：檔案逾 100 行嚴禁全檔讀取，採 `grep_search` + 區段 `view_file`（讀取視窗放寬至 80~150 行語意區塊）；單點替換用 `replace_file_content`（放寬至 ≤ 50~80 行唯一語意區塊），同檔多處修改強制調用 `multi_replace_file_content`。
+- **武器庫強制鏈條（骨架提煉）**：未知或大型模組（逾 100 行）探勘嚴禁直接盲讀原始碼，**優先調用** `python 1.devtools/tools/code_skeleton.py <路徑>` 或 `repo-radar` 提取大綱骨架（局部讀取放寬至 80~150 行完整語意區塊，消除過度微觀碎片），掏空實作省下 90% 上下文。
 - **終端壓縮與脫水**：終端高輸出指令優先包裝 `rtk`，編譯/測試長堆疊串接 `python 1.devtools/tools/compact_log.py` 脫水。
 - **會話重置**：Gate 1 完成後建議開新視窗傳入接力令，釋放 70%~90% 上下文負擔。
 - *完整規範詳見*：`.agents/skills/token-saver/SKILL.md` 與 `0.doc_mg/docs/token_optimization_guide.md`。

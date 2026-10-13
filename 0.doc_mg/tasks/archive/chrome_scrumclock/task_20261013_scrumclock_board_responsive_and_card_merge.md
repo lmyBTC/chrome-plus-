@@ -1,7 +1,7 @@
 ---
 title: "ScrumClock 看板筆電響應式 UI/UX 體驗與拖曳卡片合併功能"
 plugin: "chrome_scrumclock"
-status: "規劃中"
+status: "已結案"
 created: "2026-10-13"
 deadline: "2026-10-14"
 ---
@@ -24,16 +24,15 @@ deadline: "2026-10-14"
 - `chrome_scrumclock/src/features/project-management/components/tabs/TaskPoolTab.tsx`
 
 ### 鎖定工具鏈 (Target Devtools)
-- [ ] 探勘骨架/雷達: `py 1.devtools/tools/code_skeleton.py <目標檔案>` 或 `py 1.devtools/tools/repo_radar.py`
-- [ ] 終端日誌脫水: `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` (或 `rtk`)
-- [ ] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
+- [x] 探勘骨架/雷達: `py 1.devtools/tools/code_skeleton.py <目標檔案>` 或 `py 1.devtools/tools/repo_radar.py`
+- [x] 終端日誌脫水: `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` (或 `rtk`)
+- [x] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
-- [ ] [N/A] 輕量任務豁免 (無元件增刪、無 Storage Schema 改動、無跨插件通訊變更)
-- [ ] L1 專家技能：`.agents/skills/scrumclock-core/SKILL.md` (登錄 MergeTaskModal 元件職責)
-- [ ] L2 插件導航：`chrome_scrumclock/SCRUMCLOCK_README.md` (更新看板元件清單與交互規格)
-- [ ] L3 業務規格：`chrome_scrumclock/docs/kanban-spec.md` (若無獨立規格則併入 README)
-- [ ] L4 任務生命週期：`0.doc_mg/tasks/archive/chrome_scrumclock/` (結案後移動封存歸檔，必選)
+- [x] L1 專家技能：`.agents/skills/scrumclock-core/SKILL.md` (登錄 MergeTaskModal 元件職責)
+- [x] L2 插件導航：`chrome_scrumclock/SCRUMCLOCK_README.md` (更新看板元件清單與交互規格)
+- [x] L3 業務規格：`chrome_scrumclock/docs/kanban-spec.md` (若無獨立規格則併入 README)
+- [x] L4 任務生命週期：`0.doc_mg/tasks/archive/chrome_scrumclock/` (結案後移動封存歸檔，必選)
 
 ## 3. 任務拆解
 
@@ -48,29 +47,29 @@ deadline: "2026-10-14"
     - [x] [外層調校] 檢視 `ProjectManagementDemo.tsx` 與 `TaskPoolTab.tsx` 外層 padding/gap，在 `< 1440px` 寬度釋放更多有效視野空間。
     - [x] [終端脫水] 執行 `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` 驗證 TypeScript 與樣式編譯無誤。
 
-### Phase 2: 拖曳卡片合併交互與 MergeTaskModal 實作 狀態：`[待辦]`
-- [ ] 任務 2.1: TaskCard 拖曳放置目標辨識 (Drag Over / Drop on Card)
-    - [ ] [拖曳監聽] 在 `TaskCard.tsx` 新增 `onDragOver`, `onDragEnter`, `onDragLeave`, `onDropOnCard` 事件回調與 hover 高亮外框反饋（例如藍紫色外發光與「釋放以合併」微提示）。
-    - [ ] [冒泡防護] 在卡片 drop 時執行 `e.stopPropagation()`，防止被外層看板欄位當成跨欄搬移。
-- [ ] 任務 2.2: 建立 MergeTaskModal 元件與合併預設邏輯
-    - [ ] [元件實作] 建立 `MergeTaskModal.tsx`，接收 `sourceTask` (拖曳卡片 A) 與 `targetTask` (目標卡片 B)。
-    - [ ] [預設資料組裝]
+### Phase 2: 拖曳卡片合併交互與 MergeTaskModal 實作 狀態：`[已完成]`
+- [x] 任務 2.1: TaskCard 拖曳放置目標辨識 (Drag Over / Drop on Card)
+    - [x] [拖曳監聽] 在 `TaskCard.tsx` 新增 `onDragOver`, `onDragEnter`, `onDragLeave`, `onDropOnCard` 事件回調與 hover 高亮外框反饋（例如藍紫色外發光與「釋放以合併」微提示）。
+    - [x] [冒泡防護] 在卡片 drop 時執行 `e.stopPropagation()`，防止被外層看板欄位當成跨欄搬移。
+- [x] 任務 2.2: 建立 MergeTaskModal 元件與合併預設邏輯
+    - [x] [元件實作] 建立 `MergeTaskModal.tsx`，接收 `sourceTask` (拖曳卡片 A) 與 `targetTask` (目標卡片 B)。
+    - [x] [預設資料組裝]
         - 標題：預設保留目標卡片標題，並提供快捷按鈕拼接雙方標題。
         - 內容筆記：自動合併兩者 notes，清晰分隔標記。
         - 預估與已耗費番茄鐘：累加 `estimatedPomodoros` 與 `spentPomodoros`。
         - 檢查清單 (Checklist)：自動匯整雙方 checklist 項目。
-    - [ ] [確認與執行] 使用者可直接編輯微調，點擊「確認合併」後更新目標任務並刪除來源任務。
-- [ ] 任務 2.3: 看板狀態與資料流串接
-    - [ ] [整合] 在 `BoardView.tsx` / `TaskPoolTab.tsx` 整合 `MergeTaskModal`，串接 `onUpdateTitle`, `onUpdateNotes`, `onDeleteTask` 等既有 API。
-    - [ ] [終端脫水] 執行 `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` 驗證建置。
+    - [x] [確認與執行] 使用者可直接編輯微調，點擊「確認合併」後更新目標任務並刪除來源任務。
+- [x] 任務 2.3: 看板狀態與資料流串接
+    - [x] [整合] 在 `BoardView.tsx` / `TaskPoolTab.tsx` 整合 `MergeTaskModal`，串接 `onUpdateTitle`, `onUpdateNotes`, `onDeleteTask` 等既有 API。
+    - [x] [終端脫水] 執行 `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` 驗證建置。
 
-### Phase Final: 自動化審計與 SSOT 閉環 狀態：`[待辦]`
-- [ ] 任務 F.1: 自動化工具合規審計
-    - [ ] [Manifest 審計] 執行 `py 1.devtools/tools/audit_manifests.py` 驗證權限與 CSP 合規。
-    - [ ] [文檔交叉引用] 執行 `py 1.devtools/tools/doc_cross_ref.py` 驗證 SSOT 鏈條無死連結。
-- [ ] 任務 F.2: SSOT 實體回寫與任務歸檔
-    - [ ] [SSOT 回寫] 依 Target SSOTs 回寫 L1 專家技能與 L2 插件導航。
-    - [ ] [實體歸檔] 任務完成後依封存協議移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
+### Phase Final: 自動化審計與 SSOT 閉環 狀態：`[已完成]`
+- [x] 任務 F.1: 自動化工具合規審計
+    - [x] [Manifest 審計] 執行 `py 1.devtools/tools/audit_manifests.py` 驗證權限與 CSP 合規。
+    - [x] [文檔交叉引用] 執行 `py 1.devtools/tools/doc_cross_ref.py` 驗證 SSOT 鏈條無死連結。
+- [x] 任務 F.2: SSOT 實體回寫與任務歸檔
+    - [x] [SSOT 回寫] 依 Target SSOTs 回寫 L1 專家技能與 L2 插件導航。
+    - [x] [實體歸檔] 任務完成後依封存協議移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/`。
 
 ## 4. 影響評估
 - **權限與 API**: 本次為純前端 UI/UX 排版與現有任務狀態更新整合，不涉及額外 Chrome 權限變更。
@@ -82,37 +81,40 @@ deadline: "2026-10-14"
     - [x] 看板預設重點聚焦展開 **Backlog (`next-action`)** 與 **Doing (`in-progress`)** 兩大主力甬道。
     - [x] **Idea (`inbox`/`someday`)** 與 **Done (`done`)** 甬道支援一鍵折疊/收合為極簡縱向欄條，並可隨時點擊展開。
 - [x] **筆電螢幕適應**: 在 1280px ~ 1440px 視窗寬度下，主力甬道擁有充足寬度，即便展開所有欄位亦具備橫向平滑捲動，卡片文字排版呼吸感良好。
-- [ ] **拖曳合併體驗**:
-    - [ ] 將卡片 A 拖曳至卡片 B 上時，目標卡片有明確的高亮視覺提示。
-    - [ ] 釋放拖曳後正確彈出合併確認視窗，不會誤觸欄位搬移。
-    - [ ] 合併視窗預設彙整兩者的標題、筆記、番茄鐘與清單，可自由編輯。
-    - [ ] 點擊「確認合併」後，目標卡片更新為合併內容，來源卡片正確被清理。
+- [x] **拖曳合併體驗**:
+    - [x] 將卡片 A 拖曳至卡片 B 上時，目標卡片有明確的高亮視覺提示。
+    - [x] 釋放拖曳後正確彈出合併確認視窗，不會誤觸欄位搬移。
+    - [x] 合併視窗預設彙整兩者的標題、筆記、番茄鐘與清單，可自由編輯。
+    - [x] 點擊「確認合併」後，目標卡片更新為合併內容，來源卡片正確被清理。
 - [x] **核心規範**: 符合 Chrome Extension Manifest V3 規範，無錯誤。
-- [ ] **工具鏈合規審查 (Devtools Audit)**:
+- [x] **工具鏈合規審查 (Devtools Audit)**:
     - [x] 探勘階段已優先調用骨架工具提煉結構。
     - [x] 建置輸出已串接日誌脫水過濾 (`compact_log.py`)。
-    - [ ] 結案前已執行 `audit_manifests.py` / `doc_cross_ref.py` 自動驗證。
-- [ ] **除錯清理**: 移除所有除錯用的 `console.log()`。
-- [ ] **檔案編碼**: UTF-8 (無 BOM) 編碼。
-- [ ] **SSOT 閉環**: L1/L2 回寫完成，並移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/` 結案。
+    - [x] 結案前已執行 `audit_manifests.py` / `doc_cross_ref.py` 自動驗證。
+- [x] **除錯清理**: 移除所有除錯用的 `console.log()`。
+- [x] **檔案編碼**: UTF-8 (無 BOM) 編碼。
+- [x] **SSOT 閉環**: L1/L2 回寫完成，並移動至 `0.doc_mg/tasks/archive/chrome_scrumclock/` 結案。
 
 ## 6. AI 簽到區與會話接力
 > [x] 我已閱讀並承諾遵守「task-protocol」技能中之「三階段守門門禁 (3-Gate Protocol)」、探勘硬窄化與動態狀態收斂規範。
 > [x] 探勘逾 100 行代碼時，已強制優先調用骨架/雷達工具提取結構，未直接盲讀原始碼。
 > [x] 終端建置日誌長篇輸出已串接 `compact_log.py` 或 `rtk` 進行脫水過濾。
-> [ ] 結案前已執行 `audit_manifests.py` / `doc_cross_ref.py` 完成自動化驗證。
+> [x] 結案前已執行 `audit_manifests.py` / `doc_cross_ref.py` 完成自動化驗證。
 >
 > **Devtools 工具調用紀錄 (工具名稱 / 目標 / 節省效益)**:
 > - `code_skeleton.py`: 提煉 BoardView.tsx (858行➔40行, -95%)、TaskCard.tsx (373行➔17行, -95%)、TaskPoolTab.tsx (848行➔6行, -99%)、ProjectManagementDemo.tsx (249行➔34行, -86%)
 > - `compact_log.py`: 建置日誌脫水 (3140 字元 ➔ 80 字元, -97.5%)
-> - `audit_manifests.py`: 預備用於結案合規審計
+> - `audit_manifests.py`: 結案合規審計 (Exit 0, 全部合規)
+> - `doc_cross_ref.py`: 文檔交叉引用驗證 (Exit 0)
 >
 > **參與對話 ID 紀錄**:
 > - 2026-10-13 ID: aedf7a44-e836-43bd-a28b-a632100d98dc (初始化 Gate 1 藍圖並納入甬道聚焦需求)
 > - 2026-10-13 ID: 442bc1bc-b1eb-4ef8-a0d7-0b667a9b8bbd (執行 Phase 1 看板甬道聚焦與筆電自適應排版)
->
-> **跨會話接力指令 (Session Handover)**:
-> 若需開新視窗以徹底釋放 Gate 1 探勘佔用之 Context（節省 70%~90% 輸入 Token），請複製以下指令至新對話：
-> ```markdown
-> 載入 ./0.doc_mg/tasks/task_20261013_scrumclock_board_responsive_and_card_merge.md，開始執行 Phase 2
-> ```
+> - 2026-10-13 ID: 424c9f5c-e65f-44fc-823c-0656cb7be36c (執行 Phase 2 拖曳卡片合併交互與 MergeTaskModal 實作)
+> - 2026-10-13 ID: 2ad4e81a-b897-40a3-9b35-814d730166cc (執行 Phase Final 自動化審計驗證)
+> - 2026-10-13 ID: 713d1c13-05c1-459b-99ec-5f1ad6568434 (執行 Phase Final SSOT 閉環回寫、打勾結案與封存歸檔)
+
+## 7. 狀態收斂歷程
+- [2026-10-13] [Phase 1] 完成看板甬道聚焦收折 (Backlog & Doing) 與筆電自適應排版 (Session 442bc1bc)
+- [2026-10-13] [Phase 2] 實作 TaskCard 拖曳合併交互與 MergeTaskModal 任務資料匯整 (Session 424c9f5c)
+- [2026-10-13] [Phase Final] 完成自動化審計、L1/L2 SSOT 回寫、全項目驗收打勾並移動封存歸檔結案 (Session 713d1c13)

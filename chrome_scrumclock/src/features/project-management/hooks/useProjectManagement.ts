@@ -766,5 +766,6 @@ export const useProjectManagement = () => {
     handleBatchPushToFocus,
     handleBatchUpdateStatus,
     handleBatchDelete,
+    loadData,
   };
 };

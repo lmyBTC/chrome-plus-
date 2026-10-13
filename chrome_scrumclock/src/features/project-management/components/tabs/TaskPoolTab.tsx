@@ -39,6 +39,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
   onUpdateChecklist,
   onTriageInbox,
   isTriagingInbox,
+  onReloadMissions,
 }) => {
   const [viewMode, setViewMode] = useState<'kanban' | 'table'>(() => {
     try {
@@ -355,6 +356,7 @@ export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
           isGoogleSyncing={isGoogleSyncing}
           onTriageInbox={onTriageInbox}
           isTriagingInbox={isTriagingInbox}
+          onReloadMissions={onReloadMissions}
         />
       ) : (
         <>

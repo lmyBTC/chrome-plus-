@@ -12,6 +12,7 @@ export interface TaskCardProps {
   onUpdateTitle?: (id: string, title: string) => Promise<void>;
   onUpdatePomodoroEstimate?: (id: string, estimate: number) => Promise<void>;
   onDragStart?: (e: React.DragEvent, task: WeeklyMission) => void;
+  onDropOnCard?: (sourceTaskId: string, targetTask: WeeklyMission) => void;
 }
 
 export const TaskCard: React.FC<TaskCardProps> = ({
@@ -25,14 +26,41 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onUpdateTitle,
   onUpdatePomodoroEstimate,
   onDragStart,
+  onDropOnCard,
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(task.text);
+  const [isDragTarget, setIsDragTarget] = useState(false);
 
   const handleDragStart = (e: React.DragEvent) => {
     e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
     onDragStart?.(e, task);
+  };
+
+  const handleCardDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const handleCardDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragTarget(true);
+  };
+
+  const handleCardDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragTarget(false);
+  };
+
+  const handleCardDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation(); // 阻止事件冒泡到外層看板欄位 (防止誤觸跨欄搬移)
+    setIsDragTarget(false);
+    const sourceTaskId = e.dataTransfer.getData('text/plain');
+    if (sourceTaskId && sourceTaskId !== task.id) {
+      onDropOnCard?.(sourceTaskId, task);
+    }
   };
 
   const handleSaveTitle = async () => {
@@ -74,15 +102,31 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       draggable
       onDragStart={handleDragStart}
+      onDragOver={handleCardDragOver}
+      onDragEnter={handleCardDragEnter}
+      onDragLeave={handleCardDragLeave}
+      onDrop={handleCardDrop}
       onClick={() => onSelectTask?.(task.id)}
       className={`group relative p-3.5 bg-dark-card hover:bg-dark-hover/90 border rounded-xl shadow-xs transition-all duration-200 hover:shadow-md hover:-translate-y-0.5 cursor-grab active:cursor-grabbing select-none ${
-        isFocused
+        isDragTarget
+          ? 'border-indigo-400 ring-2 ring-indigo-500/80 bg-indigo-950/40 shadow-lg shadow-indigo-950/50 scale-[1.01]'
+          : isFocused
           ? 'border-indigo-500/70 ring-1 ring-indigo-500/40 bg-gradient-to-br from-indigo-950/25 via-dark-card to-dark-card shadow-indigo-950/20'
           : task.isCompleted || currentStatus === 'done'
           ? 'border-dark-border-subtle/50 opacity-65 hover:opacity-90 bg-dark-surface/40'
           : 'border-dark-border-subtle/80 hover:border-dark-border-default/90'
       }`}
     >
+      {/* 拖曳合併高亮提示層 (pointer-events-none 避免干擾拖曳事件) */}
+      {isDragTarget && (
+        <div className="absolute inset-0 bg-indigo-950/85 border-2 border-indigo-400 border-dashed rounded-xl flex items-center justify-center z-30 backdrop-blur-xs pointer-events-none transition-all duration-150 animate-in fade-in">
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-600 text-white text-xs font-bold rounded-lg shadow-md">
+            <span className="text-sm">🔀</span>
+            <span>釋放以合併至此任務</span>
+          </div>
+        </div>
+      )}
+
       {/* 頂部 Meta 列：優先級標籤、情境/來源標籤、番茄鐘計數 */}
       <div className="flex items-center justify-between gap-1.5 mb-2.5 text-xs">
         <div className="flex items-center gap-1.5 flex-wrap">

@@ -12,8 +12,8 @@
   * **AI 對話框互動（隨點即開）**：AI 在聊天對話框向使用者推薦或呈報檔案時，嚴格遵守 IDE 介面規範一律提供 `file:///` 格式的可點擊跳轉連結，確保使用者在對話框中隨點即開。
 * **四階段守門門禁 (4-Gate Protocol)**：
   * **Gate 0 (Zero-Tool, Zero-Scan)**：新需求**嚴禁呼叫任何工具或掃描建檔**，僅提 100~200 字方向與權衡，停步交出控制權等待授權。
-  * **Gate 1 (Grounding & Blueprint)**：精準唯讀掃描（逾 100 行強制提煉骨架），於 `0.doc_mg/tasks/` 建立任務檔（納入工具調用矩陣實證、探勘持久化快取、行號錨定與事前驗屍），第一時間執行 `git add` 納入防護並輸出「新會話接力指令」，**嚴禁修改原始碼**。
-  * **Gate 2 (Atomic Execution - One Phase, One Session)**：單輪專注一個 Phase 原子執行，每回合實體打勾同步與動態收斂；嚴格落實「One Phase, One Session」物理隔絕與 2-Strike 熔斷機制；嚴守任務檔防護五大戒律（局部替換 ≤ 10 行、禁止 workspace 傳遞 `ArtifactMetadata`、更新任務檔為最後工具呼叫）；嚴格切斷對上文探勘歷史依賴（以 `task.md` 為唯一真理源）。
+  * **Gate 1 (Grounding & Blueprint)**：精準唯讀掃描（逾 100 行優先提煉骨架，讀取視窗放寬至 80~150 行），於 `0.doc_mg/tasks/` 建立任務檔（常態任務免除工具矩陣與事前驗屍，重大架構選填；採語意區塊錨定），第一時間執行 `git add` 納入防護並輸出「新會話接力指令」，**嚴禁修改原始碼**。
+  * **Gate 2 (Atomic Execution - One Phase, One Session)**：單輪專注一個 Phase 原子執行；嚴格落實「One Phase, One Session」物理隔絕與 2-Strike 熔斷機制；嚴守任務檔防護規範（局部替換放寬至 ≤ 50~80 行唯一語意區塊、禁止 workspace 傳遞 `ArtifactMetadata`、Phase 結尾批次打勾同步任務檔且為最後工具呼叫，消除頻繁 I/O）；嚴格切斷對上文探勘歷史依賴（以 `task.md` 為唯一真理源）。
   * **Gate 3 (Knowledge Consolidation & Automated Audit)**：所有 Phase 完成後調用自動化審計工具（`audit_manifests.py`、`doc_cross_ref.py`）確保 Exit 0；落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）；實體任務檔打勾結案並移動歸檔至 `0.doc_mg/tasks/archive/`。
 * **多插件隔離與邊界防禦**：開發指定插件時**嚴禁跨目錄讀取或檢索其他插件源碼**；各插件儲存與依賴 100% 獨立，跨插件協同僅透過黑盒契約（參見 `0.doc_mg/docs/cross_plugin_contract.md`）。
 * **SSOT 文檔閉環（90/10 分級原則）**：90% 輕量任務（單純樣式、文字、局部 Bugfix）**全面豁免閉環**；僅在涉及「新增/刪除元件檔案、修改 Storage 模型、改動跨插件通訊接口」等重大架構變更時，結案前才回寫專屬 SSOT 文檔（如 `[PLUGIN]_README.md` 與對應專家技能 `SKILL.md`）。

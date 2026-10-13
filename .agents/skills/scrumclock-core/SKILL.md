@@ -19,7 +19,7 @@ ssot_dependencies: ["chrome_scrumclock/SCRUMCLOCK_README.md", "chrome_scrumclock
 * `src/background.ts`: Service Worker 背景路由、Alarms、跨插件分流
 * `src/entries/sidebar/`: 側邊欄工作區 (`ToolboxHub` 工具箱 / `AIAssistantView` PK+ 助理)
 * `src/entries/newtab/`: 新分頁儀表板視圖
-* `src/dashboard/components/BoardView.tsx`: 極簡 4 欄 GTD 敏捷看板（整合 Google Tasks 一鍵雙向同步、一鍵 Inbox Zero 與語意 WIP 防禦）
+* `src/dashboard/components/BoardView.tsx`: 極簡 4 欄 GTD 敏捷看板（整合 Google Tasks 雙向同步、Backlog/Doing 甬道聚焦收折、卡片拖曳合併 `MergeTaskModal.tsx` 與語意 WIP 防禦）
 * `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎（饑餓偵測、Few-shot 錨定路線、輸出退化正則審查、結構化 Fallback）
 * `src/features/project-management/services/`: 專案管理 AI 服務層 (`taskAIEngine.ts` 語意釐清、原子拆解與心流衝突審查 / `kanbanAuditor.ts` 看板健康度與閒置巡檢)
 * `src/features/scrumclock/components/SprintPomodoro.tsx`: 番茄鐘 25 分鐘衝刺計時面板

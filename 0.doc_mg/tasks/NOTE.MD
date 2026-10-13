@@ -9,4 +9,7 @@
 update task manager template & sop 
 
 
-doc裡面的文件需要分類管理、將專案工作區使用的檔案 區分於 插件開發代碼管理文件features作區別
+doc裡面的文件需要分類管理、將專案工作區開發使用的檔案 區分於 插件管理文件features作區別
+
+
+自從實作0.doc_mg\tasks\archive\global\task_20261010_global_token_optimization_bundle.md 之後 agent的回復速度就容易偶爾又慢又卡，如何從具體的數據中分析 找出卡住的原因與流程，判斷是否需要優化或鬆綁
