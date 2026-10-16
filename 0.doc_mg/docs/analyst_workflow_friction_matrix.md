@@ -1,3 +1,8 @@
+<!-- cross-ref:auto ─────────────────────
+  本檔: analyst_workflow_friction_matrix.md
+  交叉引用:
+    - ./cross_plugin_contract.md  [CREATE_TASK]
+───────────────────── cross-ref:end -->
 # 投資研究員 (Analyst) 投研工作流摩擦力診斷矩陣 (Analyst Workflow Friction Matrix)
 
 > **文件狀態**：正式生效  

@@ -1,4 +1,5 @@
 import React from 'react';
+import { GoogleAccountButton } from '../../components/GoogleAccountButton';
 
 export type ToolView = 'scrumclock' | 'projects' | 'bookmarks' | 'analytics' | 'toolbox' | 'activity-monitor' | 'finance' | 'gemini' | 'settings' | 'docs';
 
@@ -22,10 +23,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentView, onViewChange }) =
 
   return (
     <aside className="w-64 bg-dark-surface text-dark-secondary min-h-screen flex flex-col border-r border-dark-border-subtle">
-      <div className="p-6">
+      <div className="px-6 py-5 flex items-center justify-between">
         <h1 className="text-xl font-bold text-dark-primary tracking-wider flex items-center gap-2">
           <span>🛠️</span> PK+
         </h1>
+        <GoogleAccountButton onNavigateSettings={() => onViewChange('settings')} />
       </div>
       
       <nav className="flex-1 px-4 space-y-2">

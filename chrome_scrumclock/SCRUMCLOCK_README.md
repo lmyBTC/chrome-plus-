@@ -51,10 +51,10 @@
 | **Chrome 本地儲存** | `src/core/chrome/storage.ts` | 封裝 `chrome.storage.local`，提供型別安全的非同步讀寫快取 |
 | **雲端雙向同步** | `src/core/api/sync.ts`<br>`src/core/api/offlineQueue.ts` | 離線佇列、網路恢復自動重試、雲端資料雙向比對 |
 | **任務適配器介面** | `src/core/api/ITaskAdapter.ts`<br>`src/core/api/adapters/GoogleTaskAdapter.ts` | Google Tasks、Notion Webhook 介面抽換與適配 |
-| **全域版面框架** | `src/core/layout/MainLayout.tsx`<br>`src/core/layout/Sidebar.tsx`<br>`src/core/layout/CommandPalette.tsx` | 應用程式頂部導航、側邊選單、鍵盤快捷命令列 (`Ctrl+P` / `Cmd+K`) |
+| **全域版面框架** | `src/core/layout/MainLayout.tsx`<br>`src/core/layout/Sidebar.tsx`<br>`src/core/layout/CommandPalette.tsx` | 應用程式頂部導航、側邊選單（頂部 Logo 旁整合 `GoogleAccountButton` 快速登入/狀態指示與下拉選單）、鍵盤快捷命令列 (`Ctrl+P` / `Cmd+K`) |
 | **AI 引擎核心** | `src/utils/ai-helper.ts`<br>`src/utils/ai-prompts.ts`<br>`src/utils/ai-schemas.ts` | Chrome 內建 Gemini Nano Prompt API、外接 Gemini API Key 調用、Prompt 系統提示詞、JSON Action 解析規範 |
 | **文字與標籤解析** | `src/utils/markdown.tsx`<br>`src/utils/task-parser.ts` | 輕量 Markdown 渲染元件、文字自然語言任務時間解析 |
-| **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx` | 全域系統設定視窗（雲端雙向同步控制、跨插件 Ping/Pong 健檢與錯誤代碼觀測）、系統安裝指引與除錯手冊（支援分頁導向與自我排錯指南） |
+| **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx`<br>`src/components/GoogleAccountButton.tsx` | 全域系統設定視窗（雲端雙向同步控制、跨插件 Ping/Pong 健檢與錯誤代碼觀測）、系統安裝指引與除錯手冊、Google 帳號狀態按鈕與下拉選單元件（支援即時 OAuth 授權與登出） |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
 | **Google 原生生態整合** | `src/shared/google/` (`googleAuthClient.ts`, `googleTasksService.ts`, `googleCalendarService.ts`, `googleTasksSync.ts`) | `chrome.identity.launchWebAuthFlow` 動態 OAuth2 授權架構（支援全域設定動態 Client ID、一鍵複製 Redirect URI 與免重編譯跨帳號切換）、Google Tasks 雙向智慧同步引擎、Google Calendar 時間箱預約與番茄鐘實績回填 |
 | **Google 雙軌生態同步 (GAS Webhook)** | `src/services/googleSyncService.ts` | 零審核雙軌架構（GAS Web App 直連與 Local Hub 退避）：支援日終戰報 Sheets 覆蓋寫入 (`DailyLogs`)、看板焦點卡片 Tasks 雙向推播與行動端 Google Tasks 逆向匯入 Inbox（經由 TaskAIEngine 語意強化） |

@@ -1,3 +1,8 @@
+<!-- cross-ref:auto ─────────────────────
+  本檔: cross_plugin_contract.md
+  交叉引用:
+    - ./analyst_workflow_friction_matrix.md  [CREATE_TASK]
+───────────────────── cross-ref:end -->
 # Chrome 多插件工作區：跨插件通訊解耦與防禦性架構規範 (Cross-Plugin Decoupling & Defensive Contract)
 
 > **核心願景**：各 Chrome 擴充功能保持「100% 獨立編譯、獨立發布、自治運行」。跨插件合作僅透過原生直連純資料通訊協議 (Pure Data Contract)，任一插件的單獨重構、新增欄位或版本不一致，絕不牽連其他插件的正常運作。

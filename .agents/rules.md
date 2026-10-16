@@ -36,14 +36,14 @@
     - **任務檔防護五大戒律**：局部替換 `replace_file_content` 放寬至 ≤ 50~80 行（唯一語意區塊替換，杜絕微片段碎片化）、嚴禁 workspace 傳遞 `ArtifactMetadata`、Phase 結尾批次更新任務檔為最後工具呼叫、完成後強制停步並輸出新會話接力代碼塊。
   - **Gate 3: 知識收斂與自動化審計 (Knowledge Consolidation & Automated Audit)**：
     - **自動化工具審計**：在結案前，**強制調用自動化審計工具**（涉及 Manifest 跑 `python 1.devtools/tools/audit_manifests.py`；涉及文檔/架構跑 `python 1.devtools/tools/doc_cross_ref.py`），驗證 Exit 0。
-    - **四層 SSOT 閉環與封存**：90% 輕量任務全面豁免 L1~L3 閉環；10% 重大變更執行純骨架回寫；結案後移動封存至 `0.doc_mg/tasks/archive/[plugin]/`。
+    - **四層 SSOT 閉環與雙層封存**：90% 輕量任務全面豁免 L1~L3 閉環；10% 重大變更執行純骨架回寫；結案後移動封存至 `0.doc_mg/tasks/archive/[plugin]/`，落實雙層滾動治理（結案 ≤ 30 天平鋪於插件目錄根層，> 30 天歷史任務下沉歸納至各插件之 `history/` 子目錄）。
 - **四層 SSOT 閉環（90/10 分級與瘦身守則）**：
   - **90% 輕量任務（豁免閉環）**：單純樣式、文字、局部除錯重構，**L1~L3 免讀寫直接跳過**，僅需 L4 歸檔，零額外 Token 損耗。
   - **10% 重大變更（精準回寫）**：僅涉及新增/刪除元件、改動 Storage Schema 或跨插件通訊時，結案前依 Target SSOTs 進行「純骨架（Index）」同步：
     - **L1 專家技能**：`.agents/skills/[plugin]-core/SKILL.md` (僅記路徑與職責一句話，嚴禁貼入長篇代碼與易變行數)
     - **L2 模組導航**：`[PLUGIN]/[PLUGIN]_README.md` (模組速查、架構與進入點清單)
     - **L3 領域規格**：`[PLUGIN]/docs/[feature]-spec.md` (核心業務規則，無則免填)
-    - **L4 封存治理**：`0.doc_mg/tasks/archive/[plugin]/` (任務生命週期結案歸檔)
+    - **L4 封存治理**：`0.doc_mg/tasks/archive/[plugin]/` (採雙層架構：≤ 30 天平鋪於根層；> 30 天下沉歸納至 `history/`)
 - *完整流程詳見*：`.agents/skills/task-protocol/SKILL.md` 及 `0.doc_mg/docs/task_manager.md`。
 
 ---

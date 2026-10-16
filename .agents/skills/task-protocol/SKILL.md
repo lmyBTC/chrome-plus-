@@ -25,7 +25,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
 | **Gate 0: 方向探詢**<br>*(Session 0)* | 使用者提出新需求或模糊構想 | **嚴禁呼叫任何工具**、嚴禁讀寫掃描檔案 | 純推理輸出 100~200 字高階思考與權衡，**物理交回控制權**等待授權。 |
 | **Gate 1: 脈絡藍圖**<br>*(Session 1)* | 使用者明確同意 Gate 0 方向 | **嚴禁動程式碼**、嚴禁執行實質 Phase、**嚴禁 >100 行檔案全檔 view_file** | **[Token 探勘硬窄化 & 持久化快取實證]**：<br>1. 主題檢索：`list_dir 0.doc_mg/tasks/` 及歸檔目錄確認有無同主題或既有任務。<br>2. 骨架提煉：逾 100 行檔案強制調用 `py 1.devtools/tools/code_skeleton.py` 或 `repo-radar` 提煉大綱骨架，細讀視窗放寬至 80~150 行。<br>3. 讀取 `0.doc_mg/task_template_v2.md` 建立實體 `0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md`，任務拆解採**語意區塊錨定 (Semantic Block Anchor)**；常態任務**免除工具矩陣與事前驗屍**（重大架構選填）。<br>4. 前置宣告 **Target Devtools** 與 **Target SSOTs** 四層閉環清單。<br>5. 徹底清理範本中所有 `<!-- ... -->` 註解。<br>6. **第一時間執行 `git add <task-file>` 納入暫存區受版本防護**。<br>7. **強制停步交權，輸出開立新 Session 接力提示詞代碼塊**，嚴禁同輪改動程式碼。 |
 | **Gate 2: 分段原子執行**<br>*(One Phase, One Session)* | 使用者下達執行指定 Phase 指令 | **嚴禁跨 Phase 自動執行**、單 Bug 重試 > 2 次、**嚴禁重複盲讀原始長檔** | **[Token 執行防衛 & 零探索直接開工]**：<br>1. 依賴截斷：以實體 `task.md` 為唯一真理源，切斷上文探勘歷史依賴。<br>2. 零探索直接開工：依賴任務步驟已錨定之語意區塊細讀 (80~150 行)；若需重勘強制以骨架工具提煉，嚴禁盲讀長檔。<br>3. 單輪專注完成當前 Phase 原子任務，禁止每步即刻同步任務檔，改為 Phase 結尾批次打勾同步。<br>4. 終端脫水：大量除錯/建置/測試強制串接 `2>&1 \| py 1.devtools/tools/compact_log.py` 或 `rtk`。<br>5. 單元驗證通過 (Exit 0)，**於 Phase 結尾批次打勾同步任務檔（作為最後工具呼叫）並動態收斂後強制停步交權，輸出開立新 Session 接力代碼塊**。 |
-| **Gate 3: 知識收斂與自動化審計**<br>*(Final Acceptance)* | 所有 Phase 開發完成且單元驗證通過 | **嚴禁遺留架構漂移**、嚴禁跳過驗證標記完成 | **[Token 審計與閉環收尾]**：<br>1. 執行合規與鏈接審計工具 (`audit_manifests.py`、`doc_cross_ref.py`) 確保 Exit 0。<br>2. 落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）。<br>3. 實體任務檔打勾結案，完成 AI 簽到區與歸檔移動至 `0.doc_mg/tasks/archive/[plugin]/`。<br>4. 更新任務檔為最後一個工具呼叫，更新即刻停步。 |
+| **Gate 3: 知識收斂與自動化審計**<br>*(Final Acceptance)* | 所有 Phase 開發完成且單元驗證通過 | **嚴禁遺留架構漂移**、嚴禁跳過驗證標記完成 | **[Token 審計與閉環收尾]**：<br>1. 執行合規與鏈接審計工具 (`audit_manifests.py`、`doc_cross_ref.py`) 確保 Exit 0。<br>2. 落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）。<br>3. 實體任務檔打勾結案，完成 AI 簽到區與雙層滾動歸檔至 `0.doc_mg/tasks/archive/[plugin]/`（≤ 30 天平鋪，> 30 天下沉至 `history/`）。<br>4. 更新任務檔為最後一個工具呼叫，更新即刻停步。 |
 
 ## 3. 執行協議與中斷點 (Execution & Halt Protocol)
 1. **原子化執行**：每次工具呼叫僅限處理一個原子任務，避免大區塊覆寫造成內容截斷。
@@ -41,7 +41,7 @@ ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/task_manager.
      - **L1 專家技能**：`.agents/skills/[plugin]-core/SKILL.md` (路徑與職責一句話)
      - **L2 插件導航**：`[PLUGIN]/[PLUGIN]_README.md` (模組速查矩陣、入口索引)
      - **L3 業務規格**：`[PLUGIN]/docs/[feature]-spec.md` (核心業務規則，無則免填)
-     - **L4 封存治理**：移動封存至 `0.doc_mg/tasks/archive/[plugin]/` 歸檔結案。
+     - **L4 封存治理**：移動封存至 `0.doc_mg/tasks/archive/[plugin]/` 雙層滾動歸檔（結案 ≤ 30 天平鋪，> 30 天歷史任務下沉歸納至 `history/`）。
 6. **強制收尾協議與安全守護五大戒律 (Mandatory Closure & Safety Guards)**：
    任務標記完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。若回報完成但實體任務未打勾收斂，視為未完成並違反門禁。
    - **戒律一：精準局部替換鐵律與零錯誤傳參 (Strict Chunk Replacement ≤ 50~80 行 & No ArtifactMetadata on Workspace)**：更新實體任務檔時，**嚴格限制使用原生局部替換工具 (`replace_file_content`)，單次替換範圍 ≤ 50~80 行唯一語意區塊**。嚴禁使用 `write_to_file` 進行整檔覆寫或大區塊重寫，杜絕巨量 Token 輸出及 IDE 底層 Diff 演算法嚴重耗時（逾時阻塞 50+ 秒）引發的使用者端死鎖體感；**對 workspace 專案檔案寫入時嚴禁傳遞 `ArtifactMetadata` 參數**（該參數僅限 `brain/` 之專屬 Artifact），徹底杜絕無效工具調用報錯（Invalid tool call）導致的 50 秒重試延遲。**嚴禁編寫任何 Python/PowerShell 臨時腳本更新任務檔**（必須使用原生檔案替換工具直接原子更新）。落實 **Phase 結尾批次打勾同步**，禁止每執行一步即刻修改任務檔，消除頻繁 I/O 與上下文干擾。
@@ -71,20 +71,35 @@ Phase 結束停步或遭遇突發問題中斷時，於回覆末尾附上對應�
 ```
 
 ## 6. 封存協議 (Archiving Protocol)
-當任務完全滿足結案條件時，必須將檔案自 `0.doc_mg/tasks/` 移動至專屬歸檔目錄，嚴禁散落於根目錄：
+當任務完全滿足結案條件時，必須將檔案自 `0.doc_mg/tasks/` 移動至專屬歸檔目錄，嚴禁散落於根目錄。本專案實施「雙層滾動歸檔機制 (Two-Tier Archive Governance)」以保持目錄精簡與找查效率：
 1. **結案前置檢核 (Checklist)**：
    - 檔案內所有 Phase 已完成實體打勾並動態收斂細節。
    - 驗收標準清單全數勾選通過。
-   - 已完成四層 SSOT 閉環回寫（L1 專家技能、L2 插件導航、L3 業務規格、L4 封存歸檔）。
+   - 已完成四層 SSOT 閉環回寫（L1 專家技能、L2 插件導航、L3 業務規格、L4 雙層封存歸檔）。
    - AI 簽到區記錄當前對話 ID 並確認結案。
    - Frontmatter `status: "已完成"`。
-2. **標準歸檔目錄對照**：
-   - `chrome_scrumclock/`：`0.doc_mg/tasks/archive/chrome_scrumclock/`
-   - `chrome_video speed plus/`：`0.doc_mg/tasks/archive/chrome_video speed plus/`
-   - `finance-research-clipper-oss/`：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
-   - `browser-activity-monitor/`：`0.doc_mg/tasks/archive/browser-activity-monitor/`
-   - 全域與跨插件任務：`0.doc_mg/tasks/archive/global/`
-3. **無破壞性封存作業**：
+2. **雙層滾動歸檔架構 (Two-Tier Archive Structure)**：
+   - **第一層（近 30 天活躍封存區）**：結案日期 ≤ 30 天之任務檔，直接平鋪於各插件子目錄根層，便於近期回顧與追蹤。
+   - **第二層（歷史深層歸納區）**：結案日期 > 30 天之任務檔，定期或自動下沉歸納移入各插件目錄下之 `history/` 子目錄，以大幅消除視覺噪音。
+3. **標準歸檔目錄對照**：
+   - `chrome_scrumclock/`：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/history/`
+   - `chrome_video speed plus/`：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/`
+   - `finance-research-clipper-oss/`：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/finance-research-clipper-oss/history/`
+   - `browser-activity-monitor/`：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/browser-activity-monitor/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/browser-activity-monitor/history/`
+   - 全域與跨插件任務：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/global/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/global/history/`
+4. **維護與滾動工具**：
+   - 可執行 `py 0.doc_mg/tools/archive_rotator.py --dry-run` 預覽逾期任務，或 `--execute` 批次執行下沉遷移。
+5. **無破壞性封存作業**：
    - 一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的使用者準則。
    - 保持歷史內容與純字串相對路徑不變。
 

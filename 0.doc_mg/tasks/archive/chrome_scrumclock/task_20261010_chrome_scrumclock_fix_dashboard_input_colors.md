@@ -60,3 +60,9 @@ deadline: "2026-10-10"
 > **參與對話 ID 紀錄**:
 > - 2026-10-10 ID: 0ed4f737-f590-4a69-9907-8c7e11c026b2 (初始化)
 > - 2026-10-10 ID: 97dafd1f-dfb7-4313-a761-bc3ede41aef0 (執行 Phase 1)
+>
+> **跨會話接力指令 (Session Handover)**:
+> 若需開新視窗以徹底釋放 Gate 1 探勘佔用之 Context（節省 70%~90% 輸入 Token），請複製以下指令至新對話：
+> ```markdown
+> 載入 ./0.doc_mg/tasks/task_20261010_chrome_scrumclock_fix_dashboard_input_colors.md，開始執行 Phase 1
+> ```
