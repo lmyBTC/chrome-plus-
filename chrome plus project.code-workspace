@@ -1,8 +1,14 @@
 {
 	"folders": [
 		{
+			"name": "Chrome Plus (MV3 Extensions)",
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {
+		"search.exclude": {
+			"**/node_modules": true,
+			"**/dist": true
+		}
+	}
 }
