@@ -5,20 +5,25 @@
 
 ---
 
-## 1. 核心憲法底線 (Core Rules)
-* **語言偏好**：始終以「**繁體中文**」進行回應。
-* **路徑跳轉雙軌制 (Dual Path Protocol)**：
-  * **專案文件內部（極致精簡）**：所有專案檔案、程式碼、Markdown 文檔與專家技能內部，**全面維持最簡潔的純字串相對路徑**（如 `.agents/rules.md`、`0.doc_mg/tasks/`），嚴禁硬編碼本機絕對路徑，亦不包裝多餘的 Markdown 超連結括號，以最大化節省 Token 並杜絕 Context 噪音。
-  * **AI 對話框互動（隨點即開）**：AI 在聊天對話框向使用者推薦或呈報檔案時，嚴格遵守 IDE 介面規範一律提供 `file:///` 格式的可點擊跳轉連結，確保使用者在對話框中隨點即開。
-* **四階段守門門禁 (4-Gate Protocol)**：
-  * **Gate 0 (Zero-Tool, Zero-Scan)**：新需求**嚴禁呼叫任何工具或掃描建檔**，僅提 100~200 字方向與權衡，停步交出控制權等待授權。
-  * **Gate 1 (Grounding & Blueprint)**：精準唯讀掃描（逾 100 行優先提煉骨架，讀取視窗放寬至 80~150 行），於 `0.doc_mg/tasks/` 建立任務檔（常態任務免除工具矩陣與事前驗屍，重大架構選填；採語意區塊錨定），第一時間執行 `git add` 納入防護並輸出「新會話接力指令」，**嚴禁修改原始碼**。
-  * **Gate 2 (Atomic Execution - One Phase, One Session)**：單輪專注一個 Phase 原子執行；嚴格落實「One Phase, One Session」物理隔絕與 2-Strike 熔斷機制；嚴守任務檔防護規範（局部替換放寬至 ≤ 50~80 行唯一語意區塊、禁止 workspace 傳遞 `ArtifactMetadata`、Phase 結尾批次打勾同步任務檔且為最後工具呼叫，消除頻繁 I/O）；嚴格切斷對上文探勘歷史依賴（以 `task.md` 為唯一真理源）。
-  * **Gate 3 (Knowledge Consolidation & Automated Audit)**：所有 Phase 完成後調用自動化審計工具（`audit_manifests.py`、`doc_cross_ref.py`）確保 Exit 0；落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）；實體任務檔打勾結案並移動歸檔至 `0.doc_mg/tasks/archive/`。
-* **多插件隔離與邊界防禦**：開發指定插件時**嚴禁跨目錄讀取或檢索其他插件源碼**；各插件儲存與依賴 100% 獨立，跨插件協同僅透過黑盒契約（參見 `0.doc_mg/docs/cross_plugin_contract.md`）。
-* **SSOT 文檔閉環（90/10 分級原則）**：90% 輕量任務（單純樣式、文字、局部 Bugfix）**全面豁免閉環**；僅在涉及「新增/刪除元件檔案、修改 Storage 模型、改動跨插件通訊接口」等重大架構變更時，結案前才回寫專屬 SSOT 文檔（如 `[PLUGIN]_README.md` 與對應專家技能 `SKILL.md`）。
+## 1. 三大核心思維 (Core Mindset)
+* **簡潔與最小改動 (Keep It Simple & Minimal Change)**：避免過度設計，以最少必要改動精準達成目標。
+* **系統思維與第一性原理 (System Thinking & First Principles)**：回歸問題本質，維護架構清晰度與單一真理源 (SSOT)，杜絕連鎖副作用。
+* **目標驅動與前置思考 (Goal-Driven & Upfront Thinking)**：明確定義驗收標準與停步點，先思考並對齊藍圖再採取行動。
 
 ---
 
-## 2. 執行法規與技能導航
-* 完整專家技能樹、Token 節省技術（會話重置協議、探勘硬窄化、RTK 工具）、MV3 技術標準與 Manifest 合規審計步驟，**詳見 `.agents/rules.md`**。
+## 2. 核心憲法底線 (Core Rules)
+* **語言偏好**：始終以「**繁體中文**」進行回應。
+* **路徑跳轉雙軌制**：專案文檔與代碼內部**維持純字串相對路徑**；AI 在對話框互動呈報時**一律提供 `file:///` 格式跳轉連結**。
+* **四階段守門門禁 (4-Gate Protocol)**：
+  * **Gate 0 (Zero-Tool, Zero-Scan)**：零工具思考，評估方向與權衡，停步交出控制權等待授權。
+  * **Gate 1 (Grounding & Blueprint)**：精準唯讀掃描，於 `0.doc_mg/tasks/` 建立任務檔納入防護，輸出接力指令，嚴禁修改原始碼。
+  * **Gate 2 (Atomic Execution - One Phase, One Session)**：單輪專注一個 Phase 原子執行；落實會話隔絕與 2-Strike 熔斷，以 `task.md` 為唯一真理源。
+  * **Gate 3 (Knowledge Consolidation & Automated Audit)**：自動化審計確保 Exit 0；落實 SSOT 閉環，任務檔移入歸檔目錄結案。
+* **多插件隔離與邊界防禦**：開發指定插件時嚴禁跨目錄讀取或修改其他插件源碼；跨插件協同僅透過黑盒契約。
+* **SSOT 文檔閉環（90/10 分級原則）**：90% 輕量任務豁免閉環；10% 重大變更（元件增刪、Storage 模型、跨插件接口）結案前才回寫專屬 SSOT。
+
+---
+
+## 3. 執行法規與技能導航
+* 完整專家技能樹、Token 節省技術、MV3 技術標準與審計指令，**詳見 `.agents/rules.md`**。

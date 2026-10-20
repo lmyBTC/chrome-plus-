@@ -126,5 +126,5 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 > **跨會話接力指令 (Session Handover)**:
 > 若需開新視窗以徹底釋放 Gate 1 探勘佔用之 Context（節省 70%~90% 輸入 Token），請複製以下指令至新對話：
 > ```markdown
-> 載入 ./0.doc_mg/tasks/task_YYYYMMDD_[plugin]_[topic].md，開始執行 Phase 1
+> 載入 ./0.doc_mg/tasks/task_MMDD_01_[plugin]_[topic].md，開始執行 Phase 1
 > ```

@@ -28,7 +28,53 @@ def slugify(text):
     text = re.sub(r'[-\s]+', '_', text)
     return text.strip('_')
 
-def init_task(plugin, title, no_git=False):
+def get_next_sequence_number(date_str, full_date_str=None):
+    """
+    掃描 tasks 與 archive 目錄中當日現存任務，計算下一個流水號（回傳格式為兩位數字串，如 '01', '02'）。
+    支援同時比對:
+      - 新格式: task_{date_str}_... (如 task_1020_01_...)
+      - 歷史格式: task_{full_date_str}_... (如 task_20261020_...)
+    """
+    prefixes = [f"task_{date_str}_"]
+    if full_date_str and full_date_str != date_str:
+        prefixes.append(f"task_{full_date_str}_")
+
+    found_files = []
+    # 1. 掃描 TASKS_DIR 根層
+    if os.path.exists(TASKS_DIR):
+        for f in os.listdir(TASKS_DIR):
+            if f.endswith('.md') and any(f.startswith(p) for p in prefixes):
+                found_files.append(f)
+        # 2. 掃描 archive/ 目錄樹
+        archive_dir = os.path.join(TASKS_DIR, 'archive')
+        if os.path.isdir(archive_dir):
+            for root, _, files in os.walk(archive_dir):
+                for f in files:
+                    if f.endswith('.md') and any(f.startswith(p) for p in prefixes):
+                        found_files.append(f)
+
+    max_seq = 0
+    seq_regexes = [
+        re.compile(rf"^{re.escape(p)}(\d{{2}})_") for p in prefixes
+    ]
+
+    for f in found_files:
+        for r in seq_regexes:
+            m = r.match(f)
+            if m:
+                seq_val = int(m.group(1))
+                if seq_val > max_seq:
+                    max_seq = seq_val
+                break
+
+    if max_seq > 0:
+        next_seq = max(max_seq + 1, len(found_files) + 1)
+    else:
+        next_seq = len(found_files) + 1
+
+    return f"{next_seq:02d}"
+
+def init_task(plugin, title, no_git=False, seq=None):
     """初始化一個新任務"""
     # 驗證插件目錄是否存在
     plugin_path = os.path.join(BASE_DIR, plugin)
@@ -38,10 +84,19 @@ def init_task(plugin, title, no_git=False):
     # 確保任務目錄存在
     os.makedirs(TASKS_DIR, exist_ok=True)
 
-    # 取得日期與檔名 slug
-    date_str = datetime.now().strftime('%Y%m%d')
+    # 取得短日期 (MMDD) 與歷史全日期 (YYYYMMDD)
+    now = datetime.now()
+    date_str = now.strftime('%m%d')
+    full_date_str = now.strftime('%Y%m%d')
+
+    # 流水號處理 (若無傳入則自動計算)
+    if seq is not None:
+        seq_str = f"{int(seq):02d}"
+    else:
+        seq_str = get_next_sequence_number(date_str, full_date_str)
+
     title_slug = slugify(title)
-    task_filename = f"task_{date_str}_{plugin}_{title_slug}.md"
+    task_filename = f"task_{date_str}_{seq_str}_{plugin}_{title_slug}.md"
     task_path = os.path.join(TASKS_DIR, task_filename)
 
     # 檢查是否已存在同名檔案
@@ -58,7 +113,7 @@ def init_task(plugin, title, no_git=False):
         content = f.read()
 
     # 替換範本內容中的 placeholder
-    current_date_hyphen = datetime.now().strftime('%Y-%m-%d')
+    current_date_hyphen = now.strftime('%Y-%m-%d')
     content = content.replace('[任務標題]', title)
     content = content.replace('[請填寫插件目錄名稱，例如: chrome_pk | chrome_video speed plus | finance-research-clipper-oss | global]', plugin)
     content = content.replace('[請填寫插件目錄名稱，例如: chrome_pk | chrome_video speed plus | finance-research-clipper-oss]', plugin)
@@ -123,16 +178,21 @@ def parse_frontmatter(file_path):
             metadata[key.strip()] = val_clean.strip('"').strip("'")
     return metadata
 
-DATE_PATTERN = re.compile(r"^task_(\d{4})(\d{2})(\d{2})_.*\.md$")
+# 正則：支援舊版 8 碼 (YYYYMMDD) 與新版 4 碼 (MMDD)
+DATE_PATTERN_8 = re.compile(r"^task_(\d{4})(\d{2})(\d{2})_.*\.md$")
+DATE_PATTERN_4 = re.compile(r"^task_(\d{2})(\d{2})_.*\.md$")
 
 def parse_date_from_file(filename, metadata=None):
     """從檔名或 frontmatter 取得任務建立/過期日期"""
-    m = DATE_PATTERN.match(filename)
-    if m:
+    # 1. 優先嘗試舊版 8 碼日期 (YYYYMMDD)
+    m8 = DATE_PATTERN_8.match(filename)
+    if m8:
         try:
-            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            return date(int(m8.group(1)), int(m8.group(2)), int(m8.group(3)))
         except ValueError:
             pass
+
+    # 2. 嘗試從 frontmatter 取得完整日期 (最高可信度之 YYYY-MM-DD)
     if metadata:
         created_str = metadata.get('created') or metadata.get('deadline')
         if created_str:
@@ -141,6 +201,16 @@ def parse_date_from_file(filename, metadata=None):
                 return date(int(parts[0]), int(parts[1]), int(parts[2]))
             except Exception:
                 pass
+
+    # 3. 嘗試新版 4 碼日期 (MMDD)，年份預設以今年推斷
+    m4 = DATE_PATTERN_4.match(filename)
+    if m4:
+        try:
+            current_year = date.today().year
+            return date(current_year, int(m4.group(1)), int(m4.group(2)))
+        except ValueError:
+            pass
+
     return None
 
 def archive_tasks(dry_run=False, threshold_days=30):
@@ -259,6 +329,7 @@ def main():
     init_parser = subparsers.add_parser('init', help='初始化新任務檔案')
     init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_pk | global)')
     init_parser.add_argument('--title', required=True, help='任務標題名稱')
+    init_parser.add_argument('--seq', type=int, default=None, help='自訂當日流水號 (例如: 1 或 2，預設自動遞增)')
     init_parser.add_argument('--no-git', action='store_true', help='略過自動 git add')
 
     # archive 指令
@@ -269,7 +340,7 @@ def main():
     args = parser.parse_args()
 
     if args.command == 'init':
-        init_task(args.plugin, args.title, no_git=args.no_git)
+        init_task(args.plugin, args.title, no_git=args.no_git, seq=args.seq)
     elif args.command == 'archive':
         archive_tasks(dry_run=args.dry_run, threshold_days=args.days)
     else:
