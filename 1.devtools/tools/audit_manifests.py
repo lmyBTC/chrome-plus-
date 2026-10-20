@@ -4,10 +4,11 @@
 import os
 import json
 import sys
+import argparse
 
-# 嘗試將標準輸出設定為 UTF-8 以避免 Windows CP950 編碼報錯
+# 嘗試將標準輸出設定為 UTF-8 與行緩衝，以避免 Windows CP950 編碼報錯與背景輸出延遲
 try:
-    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 except AttributeError:
     # Python 舊版本相容
     pass
@@ -93,7 +94,7 @@ def check_code_safety(file_path):
         pass
     return issues
 
-def audit_plugin(plugin):
+def audit_plugin(plugin, compact=False):
     """審計單一插件的 manifest.json 與關聯的程式碼檔案"""
     plugin_dir = os.path.join(BASE_DIR, plugin)
     
@@ -111,14 +112,16 @@ def audit_plugin(plugin):
             break
             
     if not manifest_path:
-        print(f"[{plugin}] 警告: 找不到 manifest.json，跳過審計。")
-        return True, []
+        if not compact:
+            print(f"[{plugin}] 警告: 找不到 manifest.json，跳過審計。")
+        return True, [], []
 
     errors = []
     warnings = []
     files_to_scan = set()
     
-    print(f"開始審計 [{plugin}] ... (路徑: {os.path.relpath(manifest_path, BASE_DIR)})")
+    if not compact:
+        print(f"開始審計 [{plugin}] ... (路徑: {os.path.relpath(manifest_path, BASE_DIR)})")
     
     try:
         with open(manifest_path, 'r', encoding='utf-8') as f:
@@ -233,13 +236,9 @@ def audit_plugin(plugin):
                 errors.append("CSP 安全漏洞: extension_pages 禁止引入不安全的 http:// 外部來源。")
 
     # 遍歷插件目錄，收集所有 JS/TS/HTML 原始碼以防漏網之魚
-    for root_dir, _, files in os.walk(plugin_dir):
-        # 排除 node_modules, .git, archive 等不相關或封存目錄
-        if 'node_modules' in root_dir or '.git' in root_dir or 'archive' in root_dir:
-            continue
-        # 如果是 Vite 編譯型項目，排除產出的 dist 目錄，避免重複或誤報
-        if plugin == 'chrome_scrumclock' and 'dist' in root_dir:
-            continue
+    for root_dir, dirs, files in os.walk(plugin_dir):
+        # 排除 node_modules, .git, archive, dist 等目錄（就地剪枝避免走訪數萬子目錄造成假死）
+        dirs[:] = [d for d in dirs if d not in ('node_modules', '.git', 'archive', 'dist')]
             
         for file in files:
             if file.endswith(('.js', '.ts', '.tsx', '.jsx', '.html')):
@@ -252,57 +251,137 @@ def audit_plugin(plugin):
             rel_file = os.path.relpath(file_path, BASE_DIR)
             issues = check_code_safety(file_path)
             if issues:
-                if not has_code_issue:
-                    print("  開始掃描程式碼安全性...")
-                    has_code_issue = True
-                print(f"    檔案: {rel_file}")
                 for line, desc in issues:
                     if "XSS" in desc:
                         warnings.append(f"[{rel_file}:{line}] XSS 警告: {desc}")
-                        print(f"      [!] 行 {line}: {desc}")
+                        if not compact:
+                            if not has_code_issue:
+                                print("  開始掃描程式碼安全性...")
+                                has_code_issue = True
+                            print(f"    檔案: {rel_file}")
+                            print(f"      [!] 行 {line}: {desc}")
                     else:
                         errors.append(f"[{rel_file}:{line}] 安全錯誤: {desc}")
-                        print(f"      [X] 行 {line}: {desc}")
+                        if not compact:
+                            if not has_code_issue:
+                                print("  開始掃描程式碼安全性...")
+                                has_code_issue = True
+                            print(f"    檔案: {rel_file}")
+                            print(f"      [X] 行 {line}: {desc}")
 
     # 輸出審計報告 (使用 ASCII 安全字元避免 CP950 解碼錯誤)
-    for w in warnings:
-        # 如果是程式碼的警告，上面已經印過詳細資訊，此處僅將其收集，故不再重複印出以保簡潔
-        if not w.startswith('['):
-            print(f"  [!] 警告: {w}")
-    for e in errors:
-        if not e.startswith('['):
-            print(f"  [X] 錯誤: {e}")
-        
-    if not errors:
-        print("  [o] 通過檢測！無嚴重合規問題。")
-        return True, warnings
-    else:
-        print(f"  [X] 未通過檢測。共有 {len(errors)} 個嚴重錯誤/漏洞警告。")
-        return False, errors + warnings
+    if not compact:
+        for w in warnings:
+            if not w.startswith('['):
+                print(f"  [!] 警告: {w}")
+        for e in errors:
+            if not e.startswith('['):
+                print(f"  [X] 錯誤: {e}")
+            
+        if not errors:
+            print("  [o] 通過檢測！無嚴重合規問題。")
+        else:
+            print(f"  [X] 未通過檢測。共有 {len(errors)} 個嚴重錯誤/漏洞警告。")
+
+    return (len(errors) == 0), errors, warnings
 
 def main():
-    print("==================================================")
-    print("          Chrome 插件 Manifest V3 審計工具         ")
-    print("==================================================")
-    
-    plugins = discover_plugins(BASE_DIR)
-    print(f"動態發現 {len(plugins)} 款有效插件: {', '.join(plugins)}\n")
-    
-    all_pass = True
-    failed_plugins = []
-    
-    for plugin in plugins:
-        success, issues = audit_plugin(plugin)
-        print("-" * 50)
-        if not success:
-            all_pass = False
-            failed_plugins.append(plugin)
-            
-    if all_pass:
+    parser = argparse.ArgumentParser(description="Chrome 插件 Manifest V3 合規性與安全性自動審計器")
+    parser.add_argument('--compact', action='store_true', help='啟用緊湊輸出模式 (控制在 10 行以內)')
+    parser.add_argument('--strict', action='store_true', help='嚴格模式：存在任何警告 (如 innerHTML) 即視為未通過 (Exit 1)')
+    parser.add_argument('--plugin', help='指定審計單一插件目錄名稱')
+    parser.add_argument('--json', action='store_true', help='輸出結構化 JSON 審計報告')
+
+    args = parser.parse_args()
+
+    all_plugins = discover_plugins(BASE_DIR)
+    if args.plugin:
+        if args.plugin not in all_plugins:
+            print(f"[錯誤] 找不到指定的插件: {args.plugin}")
+            print(f"可選插件: {', '.join(all_plugins)}")
+            sys.exit(1)
+        target_plugins = [args.plugin]
+    else:
+        target_plugins = all_plugins
+
+    results = {}
+    total_errors = 0
+    total_warnings = 0
+
+    if not args.compact and not args.json:
+        print("==================================================")
+        print("          Chrome 插件 Manifest V3 審計工具         ")
+        print("==================================================")
+        print(f"動態發現 {len(target_plugins)} 款有效插件: {', '.join(target_plugins)}\n")
+
+    for plugin in target_plugins:
+        success, errors, warnings = audit_plugin(plugin, compact=args.compact or args.json)
+        results[plugin] = {
+            'success': success,
+            'errors': errors,
+            'warnings': warnings
+        }
+        total_errors += len(errors)
+        total_warnings += len(warnings)
+        if not args.compact and not args.json:
+            print("-" * 50)
+
+    is_overall_success = (total_errors == 0)
+    if args.strict and total_warnings > 0:
+        is_overall_success = False
+
+    # JSON 模式
+    if args.json:
+        report = {
+            "summary": {
+                "total_plugins": len(target_plugins),
+                "success": is_overall_success,
+                "total_errors": total_errors,
+                "total_warnings": total_warnings,
+                "strict": args.strict
+            },
+            "plugins": results
+        }
+        print(json.dumps(report, ensure_ascii=False, indent=2))
+        sys.exit(0 if is_overall_success else 1)
+
+    # 緊湊模式 (嚴格限制在 10 行以內)
+    if args.compact:
+        status_sym = "[o] 通過" if is_overall_success else "[X] 失敗"
+        print(f"=== Manifest V3 合規審計 {status_sym} ({len(target_plugins)} 款插件) ===")
+        for p in target_plugins:
+            res = results[p]
+            err_cnt = len(res['errors'])
+            warn_cnt = len(res['warnings'])
+            if err_cnt == 0 and warn_cnt == 0:
+                print(f"  [o] {p:<30} | MV3 合規")
+            elif err_cnt == 0:
+                p_sym = "[X]" if args.strict else "[o]"
+                print(f"  {p_sym} {p:<30} | MV3 合規 ({warn_cnt} 處 XSS 警告)")
+            else:
+                print(f"  [X] {p:<30} | 錯誤: {err_cnt}, 警告: {warn_cnt}")
+        
+        if is_overall_success:
+            print(f"[審計總結] 所有插件 Manifest V3 完全合規 (Exit 0)。")
+            sys.exit(0)
+        else:
+            if args.strict and total_errors == 0:
+                print(f"[審計總結] 嚴格模式未通過！發現 {total_warnings} 處警告 (Exit 1)。")
+            else:
+                failed = [p for p in target_plugins if not results[p]['success']]
+                print(f"[審計總結] 審計失敗！合規錯誤插件: {', '.join(failed)} (Exit 1)。")
+            sys.exit(1)
+
+    # 完整模式總結
+    if is_overall_success:
         print("\n[審計總結] 所有檢測到的插件 Manifest V3 均完全合規！")
         sys.exit(0)
     else:
-        print(f"\n[審計總結] 檢測失敗！以下插件有合規錯誤: {', '.join(failed_plugins)}")
+        if args.strict and total_errors == 0:
+            print(f"\n[審計總結] 嚴格模式檢測失敗！發現 {total_warnings} 個代碼安全性警告 (Exit 1)。")
+        else:
+            failed = [p for p in target_plugins if not results[p]['success']]
+            print(f"\n[審計總結] 檢測失敗！以下插件有合規錯誤: {', '.join(failed)}")
         sys.exit(1)
 
 if __name__ == '__main__':

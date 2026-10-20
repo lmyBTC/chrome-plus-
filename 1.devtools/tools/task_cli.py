@@ -6,7 +6,8 @@ import re
 import sys
 import shutil
 import argparse
-from datetime import datetime
+import subprocess
+from datetime import datetime, date
 
 # 嘗試將標準輸出設定為 UTF-8
 try:
@@ -27,11 +28,11 @@ def slugify(text):
     text = re.sub(r'[-\s]+', '_', text)
     return text.strip('_')
 
-def init_task(plugin, title):
+def init_task(plugin, title, no_git=False):
     """初始化一個新任務"""
     # 驗證插件目錄是否存在
     plugin_path = os.path.join(BASE_DIR, plugin)
-    if not os.path.isdir(plugin_path) and plugin != 'workspace':
+    if not os.path.isdir(plugin_path) and plugin not in ('workspace', 'global'):
         print(f"[警告] 找不到插件目錄 '{plugin}'，但仍會繼續建立任務。")
 
     # 確保任務目錄存在
@@ -59,16 +60,42 @@ def init_task(plugin, title):
     # 替換範本內容中的 placeholder
     current_date_hyphen = datetime.now().strftime('%Y-%m-%d')
     content = content.replace('[任務標題]', title)
+    content = content.replace('[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss | global]', plugin)
     content = content.replace('[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss]', plugin)
     content = content.replace('YYYY-MM-DD', current_date_hyphen)
     content = content.replace('[plugin]', plugin)
+
+    # 自動正則移除所有 <!-- ... --> 註解
+    content = re.sub(r'<!--[\s\S]*?-->', '', content)
+
+    # 清理因移除註解留下的多餘空行與空白
+    cleaned_lines = []
+    for line in content.splitlines():
+        if re.match(r'^\s*>\s*$', line):
+            continue
+        cleaned_lines.append(line.rstrip())
+    
+    # 壓縮連續超過 2 行的空行
+    content = re.sub(r'\n{3,}', '\n\n', '\n'.join(cleaned_lines)) + '\n'
 
     # 寫入新檔案 (強制 UTF-8，無 BOM)
     with open(task_path, 'w', encoding='utf-8', newline='\n') as f:
         f.write(content)
 
-    print(f"[成功] 已初始化任務檔案: {os.path.relpath(task_path, BASE_DIR)}")
+    rel_task = os.path.relpath(task_path, BASE_DIR)
+    print(f"[成功] 已初始化任務檔案: {rel_task}")
     print(f"       檔名: {task_filename}")
+
+    # 自動 git add
+    if not no_git:
+        try:
+            res = subprocess.run(['git', 'add', rel_task], cwd=BASE_DIR, capture_output=True, text=True)
+            if res.returncode == 0:
+                print(f"[Git] 已自動將任務檔納入版本防護 (git add {rel_task})")
+            else:
+                print(f"[警告] 自動 git add 失敗: {res.stderr.strip()}")
+        except Exception as e:
+            print(f"[警告] 自動 git add 異常: {e}")
 
 def parse_frontmatter(file_path):
     """解析 Markdown 檔案的 YAML Frontmatter"""
@@ -94,15 +121,45 @@ def parse_frontmatter(file_path):
             metadata[key.strip()] = val_clean.strip('"').strip("'")
     return metadata
 
-def archive_tasks(dry_run=False):
-    """自動歸檔狀態為已完成的任務"""
+DATE_PATTERN = re.compile(r"^task_(\d{4})(\d{2})(\d{2})_.*\.md$")
+
+def parse_date_from_file(filename, metadata=None):
+    """從檔名或 frontmatter 取得任務建立/過期日期"""
+    m = DATE_PATTERN.match(filename)
+    if m:
+        try:
+            return date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            pass
+    if metadata:
+        created_str = metadata.get('created') or metadata.get('deadline')
+        if created_str:
+            try:
+                parts = created_str.split('-')
+                return date(int(parts[0]), int(parts[1]), int(parts[2]))
+            except Exception:
+                pass
+    return None
+
+def archive_tasks(dry_run=False, threshold_days=30):
+    """自動歸檔狀態為已完成的任務，並落實雙層滾動歸檔 (Two-Tier Archive Governance)"""
     if not os.path.exists(TASKS_DIR):
         print("[資訊] 任務目錄不存在，無須歸檔。")
         return
 
+    today = date.today()
     archived_count = 0
-    # 遍歷任務目錄下的所有 markdown 檔案
-    for filename in os.listdir(TASKS_DIR):
+    rotated_count = 0
+
+    print("==================================================")
+    print("      Chrome Plus 任務生命週期雙層歸檔工具         ")
+    print(f" 基準日: {today.isoformat()} | 歷史閾值: {threshold_days} 天 | 模式: {'【模擬預覽】' if dry_run else '【正式執行】'}")
+    print("==================================================")
+
+    # 1. 掃描 TASKS_DIR 根目錄下待結案之活躍任務
+    print("\n[階段 1] 掃描待結案之已完成任務...")
+    tasks_to_archive = []
+    for filename in sorted(os.listdir(TASKS_DIR)):
         if not filename.endswith('.md') or filename.startswith('task_template'):
             continue
 
@@ -115,29 +172,82 @@ def archive_tasks(dry_run=False):
             continue
 
         status = metadata.get('status', '')
-        plugin = metadata.get('plugin', 'unknown')
+        plugin = metadata.get('plugin', 'global')
 
-        # 如果狀態是 "已完成" 或 "Closed"
         if status in ['已完成', 'Closed']:
-            # 清理插件名稱做為子資料夾
             plugin_dir = slugify(plugin)
-            archive_subdir = os.path.join(TASKS_DIR, 'archive', plugin_dir)
-            target_path = os.path.join(archive_subdir, filename)
+            file_date = parse_date_from_file(filename, metadata)
+            days_diff = (today - file_date).days if file_date else 0
 
-            print(f"[檢測到已完成任務] {filename} (所屬插件: {plugin})")
-            
-            if dry_run:
-                print(f"  [模擬] 將移至: {os.path.relpath(target_path, BASE_DIR)}")
+            # 雙層判定：超過 threshold_days 則直接進入 history/ 子目錄
+            if days_diff > threshold_days:
+                target_dir = os.path.join(TASKS_DIR, 'archive', plugin_dir, 'history')
+                tier_label = f"歷史下沉 (> {threshold_days} 天 ➔ {plugin_dir}/history/)"
             else:
-                os.makedirs(archive_subdir, exist_ok=True)
-                shutil.move(file_path, target_path)
-                print(f"  [完成] 已移至: {os.path.relpath(target_path, BASE_DIR)}")
-                archived_count += 1
+                target_dir = os.path.join(TASKS_DIR, 'archive', plugin_dir)
+                tier_label = f"近期活躍 (<= {threshold_days} 天 ➔ {plugin_dir}/)"
 
-    if archived_count > 0:
-        print(f"[歸檔完畢] 共成功歸檔 {archived_count} 個任務檔案。")
+            target_path = os.path.join(target_dir, filename)
+            tasks_to_archive.append((filename, file_path, target_path, tier_label))
+
+    if tasks_to_archive:
+        for fn, src, dst, tier in tasks_to_archive:
+            print(f"  [檢測到已完成] {fn}")
+            if dry_run:
+                print(f"    [模擬] 將移至: {os.path.relpath(dst, BASE_DIR)} ({tier})")
+            else:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.move(src, dst)
+                print(f"    [完成] 已移至: {os.path.relpath(dst, BASE_DIR)} ({tier})")
+                archived_count += 1
     else:
-        print("[資訊] 未發現符合歸檔條件的已完成任務。")
+        print("  [資訊] 未發現符合結案條件的任務檔案。")
+
+    # 2. 雙層滾動巡檢：檢查 archive/ 各插件第一層，逾期任務下沉至 history/
+    print("\n[階段 2] 檢查 archive/ 各目錄是否需雙層滾動下沉至 history/...")
+    archive_root = os.path.join(TASKS_DIR, 'archive')
+    rotate_moves = []
+
+    if os.path.isdir(archive_root):
+        for plugin_folder in sorted(os.listdir(archive_root)):
+            p_path = os.path.join(archive_root, plugin_folder)
+            if not os.path.isdir(p_path) or plugin_folder == 'history':
+                continue
+
+            for fn in sorted(os.listdir(p_path)):
+                src_file = os.path.join(p_path, fn)
+                if not os.path.isfile(src_file) or not fn.endswith('.md'):
+                    continue
+
+                metadata = parse_frontmatter(src_file)
+                f_date = parse_date_from_file(fn, metadata)
+                if not f_date:
+                    continue
+
+                days_diff = (today - f_date).days
+                if days_diff > threshold_days:
+                    dest_history_dir = os.path.join(p_path, 'history')
+                    dest_file = os.path.join(dest_history_dir, fn)
+                    rotate_moves.append((fn, src_file, dest_file, days_diff, plugin_folder))
+
+    if rotate_moves:
+        for fn, src, dst, diff, p_name in rotate_moves:
+            print(f"  [逾期滾動] {p_name}/{fn} (建立距今 {diff} 天 > {threshold_days} 天)")
+            if dry_run:
+                print(f"    [模擬] 將下沉至: {os.path.relpath(dst, BASE_DIR)}")
+            else:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.move(src, dst)
+                print(f"    [完成] 已下沉至: {os.path.relpath(dst, BASE_DIR)}")
+                rotated_count += 1
+    else:
+        print("  [資訊] archive/ 第一層檔案均在閾值內，無須滾動下沉。")
+
+    print("\n==================================================")
+    if dry_run:
+        print(f"[總結] 模擬預覽完成。待歸檔: {len(tasks_to_archive)} 份，待滾動: {len(rotate_moves)} 份。")
+    else:
+        print(f"[總結] 歸檔維護完成。成功新歸檔: {archived_count} 份，成功滾動下沉: {rotated_count} 份。")
 
 def main():
     parser = argparse.ArgumentParser(description="多插件開發區任務生命週期 CLI 工具")
@@ -145,19 +255,21 @@ def main():
 
     # init 指令
     init_parser = subparsers.add_parser('init', help='初始化新任務檔案')
-    init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_scrumclock)')
+    init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_scrumclock | global)')
     init_parser.add_argument('--title', required=True, help='任務標題名稱')
+    init_parser.add_argument('--no-git', action='store_true', help='略過自動 git add')
 
     # archive 指令
-    archive_parser = subparsers.add_parser('archive', help='自動歸檔已完成的任務')
+    archive_parser = subparsers.add_parser('archive', help='自動歸檔已完成的任務與雙層滾動維護')
     archive_parser.add_argument('--dry-run', action='store_true', help='模擬執行，不實際搬移檔案')
+    archive_parser.add_argument('--days', type=int, default=30, help='超過指定天數下沉至 history/ (預設 30 天)')
 
     args = parser.parse_args()
 
     if args.command == 'init':
-        init_task(args.plugin, args.title)
+        init_task(args.plugin, args.title, no_git=args.no_git)
     elif args.command == 'archive':
-        archive_tasks(args.dry_run)
+        archive_tasks(dry_run=args.dry_run, threshold_days=args.days)
     else:
         parser.print_help()
 
