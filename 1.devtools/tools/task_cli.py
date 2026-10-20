@@ -60,6 +60,8 @@ def init_task(plugin, title, no_git=False):
     # 替換範本內容中的 placeholder
     current_date_hyphen = datetime.now().strftime('%Y-%m-%d')
     content = content.replace('[任務標題]', title)
+    content = content.replace('[請填寫插件目錄名稱，例如: chrome_pk | chrome_video speed plus | finance-research-clipper-oss | global]', plugin)
+    content = content.replace('[請填寫插件目錄名稱，例如: chrome_pk | chrome_video speed plus | finance-research-clipper-oss]', plugin)
     content = content.replace('[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss | global]', plugin)
     content = content.replace('[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss]', plugin)
     content = content.replace('YYYY-MM-DD', current_date_hyphen)
@@ -255,7 +257,7 @@ def main():
 
     # init 指令
     init_parser = subparsers.add_parser('init', help='初始化新任務檔案')
-    init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_scrumclock | global)')
+    init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_pk | global)')
     init_parser.add_argument('--title', required=True, help='任務標題名稱')
     init_parser.add_argument('--no-git', action='store_true', help='略過自動 git add')
 

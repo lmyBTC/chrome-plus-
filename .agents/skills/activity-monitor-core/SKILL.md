@@ -8,7 +8,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 
 # 專家技能：ActivityMonitor 瀏覽器活動監控規格字典 (ActivityMonitor Core Spec)
 
-本技能為 `browser-activity-monitor` 插件之輕量調用索引。所有詳細雙軌隨選架構、IndexedDB 儲存 Schema、Resource Profiler 與 ScrumClock 整併架構已沉澱至專屬 SSOT 文檔。
+本技能為 `browser-activity-monitor` 插件之輕量調用索引。所有詳細雙軌隨選架構、IndexedDB 儲存 Schema、Resource Profiler 與 PK+ (ScrumClock) 整併架構已沉澱至專屬 SSOT 文檔。
 
 ## 1. 核心定位與技術棧 (Tech Stack)
 * **目錄路徑**: `browser-activity-monitor/`
@@ -36,7 +36,7 @@ ssot_dependencies: ["browser-activity-monitor/ACTIVITY_MONITOR_README.md", "0.do
 2. **CSP 零豁免**: 嚴禁外部 CDN、嚴禁 `unsafe-eval` 或內嵌 HTML 事件監聽 (`onclick`)。
 3. **資料本機性與隱私最小化**: 僅收集安全審核元資料並保存在本地 IndexedDB，絕不上傳遠端伺服器；禁止採集密碼或敏感表單。
 4. **匯出隱私脫敏管線 (AM-03)**: 匯出與複製日誌時預設純化 Token 與私有 IP，絕不污染底層 IndexedDB 原始除錯數據。
-5. **ScrumClock 協同邊界**: 與 ScrumClock 通訊協同遵循 `0.doc_mg/docs/cross_plugin_contract.md` 黑盒契約。
+5. **PK+ (ScrumClock) 協同邊界**: 與 PK+ 通訊協同遵循 `0.doc_mg/docs/cross_plugin_contract.md` 黑盒契約。
 
 ## 4. 深層 SSOT 導航 (Deep Reference)
 * **完整雙軌架構、儲存 Schema、資源診斷與整合指南**: 詳見 `browser-activity-monitor/ACTIVITY_MONITOR_README.md`

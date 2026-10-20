@@ -1,9 +1,9 @@
-# 🍅 [ScrumClock] 功能全景與精準架構索引 (AI 導航手冊)
+# 🍅 [PK+] (Power Kit) 功能全景與精準架構索引 (AI 導航手冊)
 
 > [!IMPORTANT]
 > **AI 開發專用導航指引 (SSOT)**：
-> 本文檔為 `chrome_scrumclock` (ScrumClock Power Kit) 之**單一真實來源索引 (SSOT)**。
-> 本檔已命名為 `SCRUMCLOCK_README.md`，專門防止多專案工作區下的檔名衝突與 AI 上下文污染。
+> 本文檔為 `chrome_pk` (PK+ / Power Kit) 之**單一真實來源索引 (SSOT)**。
+> 本檔已命名為 `PK_README.md`，專門防止多專案工作區下的檔名衝突與 AI 上下文污染。
 > 在執行任何功能開發、修復或重構前，**請優先查閱下述矩陣與索引**，直接鎖定目標檔案，嚴禁未經查表即對全目錄進行盲目掃描或巨石檔案全檔讀取，以最大化節省 Token。
 
 ---
@@ -93,7 +93,7 @@
 
 ## 💾 6. 資料模型與儲存 SSOT (Storage Schema)
 
-所有數據儲存於 `chrome_scrumclock` 獨立之 `chrome.storage.local` 及專屬 IndexedDB，嚴禁與其他插件共用。
+所有數據儲存於 `chrome_pk` 獨立之 `chrome.storage.local` 及專屬 IndexedDB，嚴禁與其他插件共用。
 
 ### 6.1 主要儲存鍵值 (Chrome Storage Local)
 1. `scrumclock_tasks`: `Task[]`
@@ -164,7 +164,7 @@
 
 ## 📡 7. 跨插件通訊中樞與 UniversalTaskPayload v2.3 規格
 
-ScrumClock 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`)，負責接收與協調各 Spoke 子插件的通訊：
+PK+ 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`)，負責接收與協調各 Spoke 子插件的通訊：
 - **原生直連分發 (Direct Messaging)**：拔除 PING_HUB 握手總線與 Outbox 背景輪詢佇列，回歸 Chrome Extension 原生 `chrome.runtime.sendMessage` 直連架構，無常駐 Alarms，完全釋放 Service Worker 休眠生命週期。
 - **任務契約 (`UniversalTaskPayload` v2.3)**：
   ```typescript
@@ -196,7 +196,7 @@ ScrumClock 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoe
 ---
 
 ## 🛡️ 8. 邊界與隔離防護準則 (Isolation Hard Rules)
-1. **禁止跨目錄讀取**: 開發 ScrumClock 時，禁止讀取 `finance-research-clipper-oss` 內部 UI 或爬蟲代碼。
+1. **禁止跨目錄讀取**: 開發 PK+ 時，禁止讀取 `finance-research-clipper-oss` 內部 UI 或爬蟲代碼。
 2. **通訊採黑盒模式**: 如需更新財務功能，僅參照 `0.doc_mg/docs/cross_plugin_contract.md` 介面協定。
 3. **安全優雅降級**: 若 FinanceClipper 未安裝，`WatchListWidget` 自動顯示離線或佔位提示，保證番茄鐘核心流程 100% 正常。
 

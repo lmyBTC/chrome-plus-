@@ -481,9 +481,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Code Skeleton Extractor - 掏空實作僅保留簽名與介面，節省 85%~95% Token",
         epilog="""範例:
-  py 1.devtools/tools/code_skeleton.py chrome_scrumclock/src/background.ts
-  npm run skeleton -- chrome_scrumclock/src/background.ts
-  py 1.devtools/tools/code_skeleton.py chrome_scrumclock/src/background.ts --save scratch/bg_skel.ts
+  py 1.devtools/tools/code_skeleton.py chrome_pk/src/background.ts
+  npm run skeleton -- chrome_pk/src/background.ts
+  py 1.devtools/tools/code_skeleton.py chrome_pk/src/background.ts --save scratch/bg_skel.ts
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )

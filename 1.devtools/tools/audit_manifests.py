@@ -44,7 +44,7 @@ def check_file_exists(base_path, relative_path, plugin_dir=None):
     if os.path.exists(full_path):
         return True, full_path
         
-    # 如果是 Vite 項目 (例如 chrome_scrumclock)
+    # 如果是 Vite 項目 (例如 chrome_pk)
     # 開發期有些檔案（如 popup.html、popup.js/ts）在項目根目錄或 src 目錄下，打包後才會合併至 dist/
     if plugin_dir:
         alt_paths = [
@@ -52,7 +52,7 @@ def check_file_exists(base_path, relative_path, plugin_dir=None):
             os.path.join(plugin_dir, 'src', clean_path),
             os.path.join(plugin_dir, 'src', clean_path.replace('.js', '.ts')),
             os.path.join(plugin_dir, 'src', clean_path.replace('.js', '.tsx')),
-            # Scrumclock 的 popup 可能是 index.html
+            # PK+ (ScrumClock) 的 popup 可能是 index.html
             os.path.join(plugin_dir, 'index.html') if 'popup' in clean_path else ''
         ]
         for alt_path in alt_paths:

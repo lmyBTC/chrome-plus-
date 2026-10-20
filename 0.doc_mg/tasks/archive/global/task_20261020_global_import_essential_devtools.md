@@ -53,12 +53,12 @@ related_drafts: []
 - `0.doc_mg/tasks/task_20261020_global_import_essential_devtools.md`
 
 ### 鎖定工具鏈 (Target Devtools)
-- [ ] 終端日誌脫水: `2>&1 | py 1.devtools/tools/compact_log.py`
-- [ ] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
+- [x] 終端日誌脫水: `2>&1 | py 1.devtools/tools/compact_log.py`
+- [x] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 - [x] [N/A] 輕量任務豁免 (無插件元件增刪、無 Storage Schema 改動、無跨插件通訊變更)
-- [ ] L4 任務生命週期: `0.doc_mg/tasks/archive/global/` (結案後移動封存歸檔，必選)
+- [x] L4 任務生命週期: `0.doc_mg/tasks/archive/global/` (結案後移動封存歸檔，必選)
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
 

@@ -1,6 +1,6 @@
 ---
 title: "[任務標題]"
-plugin: "[請填寫插件目錄名稱，例如: chrome_scrumclock | chrome_video speed plus | finance-research-clipper-oss | global]"
+plugin: "[請填寫插件目錄名稱，例如: chrome_pk | chrome_video speed plus | finance-research-clipper-oss | global]"
 status: "規劃中" # 規劃中 | 開發中 | 待審核 | 已完成
 created: "YYYY-MM-DD"
 deadline: "YYYY-MM-DD"

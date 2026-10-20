@@ -28,7 +28,7 @@ except AttributeError:
 
 # 4 組歷史幽靈 ID 及其對應路徑
 GHOST_EXTENSIONS = {
-    "agaallmookjjfabbpdgoeailhfllcgkn": "chrome_scrumclock/dist (舊隨機 ID)",
+    "agaallmookjjfabbpdgoeailhfllcgkn": "chrome_pk/dist (舊隨機 ID，原 scrumclock)",
     "egchfajhgaaebcbnbmbhnmdabicbflkf": "chrome_video speed plus (舊隨機 ID)",
     "gpgleghipcihiijlbieohhbghedmlppe": "chrome_gemini_nano (舊隨機 ID)",
     "lddmofabeepifibcahaneebcjapolbjl": "finance-research-clipper-oss (舊隨機 ID)",
@@ -37,7 +37,7 @@ GHOST_EXTENSIONS = {
 # 5 款插件正規固定公鑰 ID (白名單對照)
 VALID_PROJECT_EXTENSIONS = {
     "kjnoegggihncdaimlgfccccogghjapgn": "browser-activity-monitor",
-    "ahiihabnbjeoeneahcgbdcofncjoclcp": "chrome_scrumclock/dist",
+    "ahiihabnbjeoeneahcgbdcofncjoclcp": "chrome_pk/dist",
     "dhdnogmjajghbdcgdccicpkfljmcoieg": "chrome_video speed plus",
     "ejookehegbdmnkohfllcblcnjbgahgke": "chrome_gemini_nano",
     "imnnkgiglcbjknfbkdfocdhoookkipji": "finance-research-clipper-oss",

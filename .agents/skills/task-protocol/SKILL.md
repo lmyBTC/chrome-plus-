@@ -82,9 +82,9 @@ Phase 結束停步或遭遇突發問題中斷時，於回覆末尾附上對應�
    - **第一層（近 30 天活躍封存區）**：結案日期 ≤ 30 天之任務檔，直接平鋪於各插件子目錄根層，便於近期回顧與追蹤。
    - **第二層（歷史深層歸納區）**：結案日期 > 30 天之任務檔，定期或自動下沉歸納移入各插件目錄下之 `history/` 子目錄，以大幅消除視覺噪音。
 3. **標準歸檔目錄對照**：
-   - `chrome_scrumclock/`：
-     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/`
-     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/history/`
+   - `chrome_pk/`：
+     - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_pk/`
+     - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_pk/history/`
    - `chrome_video speed plus/`：
      - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/`
      - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/`

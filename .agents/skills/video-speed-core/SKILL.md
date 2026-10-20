@@ -18,7 +18,7 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md", "0.doc_mg/do
 ## 2. 關鍵入口架構 (Key Entrypoints)
 * `manifest.json`: Manifest V3 宣告，配置全域 `<all_urls>` / YouTube content scripts
 * `content.js`: 核心控制器，DOM `<video>` 探測、掛載 Shadow DOM 懸浮控制條、快捷鍵攔截與跨插件通訊
-* `popup.html` / `popup.js`: 彈出微型設定面板（速度、步進、A-B 循環與 ScrumClock 整合）
+* `popup.html` / `popup.js`: 彈出微型設定面板（速度、步進、A-B 循環與 PK+ (ScrumClock) 整合）
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **Shadow DOM 絕對隔離**: 控制器懸浮面板與輸入視窗必須建立在獨立 `ShadowRoot` 內，嚴禁 CSS 全域污染宿主網頁。

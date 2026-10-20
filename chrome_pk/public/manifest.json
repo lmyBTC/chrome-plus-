@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArYyTvac+1btiF4lRhouX716AYDtxvM6qfv5gq0W5FJIP6hOP5I+QyRNMz8ZfZeCBIyZ6tuT/VUn1GFCOZmnXm40suv0inYqaDmTpDdlBg77r32lnJ2XRyNwFkFrbK9hSOTFNsv7fy02fbvQl0E+trZgHEPpLIdaFDqHHSDRKo3h5tNEbccNEoiahA6ovm7OghABwykBwWu0byBmqPTYsBueP1YJhrsICyG5VQTQoF5XScyVdTxXT6X/phNfjU7/YX2ntxOZ9gpM6YVyyRxprf4jSBUc5l8fXOZeIehfEIbdolwaHU4sSbplM3pBBmhCHxuVCPFEqhC/hvAl+cIm+8QIDAQAB",
-  "name": "Power Kit",
+  "name": "PK+ (Power Kit)",
   "version": "1.0.0",
   "description": "極簡主義的每日規劃、衝刺與回顧工具",
   "icons": {
@@ -52,7 +52,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Power Kit",
+    "default_title": "PK+ (Power Kit)",
     "default_popup": "src/entries/popup/index.html"
   },
   "side_panel": {

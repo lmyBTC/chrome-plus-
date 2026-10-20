@@ -2,7 +2,7 @@
 
 > **專案儲存庫**：`https://github.com/lmyBTC/chrome-plus-`  
 > **核心架構**：Monorepo 多插件聚合、前端大腦（Chrome 130+ Web AI Matrix / Gemini Nano）+ 後端肌肉（Python 8765 微服務）、黑盒通訊契約（Contract-First）  
-> **中樞 Extension ID (ScrumClock)**：`ahiihabnbjeoeneahcgbdcofncjoclcp`（固定 2048-bit RSA SPKI 公鑰，開箱即連免配置）
+> **中樞 Extension ID (PK+)**：`ahiihabnbjeoeneahcgbdcofncjoclcp`（固定 2048-bit RSA SPKI 公鑰，開箱即連免配置）
 
 ---
 
@@ -40,56 +40,38 @@ chrome-plus-/
 │   │   ├── repo_radar_ai_prompt_instructions.md      # AI 助理高信噪比專案檢索指示規範
 │   │   ├── dev_standards.md                # 網頁與 Chrome 插件開發技術標準 (SSOT)
 │   │   └── versioning_spec.md              # 全專案版本號管理與發布合規規範 (SSOT)
-│   ├── tasks/                              # 實作工作看板 (Kanban)
-│   │   ├── task_gemini_nano_implementation_plan.md   # Nano 基礎與社群分發實作計畫 (100% 完成)
-│   │   ├── task_web_ai_matrix_parallelism.md         # Web AI 專用 API 矩陣並行實作計畫 (100% 完成)
-│   │   └── task_pm_gemini_nano_integration.md       # 敏捷專案管理 Nano 整合計畫 (100% 完成)
-│   └── tools/                              # 本機 Python 微服務與開發肌肉層 (常駐 127.0.0.1:8765)
+│   ├── tasks/                              # 實作工作看板與任務生命週期 (Kanban & Lifecycle)
+│   │   ├── task_20261020_update_readme_and_usage_guide.md # 當前執行中任務看板
+│   │   └── archive/                        # 已結案歷史任務封存歸檔 (依模組分類)
+│   └── tools/                              # 本機 Python 微服務與後端肌肉層 (常駐 127.0.0.1:8765)
 │       ├── main_dispatcher.py              # 本地 FastAPI 路由中樞 (社群、RSS、Obsidian、Radar)
+│       └── archive_rotator.py              # 歷史任務自動化滾動封存歸檔器
+│
+├── 1.devtools/                             # [自動化工具鏈與合規審計體系]
+│   └── tools/
+│       ├── audit_suite.py                  # 全自動一鍵端對端合規與隔離審計套件
+│       ├── audit_manifests.py              # 全專案 Manifest V3 合規審計工具
+│       ├── audit_plugin_isolation.py       # 多插件實體檔案與引用隔離性審計防線
+│       ├── doc_cross_ref.py                # 文檔交叉引用與斷鏈審計工具
+│       ├── version_manager.py              # 全專案版本號自動化管理與同步 CLI 工具
+│       ├── task_cli.py                     # 任務生命週期管理工具 (初始化/封存歸檔)
 │       ├── repo_radar.py                   # [高信噪比] 專案情報雷達 (大綱、章節切片、符號秒查、地圖)
 │       ├── generate_symbol_index.py        # [Token 殺手] 全域符號與文檔導航地圖快取生成器
 │       ├── code_skeleton.py                # [Token 殺手] 代碼骨架與簽名提煉器 (省 90% Token)
-│       ├── compact_log.py                  # [Token 殺手] 終端編譯/測試日誌脫水過濾器
-│       ├── local_dedup.py                  # 歷史發文相似度 SequenceMatcher 防重比對器
-│       ├── rss_generator.py                # 靜態 RSS 2.0 (feed.xml) 自動追加與最新 30 則滾動淘汰
-│       ├── social_publisher.py             # X API v2 與 Meta Threads API 直發代理 (含 Dry-Run)
-│       └── markdown_archiver.py            # 本地 Obsidian YAML Frontmatter 剪藏歸檔器
+│       └── compact_log.py                  # [Token 殺手] 終端編譯/測試日誌脫水過濾器
 │
-├── 1.devtools/                             # [自動化工具鏈與發布合規體系]
-│   └── tools/
-│       ├── audit_manifests.py              # 全專案 Manifest V3 合規審計工具
-│       └── version_manager.py              # 全專案版本號自動化管理與同步 CLI 工具
-│
-├── chrome_scrumclock/                      # [系統中樞] 敏捷專注工作站 (React 18 + TS + Tailwind + Vite)
+├── chrome_pk/                              # [系統中樞] PK+ 敏捷專注工作站 (React 18 + TS + Tailwind + Vite)
 │   ├── src/
-│   │   ├── core/ai/                        # 端側 AI 基礎設施
-│   │   │   ├── nanoService.ts              # Chrome Prompt API 多命名空間適配與單例會話管理
-│   │   │   ├── webAIGateway.ts             # Chrome 130+ 專用 Web AI API 矩陣中樞路由
-│   │   │   ├── nanoPromptGuard.ts          # 端側小模型防崩潰引擎 (8 大預定路線 Few-shot 錨定)
-│   │   │   ├── nanoIntentRouter.ts         # 全域自然語言萬能路由器 (Cmd+K 口語動作解構)
-│   │   │   └── adapters/                   # 專用小模型適配器
-│   │   │       ├── summarizerAdapter.ts    # ai.summarizer (Key-Points / TL;DR 雙模式摘要)
-│   │   │       ├── writerAdapter.ts        # ai.writer (社群貼文初稿、格式與長度控制)
-│   │   │       ├── rewriterAdapter.ts      # ai.rewriter (觀點銳化、字數縮減、在地去油)
-│   │   │       └── translatorAdapter.ts    # translation API (離線神經翻譯)
-│   │   ├── features/
-│   │   │   ├── project-management/         # GTD 專案管理看板
-│   │   │   │   ├── services/
-│   │   │   │   │   ├── taskAIEngine.ts     # 專案管理 AI 引擎 (批次釐清、原子拆解、日報、WIP 防禦)
-│   │   │   │   │   └── kanbanAuditor.ts    # 看板健康度審計 (WIP 飽和度、停滯卡片巡檢)
-│   │   │   │   └── components/
-│   │   │   │       ├── BoardView.tsx       # 看板主中控 (健康度徽章、一鍵理牌、WIP 衝突防護)
-│   │   │   │       ├── InboxTriageModal.tsx# 收件匣一鍵釐清 HITL 審核視窗
-│   │   │   │       └── TaskDetailDrawer.tsx# 卡片詳情抽屜 (整合 ai.writer 原子任務拆解)
-│   │   │   ├── scrumclock/components/
-│   │   │   │   └── EndOfDayReview.tsx      # 日終成果覆盤 (ai.summarizer 提煉 + Obsidian 落盤)
-│   │   │   └── toolbox/tools/social-dispatcher/ # 社群分發工具
-│   │   │       ├── SocialDispatcher.tsx    # 側欄雙欄發布審核 (X / Threads + 矩陣狀態指示)
-│   │   │       └── toneShifter.ts          # 4 大原生改寫調音算子 (銳化/壓線280/去油/切Thread)
-│   │   ├── content/
-│   │   │   └── pulseExtractor.ts           # 針對 pulse.html 與研報的 DOM 卡片提取器
-│   │   └── background.ts                   # 計時守護、DNR 網路阻擋、chrome.idle 閒置巡檢、路由派發
-│   └── manifest.json                       # ScrumClock Manifest V3 配置
+│   │   ├── core/ai/                        # 端側 AI 基礎設施 (NanoService, WebAIGateway, PromptGuard)
+│   │   ├── features/                       # 敏捷看板、日終覆盤、社群分發
+│   │   └── background.ts                   # 計時守護、DNR 網路阻擋、chrome.idle 巡檢
+│   └── manifest.json                       # PK+ Manifest V3 配置
+│
+├── chrome_gemini_nano/                     # [邊緣推論] Gemini Nano Prompt API 本地推論與調音中樞
+│   ├── src/                                # Prompt API 呼叫封裝、調音算子原型
+│   ├── sidepanel.html                      # 側邊欄調音中樞與推論測試介面
+│   ├── chrome_gemini_nano_README.md        # Gemini Nano 獨立擴充模組規格 SSOT
+│   └── manifest.json                       # 獨立 Gemini Nano 擴充套件設定 (Chrome 128+)
 │
 ├── finance-research-clipper-oss/           # [投研採集] 財經研報與個股爬蟲 (原生 JS, 零依賴)
 │   ├── dashboard.html                      # 獨立深色投研儀表板 (估值沙盒、分析師目標價)
@@ -97,7 +79,7 @@ chrome-plus-/
 │
 ├── chrome_video speed plus/                # [影音學習] 影音倍速與字幕筆記採集 (Shadow DOM)
 │   ├── content.js                          # 全網 HTML5 變速 (0.1x~16x) 與 A-B 循環播放
-│   └── options.html                        # 支援 Alt+S 一鍵字幕提取並推送至 ScrumClock
+│   └── options.html                        # 支援 Alt+S 一鍵字幕提取並推送至 PK+
 │
 ├── browser-activity-monitor/               # [資安防護] 瀏覽器活動與流量監控 (原生 JS, IndexedDB)
 │   ├── sidepanel.html                      # 80% 原生常駐 (封包/下載/權限) + 20% 隨選深入探針
@@ -109,14 +91,15 @@ chrome-plus-/
 
 ---
 
-## 🧩 三、 四大擴充模組生態系矩陣 (Ecosystem Matrix)
+## 🧩 三、 五大擴充模組生態系矩陣 (Ecosystem Matrix)
 
 | 模組名稱 | 載體型態 | 技術棧 | 領域職責 | 與其他模組的協同行為 |
 | :--- | :--- | :--- | :--- | :--- |
-| **ScrumClock** | New Tab, Side Panel, Popup | React 18, TypeScript, TailwindCSS, Vite | **生態系中樞**。負責敏捷衝刺、GTD 看板、Web AI 矩陣調度、社群雙語分發與本機 Python 微服務橋接。 | 接收來自各插件的 `CREATE_TASK` 契約；向本機 `:8765` 派發工具請求。 |
-| **Finance Clipper** | 獨立 Dashboard, Side Panel | 原生 JS (ES6+), CSS Grid | **財經深度採集**。爬取 Google / Yahoo / Goodinfo 財務指標、分析師目標價、估值沙盒。 | 點擊「加入今日戰役」一鍵將個股研報封裝為任務，推入 ScrumClock 收件匣。 |
-| **Video Speed Plus** | Content Script (Shadow DOM) | 原生 JS | **影音倍速與筆記**。YouTube 0.1x~16x 變速、A-B 段落循環、法說會影音打點。 | 按下 `Alt + S` 抽取當前時間戳字幕，直推 ScrumClock 待辦池。 |
-| **Activity Monitor** | Side Panel, Background Worker | 原生 JS, IndexedDB | **網路與隱私審計**。全域網路請求、下載行為審查、Origin 敏感權限透視。 | 獨立運行，亦可內嵌於 ScrumClock 工具箱中。 |
+| **PK+ (Power Kit)** | New Tab, Side Panel, Popup | React 18, TypeScript, TailwindCSS, Vite | **生態系中樞**。負責敏捷衝刺、GTD 看板、Web AI 矩陣調度、社群雙語分發與本機 Python 微服務橋接。 | 接收來自各插件的 `CREATE_TASK` 契約；向本機 `:8765` 派發工具請求。 |
+| **Gemini Nano** | Side Panel, Background Worker | 原生 JS / TypeScript, Chrome Prompt API | **端側 AI 與調音中樞**。Chrome 128+ 原生 Prompt API 本地邊緣推論、社群調音算子操練、全域口語指令測試與本機 `:8765` 微服務連動。 | 獨立純粹邊緣 AI 操練與測試場域；提供調音 Prompt 原型並與後端肌肉層協同。 |
+| **Finance Clipper** | 獨立 Dashboard, Side Panel | 原生 JS (ES6+), CSS Grid | **財經深度採集**。爬取 Google / Yahoo / Goodinfo 財務指標、分析師目標價、估值沙盒。 | 點擊「加入今日戰役」一鍵將個股研報封裝為任務，推入 PK+ 收件匣。 |
+| **Video Speed Plus** | Content Script (Shadow DOM) | 原生 JS | **影音倍速與筆記**。YouTube 0.1x~16x 變速、A-B 段落循環、法說會影音打點。 | 按下 `Alt + S` 抽取當前時間戳字幕，直推 PK+ 待辦池。 |
+| **Activity Monitor** | Side Panel, Background Worker | 原生 JS, IndexedDB | **網路與隱私審計**。全域網路請求、下載行為審查、Origin 敏感權限透視。 | 獨立運行，亦可內嵌於 PK+ 工具箱中。 |
 
 ---
 
@@ -160,12 +143,16 @@ chrome-plus-/
 
 | 工具腳本 | 核心指令 / 用法 | 解決痛點 | 效益與職責 |
 | :--- | :--- | :--- | :--- |
-| **`repo_radar.py`** | `python 0.doc_mg/tools/repo_radar.py map`<br>`python 0.doc_mg/tools/repo_radar.py section <file> -H "章節"`<br>`python 0.doc_mg/tools/repo_radar.py symbol <Name>` | 解決盲目全檔讀取與反覆 grep 找檔案的浪費 | 檢索階段節省 **90% ~ 98%** Tokens |
-| **`generate_symbol_index.py`** | `python 0.doc_mg/tools/generate_symbol_index.py` | 產出全專案 `<10KB` 的 `.repo_index.json` 快取地圖 | 代碼定位 **0 毫秒**、不到 20 tokens |
-| **`code_skeleton.py`** | `python 0.doc_mg/tools/code_skeleton.py <file>` | 掏空實作主體，僅保留 TypeScript/Python 介面與簽名 | 查詢依賴時節省 **85% ~ 95%** Tokens |
-| **`compact_log.py`** | `npm run build 2>&1 \| python 0.doc_mg/tools/compact_log.py` | 過濾千行 node_modules 堆疊，僅保留致命報錯行號 | 除錯階段節省 **75% ~ 90%** 上下文 |
-| **`version_manager.py`** | `npm run version:list`<br>`npm run version:bump`<br>`python 1.devtools/tools/version_manager.py bump minor --all` | 多插件版本號不一致、手動改錯 Manifest 格式 | MV3 合規 SemVer 自動遞增與雙向同步 |
-| **`audit_manifests.py`** | `npm run audit:manifests` | Manifest V3 欄位遺漏、CSP 違規、版本號格式錯誤 | Chrome Web Store 上架前合規自動審計 |
+| **`audit_suite.py`** | `py 1.devtools/tools/audit_suite.py` | 需手動分別執行多項審計指令之痛點 | **全自動一鍵端對端審計**：整合 Manifest V3、插件隔離性防禦與 Markdown 斷鏈稽核，CI/CD 守門必備 |
+| **`audit_manifests.py`** | `npm run audit:manifests`<br>`py 1.devtools/tools/audit_manifests.py` | Manifest V3 欄位遺漏、CSP 違規、版本號格式錯誤 | Chrome Web Store 上架前合規自動審計 |
+| **`audit_plugin_isolation.py`** | `npm run audit:isolation`<br>`py 1.devtools/tools/audit_plugin_isolation.py` | 跨插件跨目錄代碼污染、未授權外部檔案依賴 | 嚴格多插件實體檔案與引用隔離性審計防線 |
+| **`doc_cross_ref.py`** | `py 1.devtools/tools/doc_cross_ref.py` | 文檔連結失效、錨點無效、孤島文檔未清理 | 全專案 Markdown 交叉參照與斷鏈自動修復建議 |
+| **`version_manager.py`** | `npm run version:list`<br>`npm run version:bump`<br>`py 1.devtools/tools/version_manager.py bump minor --all` | 多插件版本號不一致、手動改錯 Manifest 格式 | MV3 合規 SemVer 自動遞增與雙向同步 |
+| **`task_cli.py`** | `npm run task:init`<br>`npm run task:archive` | 手動搬移與管理任務檔案耗時繁瑣 | 任務生命週期自動化管理（模板初始化、歸檔封存） |
+| **`repo_radar.py`** | `py 1.devtools/tools/repo_radar.py map`<br>`py 1.devtools/tools/repo_radar.py section <file> -H "章節"`<br>`py 1.devtools/tools/repo_radar.py symbol <Name>` | 解決盲目全檔讀取與反覆 grep 找檔案的浪費 | 檢索階段節省 **90% ~ 98%** Tokens |
+| **`generate_symbol_index.py`** | `py 1.devtools/tools/generate_symbol_index.py` | 產出全專案 `<10KB` 的 `.repo_index.json` 快取地圖 | 代碼定位 **0 毫秒**、不到 20 tokens |
+| **`code_skeleton.py`** | `npm run skeleton <file>`<br>`py 1.devtools/tools/code_skeleton.py <file>` | 掏空實作主體，僅保留 TypeScript/Python 介面與簽名 | 查詢依賴時節省 **85% ~ 95%** Tokens |
+| **`compact_log.py`** | `npm run build 2>&1 \| py 1.devtools/tools/compact_log.py` | 過濾千行 node_modules 堆疊，僅保留致命報錯行號 | 除錯階段節省 **75% ~ 90%** 上下文 |
 
 ---
 
@@ -180,22 +167,27 @@ pip install fastapi uvicorn requests
 python 0.doc_mg/tools/main_dispatcher.py
 ```
 
-### 2. 構建並加載 ScrumClock (前端大腦)
-```bash
-cd chrome_scrumclock
-npm install
-npm run build
-
-# 載入擴充套件：
-# 打開 Chrome -> 進入 chrome://extensions/ -> 開啟「開發人員模式」 -> 點擊「載入未封裝項目」 -> 選擇 chrome_scrumclock/dist 目錄
-```
+### 2. 構建並加載擴充套件 (前端大腦與五大模組)
+- **PK+ (Power Kit)**：
+  ```bash
+  cd chrome_pk && npm install && npm run build
+  ```
+  於 `chrome://extensions/` 開啟「開發人員模式」，點選「載入未封裝項目」選擇 `chrome_pk/dist` 目錄。
+- **Gemini Nano**：
+  載入 `chrome_gemini_nano/` 目錄（Chrome 128+ 需開啟 Prompt API flag）。
+- **Finance Clipper**：
+  載入 `finance-research-clipper-oss/` 目錄（原生 JS 免構建）。
+- **Video Speed Plus**：
+  載入 `chrome_video speed plus/` 目錄（原生 JS 免構建）。
+- **Activity Monitor**：
+  載入 `browser-activity-monitor/` 目錄（原生 JS 免構建）。
 
 ### 3. 建置專案全域符號快取 (開發者推薦)
 ```bash
-python 0.doc_mg/tools/generate_symbol_index.py
+py 1.devtools/tools/generate_symbol_index.py
 ```
 
-### 4. 版本管理與發布審核 (Release Workflow)
+### 4. 版本管理與發布審核 (Release & Audit Workflow)
 ```bash
 # 檢視所有插件版本與同步狀態
 npm run version:list
@@ -205,4 +197,10 @@ npm run version:bump
 
 # 執行全體插件 Manifest V3 上架合規審計
 npm run audit:manifests
+
+# 執行多插件代碼與資源隔離性審計
+npm run audit:isolation
+
+# 執行全自動端對端審計套件 (Manifest + 隔離性 + 斷鏈)
+py 1.devtools/tools/audit_suite.py
 ```

@@ -23,10 +23,10 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄常駐快捷工具箱（支援剪貼簿秒爬與當前頁面提取）
 * `popup.html` / `popup.js`: 工具列彈窗主控（模式切換、標的廣播與雙鍵設定同步）
 * `googleSheetsExporter.js`: Google Sheets 雙軌匯出模組（支援個股估值沙盒、P/E、殖利率與 Nano 觀點直連 GAS Web App 與 Local Hub 退避）
-* `aiClient.js`: 跨插件通信客戶端（連動 ScrumClock 本地 Gemini Nano 研報推論 API）
+* `aiClient.js`: 跨插件通信客戶端（連動 PK+ 本地 Gemini Nano 研報推論 API）
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
-1. **禁止跨目錄讀取**: 開發 FinanceClipper 時，嚴禁跨目錄讀取 `chrome_scrumclock/`、`browser-activity-monitor/` 等其他插件源碼。
+1. **禁止跨目錄讀取**: 開發 FinanceClipper 時，嚴禁跨目錄讀取 `chrome_pk/`、`browser-activity-monitor/` 等其他插件源碼。
 2. **通訊規格驅動**: 跨插件協同（`PING_HUB`, `CREATE_TASK`, `EXPORT_TO_SHEETS`）一律依據 `0.doc_mg/docs/cross_plugin_contract.md` 與 `0.doc_mg/docs/google_ecosystem_integration_spec.md` 黑盒規範。
 3. **零構建約束**: 維持無打包純原生 JS 特性，嚴禁引入 Node.js/Webpack/Vite 等構建工具。
 

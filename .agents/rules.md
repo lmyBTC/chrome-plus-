@@ -13,7 +13,7 @@
 |**任務協議管理**|`建立任務`,`開始開發`,`任務拆解`,`動態收斂`,`4-Gate`|`.agents/skills/task-protocol/SKILL.md`|
 |**Token 節省器**|`節省Token`,`代碼骨架`,`日誌脫水`,`rtk指令`,`局部讀寫`|`.agents/skills/token-saver/SKILL.md`|
 |**Chrome 插件合規審計**|`安全審查`,`合規檢查`,`manifest審計`,`上架檢查`|`.agents/skills/chrome-auditor/SKILL.md`|
-|**ScrumClock 規格字典**|`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|`.agents/skills/scrumclock-core/SKILL.md`|
+|**PK+ 規格字典**|`pk`,`pk+`,`power kit`,`scrumclock`,`番茄鐘`,`敏捷看板`,`pomodoro`|`.agents/skills/pk-core/SKILL.md`|
 |**FinanceClipper 研報字典**|`finance-clipper`,`研報採集`,`股票爬蟲`,`財務儀表板`|`.agents/skills/finance-clipper-core/SKILL.md`|
 |**VideoSpeedPlus 倍速字典**|`video speed`,`影片倍速`,`youtube倍速`,`videospeedplus`|`.agents/skills/video-speed-core/SKILL.md`|
 |**專案情報雷達**|`repo radar`,`符號查詢`,`檢索代碼`,`查型別`,`查文檔`,`專案地圖`|`.agents/skills/repo-radar/SKILL.md`|

@@ -6,10 +6,10 @@ Chrome 多插件工作區：跨插件通訊合約與快照 JSON Schema 自動校
 
 規範來源: 0.doc_mg/docs/cross_plugin_contract.md
 支援協議類型:
-  - AI_GENERATE_FINANCE_SUMMARY (FinanceClipper -> ScrumClock)
-  - CREATE_TASK (FinanceClipper -> ScrumClock)
-  - FOCUS_STARTED (ScrumClock -> FinanceClipper)
-  - COLLECT_NOTE (VideoSpeedPlus -> ScrumClock)
+  - AI_GENERATE_FINANCE_SUMMARY (FinanceClipper -> PK+)
+  - CREATE_TASK (FinanceClipper -> PK+)
+  - FOCUS_STARTED (PK+ -> FinanceClipper)
+  - COLLECT_NOTE (VideoSpeedPlus -> PK+)
   - CLIPPER_SNAPSHOT / MINER_SCHEMA (FinanceClipper 數據快照)
 """
 

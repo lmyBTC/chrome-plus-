@@ -4,8 +4,10 @@
   "description": "Chrome 多插件開發工作區自動化管理配置",
   "private": true,
   "scripts": {
-    "dev:scrumclock": "npm --prefix chrome_scrumclock run dev",
-    "build:scrumclock": "npm --prefix chrome_scrumclock run build",
+    "dev:pk": "npm --prefix chrome_pk run dev",
+    "build:pk": "npm --prefix chrome_pk run build",
+    "dev:scrumclock": "npm --prefix chrome_pk run dev",
+    "build:scrumclock": "npm --prefix chrome_pk run build",
     "audit:manifests": "py 1.devtools/tools/audit_manifests.py || python 1.devtools/tools/audit_manifests.py",
     "audit:isolation": "py 1.devtools/tools/audit_plugin_isolation.py || python 1.devtools/tools/audit_plugin_isolation.py",
     "version:list": "py 1.devtools/tools/version_manager.py list || python 1.devtools/tools/version_manager.py list",

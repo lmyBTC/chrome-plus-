@@ -27,7 +27,7 @@ ssot_dependencies: ["chrome_gemini_nano/chrome_gemini_nano_README.md", "chrome_g
 * `tools/main_dispatcher.py`: 本機 FastAPI 8765 路由閘道微服務
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
-1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `chrome_scrumclock`、`finance-research-clipper-oss`）之內部原始碼。
+1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `chrome_pk`、`finance-research-clipper-oss`）之內部原始碼。
 2. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/cross_plugin_contract.md` 規範（如 `DISPATCH_SOCIAL_POST`、`LOCAL_TOOL_PROXY`、Task AI 廣播接口），不得私相依賴。
 3. **VRAM 獨佔與釋放保證**: 單一裝置僅允許 Single-Flight 隊列執行推論；調用完畢必須明確呼叫 `session.destroy()` 釋放本機 VRAM。
 4. **優雅降級**: 本機模型未就緒或 Python 輔助微服務未啟動時，需提供純前端降級提示，嚴禁阻斷主流程。

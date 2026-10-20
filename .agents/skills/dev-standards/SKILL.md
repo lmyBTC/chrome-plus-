@@ -18,7 +18,7 @@ ssot_dependencies: ["0.doc_mg/docs/dev_standards.md"]
 
 ### Step 1: 環境與規格掃描
 - 讀取 `0.doc_mg/docs/dev_standards.md`。
-- 確認為**編譯型** (`chrome_scrumclock`) 或**原生零建置型**，並定位入口檔案。
+- 確認為**編譯型** (`chrome_pk`) 或**原生零建置型**，並定位入口檔案。
 
 ### Step 2: 安全性與隔離設計
 - **樣式隔離 (Shadow DOM)**: 注入 UI 必須使用 Shadow DOM 隔離 CSS，防止干擾宿主網頁。
