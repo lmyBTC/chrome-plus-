@@ -106,8 +106,8 @@
       // 計算潛在上漲空間
       if (elements.targetUpsideText) {
         if (analyst.targetMedian && stock.price) {
-          const curPrice = parseFloat(stock.price.replace(/[^0-9.]/g, ''));
-          const medPrice = parseFloat(analyst.targetMedian.replace(/[^0-9.]/g, ''));
+          const curPrice = parseFloat(String(stock.price).replace(/[^0-9.]/g, ''));
+          const medPrice = parseFloat(String(analyst.targetMedian).replace(/[^0-9.]/g, ''));
           if (!isNaN(curPrice) && !isNaN(medPrice) && curPrice > 0) {
             const upside = (((medPrice - curPrice) / curPrice) * 100).toFixed(1);
             const sign = upside >= 0 ? '+' : '';
@@ -118,6 +118,100 @@
         } else {
           elements.targetUpsideText.textContent = '';
         }
+      }
+
+      // 2.1 分析師共識離散度 (CV) 與風險等級渲染
+      const dispersionBadge = elements.targetDispersionBadge || document.getElementById('target-dispersion-badge');
+      const dispersionMeta = elements.targetDispersionMeta || document.getElementById('target-dispersion-meta');
+
+      let stats = (stock.minerMetrics && stock.minerMetrics.targetPriceStats)
+        || stock.targetPriceStats
+        || (stock.minerMetrics ? {
+            count: (stock.minerMetrics.targetLow && stock.minerMetrics.targetHigh) ? 3 : 0,
+            stdDev: stock.minerMetrics.targetStdDev,
+            cv: stock.minerMetrics.targetCv,
+            mean: stock.minerMetrics.targetMean,
+            median: stock.minerMetrics.targetMedian
+          } : null)
+        || (stock.stats && (stock.stats.targetCv !== undefined || stock.stats['目標價變異係數'] !== undefined) ? {
+            cv: stock.stats.targetCv || stock.stats['目標價變異係數'],
+            stdDev: stock.stats.targetStdDev || stock.stats['目標價標準差'],
+            count: 3
+          } : null);
+
+      // 若未直接提供但有 targetLow, targetMedian, targetHigh，進行 fallback 計算
+      if ((!stats || stats.cv === undefined || stats.cv === null) && analyst) {
+        const rawList = [analyst.targetLow, analyst.targetMedian, analyst.targetHigh]
+          .filter(Boolean)
+          .map(v => typeof v === 'number' ? v : parseFloat(String(v).replace(/[^0-9.]/g, '')))
+          .filter(v => !isNaN(v) && v > 0);
+        if (rawList.length >= 2) {
+          const n = rawList.length;
+          const sum = rawList.reduce((acc, p) => acc + p, 0);
+          const mean = sum / n;
+          const variance = rawList.reduce((acc, p) => acc + Math.pow(p - mean, 2), 0) / (n - 1);
+          const stdDev = Math.sqrt(variance);
+          const cv = mean > 0 ? (stdDev / mean) : 0;
+          stats = {
+            count: n,
+            mean: parseFloat(mean.toFixed(2)),
+            stdDev: parseFloat(stdDev.toFixed(2)),
+            cv: parseFloat(cv.toFixed(4))
+          };
+        }
+      }
+
+      if (stats && stats.cv !== undefined && stats.cv !== null) {
+        let cvVal = typeof stats.cv === 'number' ? stats.cv : parseFloat(String(stats.cv).replace(/%/g, ''));
+        if (!isNaN(cvVal) && cvVal > 1) {
+          cvVal = cvVal / 100;
+        }
+
+        const countVal = stats.count || (stats.n !== undefined ? stats.n : 0);
+
+        if (!isNaN(cvVal) && (countVal === 0 || countVal >= 2)) {
+          let badgeClass = 'badge-dispersion-mid';
+          let badgeText = '共識分歧度：適中';
+          let badgeIcon = '⚖️';
+
+          if (cvVal < 0.12) {
+            badgeClass = 'badge-dispersion-low';
+            badgeText = '低分歧 (共識集中)';
+            badgeIcon = '🛡️';
+          } else if (cvVal > 0.25) {
+            badgeClass = 'badge-dispersion-high';
+            badgeText = '高分歧 (高波動警示)';
+            badgeIcon = '⚠️';
+          } else {
+            badgeClass = 'badge-dispersion-mid';
+            badgeText = '適中分歧 (意見適中)';
+            badgeIcon = '⚖️';
+          }
+
+          if (dispersionBadge) {
+            dispersionBadge.className = `badge-dispersion ${badgeClass}`;
+            dispersionBadge.textContent = `${badgeIcon} ${badgeText}`;
+            dispersionBadge.title = `目標價變異係數 (CV): ${(cvVal * 100).toFixed(1)}%`;
+            dispersionBadge.style.display = 'inline-flex';
+          }
+
+          if (dispersionMeta) {
+            const parts = [];
+            if (countVal >= 2) parts.push(`<span>👥 分析師樣本: ${countVal} 位</span>`);
+            if (stats.stdDev !== undefined && stats.stdDev !== null && !isNaN(stats.stdDev)) {
+              parts.push(`<span>📏 標準差: $${stats.stdDev}</span>`);
+            }
+            parts.push(`<span>📊 變異係數 (CV): ${(cvVal * 100).toFixed(1)}%</span>`);
+            dispersionMeta.innerHTML = parts.join(' • ');
+            dispersionMeta.style.display = 'flex';
+          }
+        } else {
+          if (dispersionBadge) dispersionBadge.style.display = 'none';
+          if (dispersionMeta) dispersionMeta.style.display = 'none';
+        }
+      } else {
+        if (dispersionBadge) dispersionBadge.style.display = 'none';
+        if (dispersionMeta) dispersionMeta.style.display = 'none';
       }
 
       // 3. 財報表現 (Earnings)

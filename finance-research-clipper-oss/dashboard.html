@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finance Research Clipper - 智能投資研報儀表板</title>
-  <link rel="stylesheet" href="dashboard.css">
-  <link rel="stylesheet" href="dashboard-stock.css">
-  <link rel="stylesheet" href="dashboard-components.css">
-  <link rel="stylesheet" href="dashboard-peer-matrix.css">
-  <link rel="stylesheet" href="dashboard-valuation.css">
+  <link rel="stylesheet" href="src/dashboard/css/dashboard.css">
+  <link rel="stylesheet" href="src/dashboard/css/dashboard-stock.css">
+  <link rel="stylesheet" href="src/dashboard/css/dashboard-components.css">
+  <link rel="stylesheet" href="src/dashboard/css/dashboard-peer-matrix.css">
+  <link rel="stylesheet" href="src/dashboard/css/dashboard-valuation.css">
 </head>
 <body>
 
@@ -248,7 +248,10 @@
           <!-- 分析師評級與目標價階梯 -->
           <section class="card">
             <div class="card-title">
-              <span>🎯 分析師共識與目標價</span>
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span>🎯 分析師共識與目標價</span>
+                <span id="target-dispersion-badge" class="badge-dispersion" style="display: none;"></span>
+              </div>
               <span id="analyst-badge" class="rating-badge rating-buy">--</span>
             </div>
             <div class="target-price-row">
@@ -266,6 +269,7 @@
               </div>
             </div>
             <div id="target-upside-text" style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 12px; text-align: center;"></div>
+            <div id="target-dispersion-meta" class="target-dispersion-meta" style="display: none;"></div>
           </section>
 
           <!-- 財報表現 (Earnings) -->
@@ -458,18 +462,18 @@
   <!-- 吐司提示容器 -->
   <div id="toast-container" class="toast-container"></div>
 
-  <script src="aiClient.js"></script>
-  <script src="googleSheetsExporter.js"></script>
-  <script src="dashboard-render.js"></script>
-  <script src="dashboard-tabs-render.js"></script>
-  <script src="dashboard-peer-render.js"></script>
-  <script src="dashboard-valuation-render.js"></script>
-  <script src="dashboard-actions.js"></script>
-  <script src="dashboard-peer-actions.js"></script>
-  <script src="dashboard-valuation-actions.js"></script>
-  <script src="dashboard-tabs.js"></script>
-  <script src="dashboard-ai.js"></script>
-  <script src="dashboard.js"></script>
+  <script src="src/services/aiClient.js"></script>
+  <script src="src/services/googleSheetsExporter.js"></script>
+  <script src="src/dashboard/js/dashboard-render.js"></script>
+  <script src="src/dashboard/js/dashboard-tabs-render.js"></script>
+  <script src="src/dashboard/js/dashboard-peer-render.js"></script>
+  <script src="src/dashboard/js/dashboard-valuation-render.js"></script>
+  <script src="src/dashboard/js/dashboard-actions.js"></script>
+  <script src="src/dashboard/js/dashboard-peer-actions.js"></script>
+  <script src="src/dashboard/js/dashboard-valuation-actions.js"></script>
+  <script src="src/dashboard/js/dashboard-tabs.js"></script>
+  <script src="src/dashboard/js/dashboard-ai.js"></script>
+  <script src="src/dashboard/js/dashboard.js"></script>
 </body>
 </html>
 

@@ -21,7 +21,7 @@
 - **左側歷史追蹤庫**：自動紀錄最近爬取過的標的清單（代號、即時價格、時間戳記），支援隨點隨切換、快速比對，並與底部族群分類動態連動。
 - **全方位財務矩陣**：
   - 📊 **個股主看板 (Hero)**：即時股價、S&P 500 / Nasdaq 大盤對比、市值、本益比 (P/E)、殖利率、52 週區間。關鍵指標網格採自適應均稱排版（自動平衡卡片消除孤立空隙），並將趨勢向量圖示直接內嵌 SVG，杜絕圖示破圖。
-  - 🎯 **分析師共識與目標價階梯**：共識評級徽章 (*Strong Buy* / *Hold*)、最高/中位數/最低目標價視覺化水平儀、潛在上漲空間百分比計算。
+  - 🎯 **分析師共識與目標價階梯**：共識評級徽章 (*Strong Buy* / *Hold*)、最高/中位數/最低目標價視覺化水平儀、潛在上漲空間百分比計算，以及共識離散度標籤（變異係數 CV 低/中/高分歧警告與標準差統計）。
   - 📈 **最新季度財報表現 (Earnings)**：EPS 與營收實際值 vs 分析師預期。
   - 📑 **損益表數據矩陣 (Income Statement)**：主動導航至 financials 分頁並結合語意關鍵字白名單，精準呈現個股真實各年/季度營收與獲利變化。
   - 🌐 **市場主題與相關專題 (Market Topics)**：獨立呈現 Overview 總覽頁提取之市場熱門主題、趨勢與相關標的行情矩陣。
@@ -55,27 +55,27 @@
 | 模組 / 檔案 | 職責說明 | 關鍵元素 / 實作函式 |
 | :--- | :--- | :--- |
 | `manifest.json` | MV3 規範宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) | `"side_panel": { "default_path": "sidepanel.html" }` |
-| `dashboard.html`<br>`dashboard.js`<br>`dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、三向 View Switcher（個股、同業對比、估值沙盒）與核心協調整合器 | `init()`, `setupViewSwitcherEvents()`, `bindEvents()` |
-| `dashboard-stock.css`<br>`dashboard-components.css` | **[樣式] 儀表板視覺子模組**：個股 Hero/指標卡/損益表樣式、AI 研報卡片/匯出面板/Modal 樣式 | 指標卡排版、AI 研報雙欄卡片、匯出中心下拉面板樣式 |
-| `dashboard-peer-matrix.css`<br>`dashboard-valuation.css` | **[樣式] 儀表板領域樣式子模組**：同業橫向對比矩陣與敏感度估值沙盒專屬樣式隔離 | 2~5 檔標的對比排版、極值高亮、5x5 敏感度二維熱力網格與情境卡片樣式 |
-| `dashboard-render.js` | **[視圖] 核心渲染模組**：歷史清單、個股主看板、指標均稱網格 (`renderStatsGrid`)、SVG 趨勢向量 (`formatStatValue`)、損益表與市場專題卡片 | `window.DashboardRender.renderStock()`, `renderFinancialsTable()`, `formatStatValue()` |
-| `dashboard-tabs-render.js` | **[視圖] 標籤與分頁渲染模組**：族群分類分頁列、自訂主題標籤列與底部分頁狀態渲染 | `window.DashboardRender.renderCategoryTabs()`, `renderTopicTags()`, `renderSheetTabs()` |
-| `dashboard-peer-render.js` | **[視圖] 同業矩陣渲染子模組**：同業橫向對比矩陣、動態標的核選列、市值/估值/上漲空間長條比對圖表與極值標色 | `window.DashboardRender.renderPeerMatrix()` |
-| `dashboard-valuation-render.js` | **[視圖] 估值沙盒渲染子模組**：Bear / Base / Bull 三情境卡片、即時參數滑桿與 5x5 成長率 vs P/E 二維敏感度熱力矩陣 | `window.DashboardRender.renderValuationSandbox()` |
-| `dashboard-actions.js` | **[動作] 核心動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 防禦）、CSV 下載、GAS 同步等共通動作通道 | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportToGas()` |
-| `dashboard-peer-actions.js` | **[動作] 同業矩陣動作子模組**：多選標的即時數據聚合、Markdown 對比表格複製、同業矩陣 Google 試算表 (GAS) 獨立同步 | `window.DashboardActions.getPeerComparisonData()`, `exportPeerMatrixMarkdown()`, `exportPeerMatrixToGas()` |
-| `dashboard-valuation-actions.js` | **[動作] 估值沙盒動作子模組**：折現現金流與終值估值引擎、模型報表產出、推播 ScrumClock 作戰任務與 GAS 估值頁同步 | `window.DashboardActions.calculateValuation()`, `exportSandboxToGas()`, `pushSandboxToScrumClock()` |
-| `dashboard-tabs.js` | **[控制器] 標籤與分類狀態模組**：Categories 族群分類與 Topic Tags 自訂主題標籤狀態維護與持久化 | `window.DashboardTabs.init()`, `setupCategoryEvents()`, `setupTopicTagEvents()` |
-| `dashboard-ai.js` | **[控制器] 本地 AI 研報控制器**：連動 ScrumClock 本地 Gemini Nano 之 AI 解讀生命週期與複製功能 | `window.DashboardAI.init()`, `loadStockAi()`, `generateStockAi()`, `copyAiMarkdown()` |
-| `aiClient.js` | **[AI] 跨插件通訊客戶端**：與 ScrumClock 本地 Gemini Nano API 交互防腐層 | `window.FinanceAIClient.requestStockSummary()` |
-| `sidepanel.html`<br>`sidepanel.js`<br>`sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：快捷輸入（內建安全重試）、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
 | `background.js` | 背景服務工作線程：後台無感分頁管理、SPA 走訪調度、Storage 快取維護，支援 `PING` 心跳與安全異步錯誤捕獲 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
-| `crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取、Key Stats 純淨提取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
-| `crawler-sanitizer.js` | **[純函數] 數值清洗與 Miner Schema 模組**：純數字萃取、單位換算（$B/百萬/千）、52週高低範圍、目標價統計與 AI 礦企規範轉換 | `window.CrawlerSanitizer.cleanNumber()`, `cleanMarketCap()`, `sanitizeToMinerSchema()` |
-| `popup.html`<br>`popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染、標的即時廣播 (`lastCapturedStock`)、攜帶參數跳轉儀表板與雲端設定雙鍵同步 | `#open-dashboard-btn`, `broadcastCapturedStock()`, `handleOpenDashboard()` |
-| `popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
-| `popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載 | `RuleEngine`, `compressImage()`, `downloadFile()` |
-| `googleSheetsExporter.js`<br>`options.html`<br>`options.js` | **[雲端] Google Sheets 雙軌匯出**：直連 GAS Web App 與 Local Hub 退避重試，將個股代碼、現價、P/E、殖利率、目標價與 Nano 反常識觀點寫入試算表 (`Portfolio_Tracking`) | `window.GoogleSheetsExporter.exportPortfolioItem()` |
+| `dashboard.html`<br>`src/dashboard/js/dashboard.js`<br>`src/dashboard/css/dashboard.css` | **[核心] 獨立分頁儀表板主控**：生命週期、三向 View Switcher（個股、同業對比、估值沙盒）與核心協調整合器 | `init()`, `setupViewSwitcherEvents()`, `bindEvents()` |
+| `src/dashboard/css/dashboard-stock.css`<br>`src/dashboard/css/dashboard-components.css` | **[樣式] 儀表板視覺子模組**：個股 Hero/指標卡/損益表樣式、AI 研報卡片/匯出面板/Modal 樣式 | 指標卡排版、AI 研報雙欄卡片、匯出中心下拉面板樣式 |
+| `src/dashboard/css/dashboard-peer-matrix.css`<br>`src/dashboard/css/dashboard-valuation.css` | **[樣式] 儀表板領域樣式子模組**：同業橫向對比矩陣與敏感度估值沙盒專屬樣式隔離 | 2~5 檔標的對比排版、極值高亮、5x5 敏感度二維熱力網格與情境卡片樣式 |
+| `src/dashboard/js/dashboard-render.js` | **[視圖] 核心渲染模組**：歷史清單、個股主看板、指標均稱網格 (`renderStatsGrid`)、SVG 趨勢向量 (`formatStatValue`)、損益表與市場專題卡片 | `window.DashboardRender.renderStock()`, `renderFinancialsTable()`, `formatStatValue()` |
+| `src/dashboard/js/dashboard-tabs-render.js` | **[視圖] 標籤與分頁渲染模組**：族群分類分頁列、自訂主題標籤列與底部分頁狀態渲染 | `window.DashboardRender.renderCategoryTabs()`, `renderTopicTags()`, `renderSheetTabs()` |
+| `src/dashboard/js/dashboard-peer-render.js` | **[視圖] 同業矩陣渲染子模組**：同業橫向對比矩陣、動態標的核選列、市值/估值/上漲空間長條比對圖表與極值標色 | `window.DashboardRender.renderPeerMatrix()` |
+| `src/dashboard/js/dashboard-valuation-render.js` | **[視圖] 估值沙盒渲染子模組**：Bear / Base / Bull 三情境卡片、即時參數滑桿與 5x5 成長率 vs P/E 二維敏感度熱力矩陣 | `window.DashboardRender.renderValuationSandbox()` |
+| `src/dashboard/js/dashboard-actions.js` | **[動作] 核心動作外發模組**：背景深度採集發起（含 `sendRuntimeMessageWithRetry` 防禦）、CSV 下載、GAS 同步等共通動作通道 | `window.DashboardActions.triggerCrawl()`, `sendRuntimeMessageWithRetry()`, `exportToGas()` |
+| `src/dashboard/js/dashboard-peer-actions.js` | **[動作] 同業矩陣動作子模組**：多選標的即時數據聚合、Markdown 對比表格複製、同業矩陣 Google 試算表 (GAS) 獨立同步 | `window.DashboardActions.getPeerComparisonData()`, `exportPeerMatrixMarkdown()`, `exportPeerMatrixToGas()` |
+| `src/dashboard/js/dashboard-valuation-actions.js` | **[動作] 估值沙盒動作子模組**：折現現金流與終值估值引擎、模型報表產出、推播 ScrumClock 作戰任務與 GAS 估值頁同步 | `window.DashboardActions.calculateValuation()`, `exportSandboxToGas()`, `pushSandboxToScrumClock()` |
+| `src/dashboard/js/dashboard-tabs.js` | **[控制器] 標籤與分類狀態模組**：Categories 族群分類與 Topic Tags 自訂主題標籤狀態維護與持久化 | `window.DashboardTabs.init()`, `setupCategoryEvents()`, `setupTopicTagEvents()` |
+| `src/dashboard/js/dashboard-ai.js` | **[控制器] 本地 AI 研報控制器**：連動 ScrumClock 本地 Gemini Nano 之 AI 解讀生命週期與複製功能 | `window.DashboardAI.init()`, `loadStockAi()`, `generateStockAi()`, `copyAiMarkdown()` |
+| `src/crawler/crawler.js` | SPA 走訪爬蟲模組：語意文字錨點比對、分頁導航（Overview 主題萃取、Key Stats 純淨提取與 Financials 分頁精準提取） | `window.FinanceCrawler.runFullStockScraper()`, `scrapeMarketTopics()`, `scrapeFinancials()` |
+| `src/crawler/crawler-sanitizer.js` | **[純函數] 數值清洗與 Miner Schema 模組**：純數字萃取、單位換算（$B/百萬/千）、52週高低範圍、目標價統計與 AI 礦企規範轉換 | `window.CrawlerSanitizer.cleanNumber()`, `cleanMarketCap()`, `sanitizeToMinerSchema()` |
+| `sidepanel.html`<br>`src/sidepanel/sidepanel.js`<br>`src/sidepanel/sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：快捷輸入（內建安全重試）、左下角跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl` |
+| `popup.html`<br>`src/popup/popup.js` | 工具列彈出視窗主控：模式切換 (`switchMode`)、選項渲染、標的即時廣播 (`lastCapturedStock`)、攜帶參數跳轉儀表板與雲端設定雙鍵同步 | `#open-dashboard-btn`, `broadcastCapturedStock()`, `handleOpenDashboard()` |
+| `src/popup/popup-scraper.js` | **[採集] 彈窗爬蟲模組**：Google Finance 數據與 AI 對話頁面 DOM 結構解析（具備純圖示字串過濾防禦） | `scrapeAIDialogue()`, `scrapeFinanceData()`, `scrapeOverviewDOM()` |
+| `src/popup/popup-export.js` | **[格式化] 規則與匯出模組**：文字清理規則引擎、圖片壓縮、Markdown/CSV 格式化與下載、Pre-Mortem Prompt 複製支援 | `RuleEngine`, `compressImage()`, `downloadFile()` |
+| `src/services/aiClient.js` | **[AI] 跨插件通訊與 Prompt 生成器**：ScrumClock Gemini Nano API 交互防腐層，支援標準摘要與反常識 Pre-Mortem (30% 下跌情境/非共飾催化劑) 結構化 Prompt 產生 | `window.FinanceAIClient.requestStockSummary()`, `generateContrarianPrompt()` |
+| `options.html`<br>`src/options/options.js`<br>`src/services/googleSheetsExporter.js` | **[雲端] Google Sheets 雙軌匯出**：直連 GAS Web App 與 Local Hub 退避重試，支援 `=GOOGLEFINANCE(...)` 動態公式注入與數值 Fallback，將個股代碼、現價、P/E、殖利率、目標價與 Nano 反常識觀點寫入試算表 (`Portfolio_Tracking`) | `window.GoogleSheetsExporter.exportPortfolioItem()`, `buildPortfolioRow()` |
 
 ---
 
@@ -166,33 +166,42 @@ FinanceClipper 採用模組化爬蟲架構，核心為 `crawler.js` 結合 `craw
 - `parseTargetPrices(strList)` 與 `calculateTargetPriceStats(prices, currentPrice)`：計算最高、最低、中位數目標價及隱含上漲空間。
 
 ### Miner Schema 正規化標準 (`sanitizeToMinerSchema`)
-轉換多源異質爬蟲數據為標準化資料結構，供 AI 研報推論與跨插件交換：
+轉換多源異質爬蟲數據為純淨、純數字之量化與 AI 礦企（Miner）標準資料結構：
 ```javascript
 {
   ticker: string,              // 股票代號 (如 "NVDA", "2330.TW")
-  name: string,                // 公司名稱
-  price: number,               // 最新股價
-  change: number,              // 漲跌幅百分比
-  marketCap: number,           // 標準化市值數值
-  pe: number | null,           // 本益比 (TTM)
-  range52w: { low, high },     // 52 週最高最低
-  analyst: {
-    consensus: string,         // "Strong Buy" | "Buy" | "Hold" 等
-    targetHigh: number,
-    targetMedian: number,
-    targetLow: number,
-    upsidePotential: number    // 潛在上漲空間 %
+  price: number,               // 最新股價 (純數字)
+  marketCap: number,           // 標準化市值 (十億美元 / $B，純數字)
+  targetPrice: number,         // 目標價 (中位數或主要目標價，純數字)
+  targetPriceStats: {          // 目標價完整統計量物件
+    count: number,             // 分析師樣本數
+    mean: number,              // 平均目標價
+    median: number,            // 中位數目標價
+    high: number,              // 最高目標價
+    low: number,               // 最低目標價
+    upsidePercent: number,     // 中位數隱含上漲空間 %
+    upsideMeanPercent: number, // 平均數隱含上漲空間 %
+    stdDev: number,            // 目標價標準差
+    cv: number                 // 變異係數 (離散程度)
   },
-  financials: {
-    table: string[][],         // 損益表行列矩陣
-    statements: string[][][]   // 各期財報細目
-  },
-  marketTopics: {
-    table: string[][]          // 市場熱門專題行情
-  },
-  timestamp: number
+  targetMean: number,          // 扁平化平均目標價
+  targetMedian: number,        // 扁平化中位數目標價
+  targetHigh: number,          // 扁平化最高目標價
+  targetLow: number,           // 扁平化最低目標價
+  targetUpside: number,        // 扁平化現價 vs 中位數目標價上漲潛力 %
+  targetStdDev: number,        // 扁平化目標價標準差
+  targetCv: number,            // 扁平化變異係數
+  beta: number,                // 貝他值 (Beta，純數字小數兩位)
+  range52w: string,            // 52 週區間字串 ("low-high")
+  low52: number,               // 52 週最低價 (純數字)
+  high52: number,              // 52 週最高價 (純數字)
+  latestEpsActual: number,     // 最新一季實際 EPS
+  latestEpsEst: number,        // 最新一季預估 EPS
+  epsSurprise: number,         // EPS 驚喜幅度 % ((Actual - Est) / |Est| * 100%)
+  yoy: number                  // 營收或獲利 YoY 成長率 %
 }
 ```
+*備註：在外層快照物件 (`ClipperSnapshot`) 中，除包含上述 `minerMetrics` 外，亦包含 `name`、`change`、`analyst` 評等文字、`financials` 損益表矩陣與 `timestamp`。*
 
 ---
 
@@ -211,25 +220,23 @@ FinanceClipper 採用模組化爬蟲架構，核心為 `crawler.js` 結合 `craw
 | `custom_topic_tags` | `Array<string>` | 使用者自訂頂部主題分類標籤清單 |
 | `gasUrl` / `appsScriptUrl` | `string` | Google Apps Script Web App URL（雙向回退與同步相容鍵值） |
 | `sheetsUrl` / `userSpreadsheetUrl` | `string` | 目的 Google 試算表 URL（雙向回退與同步相容鍵值） |
-| `outbox_queue` | `Array<OutboxTask>` | 離線待重試任務佇列（發送至 ScrumClock 遇休眠或逾時暫存） |
-| `dead_letter_queue` | `Array<OutboxTask>` | 超過最大重試次數 (5 次) 轉入之死信佇列 |
+| `outbox_queue` | `Array<OutboxTask>` | (相容過渡) 離線待重試任務佇列 |
 
 ---
 
-## 🔌 跨插件通訊與協作規格 (Cross-Plugin Bus & Outbox)
+## 🔌 跨插件通訊與協作規格 (Cross-Plugin Bus & Integration)
 
-FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 ScrumClock 中樞 (ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`) 遵循 `0.doc_mg/docs/cross_plugin_contract.md` 規範進行無狀態資料協同：
+FinanceClipper (ID: `imnnkgiglcbjknfbkdfocdhoookkipji`) 與 PK+ 中樞 (ID: `ahiihabnbjeoeneahcgbdcofncjoclcp`) 遵循 `0.doc_mg/docs/cross_plugin_contract.md` 規範進行無狀態資料協同：
 
 ### 1. 通訊生命週期與握手
-- **自動握手 (`PING_HUB`)**：`aiClient.js` 初始化時發送 `PING_HUB` 探測 ScrumClock 在線狀態與本地 Gemini Nano 支援度，免手動配置 Extension ID。
-- **UniversalTaskPayload v2.3 任務轉入 (`CREATE_TASK`)**：
+- **自動握手 (`PING_HUB`)**：`aiClient.js` 初始化時發送 `PING_HUB` 探測 PK+ 在線狀態與本地 Gemini Nano 支援度，免手動配置 Extension ID。
+- **UniversalTaskPayload v2 任務轉入 (`CREATE_TASK`)**：
   - 透過 `sanitizeTaskPayload()` 防腐層校驗。
   - 欄位包含 `title`, `notes`, `gtdContext` (`@Focus` 等), `priority` (`P1` 等), `sourcePlugin: 'FINANCE_CLIPPER'`, `deepLinkUrl` (反向喚起 FinanceClipper 定位標的)。
 
-### 2. 離線防丟單機制 (`outbox_queue`)
-- 發送 `CREATE_TASK` 遭遇 ScrumClock 休眠或 6 秒逾時未響應時，自動暫存於 `outbox_queue`。
-- 透過 `chrome.alarms` 定期（每 30 秒）與 `chrome.tabs.onActivated` 進行非同步重試。
-- 超過 5 次重試失敗轉入 `dead_letter_queue` 並通知使用者。
+### 2. 即時直連與保險絲機制 (Circuit Breaker & Fallback)
+- **通訊超時保險絲**：跨插件直連調用設定 5~6 秒超時限制。若對端未啟動或無回應，發送端立即捕捉錯誤並提供優雅降級 UI 提示，不阻斷主線前端操作。
+- **零背景輪詢 (Zero Outbox / Zero Alarms)**：全面廢除背景輪詢佇列與死信重試。發送失敗直接交由前端即時處置，杜絕 Service Worker 週期性喚醒電力耗損。
 
 ### 3. 對外開放服務接口 (`onMessageExternal`)
 - **`GET_WATCHLIST`**：回傳本地自選股快照清單（唯讀，無副作用）。

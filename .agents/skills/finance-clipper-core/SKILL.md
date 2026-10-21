@@ -18,12 +18,12 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 ## 2. 關鍵入口架構 (Key Entrypoints)
 * `manifest.json`: Manifest V3 宣告，配置權限、側邊欄 (`side_panel`) 與外部通訊
 * `background.js`: Service Worker，4合1 SPA 背景靜默採集走訪調度與跨插件通訊監聽
-* `crawler.js` / `crawler-sanitizer.js`: 頁面 DOM 爬蟲探針與純函數數值清洗/Miner Schema 正規化函式庫
-* `dashboard.html` / `dashboard.js`: 獨立分頁大螢幕儀表板（個股主視圖、同業對比矩陣、估值敏感度沙盒）
-* `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄常駐快捷工具箱（支援剪貼簿秒爬與當前頁面提取）
-* `popup.html` / `popup.js`: 工具列彈窗主控（模式切換、標的廣播與雙鍵設定同步）
-* `googleSheetsExporter.js`: Google Sheets 雙軌匯出模組（支援個股估值沙盒、P/E、殖利率與 Nano 觀點直連 GAS Web App 與 Local Hub 退避）
-* `aiClient.js`: 跨插件通信客戶端（連動 PK+ 本地 Gemini Nano 研報推論 API）
+* `dashboard.html` / `src/dashboard/`: 獨立分頁大螢幕儀表板主控與渲染模組 (`src/dashboard/js/`, `src/dashboard/css/`)
+* `popup.html` / `src/popup/`: 工具列彈窗主控與採集匯出模組 (`src/popup/popup.js`, `popup-scraper.js`, `popup-export.js`)
+* `sidepanel.html` / `src/sidepanel/`: Chrome 側邊欄常駐快捷工具箱 (`src/sidepanel/sidepanel.js`, `sidepanel.css`)
+* `options.html` / `src/options/`: 設定頁面 (`src/options/options.js`)
+* `src/crawler/`: 頁面 DOM 爬蟲探針與純函數數值清洗 (`crawler.js`, `crawler-sanitizer.js`)
+* `src/services/`: 跨插件通信與 Google Sheets 匯出 (`aiClient.js`, `googleSheetsExporter.js`)
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **禁止跨目錄讀取**: 開發 FinanceClipper 時，嚴禁跨目錄讀取 `chrome_pk/`、`browser-activity-monitor/` 等其他插件源碼。

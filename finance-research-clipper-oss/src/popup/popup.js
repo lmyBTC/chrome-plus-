@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const exportMdBtn = document.getElementById('export-md-btn');
   const exportCsvBtn = document.getElementById('export-csv-btn');
   const copyPromptBtn = document.getElementById('copy-prompt-btn');
+  const copyContrarianPromptBtn = document.getElementById('copy-contrarian-prompt-btn');
   const fullScrapeBtn = document.getElementById('full-scrape-btn');
   const openDashboardBtn = document.getElementById('open-dashboard-btn');
   const btnGotoDashboard = document.getElementById('btn-goto-dashboard');
@@ -322,7 +323,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       // 注入 crawler-sanitizer.js 與 crawler.js
       await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        files: ['crawler-sanitizer.js', 'crawler.js']
+        files: ['src/crawler/crawler-sanitizer.js', 'src/crawler/crawler.js']
       });
 
       // 執行主調度器
@@ -862,6 +863,35 @@ document.addEventListener('DOMContentLoaded', async () => {
           copyPromptBtn.style.backgroundColor = "#e8f0fe";
           copyPromptBtn.style.color = "var(--primary-color)";
           copyPromptBtn.style.borderColor = "var(--primary-color)";
+        }, 2000);
+      } catch (err) {
+        updateStatus(`❌ ${err.message}`, "red");
+      }
+    });
+  }
+
+  if (copyContrarianPromptBtn) {
+    copyContrarianPromptBtn.addEventListener('click', async () => {
+      try {
+        const p = await buildPayload();
+        if (!window.FinanceAIClient || typeof window.FinanceAIClient.generateContrarianPrompt !== 'function') {
+          throw new Error('FinanceAIClient 模組尚未就緒');
+        }
+        const promptText = window.FinanceAIClient.generateContrarianPrompt(p);
+        await navigator.clipboard.writeText(promptText);
+
+        const originalText = copyContrarianPromptBtn.innerText;
+        copyContrarianPromptBtn.innerText = "✅ 已複製！";
+        copyContrarianPromptBtn.style.backgroundColor = "#e6f4ea";
+        copyContrarianPromptBtn.style.color = "var(--success-color)";
+        copyContrarianPromptBtn.style.borderColor = "var(--success-color)";
+        updateStatus("🦇 成功複製逆向思考與事前驗屍 Prompt 至剪貼簿！", "green");
+
+        setTimeout(() => {
+          copyContrarianPromptBtn.innerText = originalText;
+          copyContrarianPromptBtn.style.backgroundColor = "#fce8e6";
+          copyContrarianPromptBtn.style.color = "#c5221f";
+          copyContrarianPromptBtn.style.borderColor = "#c5221f";
         }, 2000);
       } catch (err) {
         updateStatus(`❌ ${err.message}`, "red");

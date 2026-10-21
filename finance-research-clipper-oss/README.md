@@ -18,10 +18,10 @@
 * `dashboard.html` / `dashboard.js`: 獨立分頁完整儀表板（個股看板、損益表、同業對比矩陣、估值敏感度沙盒）
 * `sidepanel.html` / `sidepanel.js`: Chrome 側邊欄常駐快捷工具箱
 * `popup.html` / `popup.js`: 工具列彈出視窗主控
-* `aiClient.js`: 跨插件通信客戶端（與 ScrumClock 本地 Gemini Nano 交互）
+* `aiClient.js`: 跨插件通信客戶端（與 PK+ 本地 Gemini Nano 交互）
 
 ---
 
 ## 📖 完整規格與 SSOT 導航 (Deep SSOT Reference)
-本插件所有詳細資料來源選擇器字典（Google/Yahoo/Finviz/Goodinfo/Investing）、Miner Schema 規範、Storage Schema 字典、跨插件 Outbox 通訊協議與 Google 生態系協作規格，請查閱：
+本插件所有詳細資料來源選擇器字典（Google/Yahoo/Finviz/Goodinfo/Investing）、Miner Schema 規範、Storage Schema 字典、跨插件通訊協議與 Google 生態系協作規格，請查閱：
 👉 **`FINANCE_CLIPPER_README.md`** (本插件 Single Source of Truth)

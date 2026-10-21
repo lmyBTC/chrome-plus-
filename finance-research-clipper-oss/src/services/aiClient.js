@@ -777,6 +777,124 @@
       prompt += `- **關鍵價位監測**：核心支撐位、目標停利區間、嚴格停損 (Stop-loss) 點位或跌破條件。\n`;
 
       return prompt;
+    },
+
+    /**
+     * 🦇 逆向思考與反常識 (Pre-Mortem) 投研 Prompt 產生器
+     * 以做空基金首席風控官角度進行假設驗屍（30% 下跌推演）與非共識催化劑探查：
+     * 1. 華爾街盲點與共識脆弱性診斷 (Consensus Fragility)
+     * 2. 事前驗屍：股價 -30% 毀滅性情境推演 (Pre-Mortem Collapse)
+     * 3. 隱形黑天鵝與非共識催化劑 (Hidden Catalysts & Black Swans)
+     * 4. 估值倍數收縮與流動性陷阱 (Multiple Compression)
+     * 5. 非對稱逆向交易與防禦性策略 (Asymmetric Hedging)
+     * 6. 證偽清單與反向監控指標 (Falsification Checklist)
+     * 
+     * @param {Object} data 快照資料、Payload 或個股物件
+     * @returns {string} 完整的繁體中文逆向分析 Prompt
+     */
+    buildContrarianPrompt(data) {
+      if (!data || typeof data !== 'object') {
+        return '請提供有效的個股研報資料以生成逆向 Prompt。';
+      }
+
+      const ticker = String(data.ticker || data.symbol || (data.overview && data.overview.symbol) || '未知標的').toUpperCase().trim();
+      const companyName = data.name || (data.overview && data.overview.name) || '';
+      const price = data.price || (data.overview && data.overview.price) || 'N/A';
+
+      // 關鍵統計數據提取
+      const mktCap = data.mktcap || data.marketCap || (data.stats && (data.stats['市值'] || data.stats['Market cap'])) || 'N/A';
+      const pe = data.pe || (data.stats && (data.stats['本益比'] || data.stats['P/E ratio'])) || 'N/A';
+      const range52w = data.range52w || (data.stats && (data.stats['52 週高點'] ? `${data.stats['52 週低點']} - ${data.stats['52 週高點']}` : '')) || 'N/A';
+      const beta = data.beta || (data.stats && (data.stats['Beta'] || data.stats['貝他值'])) || 'N/A';
+
+      // 目標價與分析師共識
+      const consensus = data.analyst_consensus || (data.analyst && data.analyst.consensus) || (data.analysis && data.analysis.consensus) || 'N/A';
+      const targetMedian = data.target_price_median || (data.analyst && data.analyst.targetMedian) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.median) || 'N/A';
+      const targetMean = data.target_price_mean || (data.targetPriceStats && data.targetPriceStats.mean) || (data.target_price_stats && data.target_price_stats.mean) || 'N/A';
+      const targetHigh = data.target_price_high || (data.analyst && data.analyst.targetHigh) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.high) || 'N/A';
+      const targetLow = data.target_price_low || (data.analyst && data.analyst.targetLow) || (data.analysis && data.analysis.targetPrice && data.analysis.targetPrice.low) || 'N/A';
+      const targetUpside = data.target_price_upside || (data.targetPriceStats && data.targetPriceStats.upsidePercent !== undefined ? `${data.targetPriceStats.upsidePercent}%` : '') || (data.target_price_stats && data.target_price_stats.upsidePercent !== undefined ? `${data.target_price_stats.upsidePercent}%` : 'N/A');
+      const targetCv = data.target_price_cv || (data.targetPriceStats && data.targetPriceStats.cv !== undefined ? `${(data.targetPriceStats.cv * 100).toFixed(2)}%` : '') || (data.target_price_stats && data.target_price_stats.cv !== undefined ? `${(data.target_price_stats.cv * 100).toFixed(2)}%` : 'N/A');
+
+      // 財報與營收
+      const earningsPeriod = data.earnings_period || (data.earnings && (data.earnings.period || data.earnings.latestQuarter?.quarter)) || 'N/A';
+      const epsData = data.earnings_eps || (data.earnings && data.earnings.epsActual ? `實值 ${data.earnings.epsActual} / 預期 ${data.earnings.epsEstimate || '-'}` : 'N/A');
+      const revData = data.earnings_revenue || (data.earnings && data.earnings.revenueActual ? `實值 ${data.earnings.revenueActual} / 預期 ${data.earnings.revenueEstimate || '-'}` : 'N/A');
+      const earningsInsights = data.earnings_insights || (data.earnings && Array.isArray(data.earnings.insights) ? data.earnings.insights.join('\n') : '') || '';
+
+      // 損益表與財務表格
+      const financialsTable = data.financials_table || (data.financialsTable) || '';
+
+      // 筆記或關鍵觀點
+      const note = data.note || '';
+
+      let prompt = `# 【逆向投研與反常識分析 (Pre-Mortem)】標的：${ticker}${companyName ? ` (${companyName})` : ''}\n\n`;
+      prompt += `## 你的角色與任務定位：\n`;
+      prompt += `你是一位專精於「事前驗屍 (Pre-Mortem)」與「非共識反常識思考 (Contrarian Thinking)」的頂級做空對沖基金首席風控官 (Chief Risk Officer) 與逆向價值投資人。你的核心任務不是尋找該標的有多優秀，而是徹底打破華爾街的共識偏誤與群體思維 (Groupthink)，無情推演：**「如果未來 12 個月內該標的股價暴跌 30% 以上，究竟會是哪些致命因素觸發？」**\n\n`;
+
+      prompt += `## 標的情報與數據快照 (Ground Truth Context)：\n`;
+      prompt += `- **標的代號 (Ticker)**: ${ticker} ${companyName ? `(${companyName})` : ''}\n`;
+      prompt += `- **當前股價 (Current Price)**: ${price}\n`;
+      prompt += `- **市值規模 (Market Cap)**: ${mktCap}\n`;
+      prompt += `- **本益比 (P/E)**: ${pe} | **貝他值 (Beta)**: ${beta}\n`;
+      prompt += `- **52週價格區間 (52-wk Range)**: ${range52w}\n`;
+      prompt += `- **分析師評級共識 (Consensus)**: ${consensus}\n`;
+      prompt += `- **目標價統計與離散度**:\n`;
+      prompt += `  * 中位數 (Median): $${targetMedian} | 平均值 (Mean): $${targetMean}\n`;
+      prompt += `  * 目標區間: $${targetLow} ~ $${targetHigh}\n`;
+      prompt += `  * 隱含現價上漲空間: ${targetUpside}\n`;
+      prompt += `  * 目標價變異係數 (CV): ${targetCv} (衡量華爾街意見分歧度)\n`;
+      prompt += `- **最新財報季度**: ${earningsPeriod}\n`;
+      prompt += `  * EPS (實值 vs 預估): ${epsData}\n`;
+      prompt += `  * 營收 (實值 vs 預估): ${revData}\n`;
+
+      if (earningsInsights) {
+        prompt += `\n### 財報關鍵資訊與 AI 亮點：\n${earningsInsights}\n`;
+      }
+
+      if (financialsTable && financialsTable !== 'N/A') {
+        prompt += `\n### 近期季度財務報表：\n${financialsTable}\n`;
+      }
+
+      if (note) {
+        prompt += `\n### 既有研報筆記與多方論述：\n${note}\n`;
+      }
+
+      prompt += `\n---\n\n`;
+      prompt += `## 請嚴格依照以下六大逆向模組進行結構化批判輸出（請使用犀利、客觀、高密度的繁體中文專業金融語氣）：\n\n`;
+
+      prompt += `### 1. 【華爾街盲點與共識脆弱性診斷 (Consensus Fragility & Market Blindspots)】\n`;
+      prompt += `- 當前市場普遍定價了什麼過度完美的預期 (What's priced in)？\n`;
+      prompt += `- 檢驗分析師共識 (${consensus}，CV 離散度 ${targetCv}) 背後是否有盲目線性外推的集體盲從？\n`;
+      prompt += `- 指出多頭論述中最容易被證偽的「致命單點故障 (Single Point of Failure)」為何？\n\n`;
+
+      prompt += `### 2. 【事前驗屍：股價 -30% 毀滅性情境推演 (Pre-Mortem Bear Collapse)】\n`;
+      prompt += `- 假設時空來到 12 個月後，${ticker} 股價重挫 30% 以上。請倒推還原第一張倒下的骨牌是什麼？\n`;
+      prompt += `- 具體推演：是客戶端需求斷崖式衰退、殺價競爭導致毛利崩解、資本支出過剩拖垮自由現金流，還是核心護城河被同業侵蝕？\n\n`;
+
+      prompt += `### 3. 【隱形黑天鵝與非共識催化劑 (Hidden Catalysts & Black Swans)】\n`;
+      prompt += `- 列出至少 3 個目前市場定價機率近乎為零、但一旦爆發將引發連鎖反應的黑天鵝事件（如地緣政治限制、關鍵供應鏈中斷、潛在會計質疑或重大反壟斷訴訟）。\n`;
+      prompt += `- 是否存在正在暗中崛起的顛覆性替代技術或競爭對手？\n\n`;
+
+      prompt += `### 4. 【估值倍數收縮與流動性陷阱 (Multiple Compression & De-rating)】\n`;
+      prompt += `- 當前 P/E (${pe}) 若面臨戴維斯雙殺 (Davis Double Whammy，獲利衰退 + 估值倍數腰斬)，股價最悲觀將下探至何處？\n`;
+      prompt += `- 評估大股東減持、籌碼鬆動或機構資金贖回帶來的下行流動性風險。\n\n`;
+
+      prompt += `### 5. 【非對稱逆向操盤與避險策略 (Asymmetric Hedging & Contrarian Action)】\n`;
+      prompt += `- **多頭持倉者**：如何建立低成本非對稱保護（如對沖籃子、保護性選擇權策略或減碼觸發點）？\n`;
+      prompt += `- **逆向獵人 / 空方**：等待何種「由盛轉衰」的確定性信號（例如營收 YoY 跌破門檻、庫存週轉天數暴增）才適合進場做空？\n\n`;
+
+      prompt += `### 6. 【證偽清單與反向自救指標 (Falsification Checklist)】\n`;
+      prompt += `- 條列 3 項具體、可量化的指標或重大事件。若這 3 項指標在下季度發生，代表本逆向看空推演被「證偽 (Falsified)」，投資人應立即停止放空或回補。\n`;
+
+      return prompt;
+    },
+
+    /**
+     * 別名封裝：generateContrarianPrompt 符合任務規格
+     */
+    generateContrarianPrompt(stock) {
+      return this.buildContrarianPrompt(stock);
     }
   };
 

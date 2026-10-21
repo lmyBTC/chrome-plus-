@@ -4,7 +4,7 @@
 
 const assert = require('assert');
 const path = require('path');
-const exporterPath = path.resolve(__dirname, '../../finance-research-clipper-oss/googleSheetsExporter.js');
+const exporterPath = path.resolve(__dirname, '../../finance-research-clipper-oss/src/services/googleSheetsExporter.js');
 const GoogleSheetsExporter = require(exporterPath);
 
 console.log('--- 測試 1: 基本個股資料防腐與欄位對齊 ---');
@@ -64,4 +64,38 @@ assert.throws(() => {
 }, /缺少有效的個股代碼/);
 console.log('✅ 測試 3 通過！缺少 ticker 時立即拋出明確錯誤阻擋傳輸。');
 
-console.log('--- 全部測試通過 (3/3)！---');
+console.log('--- 測試 4: Google Sheets 動態公式注入 (useFormulas = true, 預設 row 2) ---');
+const stockFormula = {
+  ticker: 'aapl',
+  name: 'Apple Inc.',
+  price: '$230.50',
+  changePercent: '+2.5%',
+  analyst: { targetMedian: '250.00' }
+};
+const payloadFormula = GoogleSheetsExporter.buildPortfolioPayload(stockFormula, {
+  useFormulas: true
+});
+assert.strictEqual(payloadFormula.payload.ticker, 'AAPL');
+assert.strictEqual(payloadFormula.payload.price, '=IFERROR(GOOGLEFINANCE(A2, "price"), 230.5)');
+assert.strictEqual(payloadFormula.payload.change, '=IFERROR(GOOGLEFINANCE(A2, "changepct")/100, 0.025)');
+assert.strictEqual(payloadFormula.payload.rawPrice, '$230.50');
+assert.strictEqual(payloadFormula.payload.rawChange, '+2.5%');
+assert.strictEqual(payloadFormula.payload.isFormula, true);
+console.log('✅ 測試 4 通過！動態公式注入正確，價格與漲跌幅百分比安全轉換。');
+
+console.log('--- 測試 5: 指定自訂 row 與邊界數值兜底 ---');
+const stockFormulaRow = {
+  ticker: 'TSLA',
+  price: '215.33',
+  change: -3.2
+};
+const payloadRow8 = GoogleSheetsExporter.buildPortfolioPayload(stockFormulaRow, {
+  useFormulas: true,
+  row: 8
+});
+assert.strictEqual(payloadRow8.payload.price, '=IFERROR(GOOGLEFINANCE(A8, "price"), 215.33)');
+assert.strictEqual(payloadRow8.payload.change, '=IFERROR(GOOGLEFINANCE(A8, "changepct")/100, -3.2)');
+console.log('✅ 測試 5 通過！自訂 row: 8 正確帶入公式。');
+
+console.log('--- 全部測試通過 (5/5)！---');
+

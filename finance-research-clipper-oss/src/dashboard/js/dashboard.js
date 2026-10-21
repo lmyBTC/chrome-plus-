@@ -84,6 +84,8 @@
     targetMedian: document.getElementById('target-median'),
     targetHigh: document.getElementById('target-high'),
     targetUpsideText: document.getElementById('target-upside-text'),
+    targetDispersionBadge: document.getElementById('target-dispersion-badge'),
+    targetDispersionMeta: document.getElementById('target-dispersion-meta'),
     earningsEps: document.getElementById('earnings-eps'),
     earningsRevenue: document.getElementById('earnings-revenue'),
     earningsSummary: document.getElementById('earnings-summary'),

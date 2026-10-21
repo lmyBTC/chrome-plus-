@@ -1,4 +1,5 @@
 @echo off
+cd /d "%~dp0"
 echo Power Kit (PK+) - 安裝腳本
 echo ================================
 

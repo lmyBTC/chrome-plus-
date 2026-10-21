@@ -203,6 +203,47 @@ function formatCsvContent(p) {
   csvContent += `"${p.timestamp}","${p.ticker}","${p.price}","${consensus}","${targetPrice}","${cleanNote}","${sp500}","${nasdaq}","${mktcap}","${pe}"\n`;
   return csvContent;
 }
+
+/**
+ * 格式化輸出基準 AI 投研 Prompt
+ * @param {Object} p Payload 資料物件
+ * @returns {string} Prompt 字串
+ */
+function formatInvestmentPromptContent(p) {
+  if (typeof window !== 'undefined' && window.FinanceAIClient && typeof window.FinanceAIClient.buildInvestmentPrompt === 'function') {
+    return window.FinanceAIClient.buildInvestmentPrompt(p);
+  }
+  try {
+    const { FinanceAIClient } = require('../services/aiClient.js');
+    if (FinanceAIClient && typeof FinanceAIClient.buildInvestmentPrompt === 'function') {
+      return FinanceAIClient.buildInvestmentPrompt(p);
+    }
+  } catch (e) {
+    // fallback
+  }
+  return `標的：${p.ticker || '未知'}\n請提供基本面分析。`;
+}
+
+/**
+ * 格式化輸出逆向反常識 (Pre-Mortem) AI 投研 Prompt
+ * @param {Object} p Payload 資料物件
+ * @returns {string} 逆向 Prompt 字串
+ */
+function formatContrarianPromptContent(p) {
+  if (typeof window !== 'undefined' && window.FinanceAIClient && typeof window.FinanceAIClient.generateContrarianPrompt === 'function') {
+    return window.FinanceAIClient.generateContrarianPrompt(p);
+  }
+  try {
+    const { FinanceAIClient } = require('../services/aiClient.js');
+    if (FinanceAIClient && typeof FinanceAIClient.generateContrarianPrompt === 'function') {
+      return FinanceAIClient.generateContrarianPrompt(p);
+    }
+  } catch (e) {
+    // fallback
+  }
+  return `標的：${p.ticker || '未知'}\n請進行事前驗屍與黑天鵝風險分析。`;
+}
+
 /**
  * 純數字鐵律與 AI 礦企單位正規化函式 (SSOT Sanitizer)
  */
@@ -494,6 +535,8 @@ if (typeof window !== 'undefined') {
   window.parseTargetPrices = parseTargetPrices;
   window.calculateTargetPriceStats = calculateTargetPriceStats;
   window.sanitizeToMinerSchema = sanitizeToMinerSchema;
+  window.formatInvestmentPromptContent = formatInvestmentPromptContent;
+  window.formatContrarianPromptContent = formatContrarianPromptContent;
 }
 
 if (typeof module !== 'undefined' && module.exports) {
@@ -504,6 +547,8 @@ if (typeof module !== 'undefined' && module.exports) {
     downloadFile,
     formatMarkdownContent,
     formatCsvContent,
+    formatInvestmentPromptContent,
+    formatContrarianPromptContent,
     cleanNumber,
     cleanMarketCap,
     cleanRange52w,

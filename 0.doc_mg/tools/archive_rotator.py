@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-archive_rotator.py - 雙層滾動歸檔維護工具 (Two-Tier Archive Rotator)
+archive_rotator.py - 任務生命週期雙層滾動歸檔維護工具 (Two-Tier Archive Rotator)
 
 職責：
 1. 第一層守門 (Tasks Root Pure Governance)：
    掃描 0.doc_mg/tasks/ 根目錄下之任務檔。未完成任務（進行中/待處理等）始終保留。
-   tasks 根目錄保持純淨（0 結案滯留）；所有已完成任務預設全數移至 0.doc_mg/tasks/archive/<plugin>/。
-2. 第二層滾動 (Archive Retention & History Governance)：
-   掃描 0.doc_mg/tasks/archive/ 各插件目錄第一層之已封存任務檔。
-   各插件目錄常態保留最新 10 份活躍任務；超過 10 份或超過指定天數（預設 30 天）之歷史任務，自動安全移入對應插件子目錄下之 `history/`。
-   第一層僅保留近 30 天且最新 10 筆之活躍封存檔案，大幅減少視覺噪音與目視成本。
+   tasks 根目錄保持純淨（0 結案滯留）；所有已完成任務移至 0.doc_mg/tasks/archive/ 根目錄（近期緩衝區）。
+2. 第二層緩衝治理 (Archive Buffer Retention Governance)：
+   掃描 0.doc_mg/tasks/archive/ 根層之已封存任務檔。
+   常態保留最新 10 份已結案任務；超過 10 份之歷史任務，依其所屬插件分類安全移入 archive/<plugin>/。
+3. 第三層歷史下沉 (Plugin History Governance)：
+   掃描 archive 各插件子目錄。超過指定天數（預設 30 天）或超過配額之歷史任務，移入對應插件子目錄下之 `history/`。
 
 安全原則：
 - 嚴禁刪除任何檔案 (No-Deletion Policy)，僅使用檔案移動 (Move)。
@@ -175,15 +176,14 @@ def rotate_tasks_root(tasks_root: str, archive_root: str, max_completed: int, ex
         retained_tasks = completed_tasks[:max_completed]
         print(f"\n已完成任務超過配額 ({len(completed_tasks)} > {max_completed})，預計溢出搬移 ({len(overflow_tasks)} 筆):")
         for ot in overflow_tasks:
-            target_plugin_dir = normalize_plugin_dir(ot["plugin"], archive_root)
-            dest_dir = os.path.join(archive_root, target_plugin_dir)
+            dest_dir = archive_root
             dest_path = os.path.join(dest_dir, ot["filename"])
-            print(f"  - {ot['filename']} [{ot['date'].isoformat()}] -> archive/{target_plugin_dir}/")
+            print(f"  - {ot['filename']} [{ot['date'].isoformat()}] -> archive/ (近期緩衝區)")
             ot["dest_dir"] = dest_dir
             ot["dest_path"] = dest_path
 
         if execute:
-            print(f"\n>>> 開始執行 tasks 根層溢出任務歸檔...")
+            print(f"\n>>> 開始執行 tasks 根層已完成任務移入 archive/ 緩衝區...")
             moved = 0
             for ot in overflow_tasks:
                 os.makedirs(ot["dest_dir"], exist_ok=True)
@@ -192,7 +192,7 @@ def rotate_tasks_root(tasks_root: str, archive_root: str, max_completed: int, ex
                     moved += 1
                 except Exception as e:
                     print(f"[ERROR] 搬移失敗 {ot['filename']}: {e}")
-            print(f"[COMPLETED] 成功歸檔 {moved} 份溢出任務至 archive/")
+            print(f"[COMPLETED] 成功移入 {moved} 份已完成任務至 archive/ 緩衝區")
     else:
         print(f"[OK] tasks 根目錄已完成任務數 ({len(completed_tasks)}) 未超過上限 ({max_completed})，全數常態保留。")
         for ct in completed_tasks:
@@ -200,23 +200,75 @@ def rotate_tasks_root(tasks_root: str, archive_root: str, max_completed: int, ex
 
     return len(completed_tasks), len(overflow_tasks)
 
-def rotate_archives(archive_root: str, ref_date: date, threshold_days: int, max_archive_retained: int, execute: bool):
-    """第二層滾動：archive/ 各插件目錄常態保留最新 max_archive_retained 筆，超過配額或超過 threshold_days 的檔案移至 history/"""
+def rotate_archive_buffer(archive_root: str, max_buffer: int, execute: bool):
+    """第二層治理：archive/ 根目錄近期緩衝區治理 (常態保留最新 max_buffer 份，溢出分流至各插件目錄)"""
     print(f"\n--------------------------------------------------")
-    print(f"【第二層治理】archive/ 雙層滾動歷史歸檔 (保留上限: {max_archive_retained} 筆 | 天數閾值: {threshold_days} 天)")
+    print(f"【第二層治理】archive/ 根目錄近期緩衝區治理 (上限: {max_buffer} 筆)")
+    print(f" 目標目錄: {archive_root}")
+    print(f"--------------------------------------------------")
+
+    if not os.path.isdir(archive_root):
+        print(f"[ERROR] 歸檔根目錄不存在: {archive_root}")
+        return 0, 0
+
+    root_files = [f for f in os.listdir(archive_root) if os.path.isfile(os.path.join(archive_root, f)) and f.startswith("task_") and f.endswith(".md")]
+
+    buffer_tasks = []
+    for fn in root_files:
+        fp = os.path.join(archive_root, fn)
+        fdate, status, plugin = parse_task_metadata(fp, fn)
+        effective_date = fdate or date.min
+        buffer_tasks.append({
+            "filename": fn,
+            "filepath": fp,
+            "date": effective_date,
+            "status": status,
+            "plugin": plugin
+        })
+
+    # 排序：由新到舊
+    buffer_tasks.sort(key=lambda x: (x["date"], x["filename"]), reverse=True)
+
+    overflow_tasks = []
+    if len(buffer_tasks) > max_buffer:
+        overflow_tasks = buffer_tasks[max_buffer:]
+        print(f"緩衝區現存 {len(buffer_tasks)} 份 > 上限 {max_buffer} 份，預計溢出分流 ({len(overflow_tasks)} 筆):")
+        for ot in overflow_tasks:
+            target_plugin_dir = normalize_plugin_dir(ot["plugin"], archive_root)
+            dest_dir = os.path.join(archive_root, target_plugin_dir)
+            dest_path = os.path.join(dest_dir, ot["filename"])
+            print(f"  - {ot['filename']} [{ot['date'].isoformat()}] -> archive/{target_plugin_dir}/")
+            ot["dest_dir"] = dest_dir
+            ot["dest_path"] = dest_path
+
+        if execute:
+            print(f"\n>>> 開始執行緩衝區溢出任務分流...")
+            moved = 0
+            for ot in overflow_tasks:
+                os.makedirs(ot["dest_dir"], exist_ok=True)
+                try:
+                    shutil.move(ot["filepath"], ot["dest_path"])
+                    moved += 1
+                except Exception as e:
+                    print(f"[ERROR] 搬移失敗 {ot['filename']}: {e}")
+            print(f"[COMPLETED] 成功分流 {moved} 份溢出任務至各插件目錄")
+    else:
+        print(f"[OK] archive/ 根目錄緩衝區任務數 ({len(buffer_tasks)}) 未超過上限 ({max_buffer})，全數常態保留。")
+        for bt in buffer_tasks:
+            print(f"  + [緩衝保留] {bt['filename']} [{bt['date'].isoformat()}]")
+
+    return len(buffer_tasks), len(overflow_tasks)
+
+def rotate_archives(archive_root: str, ref_date: date, threshold_days: int, max_archive_retained: int, execute: bool):
+    """第三層滾動：archive/ 各插件目錄常態保留最新 max_archive_retained 筆，超過配額或超過 threshold_days 的檔案移至 history/"""
+    print(f"\n--------------------------------------------------")
+    print(f"【第三層治理】archive/ 各插件目錄歷史下沉治理 (保留上限: {max_archive_retained} 筆 | 天數閾值: {threshold_days} 天)")
     print(f" 基準日期: {ref_date.isoformat()} | 歸檔目錄: {archive_root}")
     print(f"--------------------------------------------------")
 
     if not os.path.isdir(archive_root):
         print(f"[ERROR] 歸檔根目錄不存在: {archive_root}")
         return 1
-
-    # 檢查根目錄有無散落檔案
-    root_files = [f for f in os.listdir(archive_root) if os.path.isfile(os.path.join(archive_root, f)) and f.startswith("task_") and f.endswith(".md")]
-    if root_files:
-        print(f"\n[NOTICE] 發現散落在 archive/ 根層之任務檔 ({len(root_files)} 份):")
-        for rf in root_files:
-            print(f"  - {rf} (建議依插件名稱手動或透過規則歸位)")
 
     subdirs = [d for d in os.listdir(archive_root) if os.path.isdir(os.path.join(archive_root, d))]
 
@@ -320,11 +372,12 @@ def rotate_archives(archive_root: str, ref_date: date, threshold_days: int, max_
     return 0
 
 def main():
-    parser = argparse.ArgumentParser(description="雙層滾動歸檔維護工具")
+    parser = argparse.ArgumentParser(description="多層滾動歸檔維護工具")
     parser.add_argument("--tasks-root", default="0.doc_mg/tasks", help="tasks 目錄路徑 (預設: 0.doc_mg/tasks)")
     parser.add_argument("--archive-root", default=None, help="歸檔目錄路徑 (預設: 0.doc_mg/tasks/archive)")
     parser.add_argument("--root", default="0.doc_mg/tasks/archive", help="歸檔目錄相容別名 (預設: 0.doc_mg/tasks/archive)")
     parser.add_argument("--max-completed", type=int, default=0, help="tasks 根目錄保留之已完成任務數 (預設: 0，保持純淨全數歸檔)")
+    parser.add_argument("--buffer-max", "--max-buffer", dest="buffer_max", type=int, default=10, help="archive 根目錄近期緩衝區常態保留數 (預設: 10)")
     parser.add_argument("--archive-max-retained", type=int, default=10, help="archive 各插件目錄常態保留之最新任務數 (預設: 10)")
     parser.add_argument("--days", type=int, default=30, help="活躍天數閾值 (預設: 30 天)")
     parser.add_argument("--reference-date", type=str, default=None, help="基準日期 YYYY-MM-DD (預設: 今天)")
@@ -348,7 +401,7 @@ def main():
     execute_mode = args.execute
 
     print("==================================================")
-    print(" 雙層任務滾動與歸檔治理維護系統 (Two-Tier Task Rotator)")
+    print(" 多層任務滾動與歸檔治理維護系統 (Two-Tier Archive Governance)")
     print(f" 執行模式: {'【正式執行 (EXECUTE)】' if execute_mode else '【模擬預覽 (DRY-RUN)】'}")
     print("==================================================")
 
@@ -360,7 +413,14 @@ def main():
         execute=execute_mode
     )
 
-    # 第二層治理：archive 各插件目錄常態保留最新 10 份，超過 10 份或超過 30 天任務下沉至 history/
+    # 第二層治理：archive/ 根目錄近期緩衝區治理 (常態保留最新 10 份，溢出分流至各插件目錄)
+    rotate_archive_buffer(
+        archive_root=archive_root,
+        max_buffer=args.buffer_max,
+        execute=execute_mode
+    )
+
+    # 第三層治理：archive 各插件目錄常態保留最新 10 份，超過 10 份或超過 30 天任務下沉至 history/
     rotate_archives(
         archive_root=archive_root,
         ref_date=ref_date,

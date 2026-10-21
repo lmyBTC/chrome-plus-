@@ -6,7 +6,7 @@
  * 3. 跨頁面通訊與狀態廣播 (Side Panel、Dashboard 與 Popup)。
  */
 
-importScripts('aiClient.js');
+importScripts('src/services/aiClient.js');
 
 const OUTBOX_ALARM_NAME = 'outboxQueueRetry';
 
@@ -188,7 +188,7 @@ async function crawlStockByKeyword(keyword) {
     // 注入 crawler-sanitizer.js 與 crawler.js 模組
     await chrome.scripting.executeScript({
       target: { tabId: bgTab.id },
-      files: ['crawler-sanitizer.js', 'crawler.js']
+      files: ['src/crawler/crawler-sanitizer.js', 'src/crawler/crawler.js']
     });
 
     // 呼叫快速萃取爬蟲

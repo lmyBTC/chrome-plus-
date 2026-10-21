@@ -270,9 +270,13 @@
   <button id="submit-btn">同步至雲端資料庫</button>
   
   <div style="display: flex; gap: 8px; margin-top: 8px;">
-    <button id="export-md-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 Markdown 檔案">⬇️ .md</button>
-    <button id="export-csv-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color);" title="下載為 CSV 檔案">⬇️ .csv</button>
-    <button id="copy-prompt-btn" style="flex: 1.3; background-color: #e8f0fe; color: var(--primary-color); padding: 6px; font-size: 11px; border: 1px solid var(--primary-color); font-weight: 600; cursor: pointer;" title="一鍵複製結構化 AI 投研 Prompt">📋 複製 Prompt</button>
+    <button id="export-md-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;" title="下載為 Markdown 檔案">⬇️ .md</button>
+    <button id="export-csv-btn" style="flex: 1; background-color: #f1f3f4; color: var(--text-main); padding: 6px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; cursor: pointer;" title="下載為 CSV 檔案">⬇️ .csv</button>
+  </div>
+
+  <div style="display: flex; gap: 8px; margin-top: 6px;">
+    <button id="copy-prompt-btn" style="flex: 1; background-color: #e8f0fe; color: var(--primary-color); padding: 6px; font-size: 11px; border: 1px solid var(--primary-color); font-weight: 600; border-radius: 4px; cursor: pointer;" title="一鍵複製基準買方 AI 投研 Prompt">📋 基準 Prompt</button>
+    <button id="copy-contrarian-prompt-btn" style="flex: 1; background-color: #fce8e6; color: #c5221f; padding: 6px; font-size: 11px; border: 1px solid #c5221f; font-weight: 600; border-radius: 4px; cursor: pointer;" title="一鍵複製逆向思考與事前驗屍 (Pre-Mortem) 投研 Prompt">🦇 逆向 Prompt</button>
   </div>
 
   <div style="margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px;">
@@ -285,11 +289,11 @@
 
   <div id="status-bar"></div>
 
-  <script src="crawler-sanitizer.js"></script>
-  <script src="popup-scraper.js"></script>
-  <script src="popup-export.js"></script>
-  <script src="googleSheetsExporter.js"></script>
-  <script src="aiClient.js"></script>
-  <script src="popup.js"></script>
+  <script src="src/crawler/crawler-sanitizer.js"></script>
+  <script src="src/popup/popup-scraper.js"></script>
+  <script src="src/popup/popup-export.js"></script>
+  <script src="src/services/googleSheetsExporter.js"></script>
+  <script src="src/services/aiClient.js"></script>
+  <script src="src/popup/popup.js"></script>
 </body>
 </html>

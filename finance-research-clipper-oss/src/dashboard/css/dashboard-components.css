@@ -660,3 +660,73 @@
 .btn-clean-tsv:active {
   transform: translateY(0);
 }
+
+/* =============================================================================
+   🎯 目標價共識離散度徽章與統計資訊 (Consensus Dispersion Badges & Meta)
+   ============================================================================= */
+
+.badge-dispersion {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.badge-dispersion-low {
+  background-color: var(--accent-green-bg, rgba(16, 185, 129, 0.12));
+  color: var(--accent-green, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.badge-dispersion-mid {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.badge-dispersion-high {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.target-dispersion-meta {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  color: var(--text-muted, #9ca3af);
+}
+
+.target-dispersion-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (prefers-color-scheme: light) {
+  .badge-dispersion-low {
+    background-color: #ecfdf5;
+    color: #059669;
+    border-color: #a7f3d0;
+  }
+  .badge-dispersion-mid {
+    background-color: #eff6ff;
+    color: #2563eb;
+    border-color: #bfdbfe;
+  }
+  .badge-dispersion-high {
+    background-color: #fffbeb;
+    color: #d97706;
+    border-color: #fde68a;
+  }
+}

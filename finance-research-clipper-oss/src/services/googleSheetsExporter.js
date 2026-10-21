@@ -82,6 +82,34 @@
   }
 
   /**
+   * 萃取漲跌幅字串或百分比
+   */
+  function extractChange(stock) {
+    if (!stock || typeof stock !== 'object') return '';
+    if (stock.changePercent !== undefined && stock.changePercent !== null && stock.changePercent !== 'N/A') {
+      return sanitizeString(stock.changePercent, 30);
+    }
+    if (stock.change !== undefined && stock.change !== null && stock.change !== 'N/A') {
+      return sanitizeString(stock.change, 30);
+    }
+    if (stock.stats && stock.stats['漲跌幅']) {
+      return sanitizeString(stock.stats['漲跌幅'], 30);
+    }
+    return '';
+  }
+
+  /**
+   * 將數值或帶符號字串解析為純數字浮點數 (安全防呆)
+   */
+  function parseNumeric(val, fallback = 0) {
+    if (typeof val === 'number') return Number.isFinite(val) ? val : fallback;
+    if (!val) return fallback;
+    const clean = String(val).replace(/[^0-9.-]/g, '');
+    const num = parseFloat(clean);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
+  /**
    * 萃取 Gemini Nano 反常識論點與核心研報摘要
    */
   function extractCoreDigest(stock, userNote = '') {
@@ -143,22 +171,48 @@
     }
 
     const name = sanitizeString(stock.name || stock.companyName || ticker, 100);
-    const price = sanitizeString(stock.price, 30);
+    const rawPrice = sanitizeString(stock.price, 30);
+    const rawChange = extractChange(stock);
     const pe = extractPe(stock);
     const yieldVal = extractYield(stock);
     const targetPrice = extractTargetPrice(stock);
     const digest = extractCoreDigest(stock, options.userNote || '');
 
+    let price = rawPrice;
+    let change = rawChange;
+
+    // 智能公式注入 (options.useFormulas = true)
+    if (options.useFormulas) {
+      const targetRow = options.row || options.rowIndex || 2;
+      const numPrice = parseNumeric(rawPrice, 0);
+
+      // 計算漲跌幅 fallback 數值 (例如 +2.5% -> 0.025)
+      let numChange = parseNumeric(rawChange, 0);
+      if (String(rawChange).includes('%')) {
+        numChange = Number((numChange / 100).toFixed(6));
+      }
+
+      price = `=IFERROR(GOOGLEFINANCE(A${targetRow}, "price"), ${numPrice})`;
+      change = `=IFERROR(GOOGLEFINANCE(A${targetRow}, "changepct")/100, ${numChange})`;
+    }
+
     const coreData = {
       ticker: ticker,
       name: name,
       price: price,
+      change: change,
       pe: pe,
       yield: yieldVal,
       targetPrice: targetPrice,
       notes: digest,
       aiDigest: digest
     };
+
+    if (options.useFormulas) {
+      coreData.rawPrice = rawPrice;
+      coreData.rawChange = rawChange;
+      coreData.isFormula = true;
+    }
 
     return {
       protocolVersion: 2,
@@ -266,7 +320,10 @@
     try {
       const payload = buildPortfolioPayload(stock, {
         secretToken: secretToken,
-        userNote: options.userNote
+        userNote: options.userNote,
+        useFormulas: options.useFormulas,
+        row: options.row,
+        rowIndex: options.rowIndex
       });
 
       const result = await sendToGasWebhook(gasUrl, payload, options.timeoutMs || DEFAULT_TIMEOUT_MS);
@@ -318,12 +375,17 @@
     let successCount = 0;
     let failedCount = 0;
 
-    for (const stock of stocks) {
+    for (let i = 0; i < stocks.length; i++) {
+      const stock = stocks[i];
       try {
+        const itemRow = options.startRow ? (options.startRow + i) : (options.rowIndex ? (options.rowIndex + i) : (i + 2));
         const res = await syncSingleStock(stock, {
           gasUrl: gasUrl,
           secretToken: secretToken,
-          timeoutMs: options.timeoutMs || 8000
+          timeoutMs: options.timeoutMs || 8000,
+          useFormulas: options.useFormulas,
+          userNote: options.userNote,
+          rowIndex: itemRow
         });
         if (res.success) {
           successCount++;
@@ -335,7 +397,7 @@
         failedCount++;
         results.push({
           success: false,
-          ticker: stock.ticker,
+          ticker: stock ? stock.ticker : 'UNKNOWN',
           message: err.message
         });
       }
@@ -358,6 +420,8 @@
     extractPe,
     extractYield,
     extractTargetPrice,
+    extractChange,
+    parseNumeric,
     extractCoreDigest,
     sendToGasWebhook
   };
