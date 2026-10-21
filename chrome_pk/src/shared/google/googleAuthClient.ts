@@ -228,7 +228,7 @@ class GoogleAuthClient {
     const clientId = await this.resolveClientId();
     if (!clientId) {
       throw new Error(
-        'Google OAuth2 Client ID 尚未設定。請至設定頁面輸入您的 Client ID，並確保在 GCP Console 已填入對應的重新導向網址。'
+        'Google OAuth2 Client ID 尚未設定，請先填入您的 Client ID 並於 GCP Console 設定重新導向網址。'
       );
     }
 

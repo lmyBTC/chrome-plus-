@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { storage } from '../core/chrome/storage';
 import { syncService } from '../core/chrome/syncService';
 import { UserSettings, NorthStarGoal, WeeklyMission } from '../types';
@@ -57,6 +57,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [enableGoogleTasksSync, setEnableGoogleTasksSync] = useState(true);
   const [isTasksSyncing, setIsTasksSyncing] = useState(false);
   const [tasksSyncResult, setTasksSyncResult] = useState<GoogleSyncResult | null>(null);
+  const [clientIdError, setClientIdError] = useState(false);
+  const clientIdInputRef = useRef<HTMLInputElement>(null);
 
   // 跨插件聯動狀態
   const [financeClipperExtensionId, setFinanceClipperExtensionId] = useState('');
@@ -147,18 +149,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   };
 
   const handleGoogleLogin = async () => {
+    const trimmedClientId = googleClientId.trim();
+    if (!trimmedClientId) {
+      setClientIdError(true);
+      clientIdInputRef.current?.focus();
+      setMessage({
+        type: 'error',
+        text: '❌ 請先於下方步驟 2 輸入 Google OAuth2 Client ID，再進行授權登入。',
+      });
+      return;
+    }
+    setClientIdError(false);
     setIsAuthenticating(true);
     setMessage(null);
     try {
-      const trimmedClientId = googleClientId.trim();
-      if (trimmedClientId) {
-        const currentSettings = await storage.getUserSettings();
-        if (currentSettings.googleClientId !== trimmedClientId) {
-          await storage.saveUserSettings({
-            ...currentSettings,
-            googleClientId: trimmedClientId,
-          });
-        }
+      const currentSettings = await storage.getUserSettings();
+      if (currentSettings.googleClientId !== trimmedClientId) {
+        await storage.saveUserSettings({
+          ...currentSettings,
+          googleClientId: trimmedClientId,
+        });
       }
 
       await googleAuthClient.getAuthToken(true);
@@ -755,109 +765,139 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                     </label>
                   </div>
 
-                  {/* Google OAuth2 Client ID 與 Redirect URI 輔助設定 (任務 2.1 & 任務 2.2) */}
-                  <div className="bg-dark-surface/80 rounded-xl p-3.5 border border-blue-900/40 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-blue-200 flex items-center gap-1.5">
-                        <span>🔑</span> Google OAuth2 Client ID (自訂憑證)
-                      </label>
-                      <span className="text-[11px] text-dark-muted font-mono">Web Client 模式</span>
-                    </div>
-                    <p className="text-[11px] text-dark-muted leading-relaxed">
-                      請至 Google Cloud Console 建立 OAuth 2.0 Web Client 憑證並填入 Client ID。開源使用者無須修改擴充套件原始碼即可自主接入。
-                    </p>
-                    <input
-                      type="text"
-                      value={googleClientId}
-                      onChange={(e) => setGoogleClientId(e.target.value)}
-                      placeholder="例如：xxxxxx.apps.googleusercontent.com (若留空則使用預設值)"
-                      className="w-full px-3 py-2 bg-dark-card border border-dark-border-default rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-dark-primary font-mono text-xs shadow-inner"
-                    />
-
-                    {/* Redirect URI 複製工具 (任務 2.2) */}
-                    <div className="pt-2 border-t border-dark-border-subtle/60">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-blue-200 flex items-center gap-1">
-                          <span>🌐</span> Chrome 重新導向網址 (Redirect URI)
-                        </span>
+                  {/* Google Tasks 授權與設定導引三步驟 */}
+                  <div className="space-y-3">
+                    {/* Step 1: 取得 Chrome 重新導向網址 */}
+                    <div className="bg-dark-surface/80 rounded-xl p-3.5 border border-blue-900/40 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-5 h-5 rounded-full bg-blue-600/30 border border-blue-500/50 text-blue-300 font-bold text-xs flex items-center justify-center">1</span>
+                          <label className="text-xs font-bold text-blue-200">
+                            設定 GCP「已授權的重新導向 URI」
+                          </label>
+                        </div>
                         <button
                           type="button"
                           onClick={handleCopyRedirectUri}
-                          className="px-2 py-1 text-[11px] font-semibold rounded-md bg-blue-950/80 hover:bg-blue-900 border border-blue-700/60 text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
+                          className="px-2.5 py-1 text-[11px] font-semibold rounded-md bg-blue-950/80 hover:bg-blue-900 border border-blue-700/60 text-blue-300 transition-colors flex items-center gap-1 cursor-pointer"
                         >
-                          {redirectUriCopied ? '已複製 ✅' : '📋 複製網址'}
+                          {redirectUriCopied ? '已複製 ✅' : '📋 複製 Redirect URI'}
                         </button>
                       </div>
                       <div className="bg-dark-card/90 px-3 py-1.5 rounded-lg border border-dark-border-subtle/50 font-mono text-[11px] text-blue-300/90 break-all select-all">
                         {googleAuthClient.getRedirectUri()}
                       </div>
-                      <p className="text-[11px] text-amber-400/80 mt-1 flex items-center gap-1">
+                      <p className="text-[11px] text-amber-400/80 flex items-center gap-1">
                         <span>💡</span>
-                        <span>請在 GCP Console「已授權的重新導向 URI」填入上述網址，否則授權時會出現 redirect_uri_mismatch。</span>
+                        <span>請前往 Google Cloud Console 建立 OAuth 2.0 Web Client，並在「已授權的重新導向 URI」貼上此網址。</span>
                       </p>
                     </div>
-                  </div>
 
-                  {/* Google 帳號授權狀態與操作按鈕 (任務 2.3) */}
-                  <div className="bg-dark-surface/60 rounded-xl p-3.5 border border-blue-900/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-dark-primary">帳號連線狀態：</span>
-                        {authState?.isAuthenticated ? (
-                          <span className="text-xs text-green-400 font-medium flex items-center gap-1">
-                            <span>✅</span> 已授權
-                            {authState.userEmail && (
-                              <span className="text-blue-300 font-mono font-normal">({authState.userEmail})</span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-xs text-dark-muted font-normal">
-                            未連結（點擊右側按鈕進行 Google 授權登入）
-                          </span>
-                        )}
+                    {/* Step 2: 填入 Google OAuth2 Client ID */}
+                    <div className={`bg-dark-surface/80 rounded-xl p-3.5 border transition-all space-y-2.5 ${
+                      clientIdError ? 'border-red-500 ring-1 ring-red-500/50 bg-red-950/10' : 'border-blue-900/40'
+                    }`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-5 h-5 rounded-full border text-xs font-bold flex items-center justify-center ${
+                            clientIdError ? 'bg-red-600/30 border-red-500/50 text-red-300' : 'bg-blue-600/30 border-blue-500/50 text-blue-300'
+                          }`}>2</span>
+                          <label className="text-xs font-bold text-blue-200">
+                            填入 OAuth2 Client ID (自訂憑證)
+                          </label>
+                        </div>
+                        <span className="text-[11px] text-dark-muted font-mono">Web Client 模式</span>
                       </div>
-                      {authState?.error && !authState?.isAuthenticated && (
-                        <p className="text-[11px] text-red-400 font-mono">⚠️ {authState.error}</p>
+                      <input
+                        ref={clientIdInputRef}
+                        type="text"
+                        value={googleClientId}
+                        onChange={(e) => {
+                          setGoogleClientId(e.target.value);
+                          if (clientIdError) setClientIdError(false);
+                        }}
+                        placeholder="請輸入 GCP Web Client ID（例如：xxx.apps.googleusercontent.com）"
+                        className={`w-full px-3 py-2 bg-dark-card border rounded-lg focus:outline-none font-mono text-xs shadow-inner transition-all ${
+                          clientIdError
+                            ? 'border-red-500 text-red-200 focus:ring-1 focus:ring-red-500'
+                            : 'border-dark-border-default text-dark-primary focus:ring-1 focus:ring-blue-500'
+                        }`}
+                      />
+                      {clientIdError && (
+                        <p className="text-[11px] text-red-400 font-medium flex items-center gap-1 animate-pulse">
+                          <span>⚠️</span> 請先在此填入您的 Google Client ID 後再進行登入授權！
+                        </p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 self-end sm:self-auto">
-                      {authState?.isAuthenticated ? (
-                        <>
-                          <button
-                            type="button"
-                            disabled={isAuthenticating}
-                            onClick={handleGoogleLogin}
-                            className="px-2.5 py-1.5 text-xs text-blue-300 hover:text-white bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800/60 rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                          >
-                            <span>🔄</span> 重新授權
-                          </button>
-                          <button
-                            type="button"
-                            disabled={isAuthenticating}
-                            onClick={handleGoogleSignOut}
-                            className="px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
-                          >
-                            <span>🔓</span> 解除綁定
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={isAuthenticating}
-                          onClick={handleGoogleLogin}
-                          className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                        >
-                          {isAuthenticating ? (
+
+                    {/* Step 3: Google 帳號授權狀態與操作按鈕 */}
+                    <div className="bg-dark-surface/80 rounded-xl p-3.5 border border-blue-900/40 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-blue-600/30 border border-blue-500/50 text-blue-300 font-bold text-xs flex items-center justify-center">3</span>
+                        <span className="text-xs font-bold text-blue-200">授權登入與同步</span>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-dark-card/60 p-2.5 rounded-lg border border-dark-border-subtle/40">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-dark-primary">帳號連線狀態：</span>
+                            {authState?.isAuthenticated ? (
+                              <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                                <span>✅</span> 已授權
+                                {authState.userEmail && (
+                                  <span className="text-blue-300 font-mono font-normal">({authState.userEmail})</span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-dark-muted font-normal">
+                                未連結（點擊右側按鈕進行 Google 授權登入）
+                              </span>
+                            )}
+                          </div>
+                          {authState?.error && !authState?.isAuthenticated && (
+                            <p className="text-[11px] text-red-400 font-mono">⚠️ {authState.error}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                          {authState?.isAuthenticated ? (
                             <>
-                              <span className="animate-spin text-xs">⏳</span> 授權中...
+                              <button
+                                type="button"
+                                disabled={isAuthenticating}
+                                onClick={handleGoogleLogin}
+                                className="px-2.5 py-1.5 text-xs text-blue-300 hover:text-white bg-blue-950/60 hover:bg-blue-900/80 border border-blue-800/60 rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              >
+                                <span>🔄</span> 重新授權
+                              </button>
+                              <button
+                                type="button"
+                                disabled={isAuthenticating}
+                                onClick={handleGoogleSignOut}
+                                className="px-2.5 py-1.5 text-xs text-red-400 hover:text-red-300 bg-red-950/40 hover:bg-red-900/60 border border-red-800/50 rounded-lg transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                              >
+                                <span>🔓</span> 解除綁定
+                              </button>
                             </>
                           ) : (
-                            <>
-                              <span>🔑</span> 登入 Google 帳號
-                            </>
+                            <button
+                              type="button"
+                              disabled={isAuthenticating}
+                              onClick={handleGoogleLogin}
+                              className="px-3 py-1.5 text-xs font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 rounded-lg shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                            >
+                              {isAuthenticating ? (
+                                <>
+                                  <span className="animate-spin text-xs">⏳</span> 授權中...
+                                </>
+                              ) : (
+                                <>
+                                  <span>🔑</span> 登入 Google 帳號
+                                </>
+                              )}
+                            </button>
                           )}
-                        </button>
-                      )}
+                        </div>
+                      </div>
                     </div>
                   </div>
 

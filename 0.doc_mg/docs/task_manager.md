@@ -8,12 +8,23 @@
 
 本專案所有的開發與維護工作均透過「四階段守門門禁」與物理任務檔案 (`.md`) 嚴格推進，其生命週期包含以下核心門禁與封存階段：
 
-### 1.1. Gate 0: 概念對齊與方案探詢 (Zero-Tool, Zero-Scan)
+### 1.1. 4-Gate 門禁總覽矩陣 (The 4-Gate Protocol Matrix)
+
+| 門禁階段 | 准入條件 | 嚴格禁止事項 (Hard Guardrails) | 核心動作、Token 脫水工具與離開標準 (Exit Criteria) |
+| :--- | :--- | :--- | :--- |
+| **Gate 0: 方向探詢**<br>*(Session 0)* | 使用者提出新需求或模糊構想 | **嚴禁呼叫任何工具**、嚴禁讀寫掃描檔案 | 純推理輸出 100~200 字高階思考與權衡，**物理交回控制權**等待授權。 |
+| **Gate 1: 脈絡藍圖**<br>*(Session 1)* | 使用者明確同意 Gate 0 方向 | **嚴禁動程式碼**、嚴禁執行實質 Phase、**嚴禁 >100 行檔案全檔 view_file** | **[Token 探勘硬窄化 & 持久化快取實證]**：<br>1. 主題檢索：`list_dir 0.doc_mg/tasks/` 及歸檔目錄確認有無同主題或既有任務。<br>2. 骨架提煉：逾 100 行檔案強制調用 `py 1.devtools/tools/code_skeleton.py` 或 `repo-radar` 提煉大綱骨架，細讀視窗放寬至 80~150 行。<br>3. 讀取 `0.doc_mg/task_template_v2.md` 建立實體 `0.doc_mg/tasks/task_MMDD_01_[plugin]_[topic].md`，任務拆解採**語意區塊錨定**；常態任務免除工具矩陣與事前驗屍。<br>4. 前置宣告 **Target Devtools** 與 **Target SSOTs** 四層閉環清單。<br>5. 徹底清理範本中所有 `<!-- ... -->` 註解。<br>6. **第一時間執行 `git add <task-file>` 納入暫存區受版本防護**。<br>7. **強制停步交權，輸出開立新 Session 接力提示詞代碼塊**，嚴禁同輪改動程式碼。 |
+| **Gate 2: 分段原子執行**<br>*(One Phase, One Session)* | 使用者下達執行指定 Phase 指令 | **嚴禁跨 Phase 自動執行**、單 Bug 重試 > 2 次、**嚴禁重複盲讀原始長檔** | **[Token 執行防衛 & 零探索直接開工]**：<br>1. 依賴截斷：以實體 `task.md` 為唯一真理源，切斷上文探勘歷史依賴。<br>2. 零探索直接開工：依賴任務步驟已錨定之語意區塊細讀 (80~150 行)；若需重勘強制以骨架工具提煉，嚴禁盲讀長檔。<br>3. 單輪專注完成當前 Phase 原子任務，禁止每步即刻同步任務檔，改為 Phase 結尾批次打勾同步。<br>4. 終端脫水：大量除錯/建置/測試強制串接 `2>&1 \| py 1.devtools/tools/compact_log.py` 或 `rtk`。<br>5. 單元驗證通過 (Exit 0)，**於 Phase 結尾批次打勾同步任務檔（作為最後工具呼叫）並動態收斂後強制停步交權，輸出開立新 Session 接力代碼塊**。 |
+| **Gate 3: 知識收斂與自動化審計**<br>*(Final Acceptance)* | 所有 Phase 開發完成且單元驗證通過 | **嚴禁遺留架構漂移**、嚴禁跳過驗證標記完成 | **[Token 審計與閉環收尾]**：<br>1. 執行合規與鏈接審計工具 (`audit_manifests.py`、`doc_cross_ref.py`) 確保 Exit 0。<br>2. 落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）。<br>3. 實體任務檔打勾結案並移入 `0.doc_mg/tasks/archive/` 根目錄（常態保留最新 10 份，溢出自動分流）。<br>4. 更新任務檔為最後一個工具呼叫，更新即刻停步。 |
+
+### 1.2. 各階段實施細則
+
+#### Gate 0: 概念對齊與方案探詢 (Zero-Tool, Zero-Scan)
 - **原則**: 收到新需求時，**嚴禁呼叫任何掃描工具或建立實體檔案**。
 - **產出**: AI 僅憑既有高階脈絡，輸出 100~200 字的高階架構方案（包含 1~2 種作法與權衡）。
 - **中斷點**: 明確提問並交出控制權，等待開發者核准方向。若方向被否決，節省 80% 以上無謂探索 Token。
 
-### 1.2. Gate 1: 物理勘查與藍圖建檔 (Grounding & Task Blueprint)
+#### Gate 1: 物理勘查與藍圖建檔 (Grounding & Task Blueprint)
 - **前置勘查工具義務 (Tooling-First Grounding)**: 在探勘目標檔案與模組邊界時，**嚴禁直接盲讀原始碼**。凡目標檔案超過 100 行，**必須先調用 `code_skeleton.py` 提取介面骨架**；探索專案拓撲或跨模組符號時，**必須調用 `repo_radar.py`**，杜絕無效上下文膨脹。
 - **探勘持久化快取 (Probe Cache)**: 凡 Gate 1 探勘期間取得之核心關鍵資訊（如目標檔案精確行號、核心函式簽名、資料結構常數、跨插件通訊合約等），**必須以條列方式完整回寫至任務檔第二節「Gate 1 探勘持久化快取 (Probe Cache)」**。此快取為後續執行之唯一真理源，嚴禁後續會話重新全檔探勘。
 - **語意區塊錨定 (Semantic Block Anchor)**: 探勘獲取之目標檔案函式、組件或介面區塊，以完整語意為單位錨定（細讀視窗放寬至 80~150 行），避免行號漂移與香腸式切片調用。
@@ -23,7 +34,7 @@
 - **Target SSOTs 前置宣告**: 凡涉及元件、模型或架構變動，必須在建檔時前置列出 L1~L4 回寫清單（L1 專家技能、L2 模組導航、L3 領域規格、L4 任務封存），禁止僅列代碼檔案。
 - **中斷點**: 輸出 `task.md` 綱要後**強制停步**，**嚴禁在此時修改原始碼**，等待開發者下達「開始執行」或核准指令。
 
-### 1.3. Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Dynamic Condensation)
+#### 1.3. Gate 2: 分段原子執行與狀態收斂 (Atomic Execution & Dynamic Condensation)
 - **階段性會話重置協議 (One Phase, One Session Protocol)**:
   * 為防止長任務執行中 Context 累積導致注意力稀釋 (Lost in the middle) 與 Token 成本複利膨脹，專案嚴格落實「**One Phase, One Session**」物理隔絕。
   * 單一會話僅專注於一個 Phase 的原子目標與驗收。
@@ -40,9 +51,25 @@
     4. **停步並產出提示詞 (Handover)**：AI 強制結束當前輪次並交回控制權，輸出專用接力代碼塊，引導開立全新 Session 獨立排查。
 - **終端脫水防禦**: 執行建置、編譯、打包或測試時，強制串接 `compact_log.py` 或 `rtk`，嚴禁未過濾長篇 log 污染對話歷史。
 
-### 1.4. Gate 3: 驗收、SSOT 閉環與雙向聯動封存 (Verification, SSOT Closure & Archiving)
-- **四層 SSOT 閉環**: 若任務涉及模組新增、修改或架構變動，結案前必須依 Target SSOTs 宣告逐層完成物理回寫（L1 專家技能、L2 模組導航、L3 領域規格、L4 任務封存），並執行 `audit_manifests.py` / `doc_cross_ref.py` 完成自動化驗證。
+#### 1.4. Gate 3: 驗收、SSOT 閉環與雙向聯動封存 (Verification, SSOT Closure & Archiving)
+- **四層 SSOT 閉環 (90/10 分級守則)**:
+  * **90% 輕量任務（全面豁免）**：樣式調整、文字排版、局部除錯重構，L1~L3 全面豁免讀寫，task 檔直標 `[N/A]`，結案僅需 L4 任務收斂與封存。
+  * **10% 重大變更（純骨架回寫）**：僅涉及模組元件增刪、Storage 模型變動、跨插件通訊接口變更時，結案前依 Target SSOTs 完成純骨架（Index）回寫防腐（L1 專家技能、L2 插件導航、L3 業務規格、L4 任務保留與封存歸檔）。
+- **自動化審計**: 執行 `audit_manifests.py`、`doc_cross_ref.py` 確保合規且零死鏈 (Exit 0)。
 - **雙向聯動封存**: 驗收通過且無死鏈後，觸發任務與關聯草稿之雙向聯動封存流程。
+
+### 1.5. 安全守護五大戒律 (Mandatory Safety Guardrails)
+任務標記完成或對話結束前，**最後一個工具呼叫必須是更新、打勾或收斂** `0.doc_mg/tasks/task_*.md`。若回報完成但實體任務未打勾收斂，視為未完成並違反門禁。
+- **戒律一：精準局部替換鐵律與零錯誤傳參 (Strict Chunk Replacement ≤ 50~80 行 & No ArtifactMetadata on Workspace)**：
+  更新實體任務檔時，**嚴格限制使用原生局部替換工具 (`replace_file_content`)，單次替換範圍 ≤ 50~80 行唯一語意區塊**。嚴禁使用 `write_to_file` 進行整檔覆寫或大區塊重寫，杜絕巨量 Token 輸出及 IDE 底層 Diff 演算法嚴重耗時（逾時阻塞 50+ 秒）引發的使用者端死鎖體感；**對 workspace 專案檔案寫入時嚴禁傳遞 `ArtifactMetadata` 參數**（該參數僅限 `brain/` 之專屬 Artifact），徹底杜絕無效工具調用報錯（Invalid tool call）導致的 50 秒重試延遲。**嚴禁編寫任何 Python/PowerShell 臨時腳本更新任務檔**（必須使用原生檔案替換工具直接原子更新）。落實 **Phase 結尾批次打勾同步**，禁止每執行一步即刻修改任務檔，消除頻繁 I/O 與上下文干擾。
+- **戒律二：建檔即 Git Add 防護 (Instant Git Tracking Guard)**：
+  新建 `0.doc_mg/tasks/task_*.md` 必須第一時間執行 `git add <task-file>` 納入暫存區，確保受 Git 版本管理與還原防護，杜絕 untracked 狀態下的覆蓋或意外損毀。
+- **戒律三：更新即停步零冗餘與清理前置 (Update & Immediate Halt & Prior Cleanup)**：
+  暫存檔案（如臨時腳本）之清理必須**完全前置**於任務檔更新之前；更新任務檔**必須是本輪對話的最後一個工具呼叫**。更新完成後**嚴禁**再調用 `view_file`、`run_command` 或任何冗餘工具，必須立即停止工具調用並交回控制權。
+- **戒律四：驗證正則合併與單次收尾更新 (Regex Batch Verification & Single-Pass Task Update)**：
+  驗收階段嚴禁多輪單詞 Grep 輪巡，必須合併為單次正則表達式；收尾時嚴禁分拆多次替換微調任務檔（打勾、收斂歷程與 frontmatter 狀態必須單次原子替換完成），杜絕重複 Round-trip 造成 Token 與 Context 劇烈膨脹。
+- **戒律五：工具檢核矩陣分級豁免 (Tool Invocation Matrix Leveling)**：
+  常態日常開發任務**全面免除**工具檢核矩陣填寫；僅在涉及重大架構重構或跨插件核心變動時保留選填，消除形式主義開銷。在選填填寫時必須提供真實調用實證，嚴禁無證據虛應打勾。
 
 ---
 
@@ -94,18 +121,45 @@
 
 ---
 
-## 6. 標準歸檔目錄結構 (Archive Directories)
+## 6. 雙層滾動歸檔架構與標準目錄對照 (Two-Tier Retention & Archive Governance)
 
-所有已結案任務檔案依所屬插件或性質，必須移動至對應的子目錄中，嚴禁散落於 `archive/` 根目錄：
+當任務完成結案時，實體檔案應立即從 `0.doc_mg/tasks/` 移入歸檔緩衝區 `0.doc_mg/tasks/archive/` 根目錄（tasks 根目錄保持純淨零結案滯留）。歸檔目錄實施「雙層滾動歸檔機制」以兼顧近期縱覽脈絡與長期冷儲存治理：
 
-- **ScrumClock 插件**：`0.doc_mg/tasks/archive/chrome_scrumclock/`
-- **VideoSpeed 插件**：`0.doc_mg/tasks/archive/chrome_video speed plus/`
-- **研報採集器插件**：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
-- **活動監控插件**：`0.doc_mg/tasks/archive/browser-activity-monitor/`
-- **GeminiNano 插件**：`0.doc_mg/tasks/archive/chrome_gemini_nano/`
-- **全域與跨插件架構**：`0.doc_mg/tasks/archive/global/`
+### 6.1. 雙層滾動架構原則
+1. **第零層（根層進行中純淨區 - `0.doc_mg/tasks/`）**：
+   - 僅存放進行中 (In-Progress) 任務與工作清單，結案後立即移入 `archive/` 根層級，嚴禁滯留已結案任務。
+2. **第一層（近期封存緩衝區 - `0.doc_mg/tasks/archive/` 根目錄）**：
+   - 所有結案任務統一平鋪存放於 `archive/` 根層級，常態保留最新 10 份已結案任務，便於隨時縱覽近期跨插件工作脈絡。
+3. **第二層（冷儲存分類區 - `0.doc_mg/tasks/archive/[plugin]/`）**：
+   - 只有當 `archive/` 根目錄任務數超過 10 份時，最舊的溢出任務才依所屬 plugin 分流移入各插件專屬目錄（若各插件子目錄再超過閾值或天數，則下沉至 `history/`），以徹底消除視覺噪音。
 
-### 封存作業原則
+### 6.2. 標準歸檔目錄對照表 (各插件活躍區與歷史區)
+- **ScrumClock 插件 (`chrome_scrumclock`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_scrumclock/history/`
+- **PK+ 插件 (`chrome_pk`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_pk/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_pk/history/`
+- **VideoSpeed 插件 (`chrome_video speed plus`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_video speed plus/history/`
+- **研報採集器插件 (`finance-research-clipper-oss`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/finance-research-clipper-oss/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/finance-research-clipper-oss/history/`
+- **活動監控插件 (`browser-activity-monitor`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/browser-activity-monitor/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/browser-activity-monitor/history/`
+- **GeminiNano 插件 (`chrome_gemini_nano`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/chrome_gemini_nano/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/chrome_gemini_nano/history/`
+- **全域與跨插件任務 (`global`)**：
+  - 活躍區 (≤ 30 天)：`0.doc_mg/tasks/archive/global/`
+  - 歷史區 (> 30 天)：`0.doc_mg/tasks/archive/global/history/`
+
+### 6.3. 自動化維護與封存作業原則
+- **自動化滾動工具**：
+  - 執行 `py 0.doc_mg/tools/archive_rotator.py --limit 10 --dry-run` 預覽溢出與逾期任務。
+  - 執行 `py 0.doc_mg/tools/archive_rotator.py --limit 10 --execute` 批次執行下沉遷移。
 - **無破壞性安全遷移**：一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的底線。
 - **維持原始內容**：封存過程不得竄改檔案內容、變更時間標記或遺失歷史驗收記錄。
 - **純字串相對路徑**：文檔內部連結與路徑參照一律維持專案純字串相對路徑規範。

@@ -16,20 +16,14 @@ ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/web-ai-guard-spec.
 * **建置指令**: `npm run dev` (開發) / `npm run build` (打包至 `dist/`)
 
 ## 2. 關鍵入口架構 (Key Entrypoints)
-* `src/background.ts`: Service Worker 背景路由、Alarms、跨插件分流
-* `src/entries/sidebar/`: 側邊欄工作區 (`ToolboxHub` 工具箱 / `AIAssistantView` PK+ 助理)
-* `src/entries/newtab/`: 新分頁儀表板視圖
-* `src/dashboard/components/BoardView.tsx`: 極簡 4 欄 GTD 敏捷看板（整合 Google Tasks 雙向同步、Backlog/Doing 甬道聚焦收折、卡片拖曳合併 `MergeTaskModal.tsx` 與語意 WIP 防禦）
-* `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎（饑餓偵測、Few-shot 錨定路線、輸出退化正則審查、結構化 Fallback）
-* `src/features/project-management/services/`: 專案管理 AI 服務層 (`taskAIEngine.ts` 語意釐清、原子拆解與心流衝突審查 / `kanbanAuditor.ts` 看板健康度與閒置巡檢)
-* `src/features/scrumclock/components/SprintPomodoro.tsx`: 番茄鐘 25 分鐘衝刺計時面板
-* `src/features/scrumclock/components/EndOfDayReview.tsx`: 日終反思（對接 Web AI 戰報生成、Sheets 雲端匯出與 Markdown YAML 筆記匯出）
-* `src/services/googleSyncService.ts`: Google 生態雙軌同步服務（GAS Web App 直連與 Local Hub 退避；支援日終戰報 Sheets 覆蓋、看板焦點 Tasks 推播及逆向抓取至收件匣）
-* `src/shared/google/`: Google 原生生態引擎 (`googleAuthClient.ts`, `googleTasksSync.ts`, `googleCalendarService.ts`)
-* `src/core/layout/Sidebar.tsx`: 主頁面左側工具列導覽框架（頂部 Logo 旁整合 `GoogleAccountButton` 快速登入/狀態指示與下拉選單）
-* `src/components/GoogleAccountButton.tsx`: Google 帳號狀態按鈕與下拉選單元件（串接 `googleAuthClient.ts`，支援即時 OAuth 授權、狀態指示與登出）
-* `src/components/SettingsPanel.tsx`: 全域系統設定視窗（整合 Google Tasks 雙向同步開關/觸發、GAS 備份、跨插件連線健檢 Ping/Pong、錯誤狀態指示與排錯導航）
-* `src/components/InstallDocs.tsx`: 系統安裝說明書與除錯手冊（支援 initialTab 分頁直達：安裝步驟、雙向同步 SOP、排錯指南 Troubleshooting 與常見錯誤代碼表）
+* `src/background.ts`: Service Worker 背景路由、Alarms 調度與跨插件分流
+* `src/entries/`: 前端視圖入口 (`sidebar/` 側邊欄工具箱與助理、`newtab/` 新分頁儀表板、`popup/` 快顯)
+* `src/dashboard/components/BoardView.tsx`: 4 欄 GTD 敏捷看板視圖與卡片管理
+* `src/features/scrumclock/`: 番茄鐘 25 分鐘衝刺計時與日終反思 (EndOfDayReview)
+* `src/features/project-management/services/`: 專案管理 AI 服務層 (taskAIEngine, kanbanAuditor)
+* `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎
+* `src/shared/google/` & `src/services/googleSyncService.ts`: Google 原生生態與雙軌同步服務 (Tasks, Calendar, GAS 備份)
+* `src/components/`: 全域元件 (`SettingsPanel.tsx`, `InstallDocs.tsx`, `GoogleAccountButton.tsx`)
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `finance-research-clipper-oss`）之原始碼。

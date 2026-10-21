@@ -51,15 +51,36 @@
 
 ---
 
-## 3. 專案內部工具鏈矩陣 (Toolchain Matrix)
+## 3. 專案內部工具鏈矩陣與生命週期映射 (Toolchain Matrix & Lifecycle Mapping)
 
-專案在 `1.devtools/tools/` 內建以下純標準函式庫之專屬工具：
+專案在 `1.devtools/tools/` 內建純標準函式庫之專屬工具，並在各門禁階段強制映射調用，杜絕手動掃描與無效 Token 損耗：
 
-| 工具腳本 | 核心功能 | 常用指令範例 | 預期 Token 節省效益 |
-| :--- | :--- | :--- | :--- |
-| **`code_skeleton.py`** | 掏空程式碼內部實作，提煉介面與型別骨架 | `npm run skeleton -- chrome_scrumclock/src/background.ts`<br/>`py 1.devtools/tools/code_skeleton.py <路徑>` | 查詢外部依賴節省 **85%~95%** |
-| **`compact_log.py`** | 終端編譯、型別檢查與測試日誌精簡過濾器 | `npm run build 2>&1 \| python 1.devtools/tools/compact_log.py` | 報錯除錯節省 **75%~90%** |
-| **`repo_radar.py`** | 專案情報檢索（大綱、章節切片、符號秒查） | `python 1.devtools/tools/repo_radar.py symbol TaskState`<br/>`python 1.devtools/tools/repo_radar.py section GEMINI.md 1` | 專案探索節省 **80%~92%** |
+### 3.1. 任務生命週期工具鏈調用矩陣 (Task Lifecycle Trigger Matrix)
+
+| 任務生命週期階段 | 強制門禁條件 | 推薦調用指令範例 | 預期 Token 節省效益 |
+|:---|:---|:---|:---|
+| **Gate 0: 概念對齊** | 需求初探與方案權衡 | *(嚴禁調用任何掃描工具)* | 節省 **80%+** 無效探索 Token |
+| **Gate 1: 專案情報檢索** | 探勘拓撲、檔案關聯或跨模組符號 | `py 1.devtools/tools/repo_radar.py map`<br/>`py 1.devtools/tools/repo_radar.py symbol <Name>` | 節省 **80%~92%** 結構掃描 Token |
+| **Gate 1: 模組介面探勘** | 探勘 >100 行原始碼（嚴禁全檔讀取） | `npm run skeleton -- <路徑>`<br/>`py 1.devtools/tools/code_skeleton.py <路徑>` | 節省 **85%~95%** 源碼讀取 Token |
+| **Gate 1: 藍圖建檔** | 初始化任務檔與宣告 Target Devtools/SSOTs | `py 1.devtools/tools/task_cli.py init --plugin <plugin> --title "<標題>"` | 確保架構防護與快取沉澱 |
+| **Gate 2: 終端脫水防禦** | 執行建置、型別檢查或測試 | `<command> 2>&1 \| py 1.devtools/tools/compact_log.py`<br/>`rtk npm run build` | 節省 **70%~95%** 堆疊日誌雜訊 |
+| **Gate 2: 程式碼修改** | 超過 100 行之代碼或文檔局部替換 (≤ 50~80 行) | `replace_file_content`<br/>`multi_replace_file_content` | 節省 **80%** 輸出 Token，杜絕全檔覆寫 |
+| **Gate 3: Manifest 審計** | 涉及權限、Manifest 或安全變更 | `py 1.devtools/tools/audit_manifests.py`<br/>`npm run audit:manifests` | MV3 合規零人工失誤 |
+| **Gate 3: 文檔與契約驗證** | 跨插件契約或文檔交叉引用一致性 | `py 1.devtools/tools/doc_cross_ref.py`<br/>`py 1.devtools/tools/validate_contract.py` | 自動檢出死鏈與 Schema 破壞 |
+| **Gate 3: 雙層滾動歸檔** | 驗收通過且無死鏈後執行歷史收納 | `py 0.doc_mg/tools/archive_rotator.py --limit 10 --execute` | 自動滾動與歷史冷儲存分流 |
+
+### 3.2. RTK 指令包裝與終端過濾規範
+使用 `run_command` 時，必須優先評估終端輸出體積：
+- **RTK 包裝 (優先採用)**：
+  - Git 操作：`rtk git diff`, `rtk git status`, `rtk git log`, `rtk git show`
+  - 建置與檢查：`rtk npm run build`, `rtk tsc`, `rtk eslint`
+  - 檔案搜尋：`rtk rg "pattern"`
+- **日誌脫水過濾器 (`compact_log.py`)**：
+  - 智慧過濾 `node_modules` 冗長調用堆疊，只保留出錯檔案、行號與關鍵錯誤描述：
+    `npm run build 2>&1 | py 1.devtools/tools/compact_log.py`
+- **容錯與降級機制**：
+  1. 首度執行 `rtk` 前，可執行 `rtk --version` 驗證環境支援。
+  2. 若環境未安裝 `rtk`，應降級回原始指令或使用 `compact_log.py` 管線過濾。
 
 ---
 
@@ -79,7 +100,7 @@
 
 ## 5. Gate 1 探勘期武器庫強制鏈條 (Gate 1 Weaponized Exploration Protocol)
 
-在專案之「三階段守門門禁 (3-Gate Protocol)」體系中，**Gate 1（脈絡勘查與任務藍圖）** 是 Token 消耗與 Context Rot 最容易失控的高危險期。為杜絕上下文退化，憲法級規範要求強制調用武器庫工具鏈：
+在專案之「四階段守門門禁 (4-Gate Protocol)」體系中，**Gate 1（脈絡勘查與任務藍圖）** 是 Token 消耗與 Context Rot 最容易失控的高危險期。為杜絕上下文退化，憲法級規範要求強制調用武器庫工具鏈：
 
 ### 5.1 探勘硬窄化三部曲 (3-Step Exploration Chain)
 1. **第一防線：骨架掏空優先（Skeleton First）**

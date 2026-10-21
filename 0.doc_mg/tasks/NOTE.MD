@@ -4,3 +4,6 @@
 為什麼我在pk+中沒有看到相關按鈕或介面功能
 
 優化finance-research-clipper-oss的檔案結構以及資料夾結構 提升開發效率
+
+
+優化skills文件 下沉內容到docs的文件中詳細記載 減輕skills指引負擔 
