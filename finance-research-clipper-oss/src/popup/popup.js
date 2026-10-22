@@ -71,6 +71,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     tickerInput.addEventListener('change', (e) => {
       broadcastCapturedStock(e.target.value, document.getElementById('price')?.value || '', currentMode);
     });
+
+    tickerInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const tickerVal = tickerInput.value.trim().toUpperCase();
+        if (tickerVal && tickerVal !== 'UNKNOWN' && tickerVal !== '讀取中...') {
+          triggerBackgroundStockCrawl(tickerVal);
+        }
+      }
+    });
   }
 
   // 0. 載入與設定 Storage 以及檢查右鍵暫存文字
@@ -190,13 +200,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. 查詢當前 active 的分頁
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const isGoogleFinanceTab = !!(tab && tab.url && tab.url.includes("google.com/finance"));
   
-  if (tab && tab.url.includes("google.com/finance")) {
+  if (isGoogleFinanceTab) {
     fetchPageData(scrapeFinanceData);
   } else {
-    updateStatus("請在 Google Finance 股票頁面啟動此工具。", "red");
-    submitBtn.disabled = true;
-    submitBtn.style.backgroundColor = "#dadce0";
+    updateStatus("💡 請輸入代號按 Enter 或點擊「一鍵完整抓取」進行背景採集", "orange");
+    if (tickerInput) {
+      tickerInput.focus();
+    }
   }
 
   async function fetchPageData(func) {
@@ -306,8 +318,136 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 3. SPA 4合1 動態走訪爬蟲調度
+  // 3. 主動背景爬蟲調度 (跨分頁或手動輸入股票代號)
+  async function triggerBackgroundStockCrawl(targetKeyword) {
+    const cleanTicker = (targetKeyword || (tickerInput ? tickerInput.value : '')).trim().toUpperCase();
+    if (!cleanTicker || cleanTicker === 'UNKNOWN' || cleanTicker === '讀取中...') {
+      updateStatus("請先輸入欲採集的股票代號 (例如: NVDA, CORZ)", "orange");
+      if (tickerInput) tickerInput.focus();
+      return;
+    }
+
+    if (tickerInput) tickerInput.value = cleanTicker;
+
+    if (fullScrapeBtn) {
+      fullScrapeBtn.disabled = true;
+      fullScrapeBtn.textContent = "⏳ 背景採集中 (請稍候)...";
+    }
+    updateStatus(`⚡ 正在背景採集 ${cleanTicker} 行情與進階財報...`, "orange");
+
+    try {
+      const response = await new Promise((resolve) => {
+        chrome.runtime.sendMessage({
+          action: 'CRAWL_STOCK',
+          keyword: cleanTicker,
+          ticker: cleanTicker
+        }, (res) => {
+          if (chrome.runtime.lastError) {
+            resolve({ success: false, error: chrome.runtime.lastError.message });
+          } else {
+            resolve(res);
+          }
+        });
+      });
+
+      if (!response || !response.success || !response.data) {
+        const errMsg = response && response.error ? response.error : '背景採集失敗，請確認代號是否正確或網路是否通暢';
+        throw new Error(errMsg);
+      }
+
+      const stockItem = response.data;
+      const raw = stockItem.rawData || stockItem.raw || {};
+
+      // 1. 更新股票基本欄位
+      if (tickerInput) tickerInput.value = stockItem.ticker || cleanTicker;
+      const priceEl = document.getElementById('price');
+      if (priceEl) priceEl.value = stockItem.price || 'N/A';
+
+      capturedKeyStats = stockItem.stats || (raw.overview && raw.overview.stats) || {};
+
+      // 2. 合併完整數據至 capturedStockData
+      capturedStockData = {
+        ticker: stockItem.ticker || cleanTicker,
+        price: stockItem.price || 'N/A',
+        keyStats: capturedKeyStats,
+        analysis: stockItem.analysis || raw.analysis || {
+          consensus: stockItem.analyst?.consensus || 'N/A',
+          targetPrice: {
+            median: stockItem.analyst?.targetMedian || 'N/A',
+            high: stockItem.analyst?.targetHigh || 'N/A',
+            low: stockItem.analyst?.targetLow || 'N/A'
+          },
+          ratingsSummary: stockItem.analyst?.summary || ''
+        },
+        earnings: stockItem.earnings || raw.earnings || {},
+        financials: stockItem.financials || raw.financials || {}
+      };
+
+      broadcastCapturedStock(capturedStockData.ticker, capturedStockData.price, 'stock');
+
+      // 3. 渲染進階預覽面板
+      const previewEl = document.getElementById('financials-preview-content');
+      if (previewEl) {
+        const previewAnalysis = capturedStockData.analysis;
+        const previewEarnings = (stockItem.earnings && stockItem.earnings.latestQuarter)
+          ? stockItem.earnings
+          : (raw.earnings || {
+            latestQuarter: {
+              epsActual: stockItem.earnings?.epsActual || 'N/A',
+              epsEstimate: stockItem.earnings?.epsEstimate || 'N/A',
+              revenueActual: stockItem.earnings?.revenueActual || 'N/A',
+              revenueEstimate: stockItem.earnings?.revenueEstimate || 'N/A'
+            }
+          });
+        renderFullCrawlerPreview(previewEl, {
+          analysis: previewAnalysis,
+          earnings: previewEarnings,
+          financials: capturedStockData.financials
+        });
+      }
+
+      // 自動展開預覽折疊面板供使用者檢視
+      const detailsEl = document.getElementById('financials-preview-details');
+      if (detailsEl) detailsEl.open = true;
+
+      // 確保提交按鈕啟用
+      submitBtn.disabled = false;
+      submitBtn.style.backgroundColor = "";
+      submitBtn.style.cursor = "pointer";
+
+      updateStatus(`🎉 ${stockItem.ticker} 數據與進階財報採集成功！`, "green");
+    } catch (err) {
+      console.error("Trigger Background Stock Crawl Error:", err);
+      updateStatus(`❌ 採集失敗: ${err.message}`, "red");
+    } finally {
+      if (fullScrapeBtn) {
+        fullScrapeBtn.disabled = false;
+        fullScrapeBtn.textContent = "";
+        const iconSpan = document.createElement("span");
+        iconSpan.textContent = "⚡";
+        const textSpan = document.createElement("span");
+        textSpan.textContent = " 一鍵完整抓取 (4合1 SPA)";
+        fullScrapeBtn.append(iconSpan, textSpan);
+      }
+    }
+  }
+
+  // 4. SPA 4合1 動態走訪爬蟲調度
   async function executeFullStockCrawler() {
+    const isGoogleFinanceTab = !!(tab && tab.url && tab.url.includes("google.com/finance"));
+    const userTicker = tickerInput ? tickerInput.value.trim().toUpperCase() : '';
+
+    // 若非 Google Finance 分頁，自動走背景爬蟲管線
+    if (!isGoogleFinanceTab) {
+      if (!userTicker || userTicker === 'UNKNOWN' || userTicker === '讀取中...') {
+        updateStatus("請先輸入欲採集的股票代號 (例如: NVDA, CORZ)", "orange");
+        if (tickerInput) tickerInput.focus();
+        return;
+      }
+      await triggerBackgroundStockCrawl(userTicker);
+      return;
+    }
+
     if (!tab || !tab.id) {
       updateStatus("未偵測到分頁，請在 Google Finance 標的頁執行", "red");
       return;
@@ -606,8 +746,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     if (currentMode === 'stock') {
-      payload.ticker = document.getElementById('ticker').value;
-      payload.price = document.getElementById('price').value;
+      const currentTicker = document.getElementById('ticker')?.value?.trim().toUpperCase();
+      if (!currentTicker || currentTicker === 'UNKNOWN' || currentTicker === '讀取中...') {
+        throw new Error("請先輸入有效的股票代號並完成數據擷取！");
+      }
+      payload.ticker = currentTicker;
+      payload.price = document.getElementById('price').value || 'N/A';
       payload.sp500 = capturedKeyStats['S&P 500'] || capturedKeyStats['標普 500'] || "N/A";
       payload.nasdaq = capturedKeyStats['Nasdaq'] || capturedKeyStats['那斯達克'] || "N/A";
       payload.mktcap = capturedKeyStats['市值'] || "N/A";
@@ -721,6 +865,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       payload.type = "SYNC_PORTFOLIO";
       payload.yield = capturedKeyStats['殖利率'] || capturedKeyStats['股息殖利率'] || capturedKeyStats['Dividend yield'] || '';
       payload.targetPrice = payload.target_price_median || payload.target_price_mean || '';
+      payload.marketCap = payload.mktcap;
+      
+      let low52 = capturedKeyStats['52 週最低'] || capturedKeyStats['52 週低點'] || '';
+      let high52 = capturedKeyStats['52 週最高'] || capturedKeyStats['52 週高點'] || '';
+      const r52 = capturedKeyStats['52週範圍'] || capturedKeyStats['52 週範圍'] || '';
+      if ((!low52 || !high52) && r52 && r52.includes('-')) {
+        const parts = r52.split('-');
+        if (!low52 && parts[0]) low52 = parts[0].trim();
+        if (!high52 && parts[1]) high52 = parts[1].trim();
+      }
+      payload.beta = capturedKeyStats['Beta'] || capturedKeyStats['Beta (5Y monthly)'] || capturedKeyStats['貝他值'] || '';
+      payload.low52 = low52;
+      payload.high52 = high52;
+
       payload.notes = payload.note;
       payload.aiDigest = payload.note;
       payload.payload = {
@@ -729,6 +887,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         price: payload.price,
         pe: payload.pe,
         yield: payload.yield,
+        marketCap: payload.marketCap,
+        mktcap: payload.marketCap,
+        beta: payload.beta,
+        low52: payload.low52,
+        high52: payload.high52,
         targetPrice: payload.targetPrice,
         notes: payload.notes,
         aiDigest: payload.aiDigest
@@ -768,6 +931,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       const cleanUserNote = RuleEngine.processText(note, activeRules);
       payload.note = `### AI 研究精選紀錄\n\n${selectedDialogue}\n\n### 我的筆記\n${cleanUserNote}`;
     }
+
+    const sheetUrlVal = (settingsSheetUrl ? settingsSheetUrl.value : "").trim();
+    if (sheetUrlVal) {
+      payload.sheetUrl = sheetUrlVal;
+      payload.userSpreadsheetUrl = sheetUrlVal;
+    }
+
     return payload;
   }
 

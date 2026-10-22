@@ -82,6 +82,64 @@
   }
 
   /**
+   * 萃取市值字串 (Market Cap)
+   */
+  function extractMarketCap(stock) {
+    if (!stock) return '';
+    if (stock.marketCap) return sanitizeString(stock.marketCap, 30);
+    if (stock.mktcap) return sanitizeString(stock.mktcap, 30);
+    if (stock.minerMetrics && stock.minerMetrics.marketCap) return sanitizeString(stock.minerMetrics.marketCap, 30);
+    const stats = stock.stats || stock.keyStats || {};
+    const keys = ['市值', 'Market cap', 'Market Cap', '市值 (Market Cap)'];
+    for (const k of keys) {
+      if (stats[k]) return sanitizeString(stats[k], 30);
+    }
+    return '';
+  }
+
+  /**
+   * 萃取 Beta 值 (貝他值)
+   */
+  function extractBeta(stock) {
+    if (!stock) return '';
+    if (stock.beta !== undefined && stock.beta !== '') return sanitizeString(stock.beta, 20);
+    if (stock.minerMetrics && stock.minerMetrics.beta) return sanitizeString(stock.minerMetrics.beta, 20);
+    const stats = stock.stats || stock.keyStats || {};
+    const keys = ['Beta', 'Beta (5Y monthly)', '貝他值'];
+    for (const k of keys) {
+      if (stats[k]) return sanitizeString(stats[k], 20);
+    }
+    return '';
+  }
+
+  /**
+   * 萃取 52 週最高與最低
+   */
+  function extract52w(stock) {
+    if (!stock) return { low: '', high: '' };
+    let low = stock.low52 || (stock.minerMetrics && stock.minerMetrics.low52) || '';
+    let high = stock.high52 || (stock.minerMetrics && stock.minerMetrics.high52) || '';
+    const stats = stock.stats || stock.keyStats || {};
+    if (!low && stats['52 週最低']) low = stats['52 週最低'];
+    if (!low && stats['52-wk low']) low = stats['52-wk low'];
+    if (!high && stats['52 週最高']) high = stats['52 週最高'];
+    if (!high && stats['52-wk high']) high = stats['52-wk high'];
+    
+    if (!low || !high) {
+      const range = stock.range52w || stats['52週範圍'] || stats['52-wk range'] || '';
+      if (range && range.includes('-')) {
+        const parts = range.split('-');
+        if (!low && parts[0]) low = parts[0].trim();
+        if (!high && parts[1]) high = parts[1].trim();
+      }
+    }
+    return {
+      low: sanitizeString(low, 25),
+      high: sanitizeString(high, 25)
+    };
+  }
+
+  /**
    * 萃取漲跌幅字串或百分比
    */
   function extractChange(stock) {
@@ -176,6 +234,9 @@
     const pe = extractPe(stock);
     const yieldVal = extractYield(stock);
     const targetPrice = extractTargetPrice(stock);
+    const marketCap = extractMarketCap(stock);
+    const beta = extractBeta(stock);
+    const range52 = extract52w(stock);
     const digest = extractCoreDigest(stock, options.userNote || '');
 
     let price = rawPrice;
@@ -201,10 +262,16 @@
       name: name,
       price: price,
       change: change,
+      marketCap: marketCap,
+      mktcap: marketCap,
+      beta: beta,
+      low52: range52.low,
+      high52: range52.high,
       pe: pe,
       yield: yieldVal,
       targetPrice: targetPrice,
       notes: digest,
+      note: digest,
       aiDigest: digest
     };
 

@@ -249,6 +249,9 @@
      */
     sendToGas: async function (currentStock, note, btnSendGas, settingsModal) {
       if (!currentStock) return;
+      const cleanNoteText = (note && typeof note === 'object' && 'value' in note)
+        ? String(note.value || '')
+        : (typeof note === 'string' ? note : '');
 
       if (window.GoogleSheetsExporter) {
         if (btnSendGas) {
@@ -257,7 +260,7 @@
         }
 
         const res = await window.GoogleSheetsExporter.syncSingleStock(currentStock, {
-          userNote: note
+          userNote: cleanNoteText
         });
 
         if (btnSendGas) {

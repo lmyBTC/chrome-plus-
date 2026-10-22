@@ -19,73 +19,149 @@
 
 function doPost(e) {
   try {
+    if (!e || !e.postData || !e.postData.contents) {
+      return responseJSON({ status: "error", success: false, message: "未接收到 POST 資料內容" });
+    }
+
     const data = JSON.parse(e.postData.contents);
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Main");
     
-    if (data.action === "create") {
-      const uuid = Utilities.getUuid();
+    // 1. 智慧試算表定位：優先支援外掛設定之 Google Sheets URL，次選當前綁定之試算表
+    let ss = null;
+    const targetUrl = (data.sheetUrl || data.userSpreadsheetUrl || data.sheetsUrl || "").trim();
+    if (targetUrl && targetUrl.startsWith("https://docs.google.com/spreadsheets/")) {
+      try {
+        ss = SpreadsheetApp.openByUrl(targetUrl);
+      } catch (openErr) {
+        console.warn("無法透過 URL 開啟試算表，改用預設試算表:", openErr);
+      }
+    }
+    if (!ss) {
+      ss = SpreadsheetApp.getActiveSpreadsheet();
+    }
+    if (!ss) {
+      return responseJSON({ status: "error", success: false, message: "找不到目標試算表，請確認已綁定試算表或在插件設定中填入試算表網址" });
+    }
+
+    // 2. 智慧工作表解析：優先使用 "Main" 或 "Portfolio_Tracking"，若不存在則自動使用當前第一個工作表
+    let sheet = ss.getSheetByName("Main") || ss.getSheetByName("Portfolio_Tracking") || ss.getActiveSheet();
+    if (!sheet) {
+      sheet = ss.insertSheet("Main");
+    }
+
+    // 3. 檢查現有表頭與欄位數
+    let lastCol = sheet.getLastColumn();
+    let lastRow = sheet.getLastRow();
+
+    // 表頭自動初始化 (僅當為全新空白試算表時，自動建立預設 12 欄專業表頭與凍結列)
+    if (lastRow === 0 || lastCol === 0) {
+      const defaultHeaders = [
+        "UUID", "時間戳記 (Timestamp)", "觀測標的 (Ticker)", "價格 (Price)", 
+        "研報筆記 (Note)", "狀態 (Status)", "情緒 (Sentiment)", "截圖 (Screenshot)", 
+        "標普500 (S&P 500)", "那斯達克 (Nasdaq)", "市值 (Market Cap)", "本益比 (P/E)"
+      ];
+      sheet.appendRow(defaultHeaders);
+      const headerRange = sheet.getRange(1, 1, 1, defaultHeaders.length);
+      headerRange.setBackground("#1a73e8")
+                 .setFontColor("#ffffff")
+                 .setFontWeight("bold")
+                 .setHorizontalAlignment("center")
+                 .setVerticalAlignment("middle");
+      sheet.setRowHeight(1, 35);
+      sheet.setFrozenRows(1);
+      lastCol = defaultHeaders.length;
+      lastRow = 1;
+    }
+    
+    // 4. 判定動作：相容 SYNC_PORTFOLIO (新合約)、CREATE (舊範本)、以及預設寫入
+    const action = (data.action || data.type || "create").toUpperCase();
+
+    if (action === "SYNC_PORTFOLIO" || action === "CREATE") {
+      const item = data.payload || data;
+      const uuid = data.uuid || Utilities.getUuid();
       const timestamp = new Date();
       const mode = data.mode || "stock";
       
-      // 執行情緒分析
-      const sentiment = analyzeSentiment(data.note);
+      const rawTicker = String(item.ticker || data.ticker || "UNKNOWN").trim().toUpperCase();
+      // 乾淨代號 (去除 :NASDAQ, :NYSE 等交易所後綴以方便比對與展示)
+      const cleanTicker = rawTicker.replace(/:(NASDAQ|NYSE|AMEX|TPE|OTC)$/i, "");
+      const price = String(item.price || data.price || "N/A");
+      const note = String(item.notes || item.note || data.note || data.notes || data.aiDigest || "");
+      const marketCap = String(item.marketCap || item.mktcap || data.marketCap || data.mktcap || "N/A");
+      const beta = String(item.beta || data.beta || "N/A");
+      const low52 = String(item.low52 || data.low52 || "N/A");
+      const high52 = String(item.high52 || data.high52 || "N/A");
+      const targetPrice = String(item.targetPrice || data.targetPrice || "N/A");
+      const pe = String(item.pe || data.pe || "N/A");
+      const yieldVal = String(item.yield || data.yield || "N/A");
+      const sp500 = String(data.sp500 || item.sp500 || "N/A");
+      const nasdaq = String(data.nasdaq || item.nasdaq || "N/A");
+      const sentiment = data.sentiment || item.sentiment || analyzeSentiment(note);
       
-      // 處理截圖 (如有)
       let screenshotUrl = "N/A";
       if (data.screenshot) {
-        screenshotUrl = saveScreenshotToDrive(data.screenshot, data.ticker);
+        screenshotUrl = saveScreenshotToDrive(data.screenshot, cleanTicker);
       }
+
+      // 5. 智慧讀取現有表頭 (Row 1)，動態對齊欄位數值
+      const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
       
-      // 準備新增的一列資料 (共 12 欄)
-      // 欄位定義：A:UUID, B:Timestamp, C:Ticker, D:Price, E:Note, F:Status, G:Sentiment, H:Screenshot, I:S&P500, J:Nasdaq, K:MarketCap, L:PE
-      const newRow = [
-        uuid,
-        timestamp,
-        data.ticker,
-        data.price,
-        data.note,
-        "Pending",
-        sentiment,
-        screenshotUrl,
-        data.sp500 || "N/A",
-        data.nasdaq || "N/A",
-        data.mktcap || "N/A",
-        data.pe || "N/A"
-      ];
+      const newRowValues = headers.map(header => {
+        const h = String(header).trim().toLowerCase();
+        if (/^ticker|代號|標的|symbol/.test(h)) return cleanTicker;
+        if (/^price|現價|價格|目前價格/.test(h)) return price;
+        if (/marketcap|mktcap|市值/.test(h)) return marketCap;
+        if (/^beta|貝他/.test(h)) return beta;
+        if (/low52|52.*(低|low)/.test(h)) return low52;
+        if (/high52|52.*(高|high)/.test(h)) return high52;
+        if (/target.*price|目標價/.test(h)) return targetPrice;
+        if (/uuid/.test(h)) return uuid;
+        if (/timestamp|時間|日期/.test(h)) return timestamp;
+        if (/note|筆記|觀點/.test(h)) return note;
+        if (/status|狀態/.test(h)) return "Pending";
+        if (/sentiment|情緒/.test(h)) return sentiment;
+        if (/screenshot|截圖/.test(h)) return screenshotUrl;
+        if (/^pe|本益比/.test(h)) return pe;
+        if (/yield|殖利率/.test(h)) return yieldVal;
+        if (/sp500|標普/.test(h)) return sp500;
+        if (/nasdaq|那斯達克/.test(h)) return nasdaq;
+        return "";
+      });
+
+      // 6. 同代號覆蓋更新機制 (Smart Upsert)
+      let targetRowIndex = -1;
+      const tickerColIndex = headers.findIndex(h => /ticker|代號|標的|symbol/i.test(String(h).trim()));
       
-      sheet.appendRow(newRow);
-      const lastRow = sheet.getLastRow();
-      
-      // --- 自動化排版與上色 ---
-      const totalCols = newRow.length;
-      const rowRange = sheet.getRange(lastRow, 1, 1, totalCols);
-      
-      // 1. 根據模式上色
-      if (mode === "ai") {
-        rowRange.setBackground("#e8f0fe"); // 淺藍色 (AI 模式)
+      if (tickerColIndex >= 0 && lastRow > 1) {
+        const existingTickers = sheet.getRange(2, tickerColIndex + 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < existingTickers.length; i++) {
+          const rowVal = String(existingTickers[i][0]).replace(/:(NASDAQ|NYSE|AMEX|TPE|OTC)$/i, "").trim().toUpperCase();
+          if (rowVal === cleanTicker) {
+            targetRowIndex = i + 2; // +2 因為第 1 列為表頭且 1-indexed
+            break;
+          }
+        }
+      }
+
+      if (targetRowIndex > 0) {
+        // 已存在同代號：原地覆蓋更新！
+        sheet.getRange(targetRowIndex, 1, 1, newRowValues.length).setValues([newRowValues]);
       } else {
-        rowRange.setBackground("#e6f4ea"); // 淺綠色 (股票模式)
+        // 不存在同代號：新增列！
+        sheet.appendRow(newRowValues);
+        targetRowIndex = sheet.getLastRow();
       }
       
-      // 2. 格式優化 (自動對齊、換行、邊框)
-      rowRange.setVerticalAlignment("middle");
-      rowRange.setBorder(true, true, true, true, true, true, "#dadce0", SpreadsheetApp.BorderStyle.SOLID);
-      sheet.getRange(lastRow, 5).setWrap(true); // Note 欄位自動換行
+      return responseJSON({ 
+        status: "success", 
+        success: true, 
+        uuid: uuid, 
+        ticker: cleanTicker, 
+        row: targetRowIndex,
+        mode: targetRowIndex <= lastRow ? "updated" : "appended",
+        message: `成功將 [${cleanTicker}] 數據智慧同步至試算表！` 
+      });
       
-      // 3. 情緒標籤顏色優化
-      const sentimentCell = sheet.getRange(lastRow, 7);
-      if (sentiment.includes("看多")) sentimentCell.setFontColor("#1e8e3e").setFontWeight("bold");
-      if (sentiment.includes("看空")) sentimentCell.setFontColor("#d93025").setFontWeight("bold");
-      
-      // 4. 截圖連結優化
-      if (screenshotUrl !== "N/A" && !screenshotUrl.startsWith("Error")) {
-        const screenshotCell = sheet.getRange(lastRow, 8);
-        screenshotCell.setFormula(`=HYPERLINK("${screenshotUrl}", "🖼️ 查看截圖")`);
-      }
-      
-      return responseJSON({ status: "success", uuid: uuid });
-      
-    } else if (data.action === "update") {
+    } else if (action === "UPDATE") {
       const uuid = data.uuid;
       const newStatus = data.status;
       const rows = sheet.getDataRange().getValues();
@@ -93,15 +169,15 @@ function doPost(e) {
       for (let i = 1; i < rows.length; i++) {
         if (rows[i][0] === uuid) {
           sheet.getRange(i + 1, 6).setValue(newStatus);
-          return responseJSON({ status: "success", message: `UUID ${uuid} updated to ${newStatus}` });
+          return responseJSON({ status: "success", success: true, message: `UUID ${uuid} updated to ${newStatus}` });
         }
       }
-      return responseJSON({ status: "error", message: "UUID not found" });
+      return responseJSON({ status: "error", success: false, message: "UUID not found" });
     }
     
-    return responseJSON({ status: "error", message: "Invalid action" });
+    return responseJSON({ status: "error", success: false, message: `Invalid action: ${action}` });
   } catch(err) {
-    return responseJSON({ status: "error", message: err.message });
+    return responseJSON({ status: "error", success: false, message: err.message });
   }
 }
 

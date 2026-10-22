@@ -399,11 +399,18 @@
     if (btnCrawl) btnCrawl.disabled = true;
 
     chrome.runtime.sendMessage({
-      action: 'TRIGGER_DASHBOARD_CRAWL',
+      action: 'CRAWL_STOCK',
+      keyword: cleanTicker,
       ticker: cleanTicker
     }, (response) => {
       if (crawlSpinner) crawlSpinner.style.display = 'none';
       if (btnCrawl) btnCrawl.disabled = false;
+
+      if (chrome.runtime.lastError) {
+        console.warn('[FinanceClipper] 採集訊息發送失敗:', chrome.runtime.lastError.message);
+        showToast(`❌ 通訊異常: ${chrome.runtime.lastError.message}`);
+        return;
+      }
 
       if (response && response.success && response.data) {
         showToast(`✅ ${cleanTicker} 最新數據擷取成功！`);
@@ -549,17 +556,39 @@
     });
 
     // 匯出功能
-    btnCopyMarkdown.addEventListener('click', () => { window.DashboardActions.exportMarkdown(currentStock, noteInput); toggleExportPanel(false); });
-    btnDownloadCsv.addEventListener('click', () => { window.DashboardActions.exportCsv(currentStock); toggleExportPanel(false); });
-    btnSendGas.addEventListener('click', () => { window.DashboardActions.sendToGas(currentStock, noteInput); toggleExportPanel(false); });
+    btnCopyMarkdown.addEventListener('click', () => { 
+      const noteVal = noteInput ? noteInput.value : '';
+      window.DashboardActions.exportMarkdown(currentStock, noteVal); 
+      toggleExportPanel(false); 
+    });
+    btnDownloadCsv.addEventListener('click', () => { 
+      window.DashboardActions.exportCsv(currentStock); 
+      toggleExportPanel(false); 
+    });
+    btnSendGas.addEventListener('click', () => { 
+      const noteVal = noteInput ? noteInput.value : '';
+      window.DashboardActions.sendToGas(currentStock, noteVal, btnSendGas, settingsModal); 
+      toggleExportPanel(false); 
+    });
     if (btnExportFinancialModel) {
       btnExportFinancialModel.addEventListener('click', () => {
         window.DashboardActions.exportFinancialModel(currentStock, btnExportFinancialModel, settingsModal);
         toggleExportPanel(false);
       });
     }
-    if (btnBatchSendGas) btnBatchSendGas.addEventListener('click', () => { window.DashboardActions.batchSendToGas(historyList, window.DashboardTabs.getActiveCategoryId()); toggleExportPanel(false); });
-    if (btnAddToScrum) btnAddToScrum.addEventListener('click', () => { window.DashboardActions.addStockToScrumTask(currentStock, noteInput); toggleExportPanel(false); });
+    if (btnBatchSendGas) {
+      btnBatchSendGas.addEventListener('click', () => { 
+        window.DashboardActions.batchSendToGas(historyList, btnBatchSendGas, settingsModal); 
+        toggleExportPanel(false); 
+      });
+    }
+    if (btnAddToScrum) {
+      btnAddToScrum.addEventListener('click', () => { 
+        const noteVal = noteInput ? noteInput.value : '';
+        window.DashboardActions.addStockToScrumTask(currentStock, noteVal); 
+        toggleExportPanel(false); 
+      });
+    }
 
     // 頂部研報筆記與輸出中心下拉選單
     if (btnToggleExportPanel) btnToggleExportPanel.addEventListener('click', (e) => { e.stopPropagation(); toggleExportPanel(); });

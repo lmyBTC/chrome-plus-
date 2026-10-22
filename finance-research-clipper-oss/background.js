@@ -246,12 +246,15 @@ async function crawlStockByKeyword(keyword) {
         targetLow: (analysis.targetPrice && analysis.targetPrice.low) || 'N/A',
         summary: analysis.ratingsSummary || ''
       },
+      analysis: analysis,
       earnings: {
         epsActual: (earnings.latestQuarter && earnings.latestQuarter.epsActual) || 'N/A',
         epsEstimate: (earnings.latestQuarter && earnings.latestQuarter.epsEstimate) || 'N/A',
         revenueActual: (earnings.latestQuarter && earnings.latestQuarter.revenueActual) || 'N/A',
         revenueEstimate: (earnings.latestQuarter && earnings.latestQuarter.revenueEstimate) || 'N/A',
-        table: earnings.history || []
+        table: earnings.history || [],
+        latestQuarter: earnings.latestQuarter,
+        insights: earnings.insights
       },
       marketTopics: {
         table: primaryMarketTopicTable,
@@ -262,6 +265,7 @@ async function crawlStockByKeyword(keyword) {
         statements: financialStatements
       },
       minerMetrics: rawData.minerMetrics || null,
+      rawData: rawData,
       timestamp: new Date().toISOString(),
       updatedAt: new Date().toLocaleString()
     };
@@ -322,9 +326,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
-  if (message.action === 'CRAWL_STOCK') {
+  if (message.action === 'CRAWL_STOCK' || message.action === 'TRIGGER_DASHBOARD_CRAWL') {
+    const targetKeyword = message.keyword || message.ticker;
     try {
-      crawlStockByKeyword(message.keyword)
+      crawlStockByKeyword(targetKeyword)
         .then((res) => {
           try {
             sendResponse(res);
