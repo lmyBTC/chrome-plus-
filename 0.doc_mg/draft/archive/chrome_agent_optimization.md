@@ -1,6 +1,9 @@
-# Chrome 插件 Agent 開發與 Token 優化指南 (Chrome Extension Agent Optimization Guide)
+# ⚠️ [已廢止 DEPRECATED] Chrome 插件 Agent 開發與 Token 優化指南
 
-本文件整理了在開發 Chrome 插件（使用 Manifest V3）時的共同注意事項，並針對 LLM Agent 提供可顯著提高開發效率、防範安全漏洞以及降低 Token 消耗的實用技術與開發規範。
+> [!WARNING]
+> **本文件已廢止並歸檔至此。其內容已 100% 收斂至專案最新 SSOT，請參閱以下文件：**
+> 1. **Chrome 插件開發規範 (MV3 / Shadow DOM / CSP / 訊息機制)**：[`0.doc_mg/docs/dev_standards.md`](../../docs/dev_standards.md)
+> 2. **AI Agent 極致 Token 節約技術與審計工具調用矩陣**：[`0.doc_mg/docs/token_optimization_guide.md`](../../docs/token_optimization_guide.md)
 
 ---
 

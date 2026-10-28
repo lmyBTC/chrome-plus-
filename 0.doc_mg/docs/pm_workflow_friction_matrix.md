@@ -1,9 +1,18 @@
+<!-- cross-ref:auto ─────────────────────
+  本檔: pm_workflow_friction_matrix.md
+  交叉引用:
+    - ./README.md
+    - ./analyst_workflow_friction_matrix.md
+    - ./cross_plugin_contract.md
+───────────────────── cross-ref:end -->
 # 專案經理 (PM) 敏捷工作流摩擦力診斷矩陣 (PM Workflow Friction Matrix)
 
 > **文件狀態**：回寫精簡與去蕪存菁版 (SSOT)  
 > **更新日期**：2026-10-03  
 > **適用角色**：專案經理 (PM)、敏捷開發者  
 > **涉及插件**：`chrome_scrumclock` (任務與衝刺)、`browser-activity-monitor` (活動與資源軌跡)  
+> **成對矩陣**：[`analyst_workflow_friction_matrix.md`](./analyst_workflow_friction_matrix.md) (投資研究員矩陣)  
+> **中央導航**：[`0.doc_mg/docs/SSOT_README.md`](./SSOT_README.md)  
 > **架構原則**：單插件自洽、嚴格邊界防禦、拒絕過度工程化、雲端生態系遠程儲備  
 
 ---

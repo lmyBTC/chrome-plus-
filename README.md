@@ -31,15 +31,18 @@
 ```
 chrome-plus-/
 ├── 0.doc_mg/                               # [架構文檔、技術規範與極致減耗工具庫]
-│   ├── docs/                               # 核心架構與通訊契約手冊
+│   ├── docs/                               # 核心架構、規範與中央 SSOT 地圖
+│   │   ├── SSOT_README.md                  # [中央導航] 0.doc_mg 全域 SSOT 地圖與文檔總覽
 │   │   ├── cross_plugin_contract.md        # 跨插件黑盒通訊契約 (v2.2 矩陣通訊規格)
-│   │   ├── gemini_nano_advanced_exploitation_spec.md # Nano 極限潛能壓榨全景方案
-│   │   ├── scrumclock_pm_gemini_nano_optimization.md # 敏捷專案管理 Nano 賦能藍圖
-│   │   ├── token_efficient_repo_search_skill_spec.md # 極速精準檢索 Skill 解決方案規格
-│   │   ├── token_saving_engineering_practices.md     # AI 輔助開發極致 Token 節約工程指南
-│   │   ├── repo_radar_ai_prompt_instructions.md      # AI 助理高信噪比專案檢索指示規範
 │   │   ├── dev_standards.md                # 網頁與 Chrome 插件開發技術標準 (SSOT)
-│   │   └── versioning_spec.md              # 全專案版本號管理與發布合規規範 (SSOT)
+│   │   ├── token_optimization_guide.md     # 全域 Token 節約與工程減耗指南 (SSOT)
+│   │   ├── task_manager.md                 # 任務協議管理與 4-Gate 研發流程規範 (SSOT)
+│   │   ├── google_ecosystem_integration_spec.md # Google 生態雙軌串接規格書 (SSOT)
+│   │   ├── versioning_spec.md              # 全專案版本號管理與發布合規規範 (SSOT)
+│   │   ├── repo_radar_ai_prompt_instructions.md # AI 助理高信噪比專案檢索指示規範
+│   │   ├── gas_deployment_guide.md         # GAS 部署與雲端同步操作指南
+│   │   ├── analyst_workflow_friction_matrix.md # 投研員高頻工作流摩擦力與落地場景矩陣
+│   │   └── pm_workflow_friction_matrix.md  # 專案經理衝刺工作流摩擦力矩陣
 │   ├── tasks/                              # 實作工作看板與任務生命週期 (Kanban & Lifecycle)
 │   │   ├── task_20261020_update_readme_and_usage_guide.md # 當前執行中任務看板
 │   │   └── archive/                        # 已結案歷史任務封存歸檔 (依模組分類)
