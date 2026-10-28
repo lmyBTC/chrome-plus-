@@ -59,7 +59,6 @@
 
 | 任務生命週期階段 | 強制門禁條件 | 推薦調用指令範例 | 預期 Token 節省效益 |
 |:---|:---|:---|:---|
-| **Gate 0: 概念對齊** | 需求初探與方案權衡 | *(嚴禁調用任何掃描工具)* | 節省 **80%+** 無效探索 Token |
 | **Gate 1: 專案情報檢索** | 探勘拓撲、檔案關聯或跨模組符號 | `py 1.devtools/tools/repo_radar.py map`<br/>`py 1.devtools/tools/repo_radar.py symbol <Name>` | 節省 **80%~92%** 結構掃描 Token |
 | **Gate 1: 模組介面探勘** | 探勘 >100 行原始碼（嚴禁全檔讀取） | `npm run skeleton -- <路徑>`<br/>`py 1.devtools/tools/code_skeleton.py <路徑>` | 節省 **85%~95%** 源碼讀取 Token |
 | **Gate 1: 藍圖建檔** | 初始化任務檔與宣告 Target Devtools/SSOTs | `py 1.devtools/tools/task_cli.py init --plugin <plugin> --title "<標題>"` | 確保架構防護與快取沉澱 |

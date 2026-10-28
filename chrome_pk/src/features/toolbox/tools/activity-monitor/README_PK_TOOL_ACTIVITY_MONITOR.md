@@ -1,8 +1,8 @@
 # 瀏覽行為監控器 (ActivityMonitor) 功能說明
 
-> **位置**：`chrome_scrumclock/src/features/toolbox/tools/activity-monitor/`  
-> **架構角色**：`chrome_scrumclock` 實用工具箱 (ToolboxHub) 擴充工具  
-> **關聯獨立擴充功能**：[`../../../../browser-activity-monitor/`](../../../../browser-activity-monitor/README.md)
+> **位置**：`chrome_pk/src/features/toolbox/tools/activity-monitor/`  
+> **架構角色**：`chrome_pk` 實用工具箱 (ToolboxHub) 擴充工具  
+> **關聯獨立擴充功能**：`../../../../../../browser-activity-monitor/README.md`
 
 ---
 

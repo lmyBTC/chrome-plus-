@@ -11,8 +11,8 @@
 > **更新日期**：2026-10-03  
 > **適用角色**：專案經理 (PM)、敏捷開發者  
 > **涉及插件**：`chrome_scrumclock` (任務與衝刺)、`browser-activity-monitor` (活動與資源軌跡)  
-> **成對矩陣**：[`analyst_workflow_friction_matrix.md`](./analyst_workflow_friction_matrix.md) (投資研究員矩陣)  
-> **中央導航**：[`0.doc_mg/docs/SSOT_README.md`](./SSOT_README.md)  
+> **成對矩陣**：`analyst_workflow_friction_matrix.md` (投資研究員矩陣)  
+> **中央導航**：[`0.doc_mg/docs/README_SSOT.md`](./README_SSOT.md)  
 > **架構原則**：單插件自洽、嚴格邊界防禦、拒絕過度工程化、雲端生態系遠程儲備  
 
 ---

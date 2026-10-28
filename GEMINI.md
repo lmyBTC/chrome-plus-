@@ -14,9 +14,7 @@
 
 ## 2. 核心憲法底線 (Core Rules)
 * **語言偏好**：始終以「**繁體中文**」進行回應。
-* **路徑跳轉雙軌制**：專案文檔與代碼內部**維持純字串相對路徑**；AI 在對話框互動呈報時**一律提供 `file:///` 格式跳轉連結**。
-* **四階段守門門禁 (4-Gate Protocol)**：
-  * **Gate 0 (Zero-Tool, Zero-Scan)**：零工具思考，評估方向與權衡，停步交出控制權等待授權。
+* **三階段守門門禁 (3-Gate Protocol)**：
   * **Gate 1 (Grounding & Blueprint)**：精準唯讀掃描，於 `0.doc_mg/tasks/` 建立任務檔納入防護，輸出接力指令，嚴禁修改原始碼。
   * **Gate 2 (Atomic Execution - One Phase, One Session)**：單輪專注一個 Phase 原子執行；落實會話隔絕與 2-Strike 熔斷，以 `task.md` 為唯一真理源。
   * **Gate 3 (Knowledge Consolidation & Automated Audit)**：自動化審計確保 Exit 0；落實 SSOT 閉環，任務檔移入歸檔目錄結案。

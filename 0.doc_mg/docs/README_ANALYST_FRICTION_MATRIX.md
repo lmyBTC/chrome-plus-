@@ -11,8 +11,8 @@
 > **建立日期**：2026-10-03  
 > **適用角色**：買方/賣方投資研究員 (Equity/Industry Analyst)、研究助理 (RA)、基金經理人 (Fund Manager)  
 > **關聯插件**：`chrome_video speed plus` (法說會快篩與字幕筆記)、`finance-research-clipper-oss` (個股財務指標與研報爬蟲)、`chrome_scrumclock` (今日作戰任務池)  
-> **成對矩陣**：[`pm_workflow_friction_matrix.md`](./pm_workflow_friction_matrix.md) (專案經理矩陣)  
-> **中央導航**：[`0.doc_mg/docs/SSOT_README.md`](./SSOT_README.md)  
+> **成對矩陣**：`pm_workflow_friction_matrix.md` (專案經理矩陣)  
+> **中央導航**：[`0.doc_mg/docs/README_SSOT.md`](./README_SSOT.md)  
 > **關聯合約**：`0.doc_mg/docs/cross_plugin_contract.md`、`0.doc_mg/docs/google_ecosystem_integration_spec.md`
 
 ---

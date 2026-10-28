@@ -6,12 +6,13 @@ Chrome Plus - Gate 3 整合自動化審計套件 (Gate 3 Automated Audit Suite)
 
 核心職責:
 - 整合調用全站品質與架構門禁工具，提供一鍵全自動 Gate 3 檢驗。
-- 涵蓋 5 大核心門禁:
+- 涵蓋 6 大核心門禁:
   1. Manifest V3 合規性與安全審計 (audit_manifests.py)
   2. 多插件邊界與實體隔離防衛 (audit_plugin_isolation.py)
   3. Markdown 連結、死鏈與路徑規範 (audit_markdown_links.py)
   4. 文檔交叉引用一致性 (doc_cross_ref.py)
   5. 規則與文檔 Token 預算健康度 (audit_token_usage.py)
+  6. SSOT 規範與真理防腐審計 (audit_ssot.mjs)
 - 提供極簡緊湊終端矩陣、JSON 結構化輸出與 strict 嚴格中斷模式。
 - 100% Python 3 原生標準庫，完全相容 Windows PowerShell 與 UTF-8 環境。
 
@@ -48,10 +49,21 @@ class SuiteRunner:
         self.strict = strict
         self.fix = fix
         self.python_exec = sys.executable
+        self.node_exec = "node"
 
     def _run_cmd(self, args: List[str]) -> subprocess.CompletedProcess:
         return subprocess.run(
             [self.python_exec] + args,
+            cwd=str(REPO_ROOT),
+            capture_output=True,
+            text=True,
+            encoding='utf-8',
+            errors='replace'
+        )
+
+    def _run_node_cmd(self, args: List[str]) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [self.node_exec] + args,
             cwd=str(REPO_ROOT),
             capture_output=True,
             text=True,
@@ -237,6 +249,56 @@ class SuiteRunner:
             "stderr": res.stderr.strip()
         }
 
+    def audit_ssot(self) -> Dict[str, Any]:
+        """[Suite 6] SSOT 規範與真理防腐審計"""
+        t0 = time.perf_counter()
+        script = DEVTOOLS_DIR / "audit_ssot.mjs"
+        cmd = [str(script), "--json"]
+        if self.strict:
+            cmd.append("--strict")
+        res = self._run_node_cmd(cmd)
+        elapsed = time.perf_counter() - t0
+
+        output = res.stdout.strip()
+        status = "PASS"
+        summary = "SSOT 索引完整，無孤兒與違規命名"
+
+        try:
+            data = json.loads(output)
+            cataloged = data.get("catalogedCount", 0)
+            scanned = data.get("scannedCount", 0)
+            raw_status = data.get("status", "PASS")
+            issues = data.get("issues", [])
+            warnings = data.get("warnings", [])
+
+            if issues or res.returncode != 0 or raw_status == "FAIL":
+                status = "FAIL"
+                err_msg = issues[0] if issues else "存在 SSOT 規範違背"
+                summary = f"發現 {len(issues)} 處 SSOT 阻斷缺失: {err_msg}"
+            elif warnings:
+                status = "WARN" if not self.strict else "FAIL"
+                summary = f"驗證 {cataloged} 份索引: 發現 {len(warnings)} 處待關注項目"
+            else:
+                status = "PASS"
+                summary = f"驗證 {cataloged} 份索引 / 掃描 {scanned} 份手冊: 0 缺失 0 孤兒"
+        except Exception:
+            if res.returncode != 0:
+                status = "FAIL"
+                summary = "audit_ssot.mjs 執行失敗"
+            else:
+                summary = output.splitlines()[-1] if output else "完成 SSOT 審計"
+
+        return {
+            "id": "ssot",
+            "name": "SSOT 規範與真理防腐",
+            "status": status,
+            "exit_code": res.returncode,
+            "elapsed": elapsed,
+            "summary": summary,
+            "stdout": output,
+            "stderr": res.stderr.strip()
+        }
+
 
 def format_table(results: List[Dict[str, Any]], total_elapsed: float, strict: bool) -> str:
     """生成對齊美觀、Token 脫水的終端矩陣"""
@@ -296,7 +358,7 @@ def main() -> int:
     parser.add_argument("--fix", action="store_true", help="連動修復支援修復之項目 (如 Markdown 連結)")
     parser.add_argument(
         "--only", nargs="+",
-        choices=["manifests", "isolation", "markdown_links", "cross_ref", "token_usage"],
+        choices=["manifests", "isolation", "markdown_links", "cross_ref", "token_usage", "ssot"],
         help="僅執行指定的審計子項"
     )
 
@@ -309,7 +371,8 @@ def main() -> int:
         ("isolation", runner.audit_isolation),
         ("markdown_links", runner.audit_markdown_links),
         ("cross_ref", runner.audit_cross_ref),
-        ("token_usage", runner.audit_token_usage)
+        ("token_usage", runner.audit_token_usage),
+        ("ssot", runner.audit_ssot)
     ]
 
     if args.only:

@@ -10,13 +10,13 @@
 
 | 檔案路徑 | 核心職責 | 關鍵函式 / 元素 ID |
 | :--- | :--- | :--- |
-| [`manifest.json`](../manifest.json) | MV3 宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) 與 Host Permissions | `"side_panel": { "default_path": "sidepanel.html" }` |
-| [`dashboard.html`](../dashboard.html)<br>[`dashboard.js`](../dashboard.js)<br>[`dashboard.css`](../dashboard.css) | **[核心] 獨立分頁儀表板**：全螢幕看板、歷史標的庫、分析師目標價、財報矩陣、損益表與導出矩陣 | `renderStock()`, `exportMarkdown()`, `exportCsv()`, `sendToGas()` |
-| [`sidepanel.html`](../sidepanel.html)<br>[`sidepanel.js`](../sidepanel.js)<br>[`sidepanel.css`](../sidepanel.css) | **[快捷] Chrome 側邊欄工具箱**：常駐側邊、快捷輸入爬取、左下角工具箱跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl`, `#btn-side-crawl-active` |
-| [`crawler.js`](../crawler.js) | **[核心爬蟲]** SPA 動態走訪 4 大分頁，語意化文字定位與超時防護 | `window.FinanceCrawler`<br>`runFullStockScraper()`<br>`navigateToTab()` |
-| [`popup.html`](../popup.html)<br>[`popup.js`](../popup.js) | 擴充介面結構、樣式與折疊面板，提供一鍵前往儀表板捷徑 (頂部徽章與底部主按鈕) | `#open-dashboard-btn`, `#btn-goto-dashboard`, `executeFullStockCrawler()` |
-| [`background.js`](../background.js) | 背景服務工作線程：後台靜默分頁調度、數據持久化與跨視窗廣播 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
-| [`docs/google-apps-script.md`](./google-apps-script.md) | 雲端中繼站 GAS 後端接收腳本 (接收 POST, 寫入 Sheets & Drive) | `doPost(e)` |
+| `../manifest.json` | MV3 宣告、權限 (`tabs`, `sidePanel`, `storage`, `scripting`) 與 Host Permissions | `"side_panel": { "default_path": "sidepanel.html" }` |
+| `../dashboard.html`<br>`../src/dashboard/js/dashboard.js`<br>`../src/dashboard/css/dashboard.css` | **[核心] 獨立分頁儀表板**：全螢幕看板、歷史標的庫、分析師目標價、財報矩陣、損益表與導出矩陣 | `renderStock()`, `exportMarkdown()`, `exportCsv()`, `sendToGas()` |
+| `../sidepanel.html`<br>`../src/sidepanel/sidepanel.js`<br>`../src/sidepanel/sidepanel.css` | **[快捷] Chrome 側邊欄工具箱**：常駐側邊、快捷輸入爬取、左下角工具箱跳轉按鍵組合 | `#btn-side-open-dashboard`, `#btn-side-paste-crawl`, `#btn-side-crawl-active` |
+| `../src/crawler/crawler.js` | **[核心爬蟲]** SPA 動態走訪 4 大分頁，語意化文字定位與超時防護 | `window.FinanceCrawler`<br>`runFullStockScraper()`<br>`navigateToTab()` |
+| `../popup.html`<br>`../src/popup/popup.js` | 擴充介面結構、樣式與折疊面板，提供一鍵前往儀表板捷徑 (頂部徽章與底部主按鈕) | `#open-dashboard-btn`, `#btn-goto-dashboard`, `executeFullStockCrawler()` |
+| `../background.js` | 背景服務工作線程：後台靜默分頁調度、數據持久化與跨視窗廣播 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
+| [`0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md](../../0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md) | 雲端中繼站 GAS 後端接收腳本 (接收 POST, 寫入 Sheets & Drive) | `doPost(e)` |
 
 ---
 
@@ -54,7 +54,7 @@ sequenceDiagram
 
 ---
 
-## **3. 4合1 SPA 爬蟲核心規格 ([`crawler.js`](../crawler.js))**
+## **3. 4合1 SPA 爬蟲核心規格 (`../src/crawler/crawler.js`)**
 
 ### **3.1 分頁採集職責**
 
@@ -114,9 +114,9 @@ interface ClipperPayload {
 
 | 想修改的功能 / 需求 | 鎖定檔案與位置 | 修改指引 |
 | :--- | :--- | :--- |
-| **擴充或修正 Google Finance 新分頁/指標** | [`crawler.js`](../crawler.js) | 在 `runFullStockScraper()` 的 `tabs` 陣列新增分頁項目，實作對應之 `scrapeXxx()` 函式。 |
-| **調整彈出視窗按鈕、預覽排版** | [`popup.html`](../popup.html)<br>[`popup.js`](../popup.js#L260-L330) | 在 `executeFullStockCrawler()` 調整 `previewHtml` 模板，注意所有文字輸出必須經過 `escapeHtml()`。 |
-| **增加匯出欄位 (Markdown / CSV / GAS)** | [`popup.js`](../popup.js#L460-L640) | 在 `buildStockPayload()`、`copyMarkdownBtn` 與 `downloadCsvBtn` 事件監聽中同步擴充欄位映射。 |
+| **擴充或修正 Google Finance 新分頁/指標** | `../src/crawler/crawler.js` | 在 `runFullStockScraper()` 的 `tabs` 陣列新增分頁項目，實作對應之 `scrapeXxx()` 函式。 |
+| **調整彈出視窗按鈕、預覽排版** | `../popup.html`<br>`../src/popup/popup.js#L260-L330` | 在 `executeFullStockCrawler()` 調整 `previewHtml` 模板，注意所有文字輸出必須經過 `escapeHtml()`。 |
+| **增加匯出欄位 (Markdown / CSV / GAS)** | `../src/popup/popup.js#L460-L640` | 在 `buildStockPayload()`、`copyMarkdownBtn` 與 `downloadCsvBtn` 事件監聽中同步擴充欄位映射。 |
 | **安全檢查與合規性驗收** | 終端執行 | `npm run audit:manifests` 或 `python 1.devtools/tools/audit_manifests.py`。 |
 
 ---
@@ -125,7 +125,7 @@ interface ClipperPayload {
 
 | 現象 / 報錯 | 核心原因 | 快速解決路徑 |
 | :--- | :--- | :--- |
-| **`FinanceCrawler 未成功載入`** | `crawler.js` 未被注入或載入超時 | 檢查 [`popup.js`](../popup.js) 的 `executeScript` 是否有 `files: ['crawler.js']` 且 tabId 有效。 |
-| **分頁數據顯示 N/A 或未更新** | SPA 分頁路由切換後虛擬 DOM 未水合完成 | 檢查 [`crawler.js`](../crawler.js) 的 `navigateToTab()` 等待條件與延遲微調。 |
+| **`FinanceCrawler 未成功載入`** | `crawler.js` 未被注入或載入超時 | 檢查 `../src/popup/popup.js` 的 `executeScript` 是否有 `files: ['crawler.js']` 且 tabId 有效。 |
+| **分頁數據顯示 N/A 或未更新** | SPA 分頁路由切換後虛擬 DOM 未水合完成 | 檢查 `../src/crawler/crawler.js` 的 `navigateToTab()` 等待條件與延遲微調。 |
 | **`TypeError: Failed to fetch`** | GAS 部署網址錯誤或未公開 | 開啟設定面板確認 URL，確認 GAS 部署為「所有人 (Anyone) 具存取權」。 |
 | **擴充按鈕呈橘/紅禁用狀態** | 當前分頁非目標路徑或缺少 API URL | 確認目前分頁為 `google.com/finance` 且設定頁已填寫 GAS Webhook。 |

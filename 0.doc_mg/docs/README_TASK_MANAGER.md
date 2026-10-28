@@ -4,25 +4,22 @@
 
 ---
 
-## 1. 任務與草稿生命週期管理 (The 4-Gate Protocol)
+## 1. 任務與草稿生命週期管理 (The 3-Gate Protocol)
 
 本專案所有的開發與維護工作均透過「四階段守門門禁」與物理任務檔案 (`.md`) 嚴格推進，其生命週期包含以下核心門禁與封存階段：
 
-### 1.1. 4-Gate 門禁總覽矩陣 (The 4-Gate Protocol Matrix)
+### 1.1. 3-Gate 門禁總覽矩陣 (The 3-Gate Protocol Matrix)
+
+> [!NOTE]
+> **更新提示**：專案已停止使用 Gate 0，直接自 Gate 1 勘查藍圖展開。
 
 | 門禁階段 | 准入條件 | 嚴格禁止事項 (Hard Guardrails) | 核心動作、Token 脫水工具與離開標準 (Exit Criteria) |
 | :--- | :--- | :--- | :--- |
-| **Gate 0: 方向探詢**<br>*(Session 0)* | 使用者提出新需求或模糊構想 | **嚴禁呼叫任何工具**、嚴禁讀寫掃描檔案 | 純推理輸出 100~200 字高階思考與權衡，**物理交回控制權**等待授權。 |
-| **Gate 1: 脈絡藍圖**<br>*(Session 1)* | 使用者明確同意 Gate 0 方向 | **嚴禁動程式碼**、嚴禁執行實質 Phase、**嚴禁 >100 行檔案全檔 view_file** | **[Token 探勘硬窄化 & 持久化快取實證]**：<br>1. 主題檢索：`list_dir 0.doc_mg/tasks/` 及歸檔目錄確認有無同主題或既有任務。<br>2. 骨架提煉：逾 100 行檔案強制調用 `py 1.devtools/tools/code_skeleton.py` 或 `repo-radar` 提煉大綱骨架，細讀視窗放寬至 80~150 行。<br>3. 讀取 `0.doc_mg/task_template_v2.md` 建立實體 `0.doc_mg/tasks/task_MMDD_01_[plugin]_[topic].md`，任務拆解採**語意區塊錨定**；常態任務免除工具矩陣與事前驗屍。<br>4. 前置宣告 **Target Devtools** 與 **Target SSOTs** 四層閉環清單。<br>5. 徹底清理範本中所有 `<!-- ... -->` 註解。<br>6. **第一時間執行 `git add <task-file>` 納入暫存區受版本防護**。<br>7. **強制停步交權，輸出開立新 Session 接力提示詞代碼塊**，嚴禁同輪改動程式碼。 |
+| **Gate 1: 脈絡藍圖**<br>*(Session 1)* | 收到新任務需求 | **嚴禁動程式碼**、嚴禁執行實質 Phase、**嚴禁 >100 行檔案全檔 view_file** | **[Token 探勘硬窄化 & 持久化快取實證]**：<br>1. 主題檢索：`list_dir 0.doc_mg/tasks/` 及歸檔目錄確認有無同主題或既有任務。<br>2. 骨架提煉：逾 100 行檔案強制調用 `py 1.devtools/tools/code_skeleton.py` 或 `repo-radar` 提煉大綱骨架，細讀視窗放寬至 80~150 行。<br>3. 讀取 `0.doc_mg/task_template_v2.md` 建立實體 `0.doc_mg/tasks/task_MMDD_01_[plugin]_[topic].md`，任務拆解採**語意區塊錨定**；常態任務免除工具矩陣與事前驗屍。<br>4. 前置宣告 **Target Devtools** 與 **Target SSOTs** 四層閉環清單。<br>5. 徹底清理範本中所有 `<!-- ... -->` 註解。<br>6. **第一時間執行 `git add <task-file>` 納入暫存區受版本防護**。<br>7. **強制停步交權，輸出開立新 Session 接力提示詞代碼塊**，嚴禁同輪改動程式碼。 |
 | **Gate 2: 分段原子執行**<br>*(One Phase, One Session)* | 使用者下達執行指定 Phase 指令 | **嚴禁跨 Phase 自動執行**、單 Bug 重試 > 2 次、**嚴禁重複盲讀原始長檔** | **[Token 執行防衛 & 零探索直接開工]**：<br>1. 依賴截斷：以實體 `task.md` 為唯一真理源，切斷上文探勘歷史依賴。<br>2. 零探索直接開工：依賴任務步驟已錨定之語意區塊細讀 (80~150 行)；若需重勘強制以骨架工具提煉，嚴禁盲讀長檔。<br>3. 單輪專注完成當前 Phase 原子任務，禁止每步即刻同步任務檔，改為 Phase 結尾批次打勾同步。<br>4. 終端脫水：大量除錯/建置/測試強制串接 `2>&1 \| py 1.devtools/tools/compact_log.py` 或 `rtk`。<br>5. 單元驗證通過 (Exit 0)，**於 Phase 結尾批次打勾同步任務檔（作為最後工具呼叫）並動態收斂後強制停步交權，輸出開立新 Session 接力代碼塊**。 |
 | **Gate 3: 知識收斂與自動化審計**<br>*(Final Acceptance)* | 所有 Phase 開發完成且單元驗證通過 | **嚴禁遺留架構漂移**、嚴禁跳過驗證標記完成 | **[Token 審計與閉環收尾]**：<br>1. 執行合規與鏈接審計工具 (`audit_manifests.py`、`doc_cross_ref.py`) 確保 Exit 0。<br>2. 落實四層 SSOT 閉環（90% 輕量任務豁免，10% 重大變更純骨架回寫）。<br>3. 實體任務檔打勾結案並移入 `0.doc_mg/tasks/archive/` 根目錄（常態保留最新 10 份，溢出自動分流）。<br>4. 更新任務檔為最後一個工具呼叫，更新即刻停步。 |
 
 ### 1.2. 各階段實施細則
-
-#### Gate 0: 概念對齊與方案探詢 (Zero-Tool, Zero-Scan)
-- **原則**: 收到新需求時，**嚴禁呼叫任何掃描工具或建立實體檔案**。
-- **產出**: AI 僅憑既有高階脈絡，輸出 100~200 字的高階架構方案（包含 1~2 種作法與權衡）。
-- **中斷點**: 明確提問並交出控制權，等待開發者核准方向。若方向被否決，節省 80% 以上無謂探索 Token。
 
 #### Gate 1: 物理勘查與藍圖建檔 (Grounding & Task Blueprint)
 - **前置勘查工具義務 (Tooling-First Grounding)**: 在探勘目標檔案與模組邊界時，**嚴禁直接盲讀原始碼**。凡目標檔案超過 100 行，**必須先調用 `code_skeleton.py` 提取介面骨架**；探索專案拓撲或跨模組符號時，**必須調用 `repo_radar.py`**，杜絕無效上下文膨脹。
@@ -172,7 +169,6 @@
 
 | 生命週期階段 | 核心規範與門禁 | 強制調用工具 | 替代/輔助指令 | 預期防護與效益 |
 |:---|:---|:---|:---|:---|
-| **Gate 0: 概念對齊** | 嚴禁調用任何掃描工具或建立實體文件 | *(無工具調用)* | *(無)* | 節省 80%+ 無效探索 Token |
 | **Gate 1: 專案情報檢索** | 探勘拓撲、檔案關聯或跨模組符號 | `py 1.devtools/tools/repo_radar.py map`<br/>`py 1.devtools/tools/repo_radar.py symbol <Name>` | `npm run skeleton` | 節省 80%~90% 結構掃描 Token |
 | **Gate 1: 模組介面探勘** | 目標檔案 > 100 行時，嚴禁直接盲讀原始碼 | `py 1.devtools/tools/code_skeleton.py <目標檔案>` | `npm run skeleton -- <檔案>`<br/>`node 1.devtools/tools/run_py.js ...` | 掏空實作提煉簽名，節省 85%~95% 源碼 Token |
 | **Gate 1: 藍圖建檔** | 宣告 Target Devtools、Target SSOTs 與快取 | `py 1.devtools/tools/task_cli.py init --plugin <plugin> --title "<標題>"` | 手動複製並徹底刪除註解 | 確保任務結構一致並前置鎖定工具鏈與快取 |

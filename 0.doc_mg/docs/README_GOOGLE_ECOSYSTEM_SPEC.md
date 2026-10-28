@@ -1,11 +1,11 @@
-# Chrome Plus 跨插件 Google 生態系自動化對接架構規格書 (Google Ecosystem Integration Spec)
+規劃以下# Chrome Plus 跨插件 Google 生態系自動化對接架構規格書 (Google Ecosystem Integration Spec)
 
 > **版本**：v1.0.0  
 > **建立日期**：2026-10-03  
 > **狀態**：草案與架構規格確定  
 > **關聯插件**：`chrome_scrumclock`, `finance-research-clipper-oss`, `browser-activity-monitor`, `chrome_video speed plus`  
 > **通訊合約參照**：`0.doc_mg/docs/cross_plugin_contract.md`  
-> **配套實施手冊**：[`0.doc_mg/docs/gas_deployment_guide.md`](./gas_deployment_guide.md)
+> **配套實施手冊**：[`0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md`](./README_GAS_DEPLOYMENT_GUIDE.md)
 
 ---
 

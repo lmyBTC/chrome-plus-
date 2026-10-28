@@ -10,8 +10,8 @@ current_session: "Session 1 (Gate 1 Blueprint)" # 當前執行會話標記
 related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ---
 
-> - [ ] 我已閱讀並承諾遵守「task-protocol」技能中之 4-Gate Multi-Session Protocol (Gate 0 探詢 ➔ Gate 1 藍圖 ➔ Gate 2 原子執行 ➔ Gate 3 知識收斂) 與狀態收斂規範。
-> <!-- AI: 本範本僅在 Gate 0 獲准方向後，方可於 Gate 1 讀取與克隆。建立任務檔必須第一時間執行 git add 納入版本防護；更新任務檔局部替換放寬至 ≤ 50~80 行唯一語意區塊，Phase 結尾批次打勾同步；建立任務時必須刪除範本內所有 HTML 註解提示。 -->
+> - [ ] 我已閱讀並承諾遵守「task-protocol」技能中之 3-Gate Multi-Session Protocol (Gate 1 藍圖 ➔ Gate 2 原子執行 ➔ Gate 3 知識收斂) 與狀態收斂規範。
+> <!-- AI: 本範本於 Gate 1 直接讀取與克隆。建立任務檔必須第一時間執行 git add 納入版本防護；更新任務檔局部替換放寬至 ≤ 50~80 行唯一語意區塊，Phase 結尾批次打勾同步；建立任務時必須刪除範本內所有 HTML 註解提示。 -->
 
 ## 1. 目標與驗證指標 (Objective & Metrics)
 <!-- AI: 描述核心挑戰。必須將指令轉化為可客觀物理驗證的成功標準 (如 Exit 0 命令與預期行為)。 -->

@@ -56,7 +56,7 @@
 
 ### 步驟 2.3：貼上後端腳本
 1. 清空編輯器中原本的 `function myFunction() {}`。
-2. 將專案中的 [`unified_gas_router.gs`](./unified_gas_router.gs) 內容完整複製並貼入編輯器。
+2. 將專案中的 `unified_gas_router.gs` 內容完整複製並貼入編輯器。
 3. 點擊工具列的 **「儲存」💾** (或按 `Ctrl + S`)。
 
 ### 步驟 2.4：(推薦) 設定安全性金鑰 (Secret Token)
