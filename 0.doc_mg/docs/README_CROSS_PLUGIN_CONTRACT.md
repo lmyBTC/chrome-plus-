@@ -472,7 +472,7 @@
 
 ---
 
-## 8. 1.devtools 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
+## 8. 自動化合約驗證與多格式轉譯工具鏈 (CLI Tooling)
 
 工作區於 `1.devtools/tools/` 提供無外部依賴之 Python 自動化管線工具：
 
@@ -491,20 +491,20 @@
   ```
 
 ### 8.2 投研快照多格式匯出轉譯器 (`export_converter.py`)
-- **檔案路徑**：`1.devtools/tools/export_converter.py`
+- **檔案路徑**：`finance-research-clipper-oss/tools/export_converter.py`（已下沉至插件專屬目錄）
 - **功能**：
   1. **Obsidian Markdown**：自動解析快照生成相容 YAML Frontmatter、Dataview 與完整估值/獲利分析表格之筆記。
   2. **量化 CSV**：扁平化匯出包含現價、共識目標價、離散係數 (CV)、Beta、EPS 與 YoY 之數值分析表。
 - **使用指令**：
   ```bash
   # 同步轉譯為 Obsidian Markdown 與 CSV
-  python 1.devtools/tools/export_converter.py snapshot.json --format all
+  python finance-research-clipper-oss/tools/export_converter.py snapshot.json --format all
 
   # 僅轉譯為 Obsidian Markdown 筆記
-  python 1.devtools/tools/export_converter.py snapshot.json --format markdown
+  python finance-research-clipper-oss/tools/export_converter.py snapshot.json --format markdown
 
   # 批次將目錄內多份快照合併為單一彙總量化 CSV
-  python 1.devtools/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
+  python finance-research-clipper-oss/tools/export_converter.py path/to/snapshots/ --combine-csv -o master_metrics.csv
   ```
 
 ### 8.3 自動化回歸測試

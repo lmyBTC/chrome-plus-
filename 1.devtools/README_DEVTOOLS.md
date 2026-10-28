@@ -1,7 +1,7 @@
 # 🛠️ 專案開發者工具鏈 (1.devtools)
 
 > [!IMPORTANT]
-> **工具導航索引**：本目錄存放 Chrome Plus 專案之自動化審計、合約驗證、Token 節省檢索與維護工具鏈。所有腳本均使用 Python 標準函式庫，零外部環境依賴。
+> **純粹全域職責**：本目錄僅存放 Chrome Plus 專案之全域治理、合規審計、跨插件契約驗證與 Token 節省檢索工具鏈。單一插件專屬之業務工具、轉譯腳本與測試一律下沉於各插件目錄自主管理。所有全域腳本均使用 Python 標準函式庫，零外部環境依賴。
 
 ---
 
@@ -21,14 +21,14 @@
 | **`audit_manifests.py`** | Chrome 插件 Manifest V3 合規性與安全性自動審計器（支援 `--compact` 脫水模式） | `python 1.devtools/tools/audit_manifests.py`<br/>`py 1.devtools/tools/audit_manifests.py --compact` |
 | **`validate_contract.py`** | 跨插件黑盒通訊契約（JSON Schema）驗證工具 | `python 1.devtools/tools/validate_contract.py` |
 | **`task_cli.py`** | 任務生命週期管理輔助 CLI (建立、註解自動清理、自動 git-add 與雙層滾動歸檔) | `py 1.devtools/tools/task_cli.py init --plugin <名> --title <標題>`<br/>`py 1.devtools/tools/task_cli.py archive` |
-| **`export_converter.py`** | 格式匯出與資料轉換工具 | `py 1.devtools/tools/export_converter.py` |
+
 | **`doc_cross_ref.py`** | 文件交叉引用、死鏈審計、倒排索引自動修復與冗餘清理工具 | `py 1.devtools/tools/doc_cross_ref.py --audit`<br/>`py 1.devtools/tools/doc_cross_ref.py --fix --clean-redundant` |
 | **`audit_token_usage.py`** | 全專案規則與技能檔 Token 預算監控與健康度審計（支援 `--compact`） | `py 1.devtools/tools/audit_token_usage.py`<br/>`py 1.devtools/tools/audit_token_usage.py --compact` |
 | **`token_estimator.py`** | 輕量純 Python 字元啟發式 Token 估算器核心模組 | `py 1.devtools/tools/token_estimator.py <檔案路徑>` |
 | **`audit_markdown_links.py`** | 全專案 Markdown 相對路徑、錨點與跨檔引用自動校驗與修復 | `py 1.devtools/tools/audit_markdown_links.py`<br/>`py 1.devtools/tools/audit_markdown_links.py --fix` |
 | **`audit_ssot.mjs`** | SSOT 靜態合規與真理防腐審計器（索引存在性校驗/孤兒真理探測/命名防腐/90-10閉環） | `node 1.devtools/tools/audit_ssot.mjs`<br/>`npm run audit:ssot`<br/>`node 1.devtools/tools/audit_ssot.mjs --strict` |
-| **`main_dispatcher.py`** | 全域微服務調度中樞（轉發代理至 Gemini Nano 本機推論後端 127.0.0.1:8765） | `py 1.devtools/tools/main_dispatcher.py` |
-| **`gas/google_sync_hub.gs`** | Google Apps Script 雲端雙軌同步中樞指令碼（Google Tasks Webhook 接收與同步） | 複製部署至 Google Apps Script 專案 |
+
+
 | **`git_extract_section.py`** | 自 Git 歷史 Commit 秒級抽取 Markdown 標題或 HTML 區塊（免全量 checkout） | `py 1.devtools/tools/git_extract_section.py <commit> <檔案> -s "<標題>"` |
 | **`log_issue.py`** | 2-Strike 熔斷與突發次生問題結構化立案工具（防原地無效死磕） | `py 1.devtools/tools/log_issue.py log --title "<標題>" --severity HIGH --desc "<快照>"` |
 | **`analyze_task_tokens.py`** | 任務對話日誌 Token 深度剖析與 Context 膨脹分析工具（支援秒查水位探針） | `py 1.devtools/tools/analyze_task_tokens.py --quick-check`<br/>`py 1.devtools/tools/analyze_task_tokens.py --current` |

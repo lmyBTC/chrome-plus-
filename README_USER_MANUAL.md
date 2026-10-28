@@ -53,7 +53,7 @@ cd chrome-plus-
 pip install fastapi uvicorn requests
 
 # 3. 啟動本機微服務 (常駐於 127.0.0.1:8765)
-python 1.devtools/tools/main_dispatcher.py
+python chrome_gemini_nano/tools/main_dispatcher.py
 ```
 > 💡 **提示**：終端機顯示 `Uvicorn running on http://127.0.0.1:8765` 即表示後端肌肉已待命。
 
@@ -245,7 +245,7 @@ npm run version:bump
 * **解答**：請再次檢查 `chrome://flags` 中的兩個旗標是否開啟，並進入 `chrome://components` 確認 **Optimization Guide On Device Model** 已經下載完成（非 0.0.0.0）。若剛剛才開啟旗標，請務必完全重啟 Chrome。
 
 ### Q2：為什麼點擊「歸檔至 Obsidian」或「更新 RSS」提示無法連線？
-* **解答**：請確認您已在終端機啟動本機微服務：`python 1.devtools/tools/main_dispatcher.py`。該服務常駐於 `http://127.0.0.1:8765`。
+* **解答**：請確認您已在終端機啟動本機微服務：`python chrome_gemini_nano/tools/main_dispatcher.py`。該服務常駐於 `http://127.0.0.1:8765`。
 
 ### Q3：小模型會不會產生幻覺，或只回答單一標點符號「。」？
 * **解答**：不會。專案內建 `NanoPromptGuard` 預定路線防崩潰引擎，透過「英文 System Prompt + 繁中 Few-shot」強制鎖定條列式輸出，並配備瞬時 Fallback 模板，確保在任何短輸入下都輸出結構化內容。

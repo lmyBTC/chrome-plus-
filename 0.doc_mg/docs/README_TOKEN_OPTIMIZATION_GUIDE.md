@@ -143,13 +143,13 @@
 | **`audit_manifests.py`** | Chrome 插件 Manifest V3 合規性與安全性自動審計器（支援 `--compact` 脫水模式） | `py 1.devtools/tools/audit_manifests.py`<br/>`py 1.devtools/tools/audit_manifests.py --compact` |
 | **`validate_contract.py`** | 跨插件黑盒通訊契約（JSON Schema）驗證工具 | `py 1.devtools/tools/validate_contract.py` |
 | **`task_cli.py`** | 任務生命週期管理輔助 CLI (建立、註解自動清理、自動 git-add 與雙層滾動歸檔) | `py 1.devtools/tools/task_cli.py init --plugin <名> --title <標題>`<br/>`py 1.devtools/tools/task_cli.py archive` |
-| **`export_converter.py`** | 格式匯出與資料轉換工具 | `py 1.devtools/tools/export_converter.py` |
+| **`export_converter.py`** | 研報格式匯出與資料轉換工具（已下沉至財經插件） | `py finance-research-clipper-oss/tools/export_converter.py` |
 | **`doc_cross_ref.py`** | 文件交叉引用、死鏈審計、倒排索引自動修復與冗餘清理工具 | `py 1.devtools/tools/doc_cross_ref.py --audit`<br/>`py 1.devtools/tools/doc_cross_ref.py --fix --clean-redundant` |
 | **`audit_token_usage.py`** | 全專案規則與技能檔 Token 預算監控與健康度審計（支援 `--compact`） | `py 1.devtools/tools/audit_token_usage.py`<br/>`py 1.devtools/tools/audit_token_usage.py --compact` |
 | **`token_estimator.py`** | 輕量純 Python 字元啟發式 Token 估算器核心模組 | `py 1.devtools/tools/token_estimator.py <檔案路徑>` |
 | **`audit_markdown_links.py`** | 全專案 Markdown 相對路徑、錨點與跨檔引用自動校驗與修復 | `py 1.devtools/tools/audit_markdown_links.py`<br/>`py 1.devtools/tools/audit_markdown_links.py --fix` |
 | **`audit_ssot.mjs`** | SSOT 靜態合規與真理防腐審計器（索引存在性校驗/孤兒真理探測/命名防腐/90-10閉環） | `node 1.devtools/tools/audit_ssot.mjs`<br/>`npm run audit:ssot`<br/>`node 1.devtools/tools/audit_ssot.mjs --strict` |
-| **`main_dispatcher.py`** | 全域微服務調度中樞（轉發代理至本機 AI 推論後端 127.0.0.1:8765） | `py 1.devtools/tools/main_dispatcher.py` |
+| **`main_dispatcher.py`** | 本機 AI 推論微服務中樞（已下沉至 Gemini Nano 插件） | `py chrome_gemini_nano/tools/main_dispatcher.py` |
 | **`git_extract_section.py`** | 自 Git 歷史 Commit 秒級抽取 Markdown 標題或 HTML 區塊（免全量 checkout） | `py 1.devtools/tools/git_extract_section.py <commit> <檔案> -s "<標題>"` |
 | **`log_issue.py`** | 2-Strike 熔斷與突發次生問題結構化立案工具（防原地無效死磕） | `py 1.devtools/tools/log_issue.py log --title "<標題>" --severity HIGH --desc "<快照>"` |
 | **`analyze_task_tokens.py`** | 任務對話日誌 Token 深度剖析與 Context 膨脹分析工具（支援秒查水位探針） | `py 1.devtools/tools/analyze_task_tokens.py --quick-check`<br/>`py 1.devtools/tools/analyze_task_tokens.py --current` |

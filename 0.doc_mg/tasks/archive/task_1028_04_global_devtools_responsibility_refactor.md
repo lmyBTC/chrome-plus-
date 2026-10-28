@@ -1,12 +1,12 @@
 ---
 title: "devtools 純粹全域職責重構：下沉插件工具至專屬插件目錄"
 plugin: "global"
-status: "規劃中" # 規劃中 | 開發中 | 待審核 | 已完成
+status: "已完成" # 規劃中 | 開發中 | 待審核 | 已完成
 created: "2026-10-28"
 deadline: "2026-10-28"
 appetite: "1.5h"
 complexity_budget: "Max 3 Phases, 單一問題最多重試 2 次 (2-Strike 熔斷)"
-current_session: "Session 1 (Gate 1 Blueprint)"
+current_session: "Session 4 (Phase Final Gate 3 Completed & Archived)"
 related_drafts: []
 ---
 
@@ -37,12 +37,13 @@ related_drafts: []
 ## 2. 上下文探索與依賴 (Context Grounding)
 
 - **SSOT 規範查閱**：已查閱 [GEMINI.md](../../GEMINI.md)、[.agents/rules.md](../../.agents/rules.md) 及 [README_DEVTOOLS.md](../../1.devtools/README_DEVTOOLS.md)。
-- [x] **全流程工具鏈檢核矩陣 (已遵循 README_TOKEN_OPTIMIZATION_GUIDE.md L58-L82 強制執行)**：
+- [x] **全流程工具鏈檢核矩陣 (已遵循 README_TOKEN_OPTIMIZATION_GUIDE.md 強制執行)**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
   | **Gate 1: 探勘** | `py 1.devtools/tools/code_skeleton.py` / `repo_radar.py` | `py 1.devtools/tools/code_skeleton.py 1.devtools/tools/export_converter.py` ➔ 374行降為51行 | 減少 86.4% 雜訊 |
-  | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py` / `rtk` | 全面強制串接 `compact_log.py` 與 `rtk` 命令，嚴禁裸跑長日誌 | 節省 70%~95% 輸出 |
+  | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py` / `rtk` | 全面強制串接 `compact_log.py` 與 `rtk` 命令，搭配 `analyze_task_tokens.py --quick-check` 監控水位 | 節省 70%~95% 輸出 |
   | **Gate 3: 驗收** | `py 1.devtools/tools/audit_suite.py` / `doc_cross_ref.py` | 全自動整合審計套件與死鏈校驗 | Exit 0 |
+- **Gate 1 探勘持久化快取 (Probe Cache)**：`0.doc_mg/tasks/tmp/tmp_probe_1028_04_devtools_refactor.md` (已錨定待下沉之 5 份檔案與目標目錄)
 - **影響範圍地圖 (Entity Map)**：
   - 待下沉遷移至插件之檔案：
     - `1.devtools/tools/main_dispatcher.py` ➔ 廢除（直接由 `chrome_gemini_nano/tools/main_dispatcher.py` 承接）
@@ -94,10 +95,12 @@ related_drafts: []
 
 ### 鎖定工具鏈 (Target Devtools)
 
-- [x] 任務 CLI: `py 1.devtools/tools/task_cli.py archive`
-- [x] 審計套件: `py 1.devtools/tools/audit_suite.py --compact`
-- [x] SSOT 審計: `node 1.devtools/tools/audit_ssot.mjs --strict`
-- [x] 死鏈校驗: `py 1.devtools/tools/doc_cross_ref.py --audit`
+- [x] 探勘骨架/雷達: `py 1.devtools/tools/code_skeleton.py` / `py 1.devtools/tools/repo_radar.py`
+- [x] 終端日誌脫水: `<command> 2>&1 | py 1.devtools/tools/compact_log.py` (或 `rtk`)
+- [x] 水位預警探針: `py 1.devtools/tools/analyze_task_tokens.py --quick-check`
+- [x] 2-Strike 熔斷立案: `py 1.devtools/tools/log_issue.py log`
+- [x] 整合審計套件: `py 1.devtools/tools/audit_suite.py --compact`
+- [x] 任務 CLI 歸檔: `py 1.devtools/tools/task_cli.py archive`
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 
@@ -107,8 +110,8 @@ related_drafts: []
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
 
-### Phase 1: 插件專屬工具下沉遷移與目錄收納 狀態：`[待辦]`
-- [ ] 任務 1.1: 遷移 `finance-research-clipper-oss` 專屬工具與測試
+### Phase 1: 插件專屬工具下沉遷移與目錄收納 狀態：`[已完成]`
+- [x] 任務 1.1: 遷移 `finance-research-clipper-oss` 專屬工具與測試
     - **動作**:
       1. 建立 `finance-research-clipper-oss/tools/` 與 `finance-research-clipper-oss/tools/gas/`，搬移 `export_converter.py` 與 `google_sync_hub.gs`。
       2. 建立 `finance-research-clipper-oss/scripts/`，搬移 `split_dashboard_phase3.py`。
@@ -117,19 +120,19 @@ related_drafts: []
     - **驗證 (Exit 0)**:
       - 執行 `node finance-research-clipper-oss/tests/test_google_sheets_exporter.js` 通過。
       - 執行 `py -m py_compile finance-research-clipper-oss/tools/export_converter.py` 語法通過。
-- [ ] 任務 1.2: 廢除 `1.devtools/tools/main_dispatcher.py` 冗餘轉發代理
+- [x] 任務 1.2: 廢除 `1.devtools/tools/main_dispatcher.py` 冗餘轉發代理
     - **動作**: 刪除 `1.devtools/tools/main_dispatcher.py`，確認微服務核心完全由 `chrome_gemini_nano/tools/main_dispatcher.py` 獨立承擔。
     - **驗證 (Exit 0)**: 確認 `1.devtools/tools/main_dispatcher.py` 已清除，`chrome_gemini_nano/tools/main_dispatcher.py` 存在且可編譯。
 
 > 🏁 **Phase 1 Checkpoint (狀態收斂區)**：
-> - [ ] 階段所有單元驗證已通過 (Exit 0)。
-> - [ ] 遵循「One Phase, One Session」物理隔絕底線：輸出接力指令切換至 Session 2。
+> - [x] 階段所有單元驗證已通過 (Exit 0)。
+> - [x] 遵循「One Phase, One Session」物理隔絕底線：輸出接力指令切換至 Session 3 (執行 Phase 2)。
 
-### Phase 2: 全域工具/測試解耦與文檔鏈接校正 狀態：`[待辦]`
-- [ ] 任務 2.1: 重構 `1.devtools/tests/run_tests.py`
+### Phase 2: 全域工具/測試解耦與文檔鏈接校正 狀態：`[已完成]`
+- [x] 任務 2.1: 重構 `1.devtools/tests/run_tests.py`
     - **動作**: 將 `run_tests.py` 純化為全域整合測試（聚焦於 `validate_contract.py` 與 `test_cross_plugin_e2e.py`），解除對 `export_converter.py` 的硬性路徑依賴（或改為選測插件路徑）。
     - **驗證 (Exit 0)**: 執行 `py 1.devtools/tests/run_tests.py` 全數 PASS (Exit 0)。
-- [ ] 任務 2.2: 校正全域文檔與前端 UI 引用
+- [x] 任務 2.2: 校正全域文檔與前端 UI 引用
     - **動作**:
       1. 更新 `README.md` 與 `README_USER_MANUAL.md` 中的微服務啟動指令為 `python chrome_gemini_nano/tools/main_dispatcher.py`。
       2. 更新 `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md` 中的 `export_converter.py` 路徑。
@@ -138,25 +141,57 @@ related_drafts: []
     - **驗證 (Exit 0)**: 執行 `py 1.devtools/tools/doc_cross_ref.py --audit` 0 死鏈。
 
 > 🏁 **Phase 2 Checkpoint (狀態收斂區)**：
-> - [ ] 階段所有單元驗證已通過 (Exit 0)。
-> - [ ] 遵循「One Phase, One Session」物理隔絕底線：輸出接力指令切換至 Session 3 (Gate 3)。
+> - [x] 階段所有單元驗證已通過 (Exit 0)。
+> - [x] 遵循「One Phase, One Session」物理隔絕底線：輸出接力指令切換至 Session 4 (Gate 3 Final)。
 
-### Phase Final: 自動化審計與 SSOT 閉環 狀態：`[待辦]`
-- [ ] 任務 F.1: 自動化審計套件全面驗證 (Gate 3 Audit)
-    - **動作**: 執行 `py 1.devtools/tools/audit_suite.py --strict` 與 `node 1.devtools/tools/audit_ssot.mjs --strict`。
+### Phase Final: 自動化審計與 SSOT 閉環 狀態：`[已完成]`
+- [x] 任務 F.1: 自動化審計套件全面驗證 (Gate 3 Audit)
+    - **動作**: 執行 `py 1.devtools/tools/audit_suite.py --compact` 與 `node 1.devtools/tools/audit_ssot.mjs --strict`。
     - **驗證 (Exit 0)**: 全套審計通過，無 CRITICAL / 死鏈報錯。
-- [ ] 任務 F.2: SSOT 實體回寫與任務歸檔
+- [x] 任務 F.2: SSOT 實體回寫與任務歸檔
     - **動作**: 更新 `0.doc_mg/docs/README_SSOT.md`，並執行 `py 1.devtools/tools/task_cli.py archive` 完成歸檔。
     - **驗證 (Exit 0)**: 任務檔移至 `0.doc_mg/tasks/archive/global/`。
 
-## 5. 驗收標準 (Acceptance Criteria)
+> 🏁 **Phase Final Checkpoint (狀態收斂區)**：
+> - [x] 全套自動化審計通過 (Exit 0)，無 CRITICAL / 死鏈報錯。
+> - [x] SSOT 真理源回寫完成 (`0.doc_mg/docs/README_SSOT.md`)。
+> - [x] 任務標記已完成並透過 `task_cli.py archive` 歸檔封存。
 
-- [ ] **純粹全域定位**: `1.devtools/tools/` 與 `1.devtools/scripts/` 僅包含全域管理、審計、節省 token 與跨插件規範工具，無單一插件內部業務工具。
-- [ ] **獨立插件自治**: `finance-research-clipper-oss` 與 `chrome_gemini_nano` 擁有自己的 tools / scripts / tests 目錄，自給自足。
-- [ ] **審計通過**: `py 1.devtools/tools/audit_suite.py --compact` 與 `node 1.devtools/tools/audit_ssot.mjs` Exit 0。
-- [ ] **零死鏈**: 全專案 Markdown 與前端 HTML 引用鏈接完全正確，無死鏈。
-- [ ] **生命週期歸檔**: 任務完成後由 `task_cli.py archive` 歸檔封存。
+## 5. 事前驗屍與降級方案 (Pre-Mortem & Fallback)
+- **最可能失敗場景 (Pre-Mortem)**：
+  1. 搬移 `export_converter.py` 後，文檔或測試仍參照舊路徑導致死鏈。
+  2. 廢除 `main_dispatcher.py` 導致依賴轉發的啟動腳本中斷。
+- **降級/回滾方案 (Blast Radius Control)**：
+  - 搬移操作前確認 Git 乾淨；若測試或審計報錯，以 `git checkout` 迅速復原。
+- **熔斷與突發隔離機制**：
+  - 單一問題重試上限 2 次 (2-Strike 熔斷)；遇次生突發錯誤調用 `py 1.devtools/tools/log_issue.py log` 立案並還原代碼，強制停步開立新會話處理。
 
-## 6. 狀態收斂歷程 (State Convergence History)
+## 6. 驗收標準 (Acceptance Criteria)
 
-- 2026-10-28 [Gate 1]: 完成職責盤點與邊界分析，建立任務藍圖與防護清單。
+- [x] **純粹全域定位**: `1.devtools/tools/` 與 `1.devtools/scripts/` 僅包含全域管理、審計、節省 token 與跨插件規範工具，無單一插件內部業務工具。
+- [x] **獨立插件自治**: `finance-research-clipper-oss` 與 `chrome_gemini_nano` 擁有自己的 tools / scripts / tests 目錄，自給自足。
+- [x] **全自動審計通過**: `py 1.devtools/tools/audit_suite.py --compact` 與 `node 1.devtools/tools/audit_ssot.mjs --strict` Exit 0。
+- [x] **零死鏈**: 全專案 Markdown 與前端 HTML 引用鏈接完全正確，`doc_cross_ref.py --audit` 0 死鏈。
+- [x] **四層 SSOT 閉環**: L2 工具矩陣更新完成，任務由 `task_cli.py archive` 歸檔至 `archive/global/`。
+- [x] **強制收尾**: 回報任務完成或對話結束前，最後一個工具呼叫必須是更新、打勾或收斂本 task 檔案。
+
+## 7. 狀態收斂歷程 (Condensed History)
+
+- [2026-10-28] [Gate 1]: 完成職責盤點與邊界分析，建立任務藍圖與防護清單，完成規範升級適配 (Session 1)。
+- [2026-10-28] [Phase 1]: 完成 finance-research-clipper-oss 工具/腳本/測試下沉與 main_dispatcher proxy 廢除，單元驗證 5/5 全數通過 (Session 2)。
+- [2026-10-28] [Phase 2]: 純化 run_tests.py 全域測試套件；校正全專案 README、手冊、合約、GAS 與 options.html 引用；完成 .repo_index.json 快取同步與 doc_cross_ref 零死鏈驗證 (Session 3)。
+- [2026-10-28] [Phase Final]: 通過全套門禁審計 (audit_suite / audit_ssot / doc_cross_ref)，回寫 README_SSOT.md，標記完成並執行 task_cli.py archive 歸檔 (Session 4)。
+
+## 8. AI 簽到區與會話接力
+> [x] 我已閱讀並承諾遵守「task-protocol」技能中之 3-Gate Protocol、探勘硬窄化與動態狀態收斂規範。
+> [x] 探勘逾 100 行代碼時，已強制優先調用骨架/雷達工具提取結構，未直接盲讀原始碼。
+> [x] 終端建置日誌長篇輸出已串接 `compact_log.py` 或 `rtk` 進行脫水過濾。
+> [x] 結案前執行 `audit_suite.py` 完成自動化驗證。
+> **Devtools 工具調用紀錄 (工具名稱 / 目標 / 效益)**:
+> - `doc_cross_ref.py`: 驗證全專案 74 篇 Markdown 交叉引用 (0 死鏈)。
+> - `generate_symbol_index.py`: 重新生成全域快取 `.repo_index.json` (347 符號 / 22 篇大綱)。
+> - `run_tests.py`: 執行全域解耦整合測試 (4/4 PASS)。
+> - `audit_suite.py`: 執行 Gate 3 全域整合門禁審計 (Exit 0)。
+> - `audit_ssot.mjs`: 執行 SSOT 真理源防腐審計 (Exit 0)。
+> - `task_cli.py`: 執行任務生命週期歸檔 (archive)。
+> **任務結案狀態**: 本任務已全數完成驗收標準，所有插件工具下沉自治，門禁無死鏈無破壞，正式結案歸檔。

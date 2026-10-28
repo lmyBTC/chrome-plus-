@@ -4,7 +4,7 @@
 
 const assert = require('assert');
 const path = require('path');
-const exporterPath = path.resolve(__dirname, '../../finance-research-clipper-oss/src/services/googleSheetsExporter.js');
+const exporterPath = path.resolve(__dirname, '../src/services/googleSheetsExporter.js');
 const GoogleSheetsExporter = require(exporterPath);
 
 console.log('--- 測試 1: 基本個股資料防腐與欄位對齊 ---');

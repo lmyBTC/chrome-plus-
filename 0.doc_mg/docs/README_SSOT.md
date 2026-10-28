@@ -45,7 +45,7 @@
 | **Activity Monitor** | `actmon` | [README_ACTIVITY_MONITOR.md](../../browser-activity-monitor/README_ACTIVITY_MONITOR.md) | 零干擾常駐監聽 + 20% 隨選雙層探針、瀏覽隱私與權限審計 |
 | **Gemini Nano Hub** | `nano` | [README_GEMINI_NANO.md](../../chrome_gemini_nano/README_GEMINI_NANO.md) | 邊緣端 Chrome Web AI (Prompt API) 本地推論與跨插件意圖分發中樞 |
 | **Video Speed Plus** | `vidspeed` | [README_VIDEO_SPEED.md](../../chrome_video speed plus/README_VIDEO_SPEED.md) | 影音倍速微調、字幕時間戳筆記擷取、Shadow DOM 樣式嚴格隔離 |
-| **DevTools 工具箱** | `devtools` | [README_DEVTOOLS.md](../../1.devtools/README_DEVTOOLS.md) | 極致減耗腳本、代碼骨架提煉、日誌脫水與自動化合規審計工具庫 |
+| **DevTools 工具箱** | `devtools` | [README_DEVTOOLS.md](../../1.devtools/README_DEVTOOLS.md) | 純粹全域治理、合規審計、跨插件契約驗證與 Token 節省檢索工具庫 |
 
 ---
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 1.devtools/tests/run_tests.py
-自動化整合測試套件：驗證 validate_contract.py 與 export_converter.py
+自動化整合測試套件：驗證 validate_contract.py 與跨插件 E2E 流程 (純化全域職責)
 """
 
 import os
@@ -19,7 +19,7 @@ FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixture
 TOOLS_DIR = os.path.join(BASE_DIR, "tools")
 
 VALIDATOR_SCRIPT = os.path.join(TOOLS_DIR, "validate_contract.py")
-CONVERTER_SCRIPT = os.path.join(TOOLS_DIR, "export_converter.py")
+CONVERTER_SCRIPT = os.path.join(os.path.dirname(BASE_DIR), "finance-research-clipper-oss", "tools", "export_converter.py")
 E2E_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_cross_plugin_e2e.py")
 
 def run_command(cmd):
@@ -49,7 +49,10 @@ def test_validator():
     print("  -> 非法合約攔截與報錯機制 PASS")
 
 def test_converter():
-    print("[測試 3/4] 驗證 export_converter.py Obsidian Markdown 與 CSV 轉譯...")
+    if not os.path.exists(CONVERTER_SCRIPT):
+        print("[測試 3/4] (選測跳過) 未偵測到 finance-research-clipper-oss 專屬轉譯器")
+        return
+    print("[測試 3/4] 驗證 export_converter.py Obsidian Markdown 與 CSV 轉譯 (插件下沉路徑)...")
     snapshot_nvda = os.path.join(FIXTURES_DIR, "valid_clipper_snapshot.json")
     snapshot_aapl = os.path.join(FIXTURES_DIR, "valid_clipper_snapshot_aapl.json")
     combined_csv = os.path.join(FIXTURES_DIR, "test_output_combined.csv")
