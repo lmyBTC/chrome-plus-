@@ -25,7 +25,7 @@
 2. 在彈出的服務清單中找到 **`Google Tasks API`**（版本選擇預設 `v1`），點選 **「新增 (Add)」**。
    > [!NOTE]
    > 必須啟用此服務，才能讓腳本具有讀寫 Google Tasks 的能力。
-3. 開啟本機專案中的 `0.doc_mg/tools/gas/google_sync_hub.gs` 檔案，**複製全部內容**。
+3. 開啟本機專案中的 `1.devtools/tools/gas/google_sync_hub.gs` 檔案，**複製全部內容**。
 4. 清空 Apps Script 編輯器中現有的 `Code.gs` 內容，將複製的代碼貼上並儲存（`Ctrl + S`）。
 
 ---

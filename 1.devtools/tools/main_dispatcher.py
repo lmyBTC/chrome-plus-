@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-0.doc_mg/tools/main_dispatcher.py - 全域微服務調度中樞入口
+1.devtools/tools/main_dispatcher.py - 全域微服務調度中樞入口
 統一轉發並代理至 chrome_gemini_nano/tools/main_dispatcher.py
 
 @related ../../chrome_gemini_nano/tools/main_dispatcher.py

@@ -21,7 +21,7 @@ except AttributeError:
     pass
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent.parent
+REPO_ROOT = SCRIPT_DIR.parent
 
 
 JS_CONTROL_KEYWORDS = {
@@ -240,7 +240,7 @@ def extract_typescript_skeleton(content: str) -> str:
             if brace_depth <= skip_start_depth:
                 skipping_function_body = False
                 brace_depth = skip_start_depth
-                # 關鍵修復：掏空在開頭已給予閉合括號，結尾嚴禁重複 append！
+                # 掏空在開頭已給予閉合括號，結尾嚴禁重複 append
             continue
 
         # 7. 多行簽名收集處理中
@@ -481,9 +481,9 @@ def main():
     parser = argparse.ArgumentParser(
         description="Code Skeleton Extractor - 掏空實作僅保留簽名與介面，節省 85%~95% Token",
         epilog="""範例:
-  py 1.devtools/tools/code_skeleton.py chrome_pk/src/background.ts
-  npm run skeleton -- chrome_pk/src/background.ts
-  py 1.devtools/tools/code_skeleton.py chrome_pk/src/background.ts --save scratch/bg_skel.ts
+  python tools/code_skeleton.py assets/js/common.js
+  python tools/code_skeleton.py tools/sync_articles_db.py
+  python tools/code_skeleton.py assets/js/common.js --save scratch/tmp/common_skel.js
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )

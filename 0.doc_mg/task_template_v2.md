@@ -27,7 +27,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
   | :--- | :--- | :--- | :--- |
   | **Gate 1: 探勘** | `py 1.devtools/tools/code_skeleton.py` / `repo_radar.py` | `[例如：code_skeleton 提煉骨架]` | `[節省 Context]` |
   | **Gate 2: 執行** | `2>&1 \| py 1.devtools/tools/compact_log.py` / `rtk` | `[終端脫水或原子替換實證]` | `[Exit 0]` |
-  | **Gate 3: 驗收** | `py 1.devtools/tools/audit_manifests.py` / `doc_cross_ref.py` | `[合規與死鏈審計命令結果]` | `[Exit 0]` |
+  | **Gate 3: 驗收** | `py 1.devtools/tools/audit_suite.py` / `audit_manifests.py` | `[合規、隔離與死鏈審計命令結果]` | `[Exit 0]` |
 - **Gate 1 探勘持久化快取 (Probe Cache)**：`[選填]` 0.doc_mg/tasks/tmp/tmp_probe_{task_slug}.md (若無則直接依賴任務步驟錨定)
 - **影響範圍地圖 (Entity Map)**：<!-- AI: 列出本次改動牽連的檔案、組件與模組相依性。嚴禁跨目錄讀取非關插件！ -->
 - **前置條件 (Prerequisites)**：<!-- AI: 開發前必須完成的環境或狀態準備 (如 git status 乾淨、npm install 等)。 -->
@@ -42,10 +42,11 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 - `./[plugin]/path/to/target_file`
 
 ### 鎖定工具鏈 (Target Devtools)
-<!-- Gate 1 探勘與 Gate 2 執行鎖定調用之工具鏈，於建檔時前置鎖定宣告 -->
+<!-- Gate 1 探勘、Gate 2 執行與 Gate 3 審計鎖定調用之工具鏈，於建檔時前置鎖定宣告 -->
 - [ ] 探勘骨架/雷達: `py 1.devtools/tools/code_skeleton.py <目標檔案>` 或 `py 1.devtools/tools/repo_radar.py`
 - [ ] 終端日誌脫水: `npm run build 2>&1 | py 1.devtools/tools/compact_log.py` (或 `rtk`)
-- [ ] 結案自動審計: `py 1.devtools/tools/audit_manifests.py` / `py 1.devtools/tools/doc_cross_ref.py`
+- [ ] 結案整合審計: `py 1.devtools/tools/audit_suite.py --compact` (或 `audit_manifests.py` / `audit_plugin_isolation.py`)
+- [ ] 2-Strike 熔斷立案: `py 1.devtools/tools/log_issue.py log` (遇非預期 Bug 即刻立案並還原)
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 <!-- 90/10 分級守則：若屬單純樣式/文字/Bugfix 等輕量任務，L1~L3 直接勾選 [N/A] 豁免，結案不讀寫任何文檔；僅重大架構變更才需前置宣告 -->

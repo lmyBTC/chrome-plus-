@@ -167,7 +167,7 @@ chrome-plus-/
 pip install fastapi uvicorn requests
 
 # 啟動微服務 (常駐 127.0.0.1:8765)
-python 0.doc_mg/tools/main_dispatcher.py
+python 1.devtools/tools/main_dispatcher.py
 ```
 
 ### 2. 構建並加載擴充套件 (前端大腦與五大模組)

@@ -155,8 +155,8 @@
 
 ### 6.3. 自動化維護與封存作業原則
 - **自動化滾動工具**：
-  - 執行 `py 0.doc_mg/tools/archive_rotator.py --limit 10 --dry-run` 預覽溢出與逾期任務。
-  - 執行 `py 0.doc_mg/tools/archive_rotator.py --limit 10 --execute` 批次執行下沉遷移。
+  - 執行 `py 1.devtools/tools/task_cli.py archive --dry-run` 預覽溢出與逾期任務。
+  - 執行 `py 1.devtools/tools/task_cli.py archive` 批次執行雙層滾動歸檔。
 - **無破壞性安全遷移**：一律採用移動（Move）方式歸位，嚴格遵守「嚴禁刪除任何檔案」的底線。
 - **維持原始內容**：封存過程不得竄改檔案內容、變更時間標記或遺失歷史驗收記錄。
 - **純字串相對路徑**：文檔內部連結與路徑參照一律維持專案純字串相對路徑規範。

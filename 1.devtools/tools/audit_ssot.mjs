@@ -40,6 +40,7 @@ const IGNORED_DIRS = new Set([
   '.system_generated',
   'coverage',
   '.vscode',
+  'task_protocol_pack',
   'archive' // 封存與歷史目錄不列入強制規範審查
 ]);
 

@@ -27,7 +27,12 @@
 | **`token_estimator.py`** | 輕量純 Python 字元啟發式 Token 估算器核心模組 | `py 1.devtools/tools/token_estimator.py <檔案路徑>` |
 | **`audit_markdown_links.py`** | 全專案 Markdown 相對路徑、錨點與跨檔引用自動校驗與修復 | `py 1.devtools/tools/audit_markdown_links.py`<br/>`py 1.devtools/tools/audit_markdown_links.py --fix` |
 | **`audit_ssot.mjs`** | SSOT 靜態合規與真理防腐審計器（索引存在性校驗/孤兒真理探測/命名防腐/90-10閉環） | `node 1.devtools/tools/audit_ssot.mjs`<br/>`npm run audit:ssot`<br/>`node 1.devtools/tools/audit_ssot.mjs --strict` |
+| **`main_dispatcher.py`** | 全域微服務調度中樞（轉發代理至 Gemini Nano 本機推論後端 127.0.0.1:8765） | `py 1.devtools/tools/main_dispatcher.py` |
+| **`gas/google_sync_hub.gs`** | Google Apps Script 雲端雙軌同步中樞指令碼（Google Tasks Webhook 接收與同步） | 複製部署至 Google Apps Script 專案 |
 | **`git_extract_section.py`** | 自 Git 歷史 Commit 秒級抽取 Markdown 標題或 HTML 區塊（免全量 checkout） | `py 1.devtools/tools/git_extract_section.py <commit> <檔案> -s "<標題>"` |
+| **`log_issue.py`** | 2-Strike 熔斷與突發次生問題結構化立案工具（防原地無效死磕） | `py 1.devtools/tools/log_issue.py log --title "<標題>" --severity HIGH --desc "<快照>"` |
+| **`analyze_task_tokens.py`** | 任務對話日誌 Token 深度剖析與 Context 膨脹分析工具（支援秒查水位探針） | `py 1.devtools/tools/analyze_task_tokens.py --quick-check`<br/>`py 1.devtools/tools/analyze_task_tokens.py --current` |
+| **`util_archive_manager.py`** | 歷史任務與草稿雙層歸檔管理工具（支援近兩週熱資料滑動維護） | `py 1.devtools/tools/util_archive_manager.py --dry-run`<br/>`py 1.devtools/tools/util_archive_manager.py` |
 
 ---
 
@@ -61,7 +66,15 @@
   ```bash
   npm run build 2>&1 | py 1.devtools/tools/compact_log.py
   ```
-- **任務檔防護戒律**：局部替換 ≤ 10 行、禁止向 workspace 傳遞 `ArtifactMetadata`，更新任務檔為本輪最後動作。
+- **Context 水位快速監控**：秒級探查當前 Session 上下文水位與健康度（< 50ms）：
+  ```bash
+  py 1.devtools/tools/analyze_task_tokens.py --quick-check
+  ```
+- **2-Strike 熔斷實體立案**：遭遇非本原子任務之次生 Bug 或連續 2 次修復失敗時即刻立案並還原：
+  ```bash
+  py 1.devtools/tools/log_issue.py log --title "<問題標題>" --severity HIGH --desc "<錯誤描述>"
+  ```
+- **任務檔防護戒律**：局部替換 ≤ 50~80 行唯一語意區塊、禁止向 workspace 傳遞 `ArtifactMetadata`，更新任務檔為本輪最後動作。
 
 ### 階段三：Gate 3 知識收斂與自動化審計 (Knowledge Consolidation & Automated Audit)
 - **Gate 3 一鍵全自動審計套件 (推薦首選)**：
@@ -112,7 +125,7 @@
 ## 3. 相關專家技能與業務指引
 
 - **任務協議技能**：`.agents/skills/task-protocol/SKILL.md`
-- **任務管理指引**：`0.doc_mg/docs/task_manager.md`
+- **任務管理指引**：`0.doc_mg/docs/README_TASK_MANAGER.md`
 - **專案情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`
 - **檢索決策樹指引**：`0.doc_mg/docs/README_REPO_RADAR_PROMPTS.md`
 - **Manifest 合規審計技能**：`.agents/skills/chrome-auditor/SKILL.md`
