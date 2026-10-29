@@ -1,7 +1,7 @@
 ---
 title: "Chrome Canary 多實例未封裝擴充功能常駐與 ID 固定問題排查"
 plugin: "global"
-status: "進行中"
+status: "已完成"
 created: "2026-10-09"
 deadline: "2026-10-09"
 ---
