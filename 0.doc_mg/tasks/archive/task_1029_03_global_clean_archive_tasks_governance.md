@@ -15,10 +15,10 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ## 1. 目標與驗證指標 (Objective & Metrics)
 
 - **用戶原始需求 (True Intent)**：
-  依據 `0.doc_mg\docs\README_TASK_MANAGER.md` 規範，對 `0.doc_mg\tasks\archive` 進行全面清理與雙層滾動治理校正，解決非任務資產（圖片、草稿、除錯日誌）混入任務封存區、目錄名稱未對齊 SSOT、以及歷史任務在 `unknown/`、`workspace/`、`agents/` 散落的問題，恢復極致純淨的任務封存體系。
+  依據 `0.doc_mg\docs\guide-task-manager.md` 規範，對 `0.doc_mg\tasks\archive` 進行全面清理與雙層滾動治理校正，解決非任務資產（圖片、草稿、除錯日誌）混入任務封存區、目錄名稱未對齊 SSOT、以及歷史任務在 `unknown/`、`workspace/`、`agents/` 散落的問題，恢復極致純淨的任務封存體系。
 - **核心目標**：
   1. **非任務資產分流**：將混入 `tasks/archive/` 的圖片 (`image.png`)、草稿文件（Gemini Nano 7 份規劃案、2 份 friction matrix、1 份 PRD）及除錯日誌 (`bug.md`) 安全搬移至 `0.doc_mg/draft/archive/`。
-  2. **SSOT 目錄名稱對齊**：依據 `README_TASK_MANAGER.md` Section 6.2，將 `archive/gemini-nano/` 規範化更名為 `archive/chrome_gemini_nano/`，並同步修訂 `task_cli.py` 之映射設定。
+  2. **SSOT 目錄名稱對齊**：依據 `guide-task-manager.md` Section 6.2，將 `archive/gemini-nano/` 規範化更名為 `archive/chrome_gemini_nano/`，並同步修訂 `task_cli.py` 之映射設定。
   3. **散落任務精準歸位**：將 `archive/unknown/`、`archive/workspace/`、`archive/agents/` 中的歷史任務檔案安全分流至對應的插件目錄 (`finance-research-clipper-oss`、`chrome_pk`、`global`)，並清除空目錄。
   4. **雙層滾動驗收與零破壞防護**：落實白名單保護，絕不刪除任何歷史任務；驗收 `task_cli.py archive`、`doc_cross_ref.py` 與 `audit_suite.py` 確保 Exit 0 零死鏈。
 - **邊界與假設**：
@@ -27,7 +27,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `0.doc_mg/docs/README_TASK_MANAGER.md`、`.agents/rules.md`、`.agents/skills/task-protocol/SKILL.md`。
+- **SSOT 規範查閱**：已查閱 `0.doc_mg/docs/guide-task-manager.md`、`.agents/rules.md`、`.agents/skills/task-protocol/SKILL.md`。
 - [x] **全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix / Token Guard - 實證制)**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
@@ -45,7 +45,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 - **DRY 檢查**：使用現有 `task_cli.py` 與原生檔案搬移指令，不引入多餘外部腳本。
 - **架構策略與 Tree of Thoughts (ToT)**：
   - 方案 A（僅使用 task_cli.py archive）：只能處理根層溢出與逾期下沉，無法處理混入的圖片、草稿與錯誤命名的資料夾。
-  - 方案 B（結合精準分流搬移 + task_cli 工具 SSOT 校正 + 雙層歸檔驗收，選定）：徹底將非任務資產歸檔至 `draft/archive/`，將歷史任務依 plugin 歸位，並修正 `task_cli.py` 使其與 `README_TASK_MANAGER.md` 規範 100% 吻合。
+  - 方案 B（結合精準分流搬移 + task_cli 工具 SSOT 校正 + 雙層歸檔驗收，選定）：徹底將非任務資產歸檔至 `draft/archive/`，將歷史任務依 plugin 歸位，並修正 `task_cli.py` 使其與 `guide-task-manager.md` 規範 100% 吻合。
 - **硬性禁止動作 (Guardrails)**：
   - 嚴格遵守白名單保護規範，**嚴禁刪除任何任務檔案**，一律使用安全移動 (Move)。
   - 嚴禁更動插件業務功能原始碼。
@@ -63,7 +63,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 - [x] [N/A] 輕量任務豁免 (無元件增刪、無 Storage Schema 改動、無跨插件通訊變更)
 - [ ] L1 專家技能：`./.agents/skills/task-protocol/SKILL.md` (若有規則修訂則回寫)
-- [ ] L2 插件導航：`./0.doc_mg/docs/README_TASK_MANAGER.md` (SSOT 規範)
+- [ ] L2 插件導航：`./0.doc_mg/docs/guide-task-manager.md` (SSOT 規範)
 - [x] L4 任務生命週期：`0.doc_mg/tasks/archive/` (結案歸檔)
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)

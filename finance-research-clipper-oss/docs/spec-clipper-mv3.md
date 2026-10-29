@@ -16,7 +16,7 @@
 | `../src/crawler/crawler.js` | **[核心爬蟲]** SPA 動態走訪 4 大分頁，語意化文字定位與超時防護 | `window.FinanceCrawler`<br>`runFullStockScraper()`<br>`navigateToTab()` |
 | `../popup.html`<br>`../src/popup/popup.js` | 擴充介面結構、樣式與折疊面板，提供一鍵前往儀表板捷徑 (頂部徽章與底部主按鈕) | `#open-dashboard-btn`, `#btn-goto-dashboard`, `executeFullStockCrawler()` |
 | `../background.js` | 背景服務工作線程：後台靜默分頁調度、數據持久化與跨視窗廣播 | `crawlStockByKeyword()`, `waitForTabLoaded()` |
-| [`0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md](../../0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md) | 雲端中繼站 GAS 後端接收腳本 (接收 POST, 寫入 Sheets & Drive) | `doPost(e)` |
+| [`0.doc_mg/docs/guide-gas-deployment.md](../../0.doc_mg/docs/guide-gas-deployment.md) | 雲端中繼站 GAS 後端接收腳本 (接收 POST, 寫入 Sheets & Drive) | `doPost(e)` |
 
 ---
 

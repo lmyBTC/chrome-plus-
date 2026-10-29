@@ -29,7 +29,7 @@ related_drafts: []
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../.agents/rules.md) 及 `../../../1.devtools/README_DEVTOOLS.md`。
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../.agents/rules.md) 及 `../../../1.devtools/overview-devtools.md`。
 - **影響範圍地圖 (Entity Map)**：
   - 工具層：
     - `0.doc_mg/tools/archive_rotator.py` ➔ 廢除（由 `1.devtools/tools/task_cli.py archive` 取代）
@@ -37,13 +37,13 @@ related_drafts: []
     - `0.doc_mg/tools/gas/google_sync_hub.gs` ➔ 遷移至 `1.devtools/tools/gas/google_sync_hub.gs`
     - `0.doc_mg/tools/` ➔ 徹底移除
   - 文檔與規格層：
-    - `0.doc_mg/docs/README_TASK_MANAGER.md`
-    - `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`
-    - `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md`
-    - `0.doc_mg/docs/README_SSOT.md`
-    - `1.devtools/README_DEVTOOLS.md`
+    - `0.doc_mg/docs/guide-task-manager.md`
+    - `0.doc_mg/docs/guide-token-optimization.md`
+    - `0.doc_mg/docs/guide-gas-deployment.md`
+    - `0.doc_mg/docs/index-ssot.md`
+    - `1.devtools/overview-devtools.md`
     - `README.md`
-    - `README_USER_MANUAL.md`
+    - `guide-user-manual.md`
   - 前端與插件層：
     - `finance-research-clipper-oss/options.html`
 - **前置條件 (Prerequisites)**：Git 工作目錄乾淨，`task_cli.py archive --dry-run` 執行無報錯。
@@ -67,13 +67,13 @@ related_drafts: []
 - `0.doc_mg/tools/archive_rotator.py` (移除)
 - `0.doc_mg/tools/main_dispatcher.py` (移除)
 - `0.doc_mg/tools/gas/google_sync_hub.gs` (移除)
-- `0.doc_mg/docs/README_TASK_MANAGER.md` (更新引用)
-- `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md` (更新引用)
-- `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md` (更新引用)
-- `0.doc_mg/docs/README_SSOT.md` (更新索引)
-- `1.devtools/README_DEVTOOLS.md` (更新工具表)
+- `0.doc_mg/docs/guide-task-manager.md` (更新引用)
+- `0.doc_mg/docs/guide-token-optimization.md` (更新引用)
+- `0.doc_mg/docs/guide-gas-deployment.md` (更新引用)
+- `0.doc_mg/docs/index-ssot.md` (更新索引)
+- `1.devtools/overview-devtools.md` (更新工具表)
 - `README.md` (更新指令)
-- `README_USER_MANUAL.md` (更新指令)
+- `guide-user-manual.md` (更新指令)
 - `finance-research-clipper-oss/options.html` (更新路徑提示)
 
 ### 鎖定工具鏈 (Target Devtools)
@@ -85,8 +85,8 @@ related_drafts: []
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 
-- [x] L2 插件/模組導航：`1.devtools/README_DEVTOOLS.md` (更新工具清單)
-- [x] L2 全域導航：`0.doc_mg/docs/README_SSOT.md` (更新文檔與工具定位)
+- [x] L2 插件/模組導航：`1.devtools/overview-devtools.md` (更新工具清單)
+- [x] L2 全域導航：`0.doc_mg/docs/index-ssot.md` (更新文檔與工具定位)
 - [x] L4 任務生命週期：`0.doc_mg/tasks/archive/global/` (結案後移動封存歸檔)
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
@@ -106,10 +106,10 @@ related_drafts: []
 
 ### Phase 2: 全域文檔、註解與前端提示鏈接更新 (Update References & SSOT) 狀態：`[已完成]`
 - [x] 任務 2.1: 更新 `0.doc_mg/docs/` 下的文檔引用
-    - **動作**: 在 `README_TASK_MANAGER.md` 與 `README_TOKEN_OPTIMIZATION_GUIDE.md` 中將 `0.doc_mg/tools/archive_rotator.py` 改為 `1.devtools/tools/task_cli.py archive`；在 `README_GAS_DEPLOYMENT_GUIDE.md` 中修正 `google_sync_hub.gs` 路徑。
+    - **動作**: 在 `guide-task-manager.md` 與 `guide-token-optimization.md` 中將 `0.doc_mg/tools/archive_rotator.py` 改為 `1.devtools/tools/task_cli.py archive`；在 `guide-gas-deployment.md` 中修正 `google_sync_hub.gs` 路徑。
     - **驗證 (Exit 0)**: 搜尋 `0.doc_mg/docs/` 確認已無舊路徑。
-- [x] 任務 2.2: 更新根目錄文檔、`1.devtools/README_DEVTOOLS.md` 與前端介面
-    - **動作**: 更新 `README.md`、`README_USER_MANUAL.md`、`1.devtools/README_DEVTOOLS.md`、`finance-research-clipper-oss/options.html`。
+- [x] 任務 2.2: 更新根目錄文檔、`1.devtools/overview-devtools.md` 與前端介面
+    - **動作**: 更新 `README.md`、`guide-user-manual.md`、`1.devtools/overview-devtools.md`、`finance-research-clipper-oss/options.html`。
     - **驗證 (Exit 0)**: 搜尋全局活躍代碼與文檔，確認已無 `0.doc_mg/tools` 引用。
 
 > 🏁 **Phase 2 Checkpoint (狀態收斂區)**：

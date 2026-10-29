@@ -3,12 +3,12 @@ name: 任務協議管理 (Task Protocol Management)
 description: 強制執行 `task_template_v2.md` 的初始化、同步、3-Gate 門禁、會話隔離與封存管理規範。
 triggers: [建立任務, 開始開發, 任務拆解, 狀態更新, 同步進度, 3-Gate, 會話隔離, 任務協議, task_cli]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/README_TASK_MANAGER.md", ".agents/rules.md"]
+ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/guide-task-manager.md", ".agents/rules.md"]
 ---
 
 # 技能指令：任務協議守護者 (Task Protocol Guardian - Chrome Plus v3.2 鬆綁流暢版)
 
-你負責確保專案「任務物理同步」規範與 Token 節省策略 100% 執行，落實前置思考、多會話隔離、探勘硬窄化與客觀 Exit 0 驗證。任務模板真理源為 `0.doc_mg/task_template_v2.md`，指南為 `0.doc_mg/docs/README_TASK_MANAGER.md`。
+你負責確保專案「任務物理同步」規範與 Token 節省策略 100% 執行，落實前置思考、多會話隔離、探勘硬窄化與客觀 Exit 0 驗證。任務模板真理源為 `0.doc_mg/task_template_v2.md`，指南為 `0.doc_mg/docs/guide-task-manager.md`。
 
 ## 1. 前置思維底線：編碼前思考 (Think Before Coding)
 - **不要假設**：若有歧義，主動列出權衡並詢問使用者，嚴禁默默替使用者猜測。

@@ -14,21 +14,21 @@ related_drafts: [] # 關聯草稿清單
 
 ## 1. 目標與驗證指標 (Objective & Metrics)
 
-- **用戶原始需求 (True Intent)**：安裝 `task_protocol_pack\README.md` 的套件，並整合 `0.doc_mg\docs\README_TOKEN_OPTIMIZATION_GUIDE.md`，使 Chrome Plus 專案之任務協議與 Token 最佳化體系完全融合升級。
+- **用戶原始需求 (True Intent)**：安裝 `task_protocol_pack\README.md` 的套件，並整合 `0.doc_mg\docs\guide-token-optimization.md`，使 Chrome Plus 專案之任務協議與 Token 最佳化體系完全融合升級。
 - **核心目標**：
   1. **Phase 1: 工具鏈與腳本升級安裝**：
      - 執行 `task_protocol_pack/install.py --install`，安裝新工具 (`log_issue.py`, `analyze_task_tokens.py`, `util_archive_manager.py`) 並升級核心腳本 (`repo_radar.py`, `code_skeleton.py`, `compact_log.py`, `generate_symbol_index.py`, `token_estimator.py`)。
      - 驗證各工具於 `1.devtools/tools/` 下可正常執行，無外部依賴損壞。
   2. **Phase 2: 任務規範與專家技能無縫整合 (Chrome Plus 適配)**：
-     - 將 `task_protocol_pack` 之規範特質（四大支柱、Probe Cache、Line Anchor、2-Strike 熔斷實體立案）融合進 `.agents/skills/task-protocol/SKILL.md`、`.agents/skills/token-saver/SKILL.md`、`0.doc_mg/task_template_v2.md` 與 `0.doc_mg/docs/README_TASK_MANAGER.md`，維持 Chrome Plus 3-Gate 與插件隔離規範。
-  3. **Phase 3: 深度整合 README_TOKEN_OPTIMIZATION_GUIDE.md 與 Gate 3 審計驗收**：
-     - 將新工具（`log_issue.py`, `analyze_task_tokens.py`, `util_archive_manager.py`）與 Probe Cache 等架構，完整回寫並同步於 `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md` 與 `1.devtools/README_DEVTOOLS.md`。
+     - 將 `task_protocol_pack` 之規範特質（四大支柱、Probe Cache、Line Anchor、2-Strike 熔斷實體立案）融合進 `.agents/skills/task-protocol/SKILL.md`、`.agents/skills/token-saver/SKILL.md`、`0.doc_mg/task_template_v2.md` 與 `0.doc_mg/docs/guide-task-manager.md`，維持 Chrome Plus 3-Gate 與插件隔離規範。
+  3. **Phase 3: 深度整合 guide-token-optimization.md 與 Gate 3 審計驗收**：
+     - 將新工具（`log_issue.py`, `analyze_task_tokens.py`, `util_archive_manager.py`）與 Probe Cache 等架構，完整回寫並同步於 `0.doc_mg/docs/guide-token-optimization.md` 與 `1.devtools/overview-devtools.md`。
      - 執行 `py 1.devtools/tools/audit_suite.py` 確保全項目 Exit 0 綠燈通過。
 - **邊界與假設**：保留 Chrome Plus 既有的多插件邊界隔離與 Manifest V3 規範；路徑嚴格遵守 `1.devtools/tools/` 與 `0.doc_mg/`。
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `GEMINI.md`, `.agents/rules.md`, `task_protocol_pack/README.md`, `1.devtools/README_DEVTOOLS.md`。
+- **SSOT 規範查閱**：已查閱 `GEMINI.md`, `.agents/rules.md`, `task_protocol_pack/README.md`, `1.devtools/overview-devtools.md`。
 - [x] **全流程工具鏈檢核矩陣**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
@@ -39,8 +39,8 @@ related_drafts: [] # 關聯草稿清單
   - `task_protocol_pack/` (來源套件)
   - `1.devtools/tools/` (目標工具目錄)
   - `.agents/skills/` (專家技能)
-  - `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md` (整合指標文件)
-  - `0.doc_mg/task_template_v2.md` & `0.doc_mg/docs/README_TASK_MANAGER.md`
+  - `0.doc_mg/docs/guide-token-optimization.md` (整合指標文件)
+  - `0.doc_mg/task_template_v2.md` & `0.doc_mg/docs/guide-task-manager.md`
 - **前置條件 (Prerequisites)**：Git 狀態乾淨，備份機制就緒。
 
 ## 3. 策略與架構防護 (Strategy & Guardrails)
@@ -51,12 +51,12 @@ related_drafts: [] # 關聯草稿清單
 
 ### 鎖定檔案 (Target Files)
 - `1.devtools/tools/*`
-- `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`
-- `0.doc_mg/docs/README_TASK_MANAGER.md`
+- `0.doc_mg/docs/guide-token-optimization.md`
+- `0.doc_mg/docs/guide-task-manager.md`
 - `0.doc_mg/task_template_v2.md`
 - `.agents/skills/task-protocol/SKILL.md`
 - `.agents/skills/token-saver/SKILL.md`
-- `1.devtools/README_DEVTOOLS.md`
+- `1.devtools/overview-devtools.md`
 
 ### 鎖定工具鏈 (Target Devtools)
 - [x] 安裝腳本: `py task_protocol_pack/install.py --install`
@@ -65,8 +65,8 @@ related_drafts: [] # 關聯草稿清單
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 - [x] L1 專家技能：`.agents/skills/task-protocol/SKILL.md`, `.agents/skills/token-saver/SKILL.md`
-- [x] L2 模組導航：`1.devtools/README_DEVTOOLS.md`
-- [x] L3 業務規格：`0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`, `0.doc_mg/docs/README_TASK_MANAGER.md`
+- [x] L2 模組導航：`1.devtools/overview-devtools.md`
+- [x] L3 業務規格：`0.doc_mg/docs/guide-token-optimization.md`, `0.doc_mg/docs/guide-task-manager.md`
 - [x] L4 任務生命週期：`0.doc_mg/tasks/archive/global/`
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
@@ -86,15 +86,15 @@ related_drafts: [] # 關聯草稿清單
 - [x] 任務 2.1: 修正與調和 `.agents/skills/task-protocol/SKILL.md` 與 `task_template_v2.md`
     - **動作**: 確保符合 Chrome Plus 3-Gate 開發協議，消除 `doc/doc_task`、`scratch/manage.py` 等外部專案路徑殘留，注入 Probe Cache 與 2-Strike 熔斷機制。
     - **驗證 (Exit 0)**: 內容精確對齊 Chrome Plus 目錄結構與 3-Gate 門禁。
-- [x] 任務 2.2: 修正與調和 `.agents/skills/token-saver/SKILL.md` 與 `0.doc_mg/docs/README_TASK_MANAGER.md`
-    - **動作**: 確保引用路徑為 `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`，並融入四大防火牆概念。
+- [x] 任務 2.2: 修正與調和 `.agents/skills/token-saver/SKILL.md` 與 `0.doc_mg/docs/guide-task-manager.md`
+    - **動作**: 確保引用路徑為 `0.doc_mg/docs/guide-token-optimization.md`，並融入四大防火牆概念。
     - **驗證 (Exit 0)**: SSOT 鏈條無死連結。
 
 > 🏁 **Phase 2 Checkpoint (狀態收斂區)**：
 > - [x] Phase 2 所有單元驗證已通過 (Exit 0)。
 
-### Phase 3: 整合 README_TOKEN_OPTIMIZATION_GUIDE.md 與 Gate 3 自動化驗收 狀態：`[已完成]`
-- [x] 任務 3.1: 全面整合更新 `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md` 與 `1.devtools/README_DEVTOOLS.md`
+### Phase 3: 整合 guide-token-optimization.md 與 Gate 3 自動化驗收 狀態：`[已完成]`
+- [x] 任務 3.1: 全面整合更新 `0.doc_mg/docs/guide-token-optimization.md` 與 `1.devtools/overview-devtools.md`
     - **動作**: 加入 `log_issue.py`, `analyze_task_tokens.py`, `util_archive_manager.py` 的調用時機、效益與範例，建立完整工具矩陣。
     - **驗證 (Exit 0)**: 文檔內容詳盡且無死鏈。
 - [x] 任務 3.2: 執行 Gate 3 整合審計全套件
@@ -104,13 +104,13 @@ related_drafts: [] # 關聯草稿清單
 ## 6. 驗收標準 (Acceptance Criteria)
 - [x] **工具安裝合規**: `1.devtools/tools/` 成功新增 `log_issue.py`, `analyze_task_tokens.py`, `util_archive_manager.py`，且全部工具支援 `--help`。
 - [x] **路徑完全在地化**: 全專案不遺留外部專案 (`masonyang-blog`, `doc/doc_task`) 殘留路徑。
-- [x] **Token 指南整合**: `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md` 包含四大支柱、最新工具矩陣與使用手冊。
+- [x] **Token 指南整合**: `0.doc_mg/docs/guide-token-optimization.md` 包含四大支柱、最新工具矩陣與使用手冊。
 - [x] **全自動審計通過**: `py 1.devtools/tools/audit_suite.py` 審計 100% 通過 (Exit 0)。
 
 ## 7. 狀態收斂歷程 (Condensed History)
 - [2026-10-28] 任務初始化，完成 Gate 1 藍圖鎖定 (Session 1)。
 - [2026-10-28] 完成 Phase 1: 實體安裝與工具鏈驗證 (Exit 0)。
 - [2026-10-28] 完成 Phase 2: Chrome Plus 專案適配與技能規範融合 (Exit 0)。
-- [2026-10-28] 完成 Phase 3: README_TOKEN_OPTIMIZATION_GUIDE.md 整合與 Gate 3 整合審計通過 (Exit 0)。
+- [2026-10-28] 完成 Phase 3: guide-token-optimization.md 整合與 Gate 3 整合審計通過 (Exit 0)。
 
 

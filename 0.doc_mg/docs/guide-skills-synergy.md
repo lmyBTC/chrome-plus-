@@ -277,8 +277,8 @@ sequenceDiagram
   - [任務協議管理規範 (SKILL.md)](.agents/skills/task-protocol/SKILL.md)
   - [專案情報雷達規範 (SKILL.md)](.agents/skills/repo-radar/SKILL.md)
 - **旗艦工程指南**：
-  - [AI 輔助開發極致 Token 節約工程架構與工作流指南](./README_TOKEN_OPTIMIZATION_GUIDE.md)
-  - [3-Gate 任務協議與多會話生命週期管理手冊](./README_TASK_MANAGER.md)
+  - [AI 輔助開發極致 Token 節約工程架構與工作流指南](./guide-token-optimization.md)
+  - [3-Gate 任務協議與多會話生命週期管理手冊](./guide-task-manager.md)
   - [任務範本標準定義 (task_template_v2.md)](0.doc_mg/task_template_v2.md)
 - **底層工具鏈實作**：
   - [專案情報雷達工具](1.devtools/tools/repo_radar.py)

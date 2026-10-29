@@ -27,17 +27,17 @@ related_drafts: []
        - 搬移 `1.devtools/tests/test_google_sheets_exporter.js` ➔ `finance-research-clipper-oss/tests/test_google_sheets_exporter.js`
   3. **測試與全域工具鏈解耦**：
      - 重構 `1.devtools/tests/run_tests.py`：使 `1.devtools` 測試套件專注於 Global 工具（`validate_contract.py` 與 `test_cross_plugin_e2e.py`）。
-     - 更新 `1.devtools/README_DEVTOOLS.md`：移除插件專屬工具，維持乾淨的 Global 開發者工具矩陣。
-  4. **全域引用路徑校正**：校驗並修正所有文檔（`README.md`, `README_USER_MANUAL.md`, `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md`, `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md`, `finance-research-clipper-oss/options.html` 等）對搬移檔案之鏈接。
+     - 更新 `1.devtools/overview-devtools.md`：移除插件專屬工具，維持乾淨的 Global 開發者工具矩陣。
+  4. **全域引用路徑校正**：校驗並修正所有文檔（`README.md`, `guide-user-manual.md`, `0.doc_mg/docs/spec-cross-plugin-contract.md`, `0.doc_mg/docs/guide-gas-deployment.md`, `finance-research-clipper-oss/options.html` 等）對搬移檔案之鏈接。
   5. **自動化審計閉環**：確保 `audit_suite.py --strict`、`audit_ssot.mjs --strict`、`doc_cross_ref.py --audit` 全數 Exit 0。
 - **邊界與假設**：
-  - `1.devtools/scripts/unified_gas_router.gs` 與 `README_GAS_SETUP.md` 屬多插件數據匯流雲端後端，作為跨插件生態之全域雲端部署範本，保留在 `1.devtools/scripts/`。
+  - `1.devtools/scripts/unified_gas_router.gs` 與 `guide-gas-setup.md` 屬多插件數據匯流雲端後端，作為跨插件生態之全域雲端部署範本，保留在 `1.devtools/scripts/`。
   - `chrome_gemini_nano/tools/main_dispatcher.py` 已是完整本機 FastAPI 服務，移除 `1.devtools` 中的轉發 proxy 不會造成功能損失。
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../.agents/rules.md) 及 `../../../1.devtools/README_DEVTOOLS.md`。
-- [x] **全流程工具鏈檢核矩陣 (已遵循 README_TOKEN_OPTIMIZATION_GUIDE.md 強制執行)**：
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../.agents/rules.md) 及 `../../../1.devtools/overview-devtools.md`。
+- [x] **全流程工具鏈檢核矩陣 (已遵循 guide-token-optimization.md 強制執行)**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
   | **Gate 1: 探勘** | `py 1.devtools/tools/code_skeleton.py` / `repo_radar.py` | `py 1.devtools/tools/code_skeleton.py 1.devtools/tools/export_converter.py` ➔ 374行降為51行 | 減少 86.4% 雜訊 |
@@ -53,13 +53,13 @@ related_drafts: []
     - `1.devtools/tests/test_google_sheets_exporter.js` ➔ `finance-research-clipper-oss/tests/test_google_sheets_exporter.js`
   - 需解耦與更新之工具/測試：
     - `1.devtools/tests/run_tests.py`
-    - `1.devtools/README_DEVTOOLS.md`
+    - `1.devtools/overview-devtools.md`
   - 需校正引用之文檔與前端：
     - `README.md`
-    - `README_USER_MANUAL.md`
-    - `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md`
-    - `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md`
-    - `0.doc_mg/docs/README_SSOT.md`
+    - `guide-user-manual.md`
+    - `0.doc_mg/docs/spec-cross-plugin-contract.md`
+    - `0.doc_mg/docs/guide-gas-deployment.md`
+    - `0.doc_mg/docs/index-ssot.md`
     - `finance-research-clipper-oss/options.html`
 - **前置條件 (Prerequisites)**：Git 工作目錄乾淨，`audit_suite.py --compact` 現況通過。
 
@@ -86,11 +86,11 @@ related_drafts: []
 - `finance-research-clipper-oss/scripts/split_dashboard_phase3.py` (新路徑)
 - `finance-research-clipper-oss/tests/test_google_sheets_exporter.js` (新路徑)
 - `1.devtools/tests/run_tests.py` (純化為 Global 測試)
-- `1.devtools/README_DEVTOOLS.md` (純化工具表)
+- `1.devtools/overview-devtools.md` (純化工具表)
 - `README.md` (修正微服務啟動指令)
-- `README_USER_MANUAL.md` (修正微服務啟動指令)
-- `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md` (更新轉譯器路徑)
-- `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md` (更新 GAS 路徑)
+- `guide-user-manual.md` (修正微服務啟動指令)
+- `0.doc_mg/docs/spec-cross-plugin-contract.md` (更新轉譯器路徑)
+- `0.doc_mg/docs/guide-gas-deployment.md` (更新 GAS 路徑)
 - `finance-research-clipper-oss/options.html` (更新提示路徑)
 
 ### 鎖定工具鏈 (Target Devtools)
@@ -104,8 +104,8 @@ related_drafts: []
 
 ### 鎖定 SSOT 回寫清單 (Target SSOTs)
 
-- [x] L2 插件/模組導航：`1.devtools/README_DEVTOOLS.md` (更新工具矩陣)
-- [x] L2 全域導航：`0.doc_mg/docs/README_SSOT.md` (更新索引)
+- [x] L2 插件/模組導航：`1.devtools/overview-devtools.md` (更新工具矩陣)
+- [x] L2 全域導航：`0.doc_mg/docs/index-ssot.md` (更新索引)
 - [x] L4 任務生命週期：`0.doc_mg/tasks/archive/global/` (結案後移動封存歸檔)
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
@@ -134,10 +134,10 @@ related_drafts: []
     - **驗證 (Exit 0)**: 執行 `py 1.devtools/tests/run_tests.py` 全數 PASS (Exit 0)。
 - [x] 任務 2.2: 校正全域文檔與前端 UI 引用
     - **動作**:
-      1. 更新 `README.md` 與 `README_USER_MANUAL.md` 中的微服務啟動指令為 `python chrome_gemini_nano/tools/main_dispatcher.py`。
-      2. 更新 `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md` 中的 `export_converter.py` 路徑。
-      3. 更新 `0.doc_mg/docs/README_GAS_DEPLOYMENT_GUIDE.md` 與 `finance-research-clipper-oss/options.html` 中的 GAS 腳本路徑。
-      4. 更新 `1.devtools/README_DEVTOOLS.md` 工具清單，移除已下沉的工具並強調純粹全域管理定位。
+      1. 更新 `README.md` 與 `guide-user-manual.md` 中的微服務啟動指令為 `python chrome_gemini_nano/tools/main_dispatcher.py`。
+      2. 更新 `0.doc_mg/docs/spec-cross-plugin-contract.md` 中的 `export_converter.py` 路徑。
+      3. 更新 `0.doc_mg/docs/guide-gas-deployment.md` 與 `finance-research-clipper-oss/options.html` 中的 GAS 腳本路徑。
+      4. 更新 `1.devtools/overview-devtools.md` 工具清單，移除已下沉的工具並強調純粹全域管理定位。
     - **驗證 (Exit 0)**: 執行 `py 1.devtools/tools/doc_cross_ref.py --audit` 0 死鏈。
 
 > 🏁 **Phase 2 Checkpoint (狀態收斂區)**：
@@ -149,12 +149,12 @@ related_drafts: []
     - **動作**: 執行 `py 1.devtools/tools/audit_suite.py --compact` 與 `node 1.devtools/tools/audit_ssot.mjs --strict`。
     - **驗證 (Exit 0)**: 全套審計通過，無 CRITICAL / 死鏈報錯。
 - [x] 任務 F.2: SSOT 實體回寫與任務歸檔
-    - **動作**: 更新 `0.doc_mg/docs/README_SSOT.md`，並執行 `py 1.devtools/tools/task_cli.py archive` 完成歸檔。
+    - **動作**: 更新 `0.doc_mg/docs/index-ssot.md`，並執行 `py 1.devtools/tools/task_cli.py archive` 完成歸檔。
     - **驗證 (Exit 0)**: 任務檔移至 `0.doc_mg/tasks/archive/global/`。
 
 > 🏁 **Phase Final Checkpoint (狀態收斂區)**：
 > - [x] 全套自動化審計通過 (Exit 0)，無 CRITICAL / 死鏈報錯。
-> - [x] SSOT 真理源回寫完成 (`0.doc_mg/docs/README_SSOT.md`)。
+> - [x] SSOT 真理源回寫完成 (`0.doc_mg/docs/index-ssot.md`)。
 > - [x] 任務標記已完成並透過 `task_cli.py archive` 歸檔封存。
 
 ## 5. 事前驗屍與降級方案 (Pre-Mortem & Fallback)
@@ -180,7 +180,7 @@ related_drafts: []
 - [2026-10-28] [Gate 1]: 完成職責盤點與邊界分析，建立任務藍圖與防護清單，完成規範升級適配 (Session 1)。
 - [2026-10-28] [Phase 1]: 完成 finance-research-clipper-oss 工具/腳本/測試下沉與 main_dispatcher proxy 廢除，單元驗證 5/5 全數通過 (Session 2)。
 - [2026-10-28] [Phase 2]: 純化 run_tests.py 全域測試套件；校正全專案 README、手冊、合約、GAS 與 options.html 引用；完成 .repo_index.json 快取同步與 doc_cross_ref 零死鏈驗證 (Session 3)。
-- [2026-10-28] [Phase Final]: 通過全套門禁審計 (audit_suite / audit_ssot / doc_cross_ref)，回寫 README_SSOT.md，標記完成並執行 task_cli.py archive 歸檔 (Session 4)。
+- [2026-10-28] [Phase Final]: 通過全套門禁審計 (audit_suite / audit_ssot / doc_cross_ref)，回寫 index-ssot.md，標記完成並執行 task_cli.py archive 歸檔 (Session 4)。
 
 ## 8. AI 簽到區與會話接力
 > [x] 我已閱讀並承諾遵守「task-protocol」技能中之 3-Gate Protocol、探勘硬窄化與動態狀態收斂規範。

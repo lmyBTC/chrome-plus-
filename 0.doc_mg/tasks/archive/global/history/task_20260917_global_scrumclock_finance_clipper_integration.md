@@ -62,7 +62,7 @@ deadline: "2026-09-30"
 - **模組解耦**：各階段具備清晰依賴關係，Phase 1 完成後可獨立推進 Phase 2 或 Phase 3。
 - **邊界隔離鐵律 (Zero Cross-Pollution)**：
   1. **AI 視野隔離**：開發個別插件時禁止跨目錄讀取無關代碼，杜絕 Token 浪費與代碼幻覺。
-  2. **黑盒契約通訊**：跨插件協同僅依賴 `0.doc_mg/docs/README_CROSS_PLUGIN_CONTRACT.md`，把對端視為遠端 API。
+  2. **黑盒契約通訊**：跨插件協同僅依賴 `0.doc_mg/docs/spec-cross-plugin-contract.md`，把對端視為遠端 API。
   3. **資料與儲存實體隔離**：不共用 DB、不共享 storage，單向只讀快照傳遞。
   4. **可選外掛與優雅降級**：任一插件未安裝或當機，不得影響自身核心功能運作。
 

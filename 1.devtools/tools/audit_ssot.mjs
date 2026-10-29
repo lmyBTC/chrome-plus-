@@ -1,17 +1,17 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * 1.devtools/tools/audit_ssot.mjs
  * Chrome Plus - SSOT 靜態合規與真理防腐審計器 (SSOT Governance & Integrity Auditor)
  *
  * 核心職責:
- * 1. [Catalog Integrity] 解析 0.doc_mg/docs/README_SSOT.md 索引，校驗所有登錄檔案於磁碟實體存在性。
- * 2. [Orphan Discovery] 全域掃描 README_*.md 與 SKILL.md，揪出未在 README_SSOT.md 登記的孤兒真理源。
+ * 1. [Catalog Integrity] 解析 0.doc_mg/docs/index-ssot.md 索引，校驗所有登錄檔案於磁碟實體存在性。
+ * 2. [Orphan Discovery] 全域掃描 README_*.md 與 SKILL.md，揪出未在 index-ssot.md 登記的孤兒真理源。
  * 3. [Naming Guard] 檢查全域子目錄是否殘留非標準之裸名 README.md 或中文 Markdown 檔名。
  * 4. [Task Sentinel] 支援 --task-check 與 90/10 閉環審查：檢核任務檔 SSOT 鎖定清單，比對 Git 核心異動。
  *
  * 規範依據:
  * - GEMINI.md (專案最高憲法 - 4-Gate Protocol & SSOT 文檔閉環 90/10 分級原則)
- * - 0.doc_mg/docs/README_SSOT.md (全局真理源總索引)
+ * - 0.doc_mg/docs/index-ssot.md (全局真理源總索引)
  *
  * 用法範例:
  *   node 1.devtools/tools/audit_ssot.mjs              # 標準彩色報告
@@ -184,36 +184,36 @@ function runAudit() {
   const issues = [];
   const warnings = [];
 
-  const ssotIndexPath = resolve(REPO_ROOT, '0.doc_mg', 'docs', 'README_SSOT.md');
+  const ssotIndexPath = resolve(REPO_ROOT, '0.doc_mg', 'docs', 'index-ssot.md');
   if (!existsSync(ssotIndexPath)) {
     return {
       status: 'FAIL',
       exitCode: 1,
-      summary: 'CRITICAL: 未找到 0.doc_mg/docs/README_SSOT.md 總索引文件',
-      details: { issues: ['缺少 README_SSOT.md'], warnings: [] }
+      summary: 'CRITICAL: 未找到 0.doc_mg/docs/index-ssot.md 總索引文件',
+      details: { issues: ['缺少 index-ssot.md'], warnings: [] }
     };
   }
 
   const ssotContent = readFileSync(ssotIndexPath, 'utf-8');
   const catalogedLinks = extractMarkdownFileLinks(ssotContent, ssotIndexPath);
 
-  // 1. Catalog Integrity 檢驗：檢查 README_SSOT.md 中登記之文件是否存在
+  // 1. Catalog Integrity 檢驗：檢查 index-ssot.md 中登記之文件是否存在
   const catalogedFileSet = new Set();
-  catalogedFileSet.add('0.doc_mg/docs/readme_ssot.md'); // SSOT 總索引自身天然屬合規入口
+  catalogedFileSet.add('0.doc_mg/docs/index-ssot.md'); // SSOT 總索引自身天然屬合規入口
 
   for (const item of catalogedLinks) {
     const rel = toRelPosix(item.resolvedPath);
     catalogedFileSet.add(rel.toLowerCase());
 
     if (!existsSync(item.resolvedPath)) {
-      issues.push(`[索引死鏈] README_SSOT.md 登記的檔案不存在: ${item.rawTarget} -> ${rel}`);
+      issues.push(`[索引死鏈] index-ssot.md 登記的檔案不存在: ${item.rawTarget} -> ${rel}`);
     }
   }
 
-  // 2. Orphan SSOT 掃描：檢查專案內所有 README_*.md 與 SKILL.md 是否皆已登記在 README_SSOT.md
+  // 2. Orphan SSOT 掃描：檢查專案內所有 README_*.md 與 SKILL.md 是否皆已登記在 index-ssot.md
   const allMdFiles = walkDir(REPO_ROOT, (filePath) => {
     const name = basename(filePath);
-    return (name.startsWith('README_') && name.endsWith('.md')) || name === 'SKILL.md';
+    if (!name.endsWith('.md')) return false; return name.startsWith('spec-') || name.startsWith('guide-') || name.startsWith('matrix-') || name.startsWith('flow-') || name.startsWith('overview-') || name === 'SKILL.md';
   });
 
   const orphanFiles = [];
@@ -229,7 +229,7 @@ function runAudit() {
 
   if (orphanFiles.length > 0) {
     for (const orphan of orphanFiles) {
-      issues.push(`[孤兒真理源] 檔案實體存在但未登錄至 README_SSOT.md: ${orphan}`);
+      issues.push(`[孤兒真理源] 檔案實體存在但未登錄至 index-ssot.md: ${orphan}`);
     }
   }
 
@@ -241,7 +241,7 @@ function runAudit() {
     if (rel === 'README.md') return false;
     // 草稿與任務目錄略過
     if (NAMING_IGNORED_PATH_PREFIXES.some(prefix => rel.startsWith(prefix))) return false;
-    return name.toLowerCase() === 'readme.md' || (name.endsWith('.md') && /[\u4e00-\u9fa5]/.test(name));
+    const isBare = name.toLowerCase() === 'readme.md'; const isLegacy = name.startsWith('README_') && name.endsWith('.md'); const hasZh = name.endsWith('.md') && /[\u4e00-\u9fa5]/.test(name); return isBare || isLegacy || hasZh;
   });
 
   if (bareReadmes.length > 0) {

@@ -1,6 +1,6 @@
 # Gate 1 探勘持久化快取：三大專家技能綜效使用流程方案 (The Triad Synergy Feature Doc)
 
-- **目標文檔**：`0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md`
+- **目標文檔**：`0.doc_mg/docs/guide-skills-synergy.md`
 - **對應技能**：
   1. `.agents/skills/token-saver/SKILL.md` (Token 節省器)
   2. `.agents/skills/task-protocol/SKILL.md` (任務協議管理)

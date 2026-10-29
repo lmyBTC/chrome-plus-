@@ -32,17 +32,17 @@
 chrome-plus-/
 ├── 0.doc_mg/                               # [架構文檔、技術規範與極致減耗工具庫]
 │   ├── docs/                               # 核心架構、規範與中央 SSOT 地圖
-│   │   ├── SSOT_README.md                  # [中央導航] 0.doc_mg 全域 SSOT 地圖與文檔總覽
-│   │   ├── cross_plugin_contract.md        # 跨插件黑盒通訊契約 (v2.2 矩陣通訊規格)
-│   │   ├── dev_standards.md                # 網頁與 Chrome 插件開發技術標準 (SSOT)
-│   │   ├── token_optimization_guide.md     # 全域 Token 節約與工程減耗指南 (SSOT)
-│   │   ├── task_manager.md                 # 任務協議管理與 4-Gate 研發流程規範 (SSOT)
-│   │   ├── google_ecosystem_integration_spec.md # Google 生態雙軌串接規格書 (SSOT)
-│   │   ├── versioning_spec.md              # 全專案版本號管理與發布合規規範 (SSOT)
-│   │   ├── repo_radar_ai_prompt_instructions.md # AI 助理高信噪比專案檢索指示規範
-│   │   ├── gas_deployment_guide.md         # GAS 部署與雲端同步操作指南
-│   │   ├── analyst_workflow_friction_matrix.md # 投研員高頻工作流摩擦力與落地場景矩陣
-│   │   └── pm_workflow_friction_matrix.md  # 專案經理衝刺工作流摩擦力矩陣
+│   │   ├── index-ssot.md                   # [中央導航] 全域 SSOT 地圖與文檔總覽
+│   │   ├── spec-cross-plugin-contract.md        # 跨插件黑盒通訊契約 (v2.2 矩陣通訊規格)
+│   │   ├── spec-dev-standards.md                # 網頁與 Chrome 插件開發技術標準 (SSOT)
+│   │   ├── guide-token-optimization.md     # 全域 Token 節約與工程減耗指南 (SSOT)
+│   │   ├── guide-task-manager.md                 # 任務協議管理與 4-Gate 研發流程規範 (SSOT)
+│   │   ├── spec-google-ecosystem.md # Google 生態雙軌串接規格書 (SSOT)
+│   │   ├── spec-versioning.md              # 全專案版本號管理與發布合規規範 (SSOT)
+│   │   ├── guide-repo-radar.md # AI 助理高信噪比專案檢索指示規範
+│   │   ├── guide-gas-deployment.md         # GAS 部署與雲端同步操作指南
+│   │   ├── matrix-analyst-friction.md # 投研員高頻工作流摩擦力與落地場景矩陣
+│   │   └── matrix-pm-friction.md  # 專案經理衝刺工作流摩擦力矩陣
 │   ├── tasks/                              # 實作工作看板與任務生命週期 (Kanban & Lifecycle)
 │   │   ├── task_20261020_update_readme_and_usage_guide.md # 當前執行中任務看板
 │   │   └── archive/                        # 已結案歷史任務封存歸檔 (依模組分類)

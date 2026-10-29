@@ -27,7 +27,7 @@ deadline: "2026-09-18"
 3. 專案管理與進行中文檔：
    - `0.doc_mg/task_manager.md`
    - `0.doc_mg/chrome_agent_optimization.md`
-   - `0.doc_mg/scripts/README_GAS_SETUP.md`
+   - `0.doc_mg/scripts/guide-gas-setup.md`
    - `0.doc_mg/tasks/task_20260917_global_scrumclock_finance_clipper_integration.md`
 4. 插件內說明文檔（現存寫入絕對路徑處）：
    - `chrome_scrumclock/docs/README.md`

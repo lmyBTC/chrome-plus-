@@ -17,7 +17,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 - **用戶原始需求 (True Intent)**：
   將 `.agents\skills\token-saver`、`.agents\skills\task-protocol`、`.agents\skills\repo-radar` 的綜效使用流程方案撰寫成一份 feature 說明文檔記錄在 `0.doc_mg\docs`。
 - **核心目標**：
-  1. 產出 `0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md`，深度梳理三大專家技能之定位、職責分工與三位一體協同架構 (The Dev Triad)。
+  1. 產出 `0.doc_mg/docs/guide-skills-synergy.md`，深度梳理三大專家技能之定位、職責分工與三位一體協同架構 (The Dev Triad)。
   2. 定義端到端完整生命週期（Gate 1 探勘硬窄化 ➔ Gate 2 分段原子執行與日誌脫水 ➔ Gate 3 自動化驗收審計與閉環）。
   3. 提供指令調用矩陣速查表、傳統 vs 綜效 Token 消耗實測對比表（節省率 80%~95%）。
   4. 確立開發者與 AI 實戰最佳實踐與反模式防護。
@@ -26,7 +26,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `.agents/skills/token-saver/SKILL.md`、`.agents/skills/task-protocol/SKILL.md`、`.agents/skills/repo-radar/SKILL.md`、`0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`、`0.doc_mg/docs/README_TASK_MANAGER.md`。
+- **SSOT 規範查閱**：已查閱 `.agents/skills/token-saver/SKILL.md`、`.agents/skills/task-protocol/SKILL.md`、`.agents/skills/repo-radar/SKILL.md`、`0.doc_mg/docs/guide-token-optimization.md`、`0.doc_mg/docs/guide-task-manager.md`。
 - [x] **全流程工具鏈強制檢核矩陣 (Tool Invocation Matrix / Token Guard - 實證制)**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |
@@ -35,7 +35,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
   | **Gate 3: 驗收** | `py 1.devtools/tools/audit_suite.py --compact` | 合規與死鏈自動化審計全項 Exit 0 | Exit 0 |
 - **Gate 1 探勘持久化快取 (Probe Cache)**：`0.doc_mg/tasks/tmp/tmp_probe_write_skills_synergy_workflow_feature_doc.md`
 - **影響範圍地圖 (Entity Map)**：
-  - `0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md` (全新綜效說明文檔)
+  - `0.doc_mg/docs/guide-skills-synergy.md` (全新綜效說明文檔)
 - **前置條件 (Prerequisites)**：探勘快取已建立，三位一體協同骨架與章節規劃已就緒。
 
 ## 3. 策略與架構防護 (Strategy & Guardrails)
@@ -46,7 +46,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 
 ### 鎖定檔案 (Target Files)
 
-- `0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md` (新增功能說明文檔)
+- `0.doc_mg/docs/guide-skills-synergy.md` (新增功能說明文檔)
 
 ### 鎖定工具鏈 (Target Devtools)
 
@@ -65,13 +65,13 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 
 ## 4. 任務拆解與連續驗證 (Atomic Execution & Continuous Validation)
 
-### Phase 1: 撰寫三大技能綜效使用流程說明文檔 `README_SKILLS_SYNERGY_WORKFLOW.md` 狀態：`[已完成]`
+### Phase 1: 撰寫三大技能綜效使用流程說明文檔 `guide-skills-synergy.md` 狀態：`[已完成]`
 - [x] 任務 1.1 `[Blocker]`: 梳理三大技能交集架構、資訊流與責任邊界
     - **動作**: 依據探勘快取 `tmp_probe_write_skills_synergy_workflow_feature_doc.md` 建立完整大綱與架構圖 (Mermaid)。
     - **驗證 (Exit 0 / 客觀指標)**: 涵蓋司令官 (task-protocol)、偵察兵 (repo-radar)、防衛節流官 (token-saver) 三位一體定義。
 - [x] 任務 1.2: 撰寫端到端 3-Gate 完整綜效流水線與工具呼叫矩陣
     - **動作**: 詳細定義 Gate 1 (探勘快取)、Gate 2 (零探索開工 + 80~150行語意讀取 + 50~80行語意替換 + 90%+日誌脫水 + 2-Strike 熔斷)、Gate 3 (Exit 0 靜音審計 + 符號快取更新 + 90/10 SSOT 歸檔) 全流程，並附上命令對照表與 Token 節省實測對比。
-    - **驗證 (Exit 0 / 客觀指標)**: 產出完整文檔 `0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md` (UTF-8 NO BOM)。
+    - **驗證 (Exit 0 / 客觀指標)**: 產出完整文檔 `0.doc_mg/docs/guide-skills-synergy.md` (UTF-8 NO BOM)。
 
 > 🏁 **Phase 1 Checkpoint (狀態收斂區)**：
 > - [x] 階段所有單元驗證已通過 (Exit 0)。
@@ -103,7 +103,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
   - [x] **合規與合約審計**: 若涉及文檔變更，已執行自動審計腳本 (`audit_suite.py --compact`) 確保通過。
 - [x] **四層 SSOT 閉環 (90/10 分級)**:
   - [x] [N/A] 輕量任務豁免 (無結構變動，L1~L3 免比對免回寫)
-  - [x] 重大架構同步完成 (README_SKILLS_SYNERGY_WORKFLOW.md 已登錄至 README_SSOT.md 索引，audit_ssot.mjs 排除 pack v2)
+  - [x] 重大架構同步完成 (guide-skills-synergy.md 已登錄至 index-ssot.md 索引，audit_ssot.mjs 排除 pack v2)
   - [x] L4 任務生命週期: 任務結案後已執行 `task_cli.py archive` 移動至 `0.doc_mg/tasks/archive/` 歸檔緩衝區
 - [x] **除錯清理**: 已確認工作區無多餘臨時腳本殘留。
 - [x] **檔案編碼**: 確認所有修改與新增的檔案皆以 UTF-8 (無 BOM) 編碼保存。
@@ -125,7 +125,7 @@ related_drafts: [] # 關聯草稿清單 (例如: ["0.doc_mg/draft/xxx.md"])
 > - `repo_radar.py`: 對三大技能 SKILL.md 與現有 docs 進行大綱與切片提取，節省 ~12k Tokens
 > - `task_cli.py init`: 初始化任務檔並自動納入 git 版本防護
 > - `write_file`: 產出探勘持久化快取 `tmp_probe_write_skills_synergy_workflow_feature_doc.md`
-> - `write_file`: 全新建立 `0.doc_mg/docs/README_SKILLS_SYNERGY_WORKFLOW.md` (UTF-8 NO BOM)
+> - `write_file`: 全新建立 `0.doc_mg/docs/guide-skills-synergy.md` (UTF-8 NO BOM)
 > - `audit_markdown_links.py`: 掃描並自動修復脆弱連結，達成 0 死鏈 (Exit 0)
 > - `audit_suite.py --compact`: 全站 6 大門禁審計 Exit 0
 > - `task_cli.py archive`: 任務移入歸檔緩衝區完成閉環

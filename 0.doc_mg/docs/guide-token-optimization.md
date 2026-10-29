@@ -233,8 +233,8 @@
   * 專案情報雷達：`.agents/skills/repo-radar/SKILL.md`
   * 插件合規審計：`.agents/skills/chrome-auditor/SKILL.md`
 * **指針與指南文檔**：
-  * 開發工具鏈矩陣：`1.devtools/README_DEVTOOLS.md`
-  * 任務管理核心指南：`0.doc_mg/docs/README_TASK_MANAGER.md`
-  * 專案 SSOT 單一真理源架構：`0.doc_mg/docs/README_SSOT.md`
-  * 情報雷達提問指引：`0.doc_mg/docs/README_REPO_RADAR_PROMPTS.md`
+  * 開發工具鏈矩陣：`1.devtools/overview-devtools.md`
+  * 任務管理核心指南：`0.doc_mg/docs/guide-task-manager.md`
+  * 專案 SSOT 單一真理源架構：`0.doc_mg/docs/index-ssot.md`
+  * 情報雷達提問指引：`0.doc_mg/docs/guide-repo-radar.md`
   * 任務協議實體套件手冊：`task_protocol_pack/README.md`

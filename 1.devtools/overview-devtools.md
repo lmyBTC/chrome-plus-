@@ -125,9 +125,9 @@
 ## 3. 相關專家技能與業務指引
 
 - **任務協議技能**：`.agents/skills/task-protocol/SKILL.md`
-- **任務管理指引**：`0.doc_mg/docs/README_TASK_MANAGER.md`
+- **任務管理指引**：`0.doc_mg/docs/guide-task-manager.md`
 - **專案情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`
-- **檢索決策樹指引**：`0.doc_mg/docs/README_REPO_RADAR_PROMPTS.md`
+- **檢索決策樹指引**：`0.doc_mg/docs/guide-repo-radar.md`
 - **Manifest 合規審計技能**：`.agents/skills/chrome-auditor/SKILL.md`
 - **Token 節省工程技能**：`.agents/skills/token-saver/SKILL.md`
-- **Token 節省工程指南**：`0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`
+- **Token 節省工程指南**：`0.doc_mg/docs/guide-token-optimization.md`

@@ -3,12 +3,12 @@ name: Token 節省器 (RTK Token Saver)
 description: 指導 Agent 在終端執行、檔案讀寫與會話管理中最大化節省 Token，涵蓋 rtk 包裝、代碼骨架提煉、日誌脫水、局部讀寫、會話重置與自動化審計。
 triggers: [節省Token, 壓縮輸出, 優化指令, 使用rtk, token優化, 執行終端, 指令節省, rtk指令, 終端優化, 局部讀取, 精準寫入, 會話重置, 代碼骨架, 骨架提煉, code_skeleton, 日誌脫水, compact_log, 水位分析, analyze_task_tokens, 情報雷達, repo_radar]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md", ".agents/rules.md"]
+ssot_dependencies: ["0.doc_mg/docs/guide-token-optimization.md", ".agents/rules.md"]
 ---
 
 # 專家技能：Token 節省器 (RTK Token Saver - Chrome Plus v3.2 旗艦版)
 
-你負責在專案開發過程中，透過 `rtk` (Rust Token Killer) 工具、程式碼骨架化、終端日誌脫水與會話物理隔絕，最大化節省 LLM Token 消耗。詳細架構哲學與工具矩陣詳見 `0.doc_mg/docs/README_TOKEN_OPTIMIZATION_GUIDE.md`。
+你負責在專案開發過程中，透過 `rtk` (Rust Token Killer) 工具、程式碼骨架化、終端日誌脫水與會話物理隔絕，最大化節省 LLM Token 消耗。詳細架構哲學與工具矩陣詳見 `0.doc_mg/docs/guide-token-optimization.md`。
 
 ## 1. 指令改寫規範 (RTK 與日誌脫水)
 當你需要使用 `run_command` 執行終端指令時，**必須** 優先評估是否可以使用 `rtk` 包裝。
