@@ -203,3 +203,23 @@ PK+ 作為 Chrome Plus 系統核心能力中樞 (Hub，ID: `ahiihabnbjeoeneahcgb
 2. **通訊採黑盒模式**: 如需更新財務功能，僅參照 `0.doc_mg/docs/cross_plugin_contract.md` 介面協定。
 3. **安全優雅降級**: 若 FinanceClipper 未安裝，`WatchListWidget` 自動顯示離線或佔位提示，保證番茄鐘核心流程 100% 正常。
 
+
+
+---
+
+## 🛠️ 9. 微工具鷹架與架構防腐工具鏈 (Toolchain & Scaffolding)
+
+為落實四層領域架構與側邊欄隨選微工具（Pluggable Micro-Tools）自包含協議，提供以下開箱即用之 Devtools：
+
+1. **一鍵微工具鷹架 (`scaffold_tool.py`)**：
+   - 快速生成微工具標準 4 件套（`manifest.ts`、`ToolView.tsx`、`index.ts`、`types.ts`）並自動安全掛載至 `src/features/toolbox/registry.ts`。
+   - 指令範例：`py 1.devtools/tools/scaffold_tool.py --plugin chrome_pk --id <id> --name "<名稱>" --category <分類>`
+   - 支援 `--dry-run` 預覽與 `--remove` 安全卸載清理。
+2. **領域架構防腐與 Barrel 門面審查器 (`audit_arch_boundary.py`)**：
+   - 靜態語法解析檢查 `RULE_ARCH_SHARED_PURITY`（底層反向引用）、`RULE_ARCH_BARREL_PENETRATION`（跨 Feature 私有穿透）與 `RULE_ARCH_MICRO_TOOL_ISOLATION`（微工具私有交叉引用）。
+   - 指令範例：`py 1.devtools/tools/audit_arch_boundary.py --plugin chrome_pk --compact`
+3. **微工具清冊自動審驗與同步器 (`sync_toolbox_registry.py`)**：
+   - 比對實體目錄與 `registry.ts`，檢查孤兒/幽靈工具與 Manifest 協議合規性；支援 `--fix` 自動重新構建同步。
+   - 指令範例：`py 1.devtools/tools/sync_toolbox_registry.py --plugin chrome_pk --fix`
+4. **全域審計整合**：
+   - 已無縫納入全域驗收：`py 1.devtools/tools/audit_suite.py --compact` (Suite 8 & Suite 9)。

@@ -6,7 +6,7 @@ Chrome Plus - Gate 3 整合自動化審計套件 (Gate 3 Automated Audit Suite)
 
 核心職責:
 - 整合調用全站品質與架構門禁工具，提供一鍵全自動 Gate 3 檢驗。
-- 涵蓋 7 大核心門禁:
+- 涵蓋 9 大核心門禁:
   1. Manifest V3 合規性與安全審計 (audit_manifests.py)
   2. 多插件邊界與實體隔離防衛 (audit_plugin_isolation.py)
   3. Markdown 連結、死鏈與路徑規範 (audit_markdown_links.py)
@@ -14,6 +14,8 @@ Chrome Plus - Gate 3 整合自動化審計套件 (Gate 3 Automated Audit Suite)
   5. 規則與文檔 Token 預算健康度 (audit_token_usage.py)
   6. SSOT 規範與真理防腐審計 (audit_ssot.mjs)
   7. 跨插件黑盒契約驗證 (validate_contract.py)
+  8. 四層架構防腐與 Barrel 門面審查 (audit_arch_boundary.py)
+  9. 微工具清冊同步與協議校驗 (sync_toolbox_registry.py)
 - 提供極簡緊湊終端矩陣、JSON 結構化輸出與 strict 嚴格中斷模式。
 - 100% Python 3 原生標準庫，完全相容 Windows PowerShell 與 UTF-8 環境。
 
@@ -340,6 +342,70 @@ class SuiteRunner:
             "stdout": output,
             "stderr": res.stderr.strip()
         }
+    def audit_arch_boundary(self) -> Dict[str, Any]:
+        """[Suite 8] 四層架構防腐與 Barrel 門面審查 (audit_arch_boundary.py)"""
+        t0 = time.perf_counter()
+        script = DEVTOOLS_DIR / "audit_arch_boundary.py"
+        cmd = [str(script), "--plugin", "chrome_pk", "--compact"]
+        if self.strict:
+            cmd.append("--strict")
+        res = self._run_cmd(cmd)
+        elapsed = time.perf_counter() - t0
+
+        output = res.stdout.strip()
+        passed = (res.returncode == 0)
+        status = "PASS" if passed else "FAIL"
+
+        summary = "四層領域邊界 100% 合規，無私有路徑穿透"
+        if output:
+            summary = output.splitlines()[-1]
+        if not passed:
+            summary = "偵測到違反四層架構反向依賴或跨 Feature 穿透"
+
+        return {
+            "id": "arch_boundary",
+            "name": "四層架構防腐與門面審查",
+            "status": status,
+            "exit_code": res.returncode,
+            "elapsed": elapsed,
+            "summary": summary,
+            "stdout": output,
+            "stderr": res.stderr.strip()
+        }
+
+    def audit_toolbox_registry(self) -> Dict[str, Any]:
+        """[Suite 9] 微工具清冊同步與協議校驗 (sync_toolbox_registry.py)"""
+        t0 = time.perf_counter()
+        script = DEVTOOLS_DIR / "sync_toolbox_registry.py"
+        cmd = [str(script), "--plugin", "chrome_pk", "--compact"]
+        if self.strict:
+            cmd.append("--strict")
+        if self.fix:
+            cmd = [str(script), "--plugin", "chrome_pk", "--fix"]
+        res = self._run_cmd(cmd)
+        elapsed = time.perf_counter() - t0
+
+        output = res.stdout.strip()
+        passed = (res.returncode == 0)
+        status = "PASS" if passed else "FAIL"
+
+        summary = "微工具清冊 100% 同步且協議合規"
+        if output:
+            summary = output.splitlines()[-1]
+        if not passed:
+            summary = "偵測到孤兒工具、幽靈工具或清冊不一致"
+
+        return {
+            "id": "toolbox_registry",
+            "name": "微工具清冊同步與協議",
+            "status": status,
+            "exit_code": res.returncode,
+            "elapsed": elapsed,
+            "summary": summary,
+            "stdout": output,
+            "stderr": res.stderr.strip()
+        }
+
 
 
 def format_table(results: List[Dict[str, Any]], total_elapsed: float, strict: bool) -> str:
@@ -400,7 +466,7 @@ def main() -> int:
     parser.add_argument("--fix", action="store_true", help="連動修復支援修復之項目 (如 Markdown 連結)")
     parser.add_argument(
         "--only", nargs="+",
-        choices=["manifests", "isolation", "markdown_links", "cross_ref", "token_usage", "ssot", "contract"],
+        choices=["manifests", "isolation", "markdown_links", "cross_ref", "token_usage", "ssot", "contract", "arch_boundary", "toolbox_registry"],
         help="僅執行指定的審計子項"
     )
 
@@ -415,7 +481,9 @@ def main() -> int:
         ("cross_ref", runner.audit_cross_ref),
         ("token_usage", runner.audit_token_usage),
         ("ssot", runner.audit_ssot),
-        ("contract", runner.audit_contract)
+        ("contract", runner.audit_contract),
+        ("arch_boundary", runner.audit_arch_boundary),
+        ("toolbox_registry", runner.audit_toolbox_registry)
     ]
 
     if args.only:

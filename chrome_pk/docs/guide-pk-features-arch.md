@@ -154,12 +154,14 @@ export const TOOL_REGISTRY: IToolManifest[] = [
 
 1. **Step 1：層級定位判定**
    - 具有獨立工作流程、全域導航與複雜狀態的旗艦功能？ ➔ 在 `src/features/` 下建立領域目錄。
-   - 屬於實用小工具、轉換器、分析輔助或隨選功能？ ➔ 在 `src/features/toolbox/tools/` 下建立微工具目錄。
-2. **Step 2：遵守自包含範式 (Self-Containment)**
-   - 建立該目錄的 `index.ts`、`types.ts` 與核心視圖，並就地封裝私有邏輯。
+   - 屬於實用小工具、轉換器、分析輔助或隨選功能？ ➔ 在 `src/features/toolbox/tools/` 下建立微工具目錄（或使用一鍵鷹架生成器）。
+2. **Step 2：一鍵鷹架或自包含範式 (Self-Containment)**
+   - **推薦方式 (一鍵鷹架)**：使用 `py 1.devtools/tools/scaffold_tool.py --plugin chrome_pk --id <tool-id> --name "<顯示名稱>" --category <分類>`，將自動生成四件套並掛載至 `registry.ts`。
+   - **手動方式**：建立該目錄的 `manifest.ts`、`{PascalName}View.tsx`、`index.ts` 與 `types.ts`，並就地封裝私有邏輯。
    - 確保不向外部暴露任何未經 `index.ts` 導出的內部組件或工具函式。
 3. **Step 3：無侵入掛載與註冊**
-   - 若為微工具，至 `src/features/toolbox/registry.ts` 引入並加入 `TOOL_REGISTRY`。
+   - 若為微工具，確認 `src/features/toolbox/registry.ts` 已完成引入並加入 `TOOL_REGISTRY`（鷹架會自動完成；亦可執行 `sync_toolbox_registry.py` 自動校驗與同步）。
+   - 執行架構審查 `py 1.devtools/tools/audit_arch_boundary.py --plugin chrome_pk --compact` 驗證合規。
    - 啟動開發伺服器驗證，完畢即完成擴充。
 
 ---
@@ -175,3 +177,45 @@ export const TOOL_REGISTRY: IToolManifest[] = [
 - **Phase 3 (基礎層整理與路徑別名固化)**：
   - 將散落的 `core/`、`services/` 按職責收斂至 `shared/`。
   - 確保所有跨模組匯入皆遵循 `@/features/*` 與 `@/shared/*` 別名。
+
+---
+
+## 7. 工具鏈自動化與架構防腐指令 (Devtools & Boundary Audits)
+
+為維護四層架構完整性與微工具外掛生態的純淨度，本專案提供專屬自動化工具鏈（位於 `1.devtools/tools/`）：
+
+### 7.1 微工具一鍵鷹架生成器 (`scaffold_tool.py`)
+自動生成微工具標準 4 件套（`manifest.ts`、`ToolView.tsx`、`index.ts`、`types.ts`）並自動寫入 `registry.ts`：
+```bash
+# 生成新微工具
+py 1.devtools/tools/scaffold_tool.py --plugin chrome_pk --id json-formatter --name "JSON 格式化工具" --category dev --icon Braces
+
+# 預覽生成檔案與掛載更動 (Dry-Run)
+py 1.devtools/tools/scaffold_tool.py --plugin chrome_pk --id json-formatter --dry-run
+
+# 卸載並還原微工具與註冊表
+py 1.devtools/tools/scaffold_tool.py --plugin chrome_pk --id json-formatter --remove
+```
+
+### 7.2 領域架構防腐與 Barrel 門面審查器 (`audit_arch_boundary.py`)
+嚴格審查單插件內部四層領域架構，杜絕跨 Feature 私有穿透與底層反向依賴：
+```bash
+# 審查指定插件架構邊界 (Exit 0 / 1 門禁)
+py 1.devtools/tools/audit_arch_boundary.py --plugin chrome_pk --compact
+
+# 防腐三大規則：
+# 1. RULE_ARCH_SHARED_PURITY: shared/ 與 core/ 嚴禁反向引用 features/
+# 2. RULE_ARCH_BARREL_PENETRATION: 跨 feature 引用僅允許透過 @/features/<feat> 之 index.ts 門面
+# 3. RULE_ARCH_MICRO_TOOL_ISOLATION: 各微工具 tools/<id>/ 彼此獨立隔離，嚴禁私有交叉引用
+```
+
+### 7.3 微工具清冊自動審驗與同步器 (`sync_toolbox_registry.py`)
+確保實體微工具目錄與 `registry.ts` 註冊表 100% 同步且 Manifest 協議合規：
+```bash
+# 唯讀審驗清冊一致性
+py 1.devtools/tools/sync_toolbox_registry.py --plugin chrome_pk --compact
+
+# 一鍵重新掃描所有微工具並自動生成乾淨的 registry.ts
+py 1.devtools/tools/sync_toolbox_registry.py --plugin chrome_pk --fix
+```
+（註：以上審查器均已整合入 `audit_suite.py` 全域自動化門禁）
