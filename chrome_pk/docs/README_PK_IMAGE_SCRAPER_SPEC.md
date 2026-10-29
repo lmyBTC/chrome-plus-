@@ -1,7 +1,7 @@
 # 網頁圖片爬取與批量下載器 (Image Scraper) 功能規格說明書
 
 > **文件路徑**: `chrome_scrumclock/docs/image-scraper-spec.md`  
-> **維護指南**: [`src/features/toolbox/tools/image-scraper/README_PK_TOOL_IMAGE_SCRAPER.md`](../src/features/toolbox/tools/image-scraper/README_PK_TOOL_IMAGE_SCRAPER.md)  
+> **維護指南**: `chrome_pk/src/features/toolbox/tools/image-scraper/README_PK_TOOL_IMAGE_SCRAPER.md`  
 > **最後更新**: 2026-09-12 (新增：Instagram 影片與 DASH 串流解析攻克、官方 1080p MP4 直採與擴充套件原生串流下載)
 
 ---

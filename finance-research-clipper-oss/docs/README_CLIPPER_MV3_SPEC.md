@@ -6,7 +6,7 @@
 
 ## **1. 檔案架構與核心模組速查 (File Map)**
 
-專案目錄：[`finance-research-clipper-oss`](../)
+專案目錄：`finance-research-clipper-oss`
 
 | 檔案路徑 | 核心職責 | 關鍵函式 / 元素 ID |
 | :--- | :--- | :--- |

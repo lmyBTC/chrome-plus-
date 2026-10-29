@@ -22,30 +22,29 @@ import re
 import argparse
 from typing import List, Dict, Any, Optional, Tuple
 
-# 強制標準輸出為 UTF-8，解決 Windows 控制台下的編碼報錯問題
-if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8')
-elif sys.stdout.encoding != 'utf-8':
-    try:
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    except Exception:
-        pass
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
 
+from lib.common import setup_utf8_output, REPO_ROOT, get_active_task, TASKS_DIR
+
+# 強制標準輸出為 UTF-8，解決 Windows 控制台下的編碼報錯問題
+setup_utf8_output()
 
 # 引用全域統一 Token 估算器 (SSOT)
 try:
     from tools.token_estimator import estimate_tokens
 except ModuleNotFoundError:
-    _current_dir = os.path.dirname(os.path.abspath(__file__))
-    _project_root = os.path.dirname(_current_dir)
-    if _project_root not in sys.path:
-        sys.path.insert(0, _project_root)
-    if _current_dir not in sys.path:
-        sys.path.insert(0, _current_dir)
     try:
-        from tools.token_estimator import estimate_tokens
-    except ModuleNotFoundError:
         from token_estimator import estimate_tokens
+    except ModuleNotFoundError:
+        _project_root = str(REPO_ROOT)
+        if _project_root not in sys.path:
+            sys.path.insert(0, _project_root)
+        try:
+            from tools.token_estimator import estimate_tokens
+        except ModuleNotFoundError:
+            from token_estimator import estimate_tokens
 
 
 class TokenUsageAnalyzer:
@@ -60,6 +59,7 @@ class TokenUsageAnalyzer:
     def get_brain_base_dirs() -> List[str]:
         user_home = os.path.expanduser('~')
         return [
+            os.path.join(user_home, '.gemini', 'antigravity', 'brain'),
             os.path.join(user_home, '.gemini', 'antigravity-ide', 'brain'),
             os.path.join(user_home, '.gemini', 'brain'),
             os.path.join('.gemini', 'antigravity-ide', 'brain')
@@ -448,6 +448,7 @@ def main():
   python tools/analyze_task_tokens.py --task-file doc/doc_task/task.md  # 分析 Task 文件中標註的對話
         """
     )
+    parser.add_argument("target", nargs="?", default="", help="位置參數：可直接傳入 Task Markdown 檔案路徑或對話 ID (UUID/前綴)")
     parser.add_argument("--conversation-id", "-c", type=str, default="", help="指定 Antigravity 對話 ID (UUID 或前綴)")
     parser.add_argument("--task-file", "-t", type=str, default="", help="指定 Task Markdown 檔案路徑，自動萃取對話 ID 進行分析")
     parser.add_argument("--current", "-u", action="store_true", help="自動定位最新修改之當前對話 Session 進行分析")
@@ -460,6 +461,15 @@ def main():
     parser.add_argument("--quiet", "-q", action="store_true", help="簡潔模式，僅輸出總結，不輸出輪次明細")
 
     args = parser.parse_args()
+
+    # 自動推導位置參數 target 為 task_file 或 conversation_id
+    if args.target and not args.task_file and not args.conversation_id:
+        target_str = args.target.strip()
+        candidate_path = target_str if os.path.isabs(target_str) else os.path.join(REPO_ROOT, target_str)
+        if os.path.isfile(target_str) or os.path.isfile(candidate_path) or target_str.endswith(".md") or "/" in target_str or "\\" in target_str:
+            args.task_file = target_str if os.path.isfile(target_str) else candidate_path
+        else:
+            args.conversation_id = target_str
 
     analyzer = TokenUsageAnalyzer(base_context=args.base_context)
 

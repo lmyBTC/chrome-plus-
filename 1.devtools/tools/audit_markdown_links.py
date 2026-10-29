@@ -200,7 +200,7 @@ def audit_file(file_path: Path, fix: bool = False):
                 })
 
             # 判斷是否鏡像重複或脆弱相對路徑
-            clean_text = text.replace('\\', '/').strip()
+            clean_text = text.replace('\\', '/').strip().strip('`')
             is_mirror = (
                 clean_text == link
                 or clean_text == repo_link

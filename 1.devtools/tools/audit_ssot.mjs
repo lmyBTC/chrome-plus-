@@ -41,6 +41,7 @@ const IGNORED_DIRS = new Set([
   'coverage',
   '.vscode',
   'task_protocol_pack',
+  'task_protocol_pack_v2',
   'archive' // 封存與歷史目錄不列入強制規範審查
 ]);
 
@@ -113,10 +114,20 @@ function toRelPosix(absPath) {
  */
 function extractMarkdownFileLinks(mdContent, sourceFilePath) {
   const links = [];
-  // 匹配 [標籤](連結)
-  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const registeredPaths = new Set();
+
+  function addLink(label, rawTarget, resolvedPath) {
+    const norm = normalize(resolvedPath);
+    if (!registeredPaths.has(norm)) {
+      registeredPaths.add(norm);
+      links.push({ label, rawTarget, resolvedPath: norm });
+    }
+  }
+
+  // 1. 匹配傳統超連結 [標籤](連結)
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
   let match;
-  while ((match = regex.exec(mdContent)) !== null) {
+  while ((match = linkRegex.exec(mdContent)) !== null) {
     const rawTarget = match[2].trim();
     if (rawTarget.startsWith('http://') || rawTarget.startsWith('https://') || rawTarget.startsWith('#')) {
       continue;
@@ -125,13 +136,11 @@ function extractMarkdownFileLinks(mdContent, sourceFilePath) {
     let resolvedPath = null;
     if (rawTarget.startsWith('file:///')) {
       let fileUrlPath = rawTarget.slice(8);
-      // Windows 磁碟機代號修整，例如 /c:/Users -> c:/Users
       if (fileUrlPath.match(/^\/?[a-zA-Z]:/)) {
         if (fileUrlPath.startsWith('/')) fileUrlPath = fileUrlPath.slice(1);
       }
       resolvedPath = normalize(decodeURIComponent(fileUrlPath));
     } else {
-      // 相對路徑
       const cleanPath = rawTarget.split('#')[0].split('?')[0];
       if (cleanPath) {
         resolvedPath = resolve(SCRIPT_DIR, '..', '..', '0.doc_mg', 'docs', cleanPath);
@@ -142,13 +151,28 @@ function extractMarkdownFileLinks(mdContent, sourceFilePath) {
     }
 
     if (resolvedPath) {
-      links.push({
-        label: match[1],
-        rawTarget,
-        resolvedPath: normalize(resolvedPath)
-      });
+      addLink(match[1], rawTarget, resolvedPath);
     }
   }
+
+  // 2. 匹配行內代碼純路徑 `path/to/file.md` 或 `file.md` (Token 節省標準)
+  const codeRegex = /`([^`\n]+\.(?:md|ts|js|json|html|css|gs))`|`([^`\n]+[\\/][^`\n]+)`/g;
+  while ((match = codeRegex.exec(mdContent)) !== null) {
+    const rawTarget = (match[1] || match[2]).trim();
+    if (rawTarget.includes('*') || rawTarget.includes('|')) {
+      continue;
+    }
+
+    let resolvedPath = resolve(REPO_ROOT, rawTarget);
+    if (!existsSync(resolvedPath)) {
+      resolvedPath = resolve(SCRIPT_DIR, '..', '..', '0.doc_mg', 'docs', rawTarget);
+    }
+
+    if (existsSync(resolvedPath)) {
+      addLink(rawTarget, rawTarget, resolvedPath);
+    }
+  }
+
   return links;
 }
 

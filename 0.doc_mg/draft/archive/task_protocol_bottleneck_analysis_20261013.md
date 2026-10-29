@@ -2,7 +2,7 @@
 
 > **文件狀態**：正式技術審計報告  
 > **數據來源**：本地 IDE 會話軌跡日誌 (`C:/Users/G1/.gemini/antigravity-ide/brain/<conversation-id>/.system_generated/logs/transcript.jsonl`)  
-> **觸發背景**：自實施 [task_20261013_global_task_protocol_v2_upgrade.md](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/tasks/archive/global/task_20261013_global_task_protocol_v2_upgrade.md) (Task Protocol v3.1) 後，使用者反饋 Agent 回覆速度顯著變慢且頻繁卡頓。
+> **觸發背景**：自實施 [task_20261013_global_task_protocol_v2_upgrade.md](../../tasks/archive/global/task_20261013_global_task_protocol_v2_upgrade.md) (Task Protocol v3.1) 後，使用者反饋 Agent 回覆速度顯著變慢且頻繁卡頓。
 
 ---
 

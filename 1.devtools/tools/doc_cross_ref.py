@@ -50,7 +50,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # 忽略目錄
 IGNORE_DIRS = {
-    'archive', 'node_modules', '.git', 'dist', 'vendor',
+    'node_modules', '.git', 'dist', 'vendor',
     'tmp', 'used', 'scratch', '.pytest_cache', '.vscode', '.gemini'
 }
 
@@ -264,11 +264,16 @@ class CrossRefAuditor:
                 # 1. 檢驗目標有效性
                 is_valid, resolved_path, anchor = self.resolve_link_target(file_path, target)
                 
-                # 2. 檢驗冗餘格式 (鏡像路徑或 file:/// 等)
+                # 2. 檢驗無意義佔位符與冗餘鏡像格式
                 clean_target = target.split('#')[0].strip()
                 clean_text = text.replace('\\', '/').strip().strip('`')
+                target_filename = Path(clean_target).name
+                is_placeholder = clean_text.lower() in {'text', 'link', 'here', 'url', '連結', '檔案', '路徑'}
                 is_mirror = (
                     clean_text == clean_target
+                    or clean_text == target_filename
+                    or clean_text.lower() == target_filename.lower()
+                    or clean_target.endswith(clean_text)
                     or 'file:///' in target
                 )
 
@@ -279,7 +284,27 @@ class CrossRefAuditor:
                         "target": target
                     })
 
-                # 3. 處理死鏈與自動修復
+                # 3. 處理無意義佔位符與死鏈
+                if is_placeholder:
+                    dead_links.append({
+                        "line": line_idx,
+                        "text": text,
+                        "target": target,
+                        "anchor": anchor,
+                        "reason": "placeholder_syntax"
+                    })
+                    if fix:
+                        # 佔位符嘗試以目標純檔名代碼化修正
+                        real_target = self.indexer.find_best_target(clean_target, file_path)
+                        if real_target:
+                            new_rel_path = self.calculate_relative_path(file_path, real_target)
+                            file_modified = True
+                            return f"`{new_rel_path}{anchor}`"
+                        elif is_valid and resolved_path:
+                            new_rel_path = self.calculate_relative_path(file_path, resolved_path)
+                            file_modified = True
+                            return f"`{new_rel_path}{anchor}`"
+
                 if not is_valid:
                     dead_links.append({
                         "line": line_idx,

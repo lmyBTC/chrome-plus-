@@ -33,8 +33,8 @@ deadline: "2026-09-25"
 ### Phase 4: Background Service Worker 職責分流 (ROI: 中) 狀態：`[已完成]`
 
 ### Phase 5: SSOT 文件回寫閉環 (SCRUMCLOCK_README & 專家技能) 狀態：`[已完成]`
-- [x] 更新 [`chrome_scrumclock/SCRUMCLOCK_README.md`](../../chrome_scrumclock/SCRUMCLOCK_README.md)：更新 8 大模組速查、生命週期索引與巨石檔案熱區清單（移除非巨石檔，登錄新模組）。
-- [x] 更新 [`scrumclock-core/SKILL.md`](../../.agents/skills/scrumclock-core/SKILL.md)：更新架構規格、加入拆分後的子元件字典與 Hooks/Services 索引。
+- [x] 更新 `chrome_scrumclock/SCRUMCLOCK_README.md`：更新 8 大模組速查、生命週期索引與巨石檔案熱區清單（移除非巨石檔，登錄新模組）。
+- [x] 更新 `scrumclock-core/SKILL.md`：更新架構規格、加入拆分後的子元件字典與 Hooks/Services 索引。
 - [x] 執行 Manifest 合規與健康度驗證，確認無依賴死角。
 
 ## 4. 影響評估

@@ -92,7 +92,7 @@ deadline: "2026-10-05"
      - **EF-02 工時結算肉眼比對**：缺少 `missionId` 關聯，兩插件資料庫完全脫鉤，每日對帳需 10~15 分鐘。
      - **EF-03 缺乏結構化拋轉**：結算後無法一鍵匯出為 Jira Worklog / Sheets 格式，需重複手動複製。
 2. **產出 PM 斷點分析報告 (任務 3.2)**：
-   - 已建立 [pm_workflow_friction_matrix.md](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/docs/pm_workflow_friction_matrix.md)，定義完整 8 大斷點編號、時長代價評級、跨插件深水區時序圖與三階段演進藍圖。
+   - 已建立 `../../../../draft/archive/pm_workflow_friction_matrix.md`，定義完整 8 大斷點編號、時長代價評級、跨插件深水區時序圖與三階段演進藍圖。
 
 ### Phase 4: PM 場景功能真空區盤點與優先度評估 狀態：`[已完成]`
 - [x] 任務 4.1: 盤點 ScrumClock 與 ActivityMonitor 之功能真空區
@@ -113,7 +113,7 @@ deadline: "2026-10-05"
      - **AM-V03 衝刺關聯分頁快照 (Audit Reel)**：衝刺時段未自動聚合頂層導航工作網址作為任務證據鏈。
      - **AM-V04 隱私去敏與報告拋轉**：匯出日誌缺少 Query Parameter 與私有 IP 脫敏機制，無法作為外部審查憑證。
 2. **Impact vs Effort 優先度評估矩陣 (任務 4.2)**：
-   - 已於 [pm_workflow_friction_matrix.md](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/docs/pm_workflow_friction_matrix.md) 繪製 Mermaid quadrantChart 象限圖與 16 項功能的詳細落地方案。
+   - 已於 `../../../../draft/archive/pm_workflow_friction_matrix.md` 繪製 Mermaid quadrantChart 象限圖與 16 項功能的詳細落地方案。
    - **P0 速贏 (Quick Wins)**：外部選取文字右鍵快速捕獲 (IF-01)、抽屜預估工時與 P0 屬性 (IF-03)、衝刺中斷原因收集 (SF-02)、行事曆衝突預警 (SC-V03)、工作/休閒域名分類庫 (AM-V01)、一鍵週報匯出 (SC-V02)、結構化 Worklog 匯出 (EF-03)、跨插件通訊契約落實 (SF-03)。
    - **P1 策略核心 (Major Projects)**：任務模型支援 Epic/Story/Task 樹狀結構 (IF-02)、語意化分頁停留時長追蹤 (EF-01)、工時自動對齊與任務外鍵 (EF-02)、Google 日曆雙向排程 (SF-01)、專注度評分模型 (AM-V02)。
 

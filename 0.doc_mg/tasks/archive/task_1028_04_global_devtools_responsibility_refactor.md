@@ -36,7 +36,7 @@ related_drafts: []
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 [GEMINI.md](../../GEMINI.md)、[.agents/rules.md](../../.agents/rules.md) 及 [README_DEVTOOLS.md](../../1.devtools/README_DEVTOOLS.md)。
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../.agents/rules.md) 及 `../../../1.devtools/README_DEVTOOLS.md`。
 - [x] **全流程工具鏈檢核矩陣 (已遵循 README_TOKEN_OPTIMIZATION_GUIDE.md 強制執行)**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |

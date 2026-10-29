@@ -25,7 +25,18 @@ except (AttributeError, io.UnsupportedOperation if 'io' in locals() else Excepti
     pass
 
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+def detect_repo_root(start: Path) -> Path:
+    curr = start
+    for _ in range(4):
+        if (curr / "GEMINI.md").exists() or (curr / "0.doc_mg").exists() or (curr / ".git").exists():
+            return curr
+        if curr.parent == curr:
+            break
+        curr = curr.parent
+    return start.parent.parent
+
+
+REPO_ROOT = detect_repo_root(SCRIPT_DIR)
 
 # 致命錯誤特徵匹配
 ERROR_PATTERNS = [

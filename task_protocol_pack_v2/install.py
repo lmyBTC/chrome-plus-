@@ -39,6 +39,9 @@ INSTALL_MAPPING = [
     ("scripts/log_issue.py", "1.devtools/tools/log_issue.py"),
     ("scripts/analyze_task_tokens.py", "1.devtools/tools/analyze_task_tokens.py"),
     ("scripts/util_archive_manager.py", "1.devtools/tools/util_archive_manager.py"),
+    ("scripts/task_cli.py", "1.devtools/tools/task_cli.py"),
+    ("scripts/lib/common.py", "1.devtools/tools/lib/common.py"),
+    ("scripts/lib/__init__.py", "1.devtools/tools/lib/__init__.py"),
 ]
 
 def main():

@@ -14,14 +14,15 @@ import argparse
 from pathlib import Path
 from typing import List, Tuple
 
-try:
-    sys.stdout.reconfigure(encoding='utf-8')
-    sys.stderr.reconfigure(encoding='utf-8')
-except AttributeError:
-    pass
-
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
+from lib.common import setup_utf8_output, REPO_ROOT, get_repo_root
+
+setup_utf8_output()
+
+detect_repo_root = get_repo_root
 
 
 JS_CONTROL_KEYWORDS = {
@@ -114,10 +115,11 @@ def find_body_brace_index(sig_text: str) -> int:
     return -1
 
 
-def extract_typescript_skeleton(content: str) -> str:
+def extract_typescript_skeleton(content: str, expand_symbols: Optional[List[str]] = None) -> str:
     """
     從 TypeScript / TSX / JavaScript 代碼中提煉出 imports, export, interface, type,
     enum、監聽器與函式/類別簽名，掏空複雜的 JSX 與函數內部具體實作。
+    若指定 expand_symbols，則匹配之函式或類別將完整展開其內部實作。
     """
     lines = content.splitlines()
     output_lines: List[str] = []
@@ -127,6 +129,8 @@ def extract_typescript_skeleton(content: str) -> str:
     brace_depth = 0
     skipping_function_body = False
     skip_start_depth = 0
+
+    symbols_set = {s.strip() for s in expand_symbols if s.strip()} if expand_symbols else set()
 
     # 函數或方法宣告正則 (支援泛型 <...>)
     func_class_pattern = re.compile(
@@ -398,17 +402,38 @@ def extract_typescript_skeleton(content: str) -> str:
     return "\n".join(output_lines)
 
 
-def extract_python_skeleton(content: str) -> str:
+def extract_python_skeleton(content: str, expand_symbols: Optional[List[str]] = None) -> str:
     """
     從 Python 代碼中提煉出 imports, class, def 簽名與 docstrings，掏空內部實作。
+    若指定 expand_symbols，則匹配之函式或類別將完整展開其內部實作。
     """
     lines = content.splitlines()
     output_lines: List[str] = []
     in_docstring = False
     docstring_delimiter = ""
 
+    symbols_set = {s.strip() for s in expand_symbols if s.strip()} if expand_symbols else set()
+
+    expanding = False
+    expand_indent = 0
+    in_multiline_sig = False
+    current_sig_name = ""
+    current_sig_indent = 0
+
     for line in lines:
         stripped = line.strip()
+
+        # 如果處於展開模式中
+        if expanding:
+            if not stripped:
+                output_lines.append(line)
+                continue
+            curr_indent = len(line) - len(line.lstrip())
+            if curr_indent > expand_indent:
+                output_lines.append(line)
+                continue
+            else:
+                expanding = False
 
         # Docstring 處理
         if not in_docstring:
@@ -436,11 +461,31 @@ def extract_python_skeleton(content: str) -> str:
             continue
 
         # 類別與函式定義
-        if re.match(r'^\s*(?:async\s+)?def\s+', line) or re.match(r'^\s*class\s+', line):
-            indent = len(line) - len(line.lstrip())
-            output_lines.append(line)
-            if line.rstrip().endswith(":"):
-                output_lines.append(" " * (indent + 4) + "...  # implementation hidden")
+        decl_match = re.match(r'^\s*(?:async\s+)?(?:def|class)\s+([a-zA-Z0-9_]+)', line)
+        if decl_match or in_multiline_sig:
+            if not in_multiline_sig:
+                name = decl_match.group(1)
+                indent = len(line) - len(line.lstrip())
+                output_lines.append(line)
+                if not line.rstrip().endswith(":"):
+                    in_multiline_sig = True
+                    current_sig_name = name
+                    current_sig_indent = indent
+                else:
+                    if name in symbols_set:
+                        expanding = True
+                        expand_indent = indent
+                    else:
+                        output_lines.append(" " * (indent + 4) + "...  # implementation hidden")
+            else:
+                output_lines.append(line)
+                if line.rstrip().endswith(":"):
+                    in_multiline_sig = False
+                    if current_sig_name in symbols_set:
+                        expanding = True
+                        expand_indent = current_sig_indent
+                    else:
+                        output_lines.append(" " * (current_sig_indent + 4) + "...  # implementation hidden")
             continue
 
         # 模組級變數或常數 (大寫)
@@ -451,15 +496,15 @@ def extract_python_skeleton(content: str) -> str:
     return "\n".join(output_lines)
 
 
-def extract_skeleton(filepath: Path, content: str) -> Tuple[str, str]:
+def extract_skeleton(filepath: Path, content: str, expand_symbols: Optional[List[str]] = None) -> Tuple[str, str]:
     ext = filepath.suffix.lower()
     if ext in {".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"}:
-        return extract_typescript_skeleton(content), "typescript"
+        return extract_typescript_skeleton(content, expand_symbols=expand_symbols), "typescript"
     elif ext in {".py"}:
-        return extract_python_skeleton(content), "python"
+        return extract_python_skeleton(content, expand_symbols=expand_symbols), "python"
     else:
         # 其他檔案退回通用骨架（提取註解、定義）
-        return extract_typescript_skeleton(content), "generic"
+        return extract_typescript_skeleton(content, expand_symbols=expand_symbols), "generic"
 
 
 def resolve_target_file(raw_path: str) -> Path:
@@ -483,11 +528,13 @@ def main():
         epilog="""範例:
   python tools/code_skeleton.py assets/js/common.js
   python tools/code_skeleton.py tools/sync_articles_db.py
+  python tools/code_skeleton.py tools/lib/common.py --expand get_repo_root
   python tools/code_skeleton.py assets/js/common.js --save scratch/tmp/common_skel.js
 """,
         formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument("file", nargs="?", default=None, help="目標程式碼檔案路徑 (支援相對或絕對路徑)")
+    parser.add_argument("--expand", "-e", action="append", default=[], help="完整展開指定函式或類別的實作內容 (焦點骨架提煉，支援多次指定或逗號分隔)")
     parser.add_argument("--save", "-s", type=str, default=None, help="可選：將骨架結果輸出至指定檔案")
     args = parser.parse_args()
 
@@ -524,8 +571,13 @@ def main():
         print("/* 📄 骨架代碼: 目標檔案為空檔案 */")
         return
 
+    expand_list: List[str] = []
+    if args.expand:
+        for item in args.expand:
+            expand_list.extend([x.strip() for x in item.split(",") if x.strip()])
+
     try:
-        skeleton, lang_type = extract_skeleton(target_path, raw_text)
+        skeleton, lang_type = extract_skeleton(target_path, raw_text, expand_symbols=expand_list)
     except Exception as e:
         print(f"❌ 骨架提煉失敗 (語法解析異常): {e}", file=sys.stderr)
         sys.exit(1)
@@ -539,8 +591,9 @@ def main():
     except ValueError:
         rel_display = target_path.as_posix()
 
+    expand_info = f" [展開焦點: {', '.join(expand_list)}]" if expand_list else ""
     header = (
-        f"/* 📄 骨架代碼 ({lang_type}): {rel_display}\n"
+        f"/* 📄 骨架代碼 ({lang_type}){expand_info}: {rel_display}\n"
         f" * 原始: {orig_lines} 行 ➔ 骨架: {skel_lines} 行 | 減少 ~{savings:.1f}% 上下文雜訊 */\n"
     )
 

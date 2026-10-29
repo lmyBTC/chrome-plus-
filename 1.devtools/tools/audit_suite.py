@@ -185,8 +185,10 @@ class SuiteRunner:
         """[Suite 4] 文件交叉引用一致性"""
         t0 = time.perf_counter()
         script = DEVTOOLS_DIR / "doc_cross_ref.py"
-        # 針對主要文檔目錄 0.doc_mg 進行 dry-run 審計
-        cmd = [str(script), "--dir", "0.doc_mg", "--dry-run"]
+        # 針對主要文檔進行死鏈與交叉引用審計 (--audit)
+        cmd = [str(script), "--audit"]
+        if self.fix:
+            cmd = [str(script), "--fix", "--clean-redundant"]
         res = self._run_cmd(cmd)
         elapsed = time.perf_counter() - t0
 

@@ -9,16 +9,26 @@ import argparse
 import subprocess
 from datetime import datetime, date
 
-# 嘗試將標準輸出設定為 UTF-8
-try:
-    sys.stdout.reconfigure(encoding='utf-8')
-except AttributeError:
-    pass
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
 
-# 基礎路徑定義
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TASKS_DIR = os.path.join(BASE_DIR, '0.doc_mg', 'tasks')
-TEMPLATE_PATH = os.path.join(BASE_DIR, '0.doc_mg', 'task_template_v2.md')
+from lib.common import (
+    get_repo_root,
+    setup_utf8_output,
+    parse_frontmatter as common_parse_frontmatter,
+    get_active_task,
+    REPO_ROOT,
+    TASKS_DIR as COMMON_TASKS_DIR,
+    TEMPLATE_PATH as COMMON_TEMPLATE_PATH,
+)
+
+setup_utf8_output()
+
+# 基礎路徑定義 (SSOT)
+BASE_DIR = str(REPO_ROOT)
+TASKS_DIR = str(COMMON_TASKS_DIR)
+TEMPLATE_PATH = str(COMMON_TEMPLATE_PATH)
 
 def slugify(text):
     """將標題轉為適合做為檔名的 slug (英文字母、數字、底線、中文字)"""
@@ -155,28 +165,9 @@ def init_task(plugin, title, no_git=False, seq=None):
             print(f"[警告] 自動 git add 異常: {e}")
 
 def parse_frontmatter(file_path):
-    """解析 Markdown 檔案的 YAML Frontmatter"""
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-    except Exception as e:
-        print(f"[錯誤] 無法讀取檔案 {file_path}: {e}")
-        return None
-
-    # 匹配最上方的 --- block
-    match = re.match(r'^---\s*\n(.*?)\n---\s*\n', content, re.DOTALL)
-    if not match:
-        return None
-
-    yaml_block = match.group(1)
-    metadata = {}
-    for line in yaml_block.splitlines():
-        if ':' in line:
-            key, val = line.split(':', 1)
-            # 移除 YAML 註解
-            val_clean = val.split('#', 1)[0].strip()
-            metadata[key.strip()] = val_clean.strip('"').strip("'")
-    return metadata
+    """解析 Markdown 檔案的 YAML Frontmatter (委派至 lib.common)"""
+    meta = common_parse_frontmatter(file_path)
+    return meta if meta else None
 
 # 正則：支援舊版 8 碼 (YYYYMMDD) 與新版 4 碼 (MMDD)
 DATE_PATTERN_8 = re.compile(r"^task_(\d{4})(\d{2})(\d{2})_.*\.md$")
@@ -224,11 +215,11 @@ PLUGIN_DIR_MAP = {
     "activity-monitor": "browser-activity-monitor",
     "chrome_video speed plus": "chrome_video speed plus",
     "video-speed": "chrome_video speed plus",
-    "gemini-nano": "gemini-nano",
-    "chrome_gemini_nano": "gemini-nano",
+    "gemini-nano": "chrome_gemini_nano",
+    "chrome_gemini_nano": "chrome_gemini_nano",
     "global": "global",
-    "workspace": "workspace",
-    "agents": "agents",
+    "workspace": "global",
+    "agents": "global",
 }
 
 def normalize_plugin_dir(plugin, archive_root):
@@ -389,14 +380,90 @@ def archive_tasks(dry_run=False, max_buffer=10, threshold_days=30):
     else:
         print(f"[總結] 歸檔維護完成。成功新歸檔: {archived_count} 份，緩衝溢出分流: {buffer_overflow_count} 份，插件歷史下沉: {rotated_count} 份。")
 
+def generate_handover(task_path=None):
+    """
+    自動提取進行中任務之下一 Phase 目標與 Context 快照，輸出精準接力代碼塊。
+    """
+    target_file = None
+    if task_path:
+        from pathlib import Path
+        p = Path(task_path)
+        if p.is_file():
+            target_file = p
+        elif (REPO_ROOT / task_path).is_file():
+            target_file = REPO_ROOT / task_path
+        elif (COMMON_TASKS_DIR / task_path).is_file():
+            target_file = COMMON_TASKS_DIR / task_path
+
+    if not target_file:
+        target_file = get_active_task()
+
+    if not target_file or not os.path.isfile(str(target_file)):
+        print("[錯誤] 未能定位進行中任務檔案，請手動指定 task 檔案路徑。")
+        sys.exit(1)
+
+    target_file = str(target_file)
+    try:
+        with open(target_file, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        with open(target_file, "r", encoding="utf-8-sig") as f:
+            content = f.read()
+
+    rel_task_path = os.path.relpath(target_file, str(REPO_ROOT)).replace("\\", "/")
+
+    # 正則提取所有 Phase
+    phase_pattern = re.compile(r"^###\s+(Phase\s+[^:\n]+):\s*(.+)$", re.MULTILINE)
+    phases = []
+    for m in phase_pattern.finditer(content):
+        phase_label = m.group(1).strip()
+        rest = m.group(2).strip()
+        status_m = re.search(r"狀態：\s*`?\[(.*?)\]`?", rest)
+        status = status_m.group(1).strip() if status_m else "待辦"
+        phase_title = re.sub(r"\s*狀態：.*$", "", rest).strip()
+        phases.append({
+            "label": phase_label,
+            "title": phase_title,
+            "status": status,
+        })
+
+    next_phase = None
+    completed_phases = []
+    for p in phases:
+        if p["status"] == "已完成":
+            completed_phases.append(p)
+        elif not next_phase:
+            next_phase = p
+
+    print("==================================================")
+    print("  🚀 SESSION HANDOVER (跨會話無損接力指令)")
+    print("==================================================")
+    print(f"任務檔案: {rel_task_path}")
+    if completed_phases:
+        last_done = completed_phases[-1]
+        print(f"前置階段: {last_done['label']} ({last_done['title']}) [已完成]")
+
+    if next_phase:
+        prompt = f"請讀取 {rel_task_path}，開始執行 {next_phase['label']} ({next_phase['title']})"
+        print(f"接力目標: {next_phase['label']} ({next_phase['title']}) [{next_phase['status']}]")
+        print("\n請複製以下指令至新對話 Session 即可冷啟動：")
+        print("--------------------------------------------------")
+        print(prompt)
+        print("--------------------------------------------------")
+    else:
+        print("\n[🎉 恭喜] 所有 Phase 均已完成！請進行驗收審計或執行 task_cli.py archive 歸檔。")
+    print("==================================================")
+
 def main():
     parser = argparse.ArgumentParser(description="多插件開發區任務生命週期 CLI 工具")
     subparsers = parser.add_subparsers(dest="command", help="子指令")
 
     # init 指令
     init_parser = subparsers.add_parser('init', help='初始化新任務檔案')
-    init_parser.add_argument('--plugin', required=True, help='此任務所屬的插件目錄名稱 (例如: chrome_pk | global)')
-    init_parser.add_argument('--title', required=True, help='任務標題名稱')
+    init_parser.add_argument('plugin_pos', nargs='?', default=None, help='插件名稱 (位置參數)')
+    init_parser.add_argument('title_pos', nargs='?', default=None, help='任務標題名稱 (位置參數)')
+    init_parser.add_argument('--plugin', help='此任務所屬的插件目錄名稱 (例如: chrome_pk | global)')
+    init_parser.add_argument('--title', help='任務標題名稱')
     init_parser.add_argument('--seq', type=int, default=None, help='自訂當日流水號 (例如: 1 或 2，預設自動遞增)')
     init_parser.add_argument('--no-git', action='store_true', help='略過自動 git add')
 
@@ -406,12 +473,27 @@ def main():
     archive_parser.add_argument('--buffer', type=int, default=10, help='archive 根目錄近期緩衝區常態保留數 (預設: 10)')
     archive_parser.add_argument('--days', type=int, default=30, help='超過指定天數下沉至 history/ (預設 30 天)')
 
+    # handover 指令
+    handover_parser = subparsers.add_parser('handover', help='自動生成新 Session 接力提示詞')
+    handover_parser.add_argument('task_pos', nargs='?', default=None, help='指定任務檔案路徑 (可選位置參數)')
+    handover_parser.add_argument('--task', '-t', default=None, help='指定任務檔案路徑')
+
     args = parser.parse_args()
 
     if args.command == 'init':
-        init_task(args.plugin, args.title, no_git=args.no_git, seq=args.seq)
+        plugin = args.plugin or args.plugin_pos
+        title = args.title or args.title_pos
+        if not plugin or not title:
+            init_parser.print_help()
+            print("\n[錯誤] 缺少必要的插件名稱或任務標題。用法範例：")
+            print("  py 1.devtools/tools/task_cli.py init global my_cool_feature")
+            sys.exit(1)
+        init_task(plugin, title, no_git=args.no_git, seq=args.seq)
     elif args.command == 'archive':
         archive_tasks(dry_run=args.dry_run, max_buffer=args.buffer, threshold_days=args.days)
+    elif args.command == 'handover':
+        task_file = args.task or args.task_pos
+        generate_handover(task_path=task_file)
     else:
         parser.print_help()
 

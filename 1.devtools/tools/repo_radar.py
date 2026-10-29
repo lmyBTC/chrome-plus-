@@ -26,7 +26,18 @@ except AttributeError:
 
 # 專案根目錄定位 (以本腳本位於 tools/ 為基準)
 SCRIPT_DIR = Path(__file__).resolve().parent
-REPO_ROOT = SCRIPT_DIR.parent
+def detect_repo_root(start: Path) -> Path:
+    curr = start
+    for _ in range(4):
+        if (curr / "GEMINI.md").exists() or (curr / "0.doc_mg").exists() or (curr / ".git").exists():
+            return curr
+        if curr.parent == curr:
+            break
+        curr = curr.parent
+    return start.parent.parent
+
+
+REPO_ROOT = detect_repo_root(SCRIPT_DIR)
 INDEX_FILE = REPO_ROOT / ".agents" / ".repo_index.json"
 if not INDEX_FILE.exists() and (REPO_ROOT / ".repo_index.json").exists():
     INDEX_FILE = REPO_ROOT / ".repo_index.json"

@@ -34,8 +34,9 @@
 
 ```
 task_protocol_pack/
-├── README.md                          # 本說明手冊（原理、用法與適配指南）
-├── install.py                         # Chrome Plus 專案一鍵安裝/升級輔助腳本
+├── README.md                          # 本說明手冊（原理、用法、索引與 ChangeLog）
+├── INSTALLATION_GUIDE.md              # 完整安裝與實戰調優手冊（三大排坑、實測數據、Lessons Learned）
+├── install.py                         # 宿主專案一鍵安裝/升級輔助腳本（支援 --dry-run / 自動備份）
 │
 ├── docs/                              # 核心文檔與範本真理源
 │   ├── task_manager.md                # 任務生命週期、狀態收斂與雙層封存治理指南
@@ -48,8 +49,12 @@ task_protocol_pack/
 │       └── SKILL.md                   # Token 節省器 (四層防火牆、CLI 脫水模式、換場指南)
 │
 └── scripts/                           # 核心執行引擎工具鏈 (Python)
+    ├── lib/                           # 工具鏈共用微庫
+    │   ├── __init__.py                # 套件識別
+    │   └── common.py                  # 動態 SSOT 根目錄解析、控制台 UTF-8 與任務探查
+    ├── task_cli.py                    # 任務生命週期整合 CLI (init 初始化 / handover 接力 / archive 歸檔)
     ├── repo_radar.py                  # 情報雷達 (outline 大綱 / section 章節 / symbol 符號 / map 地圖)
-    ├── code_skeleton.py               # 代碼骨架提煉器 (JS/TS/Python 多語言掏空實作)
+    ├── code_skeleton.py               # 代碼骨架提煉與焦點符號展開器 (--expand 支援)
     ├── compact_log.py                 # 終端日誌脫水器 (管線過濾 Traceback 與重複堆疊)
     ├── generate_symbol_index.py       # 全域符號與情報索引生成器 (.repo_index.json)
     ├── log_issue.py                   # 2-Strike 熔斷與突發問題立案登記工具
@@ -80,18 +85,46 @@ task_protocol_pack/
   py 1.devtools/tools/repo_radar.py map
   ```
 
-### 3.2. 代碼骨架提煉器 (`code_skeleton.py`)
-- **功能**：自動掏空 JavaScript / TypeScript / Python 檔案中的函式具體實作與龐大資料陣列，僅保留類別、型別簽名、JSDoc 與匯出介面，節省 60%~85% 上下文視窗。
+### 3.2. 代碼骨架提煉與焦點展開器 (`code_skeleton.py`)
+- **功能**：自動掏空 JavaScript / TypeScript / Python 檔案中的函式具體實作與龐大資料陣列，僅保留類別、型別簽名、JSDoc 與匯出介面，節省 60%~85% 上下文視窗；支援 `--expand` 展開關鍵函式實作，兼顧宏觀骨架與微觀核心。
 - **常用指令**：
   ```bash
-  # 快速提煉大型模組或核心組件之骨架
+  # 1. 快速提煉大型模組之骨架
   py 1.devtools/tools/code_skeleton.py path/to/large_module.js
   
-  # 提煉骨架並落地為 Gate 1 探勘快取 (供後續 Session 直接開工)
-  py 1.devtools/tools/code_skeleton.py --save scratch/tmp/tmp_probe_task.md path/to/large_module.js
+  # 2. 焦點符號展開：提煉骨架同時完整保留指定函式或類別實作 (支援多個符號)
+  py 1.devtools/tools/code_skeleton.py path/to/module.py --expand funcA,ClassB
+
+  # 3. 提煉骨架並落地為 Gate 1 探勘快取 (供後續 Session 直接開工)
+  py 1.devtools/tools/code_skeleton.py path/to/large_module.js --save scratch/tmp/tmp_probe_task.md
   ```
 
-### 3.3. 終端日誌智慧脫水器 (`compact_log.py`)
+### 3.3. 任務生命週期整合 CLI (`task_cli.py`)
+- **功能**：一站式任務管理介面，整合任務初始化、跨會話接力指令生成與雙層滾動歸檔。
+- **常用指令**：
+  ```bash
+  # 1. 初始化新任務檔 (自動計算流水號並執行 git add 保護)
+  py 1.devtools/tools/task_cli.py init --plugin global --title "優化工具鏈"
+
+  # 2. 生成新會話接力代碼塊 (自動解析當前活躍任務之進度與目標)
+  py 1.devtools/tools/task_cli.py handover
+
+  # 3. 執行任務雙層滾動歸檔 (保持 tasks 根層純淨)
+  py 1.devtools/tools/task_cli.py archive --dry-run
+  py 1.devtools/tools/task_cli.py archive
+  ```
+
+### 3.4. 工具鏈共用微庫 (`lib/common.py`)
+- **功能**：底層共用基礎設施，提供標準動態專案根目錄探查 (`get_repo_root()`)、Windows 控制台 UTF-8 自動修復 (`setup_utf8_output()`)、輕量 Frontmatter 解析與活躍任務動態定位。
+- **核心介面**：
+  ```python
+  from lib.common import setup_utf8_output, get_repo_root, REPO_ROOT, TASKS_DIR, get_active_task
+  setup_utf8_output()
+  root = get_repo_root()
+  active_task = get_active_task()
+  ```
+
+### 3.5. 終端日誌智慧脫水器 (`compact_log.py`)
 - **功能**：過濾編譯、建置、測試或審計腳本輸出的冗長 Traceback、進度條與重複警告，僅保留關鍵錯誤行與退出狀態。
 - **常用指令**：
   ```bash
@@ -100,21 +133,21 @@ task_protocol_pack/
   py 1.devtools/tools/audit_suite.py 2>&1 | py 1.devtools/tools/compact_log.py
   ```
 
-### 3.4. 全域符號與情報索引生成器 (`generate_symbol_index.py`)
+### 3.6. 全域符號與情報索引生成器 (`generate_symbol_index.py`)
 - **功能**：掃描專案並生成/更新根目錄之輕量快取 `.repo_index.json`，讓 `repo_radar.py` 具備毫秒級查詢效能。
 - **常用指令**：
   ```bash
   py 1.devtools/tools/generate_symbol_index.py
   ```
 
-### 3.5. 2-Strike 熔斷與突發問題立案器 (`log_issue.py`)
+### 3.7. 2-Strike 熔斷與突發問題立案器 (`log_issue.py`)
 - **功能**：當遭遇非本任務原子目標的次生 Bug，或單一錯誤嘗試 2 次修復失敗時，立即停止原地探索，登錄結構化 Issue 記錄並乾淨還原工作區。
 - **常用指令**：
   ```bash
   py 1.devtools/tools/log_issue.py --title "Extension Storage Sync Timeout" --severity HIGH --desc "詳細錯誤快照"
   ```
 
-### 3.6. 任務生命週期與雙層歸檔器 (`util_archive_manager.py`)
+### 3.8. 任務生命週期雙層歸檔引擎 (`util_archive_manager.py`)
 - **功能**：依日期與狀態自動將已結案任務下沉歸檔，保持任務目錄極致乾淨。
 - **常用指令**：
   ```bash
@@ -123,6 +156,13 @@ task_protocol_pack/
 
   # 正式執行歸檔 (自動保護未完成任務與今日任務)
   py 1.devtools/tools/util_archive_manager.py
+  ```
+
+### 3.9. 任務 Token 消耗分析器 (`analyze_task_tokens.py`)
+- **功能**：量測特定任務檔或對話歷程中 Token 消耗量與各階段節省比例，提供客觀數據反饋。
+- **常用指令**：
+  ```bash
+  py 1.devtools/tools/analyze_task_tokens.py 0.doc_mg/tasks/task_example.md
   ```
 
 ---
@@ -165,6 +205,9 @@ task_protocol_pack/
 
 ## 5. Chrome Plus Project 專案安裝與升級指南
 
+> [!TIP]
+> **完整詳細安裝手冊與踩坑指南**：本章節為快速安裝指南。關於三大實戰踩坑（根路徑解析、Windows UTF-8 編碼、專案去外部殘留）、完整實測數據與多專案移植 SOP，請參閱 📖 **`task_protocol_pack_v2/INSTALLATION_GUIDE.md`**。
+
 本套件針對 `chrome plus project` 之現有架構設計了完全相容的路徑映射：
 
 ### 5.1. 路徑映射對照表
@@ -175,8 +218,11 @@ task_protocol_pack/
 | `docs/task_manager.md` | `0.doc_mg/docs/README_TASK_MANAGER.md` | 任務與封存治理指南（升級） |
 | `skills/task-protocol/SKILL.md` | `.agents/skills/task-protocol/SKILL.md` | 任務協議守護者技能（升級） |
 | `skills/token-saver/SKILL.md` | `.agents/skills/token-saver/SKILL.md` | Token 節省器技能（升級） |
+| `scripts/lib/common.py` | `1.devtools/tools/lib/common.py` | 工具鏈共用微庫 (SSOT 根解析/UTF-8) |
+| `scripts/lib/__init__.py` | `1.devtools/tools/lib/__init__.py` | 微庫套件標記 |
+| `scripts/task_cli.py` | `1.devtools/tools/task_cli.py` | 任務生命週期整合 CLI (init/handover/archive) |
 | `scripts/repo_radar.py` | `1.devtools/tools/repo_radar.py` | 情報雷達（升級至完整版） |
-| `scripts/code_skeleton.py` | `1.devtools/tools/code_skeleton.py` | 代碼骨架提煉器（升級） |
+| `scripts/code_skeleton.py` | `1.devtools/tools/code_skeleton.py` | 代碼骨架提煉與焦點展開器（支援 --expand） |
 | `scripts/compact_log.py` | `1.devtools/tools/compact_log.py` | 終端日誌脫水器（升級） |
 | `scripts/generate_symbol_index.py` | `1.devtools/tools/generate_symbol_index.py` | 符號索引生成器（升級） |
 | `scripts/token_estimator.py` | `1.devtools/tools/token_estimator.py` | Token 估算器（升級） |
@@ -199,13 +245,33 @@ py task_protocol_pack/install.py --install
 ### 5.3. 安裝後驗證動作
 安裝完成後，建議執行以下驗證確認工具鏈就緒：
 ```bash
-# 1. 驗證情報雷達核心能力
+# 1. 驗證任務生命週期 CLI (init / handover / archive)
+py 1.devtools/tools/task_cli.py --help
+
+# 2. 驗證情報雷達核心能力
 py 1.devtools/tools/repo_radar.py --help
 
-# 2. 驗證代碼骨架提煉能力
+# 3. 驗證代碼骨架提煉與焦點展開能力
 py 1.devtools/tools/code_skeleton.py --help
 
-# 3. 更新 Chrome Plus 全域符號情報索引
+# 4. 更新專案全域符號情報索引
 py 1.devtools/tools/generate_symbol_index.py
 ```
+
+---
+
+## 6. 版本更新歷程 (ChangeLog)
+
+- **v3.2.2 (2026-10-29)**:
+  - 產出獨立權威安裝與實戰調優手冊 `INSTALLATION_GUIDE.md`，深度彙整三大排坑陷阱（根路徑解析、Windows UTF-8 編碼、專案適配殘留）與 90.4% 日誌脫水實證數據。
+  - 套件包同步收錄 `scripts/task_cli.py`、`scripts/lib/common.py` 與 `scripts/lib/__init__.py`，達成套件 100% 自包含。
+  - 更新 `install.py` 映射對照表，支援 15 項核心組件的一鍵備份升級與驗證。
+- **v3.2.1 (2026-10-29)**:
+  - 工具鏈架構升級：抽取 `lib/common.py` 工具共用微庫，以動態向上探查取代脆弱的硬編碼層級倒推。
+  - 任務管理升級：整合 `task_cli.py`，提供 `init` 自動流水號建檔、`handover` 自動接力代碼塊生成與 `archive` 雙層滾動歸檔。
+  - 骨架提煉強化：`code_skeleton.py` 新增 `--expand` (焦點符號展開) 功能，支援宏觀骨架下局部細讀關鍵函式。
+- **v3.2.0 (2026-10-28)**:
+  - Task & Token Protocol 實體套件初次發布與專案安裝適配。
+  - 建立 3-Gate Multi-Session Protocol 與實體任務範本 (`task_template_v2.md`)。
+  - 導入四層 Token 防火牆、情報雷達 (`repo_radar.py`)、代碼骨架提煉器與終端日誌脫水器。
 

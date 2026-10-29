@@ -24,12 +24,12 @@ related_drafts: []
   3. 完成全域 100% 鏈接校正與 SSOT 閉環驗收。
   4. 建立 SSOT 自動化檢查腳本 (`audit_ssot.mjs`) 並與 Gate 3 審計套件 (`audit_suite.py`) 及 npm scripts 整合，實現 SSOT 索引完整性檢驗與任務 90/10 閉環強制約束。
 - **邊界與假設**：
-  - 專案根目錄之 [GEMINI.md](../../GEMINI.md) 屬專案最高憲法，嚴格維持原檔名。
+  - 專案根目錄之 `../../../GEMINI.md` 屬專案最高憲法，嚴格維持原檔名。
   - `.agents/skills/*/SKILL.md` 屬 Antigravity 平台規範之固定命名標準，保留 `SKILL.md`，但必須納入中央 SSOT 索引。
   - 不更動插件功能性原始程式碼（TypeScript/JavaScript/JSON），僅更新註解與文件相對路徑。
 
 ## 2. 上下文探索與依賴 (Context Grounding)
-- **SSOT 規範查閱**：已查閱 [GEMINI.md](../../GEMINI.md) 與 [.agents/rules.md](../../.agents/rules.md)。
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md` 與 [.agents/rules.md](../../../.agents/rules.md)。
 - **全流程工具鏈檢核矩陣**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |

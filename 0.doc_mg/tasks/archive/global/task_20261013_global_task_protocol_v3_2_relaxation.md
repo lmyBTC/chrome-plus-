@@ -24,7 +24,7 @@ related_drafts: ["0.doc_mg/docs/task_protocol_bottleneck_analysis_20261013.md"]
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 - **SSOT 規範查閱**：已查閱 `GEMINI.md`、`.agents/rules.md`、`.agents/skills/task-protocol/SKILL.md` 與 `0.doc_mg/task_template_v2.md`。
-- **實證數據報告**：已完成 [0.doc_mg/docs/task_protocol_bottleneck_analysis_20261013.md](file:///c:/Users/G1/00.coding%20workspace/chrome%20plus%20project/0.doc_mg/docs/task_protocol_bottleneck_analysis_20261013.md)。
+- **實證數據報告**：已完成 [0.doc_mg/docs/task_protocol_bottleneck_analysis_20261013.md](../../../draft/archive/task_protocol_bottleneck_analysis_20261013.md)。
 - **影響範圍地圖 (Entity Map)**：
   - `GEMINI.md` (修正 Gate 1 與 Gate 2 憲法條款)
   - `.agents/rules.md` (修正探勘行數、替換行數與任務檔防護五大戒律)

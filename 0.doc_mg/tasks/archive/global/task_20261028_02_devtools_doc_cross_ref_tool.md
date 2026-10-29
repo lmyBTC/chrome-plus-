@@ -22,7 +22,7 @@ related_drafts: []
   3. 全域驗證：執行 `py 1.devtools/tools/doc_cross_ref.py --audit` 達到 Exit 0（零死鏈）。
 - **邊界與假設**：
   - 工具必須純 Python 3 標準庫（`argparse`, `re`, `pathlib`, `os`, `sys`, `json`），杜絕第三方依賴。
-  - 遵循專案「路徑跳轉雙軌制」：文檔源碼內部維持純相對路徑或 Repo 相對路徑，嚴禁寫入 `file:///`；對話框提示才使用 `file:///`。
+  - 
   - 多插件邊界防禦：不得違反跨插件隔離防禦規範。
 
 ## 2. 上下文探索與依賴 (Context Grounding)
