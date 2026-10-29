@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { WeeklyMission, ChecklistItem } from '../../types';
+import { WeeklyMission, ChecklistItem } from '../../../../types';
 
 export interface MergeTaskModalProps {
   sourceTask: WeeklyMission | null;

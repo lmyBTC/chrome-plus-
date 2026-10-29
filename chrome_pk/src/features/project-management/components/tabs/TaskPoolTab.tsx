@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { TaskPoolTabProps } from './types';
 import { TaskDetailDrawer } from './TaskDetailDrawer';
-import { BoardView } from '../../../../dashboard/components/BoardView';
+import { BoardView } from '../board';
 
 export const TaskPoolTab: React.FC<TaskPoolTabProps> = ({
   weeklyMissions,

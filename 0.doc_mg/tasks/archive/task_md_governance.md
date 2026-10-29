@@ -29,7 +29,7 @@ related_drafts: []
   - 不更動插件功能性原始程式碼（TypeScript/JavaScript/JSON），僅更新註解與文件相對路徑。
 
 ## 2. 上下文探索與依賴 (Context Grounding)
-- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md` 與 [.agents/rules.md](../../../.agents/rules.md)。
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md` 與 `../../../.agents/rules.md`。
 - **全流程工具鏈檢核矩陣**：
   | 門禁階段 (Gate) | 規範必備常備工具 | 調用實證 (Command / Output 摘要) | 效益 / 狀態 |
   | :--- | :--- | :--- | :--- |

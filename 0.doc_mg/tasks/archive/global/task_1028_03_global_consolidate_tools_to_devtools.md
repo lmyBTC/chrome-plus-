@@ -29,7 +29,7 @@ related_drafts: []
 
 ## 2. 上下文探索與依賴 (Context Grounding)
 
-- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、[.agents/rules.md](../../../../.agents/rules.md) 及 `../../../1.devtools/overview-devtools.md`。
+- **SSOT 規範查閱**：已查閱 `../../../GEMINI.md`、`../../../../.agents/rules.md` 及 `../../../1.devtools/overview-devtools.md`。
 - **影響範圍地圖 (Entity Map)**：
   - 工具層：
     - `0.doc_mg/tools/archive_rotator.py` ➔ 廢除（由 `1.devtools/tools/task_cli.py archive` 取代）

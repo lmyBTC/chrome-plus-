@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { WeeklyMission, GTDStatus } from '../../types';
-import { storage } from '../../core/chrome/storage';
-import { googleTasksSync } from '../../shared/google/googleTasksSync';
-import { googleSyncService } from '../../services/googleSyncService';
+import { WeeklyMission, GTDStatus } from '../../../../types';
+import { storage } from '../../../../core/chrome/storage';
+import { googleTasksSync } from '../../../../shared/google/googleTasksSync';
+import { googleSyncService } from '../../../../services/googleSyncService';
 import { TaskCard } from './TaskCard';
 import { MergeTaskModal } from './MergeTaskModal';
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { WeeklyMission, GTDStatus } from '../../types';
+import { WeeklyMission, GTDStatus } from '../../../../types';
 
 export interface TaskCardProps {
   task: WeeklyMission;

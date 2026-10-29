@@ -3,7 +3,7 @@ name: PK+ 插件規格與元件字典 (PK Core Spec)
 description: 定義 chrome_pk 插件之核心定位、技術棧、架構入口與深層 SSOT 導航。
 triggers: [pk, pk+, power kit, scrumclock, 番茄鐘, 敏捷看板, pk開發, scrum, pomodoro, 側邊欄番茄鐘]
 dependencies: []
-ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md"]
+ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/guide-pk-features-arch.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md"]
 ---
 
 # 專家技能：PK+ 插件規格與元件字典 (PK Core Spec)
@@ -18,9 +18,10 @@ ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/web-ai-guard-spec.
 ## 2. 關鍵入口架構 (Key Entrypoints)
 * `src/background.ts`: Service Worker 背景路由、Alarms 調度與跨插件分流
 * `src/entries/`: 前端視圖入口 (`sidebar/` 側邊欄工具箱與助理、`newtab/` 新分頁儀表板、`popup/` 快顯)
-* `src/dashboard/components/BoardView.tsx`: 4 欄 GTD 敏捷看板視圖與卡片管理
+* `src/features/project-management/components/board/BoardView.tsx`: 4 欄 GTD 敏捷看板視圖與卡片管理
 * `src/features/scrumclock/`: 番茄鐘 25 分鐘衝刺計時與日終反思 (EndOfDayReview)
 * `src/features/project-management/services/`: 專案管理 AI 服務層 (taskAIEngine, kanbanAuditor)
+* `src/features/toolbox/`: 側邊欄隨選工具箱 (`ToolboxHub.tsx`)，基於 `registry.ts` 外掛註冊協議動態掛載：隨選腳本執行器 (`tools/script-runner/`，支援在線編輯、安全語法預檢、即時執行、Console 控制台與 CSV/JSON 匯出)、圖片採集器 (`image-scraper/`)、影音字幕收集器 (`subtitle-collector/`)、活動監控器 (`activity-monitor/`) 與投研自選微工具 (`finance-watchlist`)
 * `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎
 * `src/shared/google/` & `src/services/googleSyncService.ts`: Google 原生生態與雙軌同步服務 (Tasks, Calendar, GAS 備份)
 * `src/components/`: 全域元件 (`SettingsPanel.tsx`, `InstallDocs.tsx`, `GoogleAccountButton.tsx`)
@@ -29,6 +30,8 @@ ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/web-ai-guard-spec.
 1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `finance-research-clipper-oss`）之原始碼。
 2. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/cross_plugin_contract.md` 與 `UniversalTaskPayload` v2.3 介面。
 3. **優雅降級**: 依賴之外部插件未啟用時，對應小工具必須安全降級，不得中斷核心番茄鐘流程。
+4. **架構與命名規範**: 新增微工具或模組必須嚴格遵循 `guide-pk-features-arch.md` 之四層領域切片、Pluggable Micro-Tools 註冊協議與 `kebab-case`/`PascalCase` 命名規範。
 
 ## 4. 深層 SSOT 導航 (Deep Reference)
+* **架構地圖、資料夾結構與命名規範 (SSOT)**: 詳見 `chrome_pk/docs/guide-pk-features-arch.md`
 * **完整元件矩陣、Storage Schema、通訊協議與熱區清單**: 詳見 `chrome_pk/PK_README.md`

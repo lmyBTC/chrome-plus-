@@ -1,51 +1,18 @@
 import React, { useState } from 'react';
-import { ToolboxToolId, ToolboxToolInfo } from './types';
-import { ImageScraper } from './tools/image-scraper';
-import { ActivityMonitor } from './tools/activity-monitor';
-import { SubtitleCollector } from './tools/subtitle-collector';
-import { WatchListWidget } from '../finance-integration';
-
-const AVAILABLE_TOOLS: ToolboxToolInfo[] = [
-  {
-    id: 'image-scraper',
-    name: '網頁圖片爬取器',
-    shortName: '圖片爬取',
-    description: '抓取任意網頁（如 Flickr 相簿）或分頁圖片，支援篩選與批量下載',
-    icon: '🖼️',
-    badge: '熱門'
-  },
-  {
-    id: 'activity-monitor',
-    name: '瀏覽行為監控器',
-    shortName: '行為監控',
-    description: '實時審查網頁敏感權限（鏡頭、定位、剪貼簿）與 API 存取風險',
-    icon: '🛡️',
-    badge: '安全'
-  },
-  {
-    id: 'subtitle-collector',
-    name: '影片字幕收集器',
-    shortName: '字幕收集',
-    description: '檢視並管理跨插件收集的影音字幕與筆記，支援時間戳跳轉與任務轉化',
-    icon: '🎬',
-    badge: '影音'
-  },
-  {
-    id: 'finance-research',
-    name: '投研自選看板',
-    shortName: '投研看板',
-    description: '載入 Clipper 快照與華爾街目標價偏離程度，聯動深度研究番茄鐘',
-    icon: '📈',
-    badge: '投研'
-  }
-];
+import { ToolboxToolId } from './types';
+import { TOOL_REGISTRY, getToolManifest } from './registry';
 
 export interface ToolboxHubProps {
   isSidebar?: boolean;
 }
 
 export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => {
-  const [activeTool, setActiveTool] = useState<ToolboxToolId>('image-scraper');
+  const [activeTool, setActiveTool] = useState<ToolboxToolId>(
+    TOOL_REGISTRY[0]?.id || 'script-runner'
+  );
+
+  const activeManifest = getToolManifest(activeTool) || TOOL_REGISTRY[0];
+  const ActiveComponent = activeManifest?.component;
 
   return (
     <div className="flex-1 flex flex-col h-full bg-dark-bg text-dark-primary overflow-y-auto scrollbar-thin scrollbar-thumb-slate-800">
@@ -64,7 +31,7 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
             </div>
             
             <div className="text-xs text-dark-muted bg-dark-hover px-3 py-1.5 rounded-full border border-dark-border-subtle">
-              已載入 {AVAILABLE_TOOLS.length} 個實用工具
+              已載入 {TOOL_REGISTRY.length} 個實用工具
             </div>
           </div>
         ) : (
@@ -74,23 +41,26 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
               <span className="text-xs font-bold text-dark-primary tracking-wide">實用工具箱</span>
             </div>
             <span className="text-[10px] text-dark-muted bg-dark-hover px-2 py-0.5 rounded-md border border-dark-border-subtle">
-              {AVAILABLE_TOOLS.length} 項工具
+              {TOOL_REGISTRY.length} 項工具
             </span>
           </div>
         )}
 
         {/* 工具分類切換 Tabs */}
-        <div className={`mt-2.5 ${isSidebar ? 'grid grid-cols-4 gap-1' : 'flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin'}`}>
-          {AVAILABLE_TOOLS.map((tool) => {
-            const isActive = activeTool === tool.id;
+        <div className={`mt-2.5 ${isSidebar ? 'grid grid-cols-5 gap-1' : 'flex items-center space-x-2 overflow-x-auto pb-1 scrollbar-thin'}`}>
+          {TOOL_REGISTRY.map((tool) => {
+            const isActive = activeTool === tool.id || (activeTool === 'finance-research' && tool.id === 'finance-watchlist');
+            const displayName = tool.title || tool.name;
+            const displayShortName = tool.shortName || displayName;
+
             return (
               <button
                 key={tool.id}
                 onClick={() => setActiveTool(tool.id)}
-                title={tool.name}
+                title={displayName}
                 className={`flex items-center justify-center space-x-1 rounded-lg font-medium transition-all ${
                   isSidebar
-                    ? 'px-1.5 py-1.5 text-[11px]'
+                    ? 'px-1 py-1.5 text-[10px]'
                     : 'px-4 py-2 text-sm'
                 } ${
                   isActive
@@ -99,7 +69,7 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
                 }`}
               >
                 <span className={isSidebar ? 'text-xs' : 'text-sm'}>{tool.icon}</span>
-                <span className="truncate">{isSidebar ? tool.shortName : tool.name}</span>
+                <span className="truncate">{isSidebar ? displayShortName : displayName}</span>
                 {!isSidebar && tool.badge && (
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded-full uppercase tracking-wider font-bold ${
@@ -117,10 +87,7 @@ export const ToolboxHub: React.FC<ToolboxHubProps> = ({ isSidebar = false }) => 
 
       {/* 主工作區域 */}
       <div className={`flex-1 ${isSidebar ? 'p-2 w-full' : 'p-8 max-w-7xl w-full mx-auto'}`}>
-        {activeTool === 'image-scraper' && <ImageScraper isSidebar={isSidebar} />}
-        {activeTool === 'activity-monitor' && <ActivityMonitor isSidebar={isSidebar} />}
-        {activeTool === 'subtitle-collector' && <SubtitleCollector isSidebar={isSidebar} />}
-        {activeTool === 'finance-research' && <WatchListWidget isSidebar={isSidebar} />}
+        {ActiveComponent && <ActiveComponent isSidebar={isSidebar} />}
       </div>
     </div>
   );
