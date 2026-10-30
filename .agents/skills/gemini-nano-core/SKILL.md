@@ -1,9 +1,9 @@
 ---
 name: GeminiNano 核心規格與本機 AI 字典 (GeminiNano Core Spec)
 description: 定義 chrome_gemini_nano 插件之核心定位、Prompt API 邊緣推論、本地工具代理架構與深層 SSOT 導航。
-triggers: [gemini-nano, gemini nano, prompt api, web ai, ai.summarizer, ai.writer, ai.rewriter, 本地ai, 本機大模型, 社群調音, pulse, 萬能路由, chrome_gemini_nano]
+triggers: [gemini-nano, gemini nano, prompt api, web ai, ai.summarizer, ai.writer, ai.rewriter, 本地ai, 本機大模型, 社群調音, pulse, 萬能路由, chrome_gemini_nano, geminiOfficialBridge, 官方gemini橋接, gemini-bridge]
 dependencies: []
-ssot_dependencies: ["chrome_gemini_nano/chrome_gemini_nano_README.md", "chrome_gemini_nano/docs/gemini_nano_spec.md", "0.doc_mg/docs/cross_plugin_contract.md"]
+ssot_dependencies: ["chrome_gemini_nano/chrome_gemini_nano_README.md", "chrome_gemini_nano/docs/gemini_nano_spec.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/spec-official-gemini-bridge.md"]
 ---
 
 # 專家技能：GeminiNano 核心規格與本機 AI 字典 (GeminiNano Core Spec)
@@ -24,6 +24,7 @@ ssot_dependencies: ["chrome_gemini_nano/chrome_gemini_nano_README.md", "chrome_g
 * `src/services/nanoIntentRouter.ts`: 自然語言口語解析路由器 (Cmd+K 萬能路由)
 * `src/services/toneShifter.ts`: 4 大社群調音算子 (銳化/壓線/去油/切Thread，對接 RewriterAdapter)
 * `src/services/pulseExtractor.ts`: 網頁卡片 DOM 提取與 1500 字元截斷
+* `src/geminiOfficialBridge.ts`: 官方 Gemini 側欄雙向橋接 Content Script (DOM 串流監聽 Ingress + 原生 Setter 注入 Egress)
 * `tools/main_dispatcher.py`: 本機 FastAPI 8765 路由閘道微服務
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
@@ -36,3 +37,4 @@ ssot_dependencies: ["chrome_gemini_nano/chrome_gemini_nano_README.md", "chrome_g
 * **完整功能矩陣、端到端執行管線與本地工具索引**: `chrome_gemini_nano/chrome_gemini_nano_README.md`
 * **Prompt API 與本地微服務 API 規格**: `chrome_gemini_nano/docs/gemini_nano_spec.md`
 * **跨插件黑盒契約規範**: `0.doc_mg/docs/cross_plugin_contract.md`
+* **官方 Gemini 側欄雙向橋接規格**: `0.doc_mg/docs/spec-official-gemini-bridge.md`

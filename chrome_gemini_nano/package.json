@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
-    "lint": "tsc --noEmit"
+    "build": "tsc && vite build && vite build --mode bridge",
+    "lint": "tsc --noEmit",
+    "test:bridge": "npx tsx tests/test_gemini_official_bridge.ts"
   },
   "dependencies": {
     "chrome-plus-workspace": "file:..",

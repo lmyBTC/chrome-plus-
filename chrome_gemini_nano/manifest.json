@@ -8,10 +8,24 @@
     "activeTab",
     "scripting",
     "storage",
-    "sidePanel"
+    "sidePanel",
+    "clipboardWrite",
+    "notifications"
   ],
   "host_permissions": [
-    "http://127.0.0.1:8765/*"
+    "http://127.0.0.1:8765/*",
+    "https://gemini.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://gemini.google.com/*"
+      ],
+      "js": [
+        "dist/geminiOfficialBridge.iife.js"
+      ],
+      "run_at": "document_idle"
+    }
   ],
   "action": {
     "default_title": "開啟 Gemini Nano 調音中樞"

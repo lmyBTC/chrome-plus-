@@ -15,6 +15,7 @@ import {
 import { monitorService } from './features/activity-monitor/services/monitorService';
 import { WeeklyMission, InboxItem } from './types';
 import { KanbanAuditor } from './features/project-management/services/kanbanAuditor';
+import { OfficialGeminiConnector } from './core/ai/OfficialGeminiConnector';
 // 初始化活動監控服務
 monitorService.initialize();
 
@@ -241,6 +242,18 @@ chrome.runtime.onMessage.addListener((message: any, sender, sendResponse) => {
     case 'UPDATE_GEMINI_CHAT':
       saveGeminiConversation(message.payload);
       break;
+    case 'GEMINI_OFFICIAL_SYNC':
+      OfficialGeminiConnector.getInstance()
+        .handleSync(message.payload)
+        .then((res) => sendResponse(res))
+        .catch((err) => sendResponse({ success: false, ack: false, error: err?.message }));
+      return true;
+    case 'INJECT_TO_OFFICIAL_GEMINI':
+      OfficialGeminiConnector.getInstance()
+        .injectToOfficialGemini(message.payload?.text, message.payload?.autoSubmit)
+        .then((res) => sendResponse(res))
+        .catch((err) => sendResponse({ success: false, ack: false, error: err?.message }));
+      return true;
     case 'OPEN_DASHBOARD':
       chrome.tabs.create({ url: chrome.runtime.getURL('src/entries/newtab/index.html') });
       break;

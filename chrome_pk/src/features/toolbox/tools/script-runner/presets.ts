@@ -8,6 +8,8 @@ export const PRESET_SCRIPTS: ScriptItem[] = [
     category: 'pikpak',
     targetUrlPattern: '*://mypikpak.com/s/*',
     isPreset: true,
+    version: '1.1.0',
+    changelog: ['1.0.0: 初始版本，DFS 遞迴遍歷', '1.1.0: 支援分頁翻頁與 Token 刷新'],
     createdAt: 1730160000000,
     updatedAt: 1730160000000,
     code: `(async () => {
@@ -145,6 +147,8 @@ export const PRESET_SCRIPTS: ScriptItem[] = [
     description: '抓取當前頁面所有 H1~H6 大綱結構與所有外連/內連網址，便於整理文章脈絡。',
     category: 'scraper',
     isPreset: true,
+    version: '1.0.0',
+    changelog: ['1.0.0: 初始版本'],
     createdAt: 1730160000000,
     updatedAt: 1730160000000,
     code: `(() => {
@@ -183,6 +187,8 @@ export const PRESET_SCRIPTS: ScriptItem[] = [
     description: '掃描目前頁面載入的所有 <img>、<video> 資源與真實渲染尺寸與來源。',
     category: 'scraper',
     isPreset: true,
+    version: '1.0.0',
+    changelog: ['1.0.0: 初始版本'],
     createdAt: 1730160000000,
     updatedAt: 1730160000000,
     code: `(() => {
@@ -220,6 +226,8 @@ export const PRESET_SCRIPTS: ScriptItem[] = [
     description: '讀取 PerformanceNavigationTiming 分析 DNS、TCP、TTFB 及頁面加載關鍵耗時。',
     category: 'utility',
     isPreset: true,
+    version: '1.0.0',
+    changelog: ['1.0.0: 初始版本'],
     createdAt: 1730160000000,
     updatedAt: 1730160000000,
     code: `(() => {

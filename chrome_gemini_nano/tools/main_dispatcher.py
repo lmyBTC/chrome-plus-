@@ -59,8 +59,23 @@ async def health_check():
             "publish_threads",
             "save_markdown",
             "sync_google",
-            "flush_google_queue"
+            "flush_google_queue",
+            "gemini_inject"
         ]
+    }
+
+@app.post("/api/v1/gemini/inject")
+async def gemini_inject_api(payload: Dict[str, Any]):
+    text = payload.get("text", "")
+    auto_submit = payload.get("autoSubmit", True)
+    logger.info(f"⚡ 收到官方 Gemini 注入轉發 (長度: {len(text)})")
+    return {
+        "success": True,
+        "ack": True,
+        "injectedLength": len(text),
+        "submitted": auto_submit,
+        "level": 2,
+        "timestamp": payload.get("timestamp")
     }
 
 @app.post("/exec")
@@ -114,6 +129,19 @@ async def execute_tool(req: ToolRequest):
             from google_sync_worker import flush_offline_queue
             gas_url = data.get("gas_webhook_url", "")
             return flush_offline_queue(gas_url)
+
+        elif name == "gemini_inject":
+            text = data.get("text", "")
+            auto_submit = data.get("autoSubmit", True)
+            logger.info(f"⚡ 收到 Gemini 回拋工具轉發 (長度: {len(text)})")
+            return {
+                "success": True,
+                "ack": True,
+                "injectedLength": len(text),
+                "submitted": auto_submit,
+                "level": 2,
+                "timestamp": data.get("timestamp")
+            }
 
         else:
             logger.warning(f"⚠️ 未知的工具指令: {name}")

@@ -249,6 +249,12 @@ interface CrossPluginGoogleResponse {
    - `FETCH_INBOX_TASKS`: 逆向拉取 Google Tasks 未完成項目至看板。
 3. **超時底線**：全端 10 秒超時控制，失敗降級至本機微服務 `127.0.0.1:8765/sync_google` 離線佇列。
 
+### 6.11 官方 Gemini 側欄雙向橋接協定 (`GEMINI_OFFICIAL_SYNC` / `INJECT_TO_OFFICIAL_GEMINI` v2.4)
+- **規範詳情**：參見專屬 SSOT `0.doc_mg/docs/spec-official-gemini-bridge.md`。
+- **雙向事件**：
+  1. `GEMINI_OFFICIAL_SYNC`：Bridge 監聽官方 Gemini DOM 串流（800ms 防抖去重）➔ 廣播至 PK+ 歷史對話池。
+  2. `INJECT_TO_OFFICIAL_GEMINI`：PK+ 成果回拋 ➔ Bridge 透過原生 Setter 注入與事件合成序列輸入官方對話框；具備三層階梯式降級（層 1 Web DOM ➔ 層 2 本機 :8765 ➔ 層 3 剪貼簿 + Chrome Notification）。
+
 ---
 
 ## 7. AI 輔助開發視野邊界守則 (AI Context Boundary Protection)

@@ -29,6 +29,7 @@
 | 規範名稱 | 檔案路徑 | 核心範疇與定位 |
 | :--- | :--- | :--- |
 | **跨插件通訊黑盒契約** | `0.doc_mg/docs/spec-cross-plugin-contract.md` | 跨插件鬆耦合事件總線、`UniversalGooglePayload` 與標準通訊協議 |
+| **官方 Gemini 側欄雙向橋接規格** | `0.doc_mg/docs/spec-official-gemini-bridge.md` | 官方側欄雙向橋接架構 (Ingress 800ms 防抖串流 + Egress 三層降級) |
 | **Chrome 插件技術標準** | `0.doc_mg/docs/spec-dev-standards.md` | Manifest V3 規範、Shadow DOM 樣式隔離、CSP/XSS 資安防禦原則 |
 | **Token 節省技術指南** | `0.doc_mg/docs/guide-token-optimization.md` | RTK 命令包裝、代碼骨架提煉、終端日誌脫水與長對話動態收斂 |
 | **三大技能綜效流程指南** | `0.doc_mg/docs/guide-skills-synergy.md` | token-saver、task-protocol 與 repo-radar 三位一體開發流水線指南 |

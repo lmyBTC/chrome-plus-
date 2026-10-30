@@ -23,6 +23,7 @@
 | **萬能意圖路由器** | 自然語言指令解析器 (Cmd+K 路由)，將口語指令拆解為具體 Actions | `src/services/nanoIntentRouter.ts` | `src/services/nanoService.ts` | 支援番茄鐘、GTD、社群分發與筆記動作 |
 | **內容卡片擷取器** | 網頁卡片 DOM 提取與 1500 字元截斷防爆保護 | `src/services/pulseExtractor.ts` | DOM API | 針對研報卡片與長文內容提取重點 |
 | **社群調音算子** | 4 大社群調音變換：銳化觀點、壓線字數、去油去官腔、拆切 Threads | `src/services/toneShifter.ts` | `src/services/adapters/rewriterAdapter.ts` | 透過原生 RewriterAdapter 進行風格重寫 |
+| **官方 Gemini 雙向橋接** | 官方側欄雙向橋接 Content Script，DOM 串流監聽 Ingress + 原生 Setter 注入 Egress | `src/geminiOfficialBridge.ts` | Chrome MV3 Content Script / DOM API | 串接 PK+，支援三層降級保底 (v2.4) |
 
 ---
 
@@ -32,7 +33,7 @@
 
 | 工具腳本 | 核心職責 | 連線埠 / 協議 | 依賴模組 | 備註 |
 | :--- | :--- | :--- | :--- | :--- |
-| **本地中樞閘道** (`main_dispatcher.py`) | 本機 HTTP 微服務中樞，接收擴充插件指令並調度底層腳本 | `http://127.0.0.1:8765` (FastAPI) | `fastapi`, `uvicorn` | 支援 CORS，提供社群發布、RSS、去重端點 |
+| **本地中樞閘道** (`main_dispatcher.py`) | 本機 HTTP 微服務中樞，接收擴充插件指令並調度底層腳本 | `http://127.0.0.1:8765` (FastAPI) | `fastapi`, `uvicorn` | 支援 CORS，提供社群發布、RSS、去重端點與 Gemini 注入橋接 (/api/v1/gemini/inject) |
 | **社群發布代理** (`social_publisher.py`) | 代理發布貼文至 X (Twitter) API 與 Meta Threads API | REST API / 本地 CLI | `requests`, `requests_oauthlib` | 支援 `--dry-run` 模擬測試模式 |
 | **RSS 生成維護器** (`rss_generator.py`) | 維護本機 `feed.xml`，自動追加新貼文並滾動保留最新 30 則 | 本地 XML 檔案讀寫 | `xml.etree.ElementTree` | 產出標準 RSS 2.0 格式 |
 | **歷史貼文去重** (`local_dedup.py`) | 貼文相似度防重比對，避免重複發表相同內容 | 相似度比對演算法 | `difflib.SequenceMatcher` | 預設門檻值 `>= 0.65` 發出防重警告 |
@@ -80,3 +81,4 @@ SocialDispatcher.tsx (HITL 人機協同檢視與調整)
 1. **多插件邊界防禦**：本插件保持完全獨立，前端代碼與本地工具均位於 `chrome_gemini_nano/` 命名空間內。
 2. **通訊契約協定**：如需與 `chrome_scrumclock` 或其他擴充套件聯動，必須嚴格依循 `0.doc_mg/docs/cross_plugin_contract.md` 定義之 `DISPATCH_SOCIAL_POST` 與 `LOCAL_TOOL_PROXY` 標準訊息結構進行黑盒通訊。
 3. **優雅降級機制**：若本地端 Python 微服務 (`127.0.0.1:8765`) 未啟動，前端介面需提示連線狀態，不引發致命錯誤。
+4. **官方 Gemini 橋接契約**：透過 `GEMINI_OFFICIAL_SYNC` 與 `INJECT_TO_OFFICIAL_GEMINI` 黑盒事件與 `chrome_pk` 雙向通訊，規格詳見 `0.doc_mg/docs/spec-official-gemini-bridge.md`。

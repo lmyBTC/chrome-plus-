@@ -12,7 +12,7 @@ import re
 import sys
 import argparse
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:

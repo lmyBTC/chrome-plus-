@@ -2,6 +2,7 @@ import { executeNanoInference, parseFinanceSummary } from '../utils/ai-helper';
 import { buildFinanceSummaryPrompt, FINANCE_SUMMARY_SYSTEM_PROMPT } from '../utils/ai-prompts';
 import { getUserSettings } from './alarmHandlers';
 import { sendDirectMessage, logContractDebug } from '../shared/messaging/outboxQueue';
+import { OfficialGeminiConnector } from '../core/ai/OfficialGeminiConnector';
 
 export const DEFAULT_FINANCE_CLIPPER_ID = 'imnnkgiglcbjknfbkdfocdhoookkipji';
 export const DEFAULT_ACTIVITY_MONITOR_ID = 'kjnoegggihncdaimlgfccccogghjapgn';
@@ -131,6 +132,45 @@ export function handleExternalMessage(message: any, sender: chrome.runtime.Messa
         sendResponse({
           success: false,
           error: err?.message || '接收社群草稿時發生未預期錯誤'
+        });
+      }
+    })();
+    return true;
+  }
+
+  // 6. 官方 Gemini 側欄雙向橋接同步 (GEMINI_OFFICIAL_SYNC)
+  if (message?.type === 'GEMINI_OFFICIAL_SYNC') {
+    (async () => {
+      try {
+        const result = await OfficialGeminiConnector.getInstance().handleSync(message.payload);
+        sendResponse(result);
+      } catch (err: any) {
+        logContractDebug('FALLBACK', 'GEMINI_OFFICIAL_SYNC', sender.id || 'unknown', err?.message);
+        sendResponse({
+          success: false,
+          ack: false,
+          error: err?.message || '同步官方 Gemini 對話時發生未預期錯誤'
+        });
+      }
+    })();
+    return true;
+  }
+
+  // 7. 回拋注入官方 Gemini 側欄 (INJECT_TO_OFFICIAL_GEMINI)
+  if (message?.type === 'INJECT_TO_OFFICIAL_GEMINI') {
+    (async () => {
+      try {
+        const result = await OfficialGeminiConnector.getInstance().injectToOfficialGemini(
+          message.payload?.text,
+          message.payload?.autoSubmit
+        );
+        sendResponse(result);
+      } catch (err: any) {
+        logContractDebug('FALLBACK', 'INJECT_TO_OFFICIAL_GEMINI', sender.id || 'unknown', err?.message);
+        sendResponse({
+          success: false,
+          ack: false,
+          error: err?.message || '回拋官方 Gemini 側欄時發生未預期錯誤'
         });
       }
     })();

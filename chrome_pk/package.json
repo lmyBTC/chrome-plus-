@@ -11,13 +11,16 @@
     "test:prompt": "tsx tests/prompt-eval.ts",
     "test:nano-mock": "tsx tests/nano-mock-eval.ts",
     "test:contract": "tsx tests/contract-cross-plugin-eval.ts",
-    "test:e2e-live": "tsx tests/e2e-nano-live-eval.ts"
+    "test:e2e-live": "tsx tests/e2e-nano-live-eval.ts",
+    "test:official-bridge": "tsx tests/test_official_gemini_connector.ts"
   },
   "dependencies": {
+    "@types/prismjs": "^1.26.6",
     "chart.js": "^4.4.0",
     "chrome-plus-workspace": "file:..",
     "date-fns": "^2.30.0",
     "kbar": "^0.1.0-beta.48",
+    "prismjs": "^1.30.0",
     "react": "^18.2.0",
     "react-chartjs-2": "^5.2.0",
     "react-dom": "^18.2.0",
