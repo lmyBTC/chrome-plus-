@@ -3,7 +3,7 @@ name: 專案情報雷達 (Repo Radar & Symbol Locator)
 description: 提供極低 Token 的專案拓撲地圖 (map)、文檔大綱 (outline)、章節切片 (section)、全域符號秒查 (symbol) 與熔斷搜尋 (search)。
 triggers: [repo radar, 符號查詢, 檢索代碼, 查型別, 查介面, 查文檔, 文檔大綱, 章節切片, 專案地圖, symbol lookup, 專案雷達]
 dependencies: []
-ssot_dependencies: [0.doc_mg/docs/repo_radar_ai_prompt_instructions.md, 1.devtools/tools/repo_radar.py, 1.devtools/tools/generate_symbol_index.py]
+ssot_dependencies: ["0.doc_mg/docs/guide-repo-radar.md", "1.devtools/docs/spec-devtools-matrix.md", "1.devtools/tools/repo_radar.py", "1.devtools/tools/generate_symbol_index.py"]
 ---
 
 # 專家技能：專案情報雷達與極致精準檢索 (Repo Radar Skill)
@@ -41,7 +41,8 @@ ssot_dependencies: [0.doc_mg/docs/repo_radar_ai_prompt_instructions.md, 1.devtoo
 
 ## 3. 關聯 SSOT 與技術指針
 
-- **AI 導航指引與決策樹**：`0.doc_mg/docs/repo_radar_ai_prompt_instructions.md`
+- **AI 導航指引與決策樹**：`0.doc_mg/docs/guide-repo-radar.md`
+- **開發者工具矩陣字典 (SSOT)**：`1.devtools/docs/spec-devtools-matrix.md`
 - **實體工具腳本**：`1.devtools/tools/repo_radar.py`
 - **符號索引生成器**：`1.devtools/tools/generate_symbol_index.py`
 - **全域規則對齊**：`.agents/rules.md`

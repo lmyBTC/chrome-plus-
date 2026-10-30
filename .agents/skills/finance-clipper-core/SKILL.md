@@ -3,7 +3,7 @@ name: FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec
 description: 定義 finance-research-clipper-oss 插件之核心定位、零構建架構入口、跨插件黑盒契約與深層 SSOT 導航。
 triggers: [finance-clipper, 研報採集, 股票爬蟲, 財務儀表板, yahoo finance爬蟲, 個股剪輯, 財報分析]
 dependencies: []
-ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md"]
+ssot_dependencies: ["finance-research-clipper-oss/docs/spec-clipper-components.md", "finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0.doc_mg/docs/spec-cross-plugin-contract.md", "0.doc_mg/docs/spec-google-ecosystem.md"]
 ---
 
 # 專家技能：FinanceClipper 研報採集與財務規格字典 (FinanceClipper Core Spec)
@@ -27,10 +27,11 @@ ssot_dependencies: ["finance-research-clipper-oss/FINANCE_CLIPPER_README.md", "0
 
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **禁止跨目錄讀取**: 開發 FinanceClipper 時，嚴禁跨目錄讀取 `chrome_pk/`、`browser-activity-monitor/` 等其他插件源碼。
-2. **通訊規格驅動**: 跨插件協同（`PING_HUB`, `CREATE_TASK`, `EXPORT_TO_SHEETS`）一律依據 `0.doc_mg/docs/cross_plugin_contract.md` 與 `0.doc_mg/docs/google_ecosystem_integration_spec.md` 黑盒規範。
+2. **通訊規格驅動**: 跨插件協同（`PING_HUB`, `CREATE_TASK`, `EXPORT_TO_SHEETS`）一律依據 `0.doc_mg/docs/spec-cross-plugin-contract.md` 與 `0.doc_mg/docs/spec-google-ecosystem.md` 黑盒規範。
 3. **零構建約束**: 維持無打包純原生 JS 特性，嚴禁引入 Node.js/Webpack/Vite 等構建工具。
 
 ## 4. 深層 SSOT 導航 (Deep Reference)
+* **組成元件字典與架構切片 (SSOT)**: 詳見 `finance-research-clipper-oss/docs/spec-clipper-components.md`
 * **完整規格、選擇器字典、Miner Schema 與儲存模型**: 詳見 `finance-research-clipper-oss/FINANCE_CLIPPER_README.md`
-* **跨插件協同通訊協議**: 詳見 `0.doc_mg/docs/cross_plugin_contract.md`
-* **Google 生態系直連規範**: 詳見 `0.doc_mg/docs/google_ecosystem_integration_spec.md`
+* **跨插件協同通訊協議**: 詳見 `0.doc_mg/docs/spec-cross-plugin-contract.md`
+* **Google 生態系直連規範**: 詳見 `0.doc_mg/docs/spec-google-ecosystem.md`

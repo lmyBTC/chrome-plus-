@@ -72,3 +72,10 @@ scratch/
 .repo_index.json
 
 
+
+# Google Drive for Desktop 暫存與快取
+.tmp.driveupload/
+*.tmp.driveupload
+.driveupload/
+.drive/
+Icon?

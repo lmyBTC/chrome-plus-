@@ -24,5 +24,6 @@
 
 ## 📖 完整規格與 SSOT 導航 (Deep SSOT Reference)
 本插件所有詳細雙軌隨選健檢架構、IndexedDB 儲存 Schema、前端環形緩衝區規範、資源效能診斷閾值與 ScrumClock 整併架構，請查閱：
-👉 **`ACTIVITY_MONITOR_README.md`** (本插件 Single Source of Truth)
+- 👉 **`ACTIVITY_MONITOR_README.md`** (本插件 Single Source of Truth)
+- 👉 **組成元件架構字典**：`browser-activity-monitor/docs/spec-actmon-components.md` (詳細記載雙軌探針、資源監控與儲存層元件矩陣)
 

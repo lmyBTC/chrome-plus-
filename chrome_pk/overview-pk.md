@@ -77,6 +77,7 @@
 
 | 規格文件名稱 | 相對路徑 | 內容重點 |
 | :--- | :--- | :--- |
+| **8 大切片元件架構字典** | `chrome_pk/docs/spec-pk-components.md` | 8 大垂直切片元件、服務邏輯與微工具架構字典 |
 | **架構地圖與資料夾命名規範** | `docs/guide-pk-features-arch.md` | 四層領域架構、資料夾命名規範、Toolbox 微工具外掛協議與擴充 Checklist |
 | **圖片擷取器規格書** | `docs/image-scraper-spec.md` | 圖片抓取邏輯、IG 解析策略、下載佇列併發設計 |
 | **Gemini 注入規格書** | `docs/gemini-content-spec.md` | Content Script 注入規則、DOM 擷取與 Markdown 轉換流程 |

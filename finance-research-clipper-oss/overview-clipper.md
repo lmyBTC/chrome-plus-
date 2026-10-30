@@ -49,6 +49,7 @@
 ## 🧭 專案模組架構速查 (File Map)
 
 詳細系統架構與技術規範請參閱完整文件：
+- 👉 組成元件架構規格字典 (`finance-research-clipper-oss/docs/spec-clipper-components.md`)
 - 👉 開發規格與架構說明書 (`docs/chrome-extension-v3-spec.md`)
 - 👉 同業對比矩陣與敏感度估值沙盒業務規格 (`docs/peer-matrix-and-valuation-spec.md`)
 

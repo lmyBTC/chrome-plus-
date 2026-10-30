@@ -124,6 +124,7 @@
 
 ## 3. 相關專家技能與業務指引
 
+- **全域工具矩陣規格**：`1.devtools/docs/spec-devtools-matrix.md`
 - **任務協議技能**：`.agents/skills/task-protocol/SKILL.md`
 - **任務管理指引**：`0.doc_mg/docs/guide-task-manager.md`
 - **專案情報雷達技能**：`.agents/skills/repo-radar/SKILL.md`

@@ -3,7 +3,7 @@ name: 任務協議管理 (Task Protocol Management)
 description: 強制執行 `task_template_v2.md` 的初始化、同步、3-Gate 門禁、會話隔離與封存管理規範。
 triggers: [建立任務, 開始開發, 任務拆解, 狀態更新, 同步進度, 3-Gate, 會話隔離, 任務協議, task_cli]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/guide-task-manager.md", ".agents/rules.md"]
+ssot_dependencies: ["0.doc_mg/task_template_v2.md", "0.doc_mg/docs/guide-task-manager.md", "1.devtools/docs/spec-devtools-matrix.md", ".agents/rules.md"]
 ---
 
 # 技能指令：任務協議守護者 (Task Protocol Guardian - Chrome Plus v3.2 鬆綁流暢版)

@@ -3,7 +3,7 @@ name: Token 節省器 (RTK Token Saver)
 description: 指導 Agent 在終端執行、檔案讀寫與會話管理中最大化節省 Token，涵蓋 rtk 包裝、代碼骨架提煉、日誌脫水、局部讀寫、會話重置與自動化審計。
 triggers: [節省Token, 壓縮輸出, 優化指令, 使用rtk, token優化, 執行終端, 指令節省, rtk指令, 終端優化, 局部讀取, 精準寫入, 會話重置, 代碼骨架, 骨架提煉, code_skeleton, 日誌脫水, compact_log, 水位分析, analyze_task_tokens, 情報雷達, repo_radar]
 dependencies: []
-ssot_dependencies: ["0.doc_mg/docs/guide-token-optimization.md", ".agents/rules.md"]
+ssot_dependencies: ["0.doc_mg/docs/guide-token-optimization.md", "1.devtools/docs/spec-devtools-matrix.md", ".agents/rules.md"]
 ---
 
 # 專家技能：Token 節省器 (RTK Token Saver - Chrome Plus v3.2 旗艦版)

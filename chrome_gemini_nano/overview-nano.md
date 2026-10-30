@@ -82,3 +82,11 @@ SocialDispatcher.tsx (HITL 人機協同檢視與調整)
 2. **通訊契約協定**：如需與 `chrome_scrumclock` 或其他擴充套件聯動，必須嚴格依循 `0.doc_mg/docs/cross_plugin_contract.md` 定義之 `DISPATCH_SOCIAL_POST` 與 `LOCAL_TOOL_PROXY` 標準訊息結構進行黑盒通訊。
 3. **優雅降級機制**：若本地端 Python 微服務 (`127.0.0.1:8765`) 未啟動，前端介面需提示連線狀態，不引發致命錯誤。
 4. **官方 Gemini 橋接契約**：透過 `GEMINI_OFFICIAL_SYNC` 與 `INJECT_TO_OFFICIAL_GEMINI` 黑盒事件與 `chrome_pk` 雙向通訊，規格詳見 `0.doc_mg/docs/spec-official-gemini-bridge.md`。
+
+---
+
+## 📖 5. 完整規格與 SSOT 導航 (Deep SSOT Reference)
+
+本插件詳細組成元件、Prompt API Pipeline、Web AI Gateway 分流適配與本地微服務代理，請查閱：
+- 👉 **組成元件規格字典**：`chrome_gemini_nano/docs/spec-nano-components.md` (詳細記載 Prompt API 適配層、Web AI 矩陣閘道與本機 FastAPI 工具代理元件)
+- 👉 **邊緣推論模型規格**：`chrome_gemini_nano/docs/spec-nano-core.md` (Gemini Nano 模型邊緣推論參數與會話管理規格)

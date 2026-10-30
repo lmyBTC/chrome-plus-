@@ -3,7 +3,7 @@ name: PK+ 插件規格與元件字典 (PK Core Spec)
 description: 定義 chrome_pk 插件之核心定位、技術棧、架構入口與深層 SSOT 導航。
 triggers: [pk, pk+, power kit, scrumclock, 番茄鐘, 敏捷看板, pk開發, scrum, pomodoro, 側邊欄番茄鐘, officialGeminiConnector, 官方gemini橋接, geminiOfficialBridge]
 dependencies: []
-ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/guide-pk-features-arch.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/cross_plugin_contract.md", "0.doc_mg/docs/google_ecosystem_integration_spec.md", "0.doc_mg/docs/spec-official-gemini-bridge.md"]
+ssot_dependencies: ["chrome_pk/docs/spec-pk-components.md", "chrome_pk/PK_README.md", "chrome_pk/docs/guide-pk-features-arch.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/spec-cross-plugin-contract.md", "0.doc_mg/docs/spec-google-ecosystem.md", "0.doc_mg/docs/spec-official-gemini-bridge.md"]
 ---
 
 # 專家技能：PK+ 插件規格與元件字典 (PK Core Spec)
@@ -36,11 +36,12 @@ ssot_dependencies: ["chrome_pk/PK_README.md", "chrome_pk/docs/guide-pk-features-
 
 ## 4. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **禁止跨插件掃描**: 嚴禁讀取或檢索其他插件目錄（如 `finance-research-clipper-oss`）之原始碼。
-2. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/cross_plugin_contract.md` 與 `UniversalTaskPayload` v2.3 介面。
+2. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/spec-cross-plugin-contract.md` 與 `UniversalTaskPayload` v2.3 介面。
 3. **優雅降級**: 依賴之外部插件未啟用時，對應小工具必須安全降級，不得中斷核心番茄鐘流程。
 4. **架構與命名規範**: 新增微工具或模組必須嚴格遵循 `guide-pk-features-arch.md` 之四層領域切片、Pluggable Micro-Tools 註冊協議與 `kebab-case`/`PascalCase` 命名規範。
 
 ## 5. 深層 SSOT 導航 (Deep Reference)
-* **架構地圖、資料夾結構與命名規範 (SSOT)**: 詳見 `chrome_pk/docs/guide-pk-features-arch.md`
+* **組成元件字典與架構切片 (SSOT)**: 詳見 `chrome_pk/docs/spec-pk-components.md`
+* **架構地圖、資料夾結構與命名規範**: 詳見 `chrome_pk/docs/guide-pk-features-arch.md`
 * **完整元件矩陣、Storage Schema、通訊協議與熱區清單**: 詳見 `chrome_pk/PK_README.md`
 * **官方 Gemini 側欄雙向橋接規格**: 詳見 `0.doc_mg/docs/spec-official-gemini-bridge.md`

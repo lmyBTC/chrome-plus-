@@ -20,4 +20,5 @@
 
 ## 📖 完整規格與 SSOT 導航 (Deep SSOT Reference)
 本插件所有詳細資料模型 (Storage Schema)、Shadow DOM 隔離技術細節、全域鍵盤快捷鍵映射、法說會打點與跨插件通訊協定，請查閱：
-👉 **`VIDEOSPEED_README.md`** (本插件 Single Source of Truth)
+- 👉 **`VIDEOSPEED_README.md`** (本插件 Single Source of Truth)
+- 👉 **組成元件架構字典**：`chrome_video speed plus/docs/spec-vidspeed-components.md` (詳細記載 Shadow DOM 注入容器、懸浮面板、快速鍵監聽與時間戳筆記元件)

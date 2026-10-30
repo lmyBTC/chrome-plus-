@@ -37,6 +37,7 @@
 | **Google 生態整合架構** | `0.doc_mg/docs/spec-google-ecosystem.md` | Google Workspace (Sheets/Docs/Tasks/Calendar) 雙軌串接藍圖 |
 | **GAS Web App 部署指南** | `0.doc_mg/docs/guide-gas-deployment.md` | Google Apps Script 個人專屬同步中樞部署與 Secret 設定步驟 |
 | **語意化版本與發布規範** | `0.doc_mg/docs/spec-versioning.md` | 專案語意化版號 (SemVer) 推進原則與自動化版號更新規則 |
+| **Chrome 合規審計規範** | `0.doc_mg/docs/spec-chrome-auditor.md` | Manifest V3 / CSP / XSS 自動化合規檢驗與審計清單規範 |
 | **Repo Radar 提示詞指南** | `0.doc_mg/docs/guide-repo-radar.md` | 專案符號秒查、拓撲輪廓提煉與超低 Token 探索規範 |
 | **分析師工作流摩擦力矩陣** | `0.doc_mg/docs/matrix-analyst-friction.md` | 投研員、研究助理日常高頻操作摩擦力與落地場景分析 |
 | **專案經理工作流摩擦力矩陣** | `0.doc_mg/docs/matrix-pm-friction.md` | 專案經理與敏捷開發者衝刺規劃、任務池拋轉之摩擦力矩陣 |
@@ -63,6 +64,7 @@
 各模組業務規格一律遵循 **`spec-<module>-<topic>.md`**、**`guide-<module>-<topic>.md`** 或 **`flow-<module>-<topic>.md`** 規範：
 
 ### Chrome PK 模組
+- `chrome_pk/docs/spec-pk-components.md`：PK+ 8 大垂直切片元件架構與微工具字典
 - `chrome_pk/docs/spec-pk-gtd-kanban.md`：GTD 敏捷看板與戰役任務規格
 - `chrome_pk/docs/spec-pk-activity-monitor.md`：活動監控整合模組技術規格
 - `chrome_pk/docs/spec-pk-dark-theme.md`：深色主題色彩變數與設計系統
@@ -81,9 +83,11 @@
 - `chrome_pk/src/features/toolbox/tools/subtitle-collector/guide-tool-subtitle-collector.md`：Toolbox 字幕收集小工具說明
 
 ### DevTools 工具箱模組
+- `1.devtools/docs/spec-devtools-matrix.md`：全域工具矩陣、職責分類與調用協定規格
 - `1.devtools/scripts/guide-gas-setup.md`：GAS 快速部署腳本指南
 
 ### Finance Clipper 模組
+- `finance-research-clipper-oss/docs/spec-clipper-components.md`：雙載體 UI、爬蟲管線與分析沙盒元件規格字典
 - `finance-research-clipper-oss/docs/spec-clipper-mv3.md`：MV3 安全標準與注入架構
 - `finance-research-clipper-oss/docs/spec-clipper-peer-valuation.md`：同行估值比較矩陣規格
 - `finance-research-clipper-oss/docs/spec-clipper-google-finance.md`：Google Finance 測試版數據流規格
@@ -91,8 +95,13 @@
 - `finance-research-clipper-oss/docs/spec-clipper-gas-sync.md`：Clipper 專屬 Sheets 試算表結構
 
 ### Gemini Nano & Activity Monitor 模組
+- `chrome_gemini_nano/docs/spec-nano-components.md`：Prompt API Pipeline、Web AI Gateway 與本地代理元件規格字典
 - `chrome_gemini_nano/docs/spec-nano-core.md`：Gemini Nano 邊緣模型規格
+- `browser-activity-monitor/docs/spec-actmon-components.md`：雙軌健檢探針、分析引擎與資料庫儲存元件規格字典
 - `browser-activity-monitor/docs/spec-actmon-tab-interceptor.md`：分頁攔截器與監聽規格
+
+### Video Speed Plus 模組
+- `chrome_video speed plus/docs/spec-vidspeed-components.md`：Shadow DOM 注入容器、控制條與快速鍵元件規格字典
 
 ---
 

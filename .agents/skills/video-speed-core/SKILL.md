@@ -3,7 +3,7 @@ name: VideoSpeedPlus 影片倍速規格與樣式隔離字典 (VideoSpeedPlus Cor
 description: 定義 chrome_video speed plus 插件之核心定位、Shadow DOM 樣式隔離底線、架構入口與深層 SSOT 導航。
 triggers: [video speed, 影片倍速, youtube倍速, videospeedplus, 倍速播放, 影片控制器]
 dependencies: []
-ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md", "0.doc_mg/docs/cross_plugin_contract.md"]
+ssot_dependencies: ["chrome_video speed plus/docs/spec-vidspeed-components.md", "chrome_video speed plus/VIDEOSPEED_README.md", "0.doc_mg/docs/spec-cross-plugin-contract.md"]
 ---
 
 # 專家技能：VideoSpeedPlus 影片倍速規格與樣式隔離字典 (VideoSpeedPlus Core Spec)
@@ -23,7 +23,9 @@ ssot_dependencies: ["chrome_video speed plus/VIDEOSPEED_README.md", "0.doc_mg/do
 ## 3. 邊界防禦與隔離禁忌 (Hard Rules)
 1. **Shadow DOM 絕對隔離**: 控制器懸浮面板與輸入視窗必須建立在獨立 `ShadowRoot` 內，嚴禁 CSS 全域污染宿主網頁。
 2. **純淨原生約束**: 維持無打包純 Vanilla JS 結構，禁止引入重量級打包工具或龐大第三方函式庫。
-3. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/cross_plugin_contract.md` 規範傳遞純資料（`COLLECT_NOTE`），禁止跨目錄讀寫外部插件源碼或私有儲存。
+3. **黑盒契約通訊**: 跨插件協同僅透過 `0.doc_mg/docs/spec-cross-plugin-contract.md` 規範傳遞純資料（`COLLECT_NOTE`），禁止跨目錄讀寫外部插件源碼或私有儲存。
 
 ## 4. 深層 SSOT 導航 (Deep Reference)
+* **組成元件字典與架構切片 (SSOT)**: 詳見 `chrome_video speed plus/docs/spec-vidspeed-components.md`
 * **完整規格、快捷鍵映射、Storage Schema 與通訊細節**: 詳見 `chrome_video speed plus/VIDEOSPEED_README.md`
+* **跨插件黑盒契約規範**: 詳見 `0.doc_mg/docs/spec-cross-plugin-contract.md`
