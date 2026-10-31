@@ -40,10 +40,41 @@ const PopupApp: React.FC = () => {
 
   const handleOpenSidePanel = async () => {
     try {
-      if (typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
-        const currentWindow = await chrome.windows.getCurrent();
-        if (currentWindow.id) {
-          await (chrome.sidePanel as any).open({ windowId: currentWindow.id });
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      let openedInPage = false;
+
+      // 檢查當前 activeTab 是否為一般網頁（非受保護特權頁面）
+      if (
+        activeTab &&
+        activeTab.id &&
+        activeTab.url &&
+        !activeTab.url.startsWith('chrome://') &&
+        !activeTab.url.startsWith('chrome-extension://') &&
+        !activeTab.url.startsWith('edge://') &&
+        !activeTab.url.startsWith('devtools://') &&
+        !activeTab.url.startsWith('view-source:') &&
+        !activeTab.url.startsWith('about:')
+      ) {
+        try {
+          const response = await chrome.tabs.sendMessage(activeTab.id, {
+            type: 'TOGGLE_PK_INPAGE_SIDEBAR',
+          });
+          if (response && response.success) {
+            openedInPage = true;
+          }
+        } catch (_err) {
+          // Content script 尚未就緒或處於 Web Store 限制頁面，降級處理
+          openedInPage = false;
+        }
+      }
+
+      // 若無法於頁面內注入（特權頁面、無效分頁等），降級開啟原生 sidePanel
+      if (!openedInPage) {
+        if (typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
+          const currentWindow = await chrome.windows.getCurrent();
+          if (currentWindow.id) {
+            await (chrome.sidePanel as any).open({ windowId: currentWindow.id });
+          }
         }
       }
     } catch (error) {

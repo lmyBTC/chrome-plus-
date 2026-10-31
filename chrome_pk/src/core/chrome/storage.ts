@@ -14,6 +14,8 @@ const DEFAULT_SETTINGS: UserSettings = {
   whiteNoiseEnabled: false,
   whiteNoiseVolume: 0.5,
   geminiApiKey: '',
+  geminiModel: 'gemini-2.0-flash',
+  enableFunctionCalling: true,
   enableWebhook: false,
   webhookUrl: '',
   webhookSecretToken: '',

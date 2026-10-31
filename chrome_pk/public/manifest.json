@@ -40,7 +40,11 @@
     {
       "resources": [
         "scripts/probes/probe-isolated.js",
-        "scripts/probes/probe-main.js"
+        "scripts/probes/probe-main.js",
+        "src/entries/sidebar/*",
+        "sidebar.js",
+        "index.css",
+        "icons/*"
       ],
       "matches": ["<all_urls>"]
     }
@@ -62,6 +66,13 @@
     "newtab": "src/entries/newtab/index.html"
   },
   "commands": {
+    "toggle_sidebar": {
+      "suggested_key": {
+        "default": "Alt+S",
+        "mac": "Alt+S"
+      },
+      "description": "切換 PK+ 左側工作欄開合 (In-Page / 側欄)"
+    },
     "quick_capture": {
       "suggested_key": {
         "default": "Alt+K",

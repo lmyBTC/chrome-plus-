@@ -54,6 +54,7 @@
 | **任務適配器介面** | `src/core/api/ITaskAdapter.ts`<br>`src/core/api/adapters/GoogleTaskAdapter.ts` | Google Tasks、Notion Webhook 介面抽換與適配 |
 | **全域版面框架** | `src/core/layout/MainLayout.tsx`<br>`src/core/layout/Sidebar.tsx`<br>`src/core/layout/CommandPalette.tsx` | 應用程式頂部導航、側邊選單（頂部 Logo 旁整合 `GoogleAccountButton` 快速登入/狀態指示與下拉選單）、鍵盤快捷命令列 (`Ctrl+P` / `Cmd+K`) |
 | **AI 引擎核心** | `src/utils/ai-helper.ts`<br>`src/utils/ai-prompts.ts`<br>`src/utils/ai-schemas.ts` | Chrome 內建 Gemini Nano Prompt API、外接 Gemini API Key 調用、Prompt 系統提示詞、JSON Action 解析規範 |
+| **Gemini 雲端與看板分發** | `src/core/ai/GeminiCloudAgent.ts`<br>`src/features/project-management/services/kanbanActionDispatcher.ts` | 直連 Gemini REST API、SSE 流式解析、7 大 PK_TOOLS Function Calling 宣告、WIP 限制守門防護與破壞性確認攔截 |
 | **文字與標籤解析** | `src/utils/markdown.tsx`<br>`src/utils/task-parser.ts` | 輕量 Markdown 渲染元件、文字自然語言任務時間解析 |
 | **頂層通用元件** | `src/components/SettingsPanel.tsx`<br>`src/components/InstallDocs.tsx`<br>`src/components/GoogleAccountButton.tsx` | 全域系統設定視窗（雲端雙向同步控制、跨插件 Ping/Pong 健檢與錯誤代碼觀測）、系統安裝指引與除錯手冊、Google 帳號狀態按鈕與下拉選單元件（支援即時 OAuth 授權與登出） |
 | **跨插件通訊中樞 (V2)** | `src/shared/messaging/outboxQueue.ts`<br>`src/shared/types/taskContracts.ts`<br>`src/background/externalService.ts` | 恆定 Extension ID (`ahiihabnbjeoeneahcgbdcofncjoclcp`)、原生直連分發 (`sendDirectMessage`) 與 UniversalTaskPayload v2.3 極簡任務解析 |
@@ -78,6 +79,7 @@
 | 規格文件名稱 | 相對路徑 | 內容重點 |
 | :--- | :--- | :--- |
 | **8 大切片元件架構字典** | `chrome_pk/docs/spec-pk-components.md` | 8 大垂直切片元件、服務邏輯與微工具架構字典 |
+| **Gemini Cloud Agent 與 Function Calling 規格書** | `chrome_pk/docs/spec-pk-gemini-cloud-agent.md` | Gemini Cloud Agent REST API 直連、7 大看板操控 Function Calling、WIP 限制與確認 Modal 規格 |
 | **架構地圖與資料夾命名規範** | `docs/guide-pk-features-arch.md` | 四層領域架構、資料夾命名規範、Toolbox 微工具外掛協議與擴充 Checklist |
 | **圖片擷取器規格書** | `docs/image-scraper-spec.md` | 圖片抓取邏輯、IG 解析策略、下載佇列併發設計 |
 | **Gemini 注入規格書** | `docs/gemini-content-spec.md` | Content Script 注入規則、DOM 擷取與 Markdown 轉換流程 |

@@ -30,7 +30,8 @@ PK+ 作為全功能個人知識庫與生產力中樞，具備高度模組化的�
 ### 2.2 十大切片模組清單 (Feature Slices Matrix)
 * **`project-management` (專案與看板模組)**
   * 核心元件：`KanbanBoard.tsx`, `TaskCard.tsx`, `ColumnContainer.tsx`, `FilterBar.tsx`
-  * 職責：任務卡片之拖曳管理、分組 (Backlog, Todo, In Progress, Done)、標籤與到期日管理。
+  * 核心服務：`kanbanActionDispatcher.ts` (AI 看板指令分發器、WIP 限制守門防護、二階段確認攔截)、`kanbanAuditor.ts` (WIP 衝突審計)
+  * 職責：任務卡片之拖曳管理、分組 (Backlog, Todo, In Progress, Done)、標籤與到期日管理、接收來自 AI 助手之 Function Calling 落地操控。
 * **`toolbox` (動態工具箱)**
   * 核心元件：`ToolboxGrid.tsx`, `ToolCard.tsx`, `ToolRegistry.ts`
   * 職責：註冊並展示常用微工具，支援依標籤過濾與外接插件快捷調度。
@@ -47,8 +48,9 @@ PK+ 作為全功能個人知識庫與生產力中樞，具備高度模組化的�
   * 核心元件：`TimerDisplay.tsx`, `PomodoroRing.tsx`, `SprintTracker.tsx`
   * 職責：專注時間倒數、衝刺節奏掌控，並可透過 Message Passing 觸發倍速控制器暫停。
 * **`ai-sidebar` (側邊對話助手)**
-  * 核心元件：`ChatBox.tsx`, `MessageBubble.tsx`, `PromptSuggestions.tsx`
-  * 職責：封裝與 Gemini Nano / 雲端模型之對話介面。
+  * 核心元件：`AIAssistantView.tsx` (三模切換、Action Report 氣泡、WIP 警告橫幅、確認 Modal), `ChatBox.tsx`, `MessageBubble.tsx`, `PromptSuggestions.tsx`
+  * 核心 Hook：`useAISession.ts` (管理 `local_nano` / `gemini_cloud` / `official_bridge` 三模狀態循環)
+  * 職責：封裝與 Gemini Nano (本機)、Gemini Cloud (REST API + 7 大 Function Calling) 及官方 Gemini (網頁橋接) 之對話與自動化操控介面。
 * **`bookmarks` (智慧書籤模組)**
   * 核心元件：`BookmarkTree.tsx`, `TagManager.tsx`
   * 職責：Chrome 內建書籤之強化分類與過濾。
@@ -60,6 +62,10 @@ PK+ 作為全功能個人知識庫與生產力中樞，具備高度模組化的�
   * 職責：法說會與研報影音字幕之時間戳解析與同步打點。
 
 ### 2.3 核心架構與基礎服務 (Core & Services)
+* **`GeminiCloudAgent` (`src/core/ai/GeminiCloudAgent.ts`)**
+  * 職責：直連 Gemini REST API，提供 SSE 流式推論、Context Snapshot 看板即時狀態注入，以及 7 大 PK_TOOLS Function Calling 宣告。
+* **`OfficialGeminiConnector` (`src/core/ai/OfficialGeminiConnector.ts`)**
+  * 職責：官方 Gemini 雙向橋接連接器，實現跨分頁提問與答覆擷取。
 * **`GasSyncService` (`src/services/GasSyncService.ts`)**
   * 職責：透過 Google Apps Script Hub 實現多端跨裝置無伺服器雙向同步。
 * **`StorageManager` (`src/core/storage/`)**

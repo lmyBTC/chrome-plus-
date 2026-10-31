@@ -47,6 +47,15 @@ const SidebarApp: React.FC = () => {
           >
             ⚙️
           </button>
+          <button
+            onClick={() => {
+              window.parent.postMessage({ type: 'PK_INPAGE_SIDEBAR_CLOSE' }, '*');
+            }}
+            title="收合側欄"
+            className="p-1.5 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-white transition-all text-xs"
+          >
+            ✕
+          </button>
         </div>
       </div>
 

@@ -172,8 +172,29 @@ if (typeof chrome.contextMenus !== 'undefined') {
         timestamp: Date.now()
       };
 
-      chrome.storage.local.set({ pendingAnalyzeText: pendingData }, () => {
-        if (typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
+      chrome.storage.local.set({ pendingAnalyzeText: pendingData }, async () => {
+        let openedInPage = false;
+        if (
+          tab &&
+          tab.id &&
+          tab.url &&
+          !tab.url.startsWith('chrome://') &&
+          !tab.url.startsWith('edge://') &&
+          !tab.url.startsWith('chrome-extension://') &&
+          !tab.url.startsWith('devtools://') &&
+          !tab.url.startsWith('view-source:') &&
+          !tab.url.startsWith('about:')
+        ) {
+          try {
+            const res = await chrome.tabs.sendMessage(tab.id, { type: 'OPEN_PK_INPAGE_SIDEBAR' });
+            if (res && res.success) {
+              openedInPage = true;
+            }
+          } catch (_) {
+            openedInPage = false;
+          }
+        }
+        if (!openedInPage && typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
           (chrome.sidePanel as any).open({ windowId: tab.windowId })
             .catch((err: any) => console.error("開啟側欄失敗:", err));
         }
@@ -182,9 +203,39 @@ if (typeof chrome.contextMenus !== 'undefined') {
   });
 }
 
-// 監聽快捷鍵 (Quick Capture / Omni-Capture)
+// 監聽快捷鍵 (Toggle Sidebar / Quick Capture / Omni-Capture)
 chrome.commands.onCommand.addListener(async (command: string) => {
-  if (command === 'quick_capture') {
+  if (command === 'toggle_sidebar') {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      let openedInPage = false;
+      if (
+        tab &&
+        tab.id &&
+        tab.url &&
+        !tab.url.startsWith('chrome://') &&
+        !tab.url.startsWith('chrome-extension://') &&
+        !tab.url.startsWith('edge://') &&
+        !tab.url.startsWith('devtools://') &&
+        !tab.url.startsWith('view-source:') &&
+        !tab.url.startsWith('about:')
+      ) {
+        try {
+          const res = await chrome.tabs.sendMessage(tab.id, { type: 'TOGGLE_PK_INPAGE_SIDEBAR' });
+          if (res && res.success) {
+            openedInPage = true;
+          }
+        } catch (_) {
+          openedInPage = false;
+        }
+      }
+      if (!openedInPage && tab && tab.windowId && typeof chrome.sidePanel !== 'undefined' && (chrome.sidePanel as any).open) {
+        await (chrome.sidePanel as any).open({ windowId: tab.windowId });
+      }
+    } catch (err) {
+      console.error('[ToggleSidebar] 切換側欄錯誤:', err);
+    }
+  } else if (command === 'quick_capture') {
     chrome.windows.create({
       url: chrome.runtime.getURL('index.html?quick=true'),
       type: 'popup',
@@ -334,4 +385,4 @@ if (typeof chrome.idle !== 'undefined') {
     }
   });
 }
-
+

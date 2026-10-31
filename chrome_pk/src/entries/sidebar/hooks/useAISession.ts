@@ -3,10 +3,25 @@ import { getAICore, checkAiCapabilities, safeExtractJSON } from '../../../utils/
 import { AIActionSchema } from '../../../utils/ai-schemas';
 import { CHAT_SYSTEM_PROMPT, PARSE_SYSTEM_PROMPT } from '../../../utils/ai-prompts';
 import { StorageQueue } from '../../../core/chrome/storageQueue';
+import { OfficialGeminiConnector } from '../../../core/ai/OfficialGeminiConnector';
+
+import { GeminiCloudAgent, buildContextSnapshot } from '../../../core/ai/GeminiCloudAgent';
+import { KanbanActionDispatcher } from '../../../features/project-management/services/kanbanActionDispatcher';
+
+export type AIMode = 'local_nano' | 'gemini_cloud' | 'official_bridge';
 
 export interface Message {
-  role: 'user' | 'model' | 'system';
+  role: 'user' | 'model' | 'system' | 'action_report';
   content: string;
+  actionName?: string;
+  warning?: string;
+  success?: boolean;
+}
+
+export interface PendingConfirm {
+  call: { name: string; args: Record<string, any> };
+  message: string;
+  details?: string;
 }
 
 /**
@@ -16,8 +31,10 @@ export function useAISession(storageQueue: StorageQueue) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
   const [aiAvailable, setAiAvailable] = useState<'yes' | 'no' | 'checking'>('checking');
+  const [aiMode, setAiMode] = useState<AIMode>('official_bridge');
   const [isInitializing, setIsInitializing] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null);
 
   const aiSessionRef = useRef<any>(null);
   const parseSessionRef = useRef<any>(null);
@@ -65,11 +82,19 @@ export function useAISession(storageQueue: StorageQueue) {
       const isAvailable = await checkAiCapabilities(aiAPI);
       if (!isAvailable) {
         setAiAvailable('no');
+        setAiMode('official_bridge');
+        setMessages([
+          {
+            role: 'model',
+            content: '👋 你好！當前環境本機 Gemini Nano 尚未就緒或受限於 iframe 沙盒。已為你啟用「官方 Gemini 聯動模式」🌐！在此輸入的指令將直接回拋至右側 Google Workspace / Gemini 官方側邊欄，對話結果即時同步於「官方對話」分頁。'
+          }
+        ]);
         setIsInitializing(false);
         return;
       }
 
       setAiAvailable('yes');
+      setAiMode('local_nano');
       
       aiSessionRef.current = await createSafeAISession(aiAPI, CHAT_SYSTEM_PROMPT);
 
@@ -88,6 +113,7 @@ export function useAISession(storageQueue: StorageQueue) {
       setIsInitializing(false);
     } catch (error) {
       console.error('初始化內建 AI 失敗:', error);
+      setAiMode('official_bridge');
       setAiAvailable('no');
       setIsInitializing(false);
     }
@@ -317,13 +343,126 @@ export function useAISession(storageQueue: StorageQueue) {
 
   const handleSend = async (customText?: string) => {
     const textToProcess = customText || inputText;
-    if (!textToProcess.trim() || isSending || aiAvailable !== 'yes') return;
+    if (!textToProcess.trim() || isSending) return;
+    if (aiMode === 'local_nano' && aiAvailable !== 'yes') return;
 
     if (!customText) {
       setInputText('');
     }
     setMessages(prev => [...prev, { role: 'user', content: textToProcess }]);
     setIsSending(true);
+
+    if (aiMode === 'official_bridge') {
+      try {
+        const connector = OfficialGeminiConnector.getInstance();
+        const res = await connector.injectToOfficialGemini(textToProcess, true);
+        if (res.success) {
+          if (res.fallbackLevel === 1) {
+            setMessages(prev => [
+              ...prev,
+              {
+                role: 'model',
+                content: '🚀 指令已成功回拋至官方 Gemini 側邊欄！請檢視右側官方側欄即時回應，完成後將自動同步至「官方對話」分頁。'
+              }
+            ]);
+          } else if (res.fallbackLevel === 2) {
+            setMessages(prev => [
+              ...prev,
+              {
+                role: 'model',
+                content: '🌐 已透過本機微服務轉發至官方 Gemini。'
+              }
+            ]);
+          } else {
+            setMessages(prev => [
+              ...prev,
+              {
+                role: 'model',
+                content: '📋 官方側欄目前無法直接自動注入，已將內容複製至剪貼簿，請在官方側欄直接按 Ctrl+V 貼上送出。'
+              }
+            ]);
+          }
+        } else {
+          setMessages(prev => [
+            ...prev,
+            { role: 'system', content: `❌ 回拋失敗：${res.error || '無法連線至官方側欄'}` }
+          ]);
+        }
+      } catch (err: any) {
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', content: `❌ 回拋過程發生例外：${err?.message || '未知錯誤'}` }
+        ]);
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
+
+    if (aiMode === 'gemini_cloud') {
+      try {
+        const resultMissions = await chrome.storage.local.get('weeklyMissions');
+        const missions = resultMissions.weeklyMissions || [];
+        const resultSettings = await chrome.storage.local.get('userSettings');
+        const userSettings = resultSettings.userSettings || {};
+        const contextSnapshot = buildContextSnapshot(missions, userSettings);
+
+        const agentRes = await GeminiCloudAgent.sendMessage(textToProcess, {
+          contextSnapshot,
+          history: messages.slice(-6).map(m => ({
+            role: m.role === 'model' ? 'model' : 'user',
+            content: m.content
+          }))
+        });
+
+        if (agentRes.text) {
+          setMessages(prev => [...prev, { role: 'model', content: agentRes.text }]);
+        }
+
+        if (agentRes.functionCalls && agentRes.functionCalls.length > 0) {
+          for (const call of agentRes.functionCalls) {
+            const dispatchResult = await KanbanActionDispatcher.dispatch(call, {
+              missions,
+              wipLimit: userSettings.wipLimit || userSettings.maxWipLimit || 3,
+              settings: userSettings
+            });
+
+            if (dispatchResult.requireConfirm && dispatchResult.confirmData) {
+              setPendingConfirm({
+                call: {
+                  name: dispatchResult.confirmData.action,
+                  args: dispatchResult.confirmData.args || {}
+                },
+                message: dispatchResult.message,
+                details: dispatchResult.confirmData.details
+              });
+            } else {
+              setMessages(prev => [
+                ...prev,
+                {
+                  role: 'action_report',
+                  content: dispatchResult.message,
+                  actionName: call.name,
+                  warning: dispatchResult.warning,
+                  success: dispatchResult.success
+                }
+              ]);
+            }
+          }
+        } else if (!agentRes.text) {
+          setMessages(prev => [...prev, { role: 'model', content: '（已收到訊息，未觸發額外動作）' }]);
+        }
+      } catch (err: any) {
+        console.error('Gemini Cloud 請求失敗:', err);
+        setMessages(prev => [
+          ...prev,
+          { role: 'system', content: `❌ 雲端 AI 請求失敗：${err?.message || '未知錯誤，請檢查 API Key 或網路連線。'}` }
+        ]);
+      } finally {
+        setIsSending(false);
+      }
+      return;
+    }
 
     try {
       const aiAPI = getAICore();
@@ -401,18 +540,70 @@ export function useAISession(storageQueue: StorageQueue) {
     }
   };
 
+  const handleConfirmAction = async () => {
+    if (!pendingConfirm) return;
+    setIsSending(true);
+    const targetCall = pendingConfirm.call;
+    try {
+      const resultMissions = await chrome.storage.local.get('weeklyMissions');
+      const missions = resultMissions.weeklyMissions || [];
+      const resultSettings = await chrome.storage.local.get('userSettings');
+      const userSettings = resultSettings.userSettings || {};
+
+      const res = await KanbanActionDispatcher.dispatch(targetCall, {
+        missions,
+        wipLimit: userSettings.wipLimit || userSettings.maxWipLimit || 3,
+        settings: userSettings
+      });
+
+      setPendingConfirm(null);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'action_report',
+          content: res.message,
+          actionName: targetCall.name,
+          warning: res.warning,
+          success: res.success
+        }
+      ]);
+    } catch (err: any) {
+      setPendingConfirm(null);
+      setMessages(prev => [
+        ...prev,
+        { role: 'system', content: `❌ 執行確認操作失敗: ${err?.message || '未知錯誤'}` }
+      ]);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCancelAction = () => {
+    setPendingConfirm(null);
+    setMessages(prev => [
+      ...prev,
+      { role: 'system', content: '🚫 已取消執行該破壞性操作。' }
+    ]);
+  };
+
   return {
     messages,
     setMessages,
     inputText,
     setInputText,
     aiAvailable,
+    aiMode,
+    setAiMode,
+    injectToOfficial: (text: string, autoSubmit = true) => OfficialGeminiConnector.getInstance().injectToOfficialGemini(text, autoSubmit),
     isInitializing,
     isSending,
     setIsSending,
     handleSend,
     aiSessionRef,
-    checkAndInitAI
+    checkAndInitAI,
+    pendingConfirm,
+    handleConfirmAction,
+    handleCancelAction
   };
 }
 

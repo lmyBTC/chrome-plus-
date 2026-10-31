@@ -44,6 +44,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
   const [enableGoogleSync, setEnableGoogleSync] = useState(true);
   const [googleSyncLocalHubFallback, setGoogleSyncLocalHubFallback] = useState(true);
   const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [geminiModel, setGeminiModel] = useState<'gemini-2.0-flash' | 'gemini-1.5-pro' | string>('gemini-2.0-flash');
+  const [enableFunctionCalling, setEnableFunctionCalling] = useState(true);
   const [lastSyncTime, setLastSyncTime] = useState('載入中...');
   const [enableWebhook, setEnableWebhook] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
@@ -109,6 +111,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
       setGoogleSyncLocalHubFallback(data.userSettings.googleSyncLocalHubFallback !== false);
       setEnableGoogleTasksSync(data.userSettings.enableGoogleTasksSync !== false);
       setGeminiApiKey(data.userSettings.geminiApiKey || '');
+      setGeminiModel(data.userSettings.geminiModel || 'gemini-2.0-flash');
+      setEnableFunctionCalling(data.userSettings.enableFunctionCalling !== false);
       setEnableWebhook(data.userSettings.enableWebhook || false);
       setWebhookUrl(data.userSettings.webhookUrl || '');
       setWebhookSecretToken(data.userSettings.webhookSecretToken || '');
@@ -343,6 +347,8 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         googleSyncLocalHubFallback: googleSyncLocalHubFallback,
         enableGoogleTasksSync: enableGoogleTasksSync,
         geminiApiKey: geminiApiKey.trim(),
+        geminiModel: geminiModel,
+        enableFunctionCalling: enableFunctionCalling,
         distractionSites: blockSites,
         enableWebhook: enableWebhook,
         webhookUrl: webhookUrl.trim(),
@@ -634,7 +640,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
         {activeTab === 'ai' && (
           <div className="space-y-6">
             {/* Gemini API 設定 */}
-            <div className="bg-purple-950/20 border border-purple-900/50 rounded-xl p-5">
+            <div className="bg-purple-950/20 border border-purple-900/50 rounded-xl p-5 space-y-4">
               <label className="block text-sm font-bold text-purple-300 mb-1 flex items-center gap-1.5">
                 <span>🤖</span> Gemini API Key (自備金鑰)
               </label>
@@ -648,6 +654,40 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onNavigateToDocs }
                 placeholder="AI Studio 申請的 API Key (AI 助理功能必備)"
                 className="w-full px-4 py-2.5 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-dark-primary font-mono text-sm shadow-sm"
               />
+
+              {/* Gemini 模型選擇 */}
+              <div className="pt-2 border-t border-purple-900/40">
+                <label className="block text-xs font-semibold text-purple-300 mb-1 flex items-center gap-1">
+                  <span>⚙️</span> Gemini 雲端模型選擇 (Cloud Model)
+                </label>
+                <select
+                  value={geminiModel}
+                  onChange={(e) => setGeminiModel(e.target.value)}
+                  className="w-full px-3 py-2 bg-dark-surface border border-dark-border-default rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-dark-primary text-sm shadow-sm"
+                >
+                  <option value="gemini-2.0-flash">Gemini 2.0 Flash (高速低延遲、推薦用於日常對話與看板調度)</option>
+                  <option value="gemini-1.5-pro">Gemini 1.5 Pro (深度推理、複雜任務拆解與長文本分析)</option>
+                </select>
+              </div>
+
+              {/* Function Calling 看板操控開關 */}
+              <div className="pt-2 border-t border-purple-900/40 flex items-center justify-between">
+                <div>
+                  <label className="text-xs font-semibold text-purple-200 block">⚡ 自動執行看板與任務指令 (Function Calling)</label>
+                  <p className="text-[11px] text-purple-300/70">
+                    允許雲端 Gemini 透過函數調用直接建立、拆解與更新任務卡片（嚴格遵守 WIP 限制與破壞性二次確認）。
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={enableFunctionCalling}
+                    onChange={(e) => setEnableFunctionCalling(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-dark-surface peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-gray-300 after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                </label>
+              </div>
             </div>
 
             {/* Google Apps Script 設定 */}

@@ -343,39 +343,55 @@ export class OfficialGeminiConnector {
 
     const trimmedText = text.trim();
 
-    // ── 層級 1：向 gemini.google.com Tab 發送 INJECT_TO_OFFICIAL_GEMINI ──
+    // ── 層級 1：向官方 Gemini / Workspace 側欄 Tab 發送 INJECT_TO_OFFICIAL_GEMINI ──
     try {
       if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
-        const tabs = await chrome.tabs.query({ url: '*://gemini.google.com/*' });
-        if (tabs && tabs.length > 0) {
-          const targetTab = tabs.find((t) => t.active) || tabs[0];
+        // 同時查詢 gemini.google.com 及包含 Workspace Ask Gemini 側欄的 Google 應用分頁
+        const geminiTabs = await chrome.tabs.query({ url: '*://gemini.google.com/*' });
+        const workspaceTabs = await chrome.tabs.query({ url: ['*://mail.google.com/*', '*://docs.google.com/*', '*://drive.google.com/*'] });
+        const activeTabs = await chrome.tabs.query({ active: true, currentWindow: true });
+
+        // 候選優先順序：使用中的 Active Tab (若在 Google 域名) > gemini.google.com > Workspace 標籤頁
+        const candidateTabs: chrome.tabs.Tab[] = [];
+        if (activeTabs.length > 0 && activeTabs[0].url && /google\.com/i.test(activeTabs[0].url)) {
+          candidateTabs.push(activeTabs[0]);
+        }
+        geminiTabs.forEach(t => { if (!candidateTabs.some(c => c.id === t.id)) candidateTabs.push(t); });
+        workspaceTabs.forEach(t => { if (!candidateTabs.some(c => c.id === t.id)) candidateTabs.push(t); });
+
+        for (const targetTab of candidateTabs) {
           if (targetTab.id) {
-            const sendPromise = chrome.tabs.sendMessage(targetTab.id, {
-              protocolVersion: 2,
-              type: 'INJECT_TO_OFFICIAL_GEMINI',
-              payload: {
-                text: trimmedText,
-                autoSubmit,
-                contextSource: 'PK_PLUS',
-                timestamp: Date.now()
+            try {
+              const sendPromise = chrome.tabs.sendMessage(targetTab.id, {
+                protocolVersion: 2,
+                type: 'INJECT_TO_OFFICIAL_GEMINI',
+                payload: {
+                  text: trimmedText,
+                  autoSubmit,
+                  contextSource: 'PK_PLUS',
+                  timestamp: Date.now()
+                }
+              });
+
+              const bridgeRes: any = await withTimeout(
+                sendPromise,
+                3000,
+                '官方 Gemini 側欄 Content Script 回應超時'
+              );
+
+              if (bridgeRes && bridgeRes.success) {
+                return {
+                  success: true,
+                  ack: true,
+                  injectedLength: bridgeRes.injectedLength ?? trimmedText.length,
+                  submitted: bridgeRes.submitted ?? autoSubmit,
+                  fallbackLevel: 1,
+                  timestamp: bridgeRes.timestamp ?? Date.now()
+                };
               }
-            });
-
-            const bridgeRes: any = await withTimeout(
-              sendPromise,
-              4000,
-              '官方 Gemini 側欄 Content Script 回應超時'
-            );
-
-            if (bridgeRes && bridgeRes.success) {
-              return {
-                success: true,
-                ack: true,
-                injectedLength: bridgeRes.injectedLength ?? trimmedText.length,
-                submitted: bridgeRes.submitted ?? autoSubmit,
-                fallbackLevel: 1,
-                timestamp: bridgeRes.timestamp ?? Date.now()
-              };
+            } catch {
+              // 該 tab 未注入或無回應，嘗試下一候選分頁
+              continue;
             }
           }
         }
@@ -474,6 +490,53 @@ export class OfficialGeminiConnector {
       message: '已觸發層 3 降級：內容已複製至剪貼簿並彈出系統通知',
       timestamp: Date.now()
     };
+  }
+
+  /**
+   * 取得儲存之官方對話歷史列表
+   */
+  public async getStoredConversations(): Promise<StoredGeminiConversation[]> {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        const data = await chrome.storage.local.get('geminiConversations');
+        return Array.isArray(data.geminiConversations) ? data.geminiConversations : [];
+      } catch (err) {
+        console.warn('[OfficialGeminiConnector] 讀取官方對話失敗:', err);
+      }
+    }
+    return [];
+  }
+
+  /**
+   * 移除單筆官方對話
+   */
+  public async removeConversation(sessionId: string): Promise<boolean> {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        const list = await this.getStoredConversations();
+        const filtered = list.filter((c) => c.id !== sessionId);
+        await chrome.storage.local.set({ geminiConversations: filtered });
+        return true;
+      } catch (err) {
+        console.warn('[OfficialGeminiConnector] 刪除官方對話失敗:', err);
+      }
+    }
+    return false;
+  }
+
+  /**
+   * 清空所有官方對話池
+   */
+  public async clearConversations(): Promise<boolean> {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      try {
+        await chrome.storage.local.set({ geminiConversations: [] });
+        return true;
+      } catch (err) {
+        console.warn('[OfficialGeminiConnector] 清空官方對話失敗:', err);
+      }
+    }
+    return false;
   }
 }
 

@@ -11,6 +11,8 @@ export interface UserSettings {
   whiteNoiseEnabled?: boolean;
   whiteNoiseVolume?: number;
   geminiApiKey?: string;
+  geminiModel?: 'gemini-2.0-flash' | 'gemini-1.5-pro' | string;
+  enableFunctionCalling?: boolean;
   enableWebhook?: boolean;
   webhookUrl?: string;
   webhookSecretToken?: string;

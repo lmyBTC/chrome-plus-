@@ -65,6 +65,7 @@
 
 ### Chrome PK 模組
 - `chrome_pk/docs/spec-pk-components.md`：PK+ 8 大垂直切片元件架構與微工具字典
+- `chrome_pk/docs/spec-pk-gemini-cloud-agent.md`：Gemini Cloud Agent 與 7 大看板操控 Function Calling 技術規格
 - `chrome_pk/docs/spec-pk-gtd-kanban.md`：GTD 敏捷看板與戰役任務規格
 - `chrome_pk/docs/spec-pk-activity-monitor.md`：活動監控整合模組技術規格
 - `chrome_pk/docs/spec-pk-dark-theme.md`：深色主題色彩變數與設計系統

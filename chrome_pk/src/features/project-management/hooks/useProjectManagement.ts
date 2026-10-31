@@ -7,6 +7,7 @@ import { googleSyncService } from '../../../services/googleSyncService';
 import { WeeklyMission, InboxItem, GTDStatus, ChecklistItem } from '../../../types';
 import { DashboardColumns, SprintLogWithMission } from '../components/tabs/types';
 import { TaskAIEngine, SubtaskProposal, TaskTriageProposal } from '../services/taskAIEngine';
+import { KanbanActionDispatcher, AIActionCall, ActionDispatchResult } from '../services/kanbanActionDispatcher';
 
 declare const chrome: any;
 
@@ -712,6 +713,25 @@ export const useProjectManagement = () => {
     }
   };
 
+  /**
+   * Gemini Cloud Agent Function Calling 指令分發器
+   */
+  const dispatchAIAction = async (actionCall: AIActionCall): Promise<ActionDispatchResult> => {
+    const settings = await storage.getUserSettings();
+    const result = await KanbanActionDispatcher.dispatch(actionCall, {
+      missions: weeklyMissions,
+      wipLimit: settings.maxWipLimit,
+      settings,
+      onReload: loadData,
+    });
+    if (result.success) {
+      await loadData();
+    }
+    return result;
+  };
+
+
+
   return {
     weeklyMissions,
     inboxItems,
@@ -766,6 +786,7 @@ export const useProjectManagement = () => {
     handleBatchPushToFocus,
     handleBatchUpdateStatus,
     handleBatchDelete,
+    dispatchAIAction,
     loadData,
   };
 };

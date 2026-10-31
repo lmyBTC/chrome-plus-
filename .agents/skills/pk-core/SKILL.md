@@ -1,9 +1,9 @@
 ---
 name: PK+ 插件規格與元件字典 (PK Core Spec)
 description: 定義 chrome_pk 插件之核心定位、技術棧、架構入口與深層 SSOT 導航。
-triggers: [pk, pk+, power kit, scrumclock, 番茄鐘, 敏捷看板, pk開發, scrum, pomodoro, 側邊欄番茄鐘, officialGeminiConnector, 官方gemini橋接, geminiOfficialBridge]
+triggers: [pk, pk+, power kit, scrumclock, 番茄鐘, 敏捷看板, pk開發, scrum, pomodoro, 側邊欄番茄鐘, officialGeminiConnector, 官方gemini橋接, geminiOfficialBridge, geminiCloudAgent, functionCalling, pkTools]
 dependencies: []
-ssot_dependencies: ["chrome_pk/docs/spec-pk-components.md", "chrome_pk/PK_README.md", "chrome_pk/docs/guide-pk-features-arch.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/spec-cross-plugin-contract.md", "0.doc_mg/docs/spec-google-ecosystem.md", "0.doc_mg/docs/spec-official-gemini-bridge.md"]
+ssot_dependencies: ["chrome_pk/docs/spec-pk-components.md", "chrome_pk/docs/spec-pk-gemini-cloud-agent.md", "chrome_pk/docs/guide-pk-features-arch.md", "chrome_pk/docs/web-ai-guard-spec.md", "0.doc_mg/docs/spec-cross-plugin-contract.md", "0.doc_mg/docs/spec-google-ecosystem.md", "0.doc_mg/docs/spec-official-gemini-bridge.md"]
 ---
 
 # 專家技能：PK+ 插件規格與元件字典 (PK Core Spec)
@@ -23,7 +23,9 @@ ssot_dependencies: ["chrome_pk/docs/spec-pk-components.md", "chrome_pk/PK_README
 * `src/features/project-management/services/`: 專案管理 AI 服務層 (taskAIEngine, kanbanAuditor)
 * `src/features/toolbox/`: 側邊欄隨選工具箱 (`ToolboxHub.tsx`)，基於 `registry.ts` 外掛註冊協議動態掛載：隨選腳本執行器 (`tools/script-runner/`，支援在線 Prism 語法高亮、分類搜尋 Chips、腳本參數化 `{{KEY}}`、多分頁批次執行、進度條+中斷控制、執行歷程 20 筆環形佇列、JSON Diff 比較、CSV/JSON 匯出；Storage keys: `pk_custom_scripts`, `pk_active_script_id`, `pk_draft_code`, `pk_script_runner_history`)、圖片採集器 (`image-scraper/`)、影音字幕收集器 (`subtitle-collector/`)、活動監控器 (`activity-monitor/`) 與投研自選微工具 (`finance-watchlist`)
 * `src/core/ai/nanoPromptGuard.ts`: Gemini Nano 端側小模型四層防崩潰引擎
+* `src/core/ai/GeminiCloudAgent.ts`: Gemini Cloud Agent 雲端直連核心 (SSE 流式輸出、7 大 PK_TOOLS Function Calling 宣告與 Context Snapshot 看板快照打包)
 * `src/core/ai/OfficialGeminiConnector.ts`: 官方 Gemini 雙向橋接連接器 (Ingress 去重/寬容讀者 + Egress injectToOfficialGemini 三層階梯降級)
+* `src/features/project-management/services/kanbanActionDispatcher.ts`: AI 看板指令分發器 (WIP 限制守門防護、二階段確認攔截、7 大 GTD/看板指令落地)
 * `src/shared/google/` & `src/services/googleSyncService.ts`: Google 原生生態與雙軌同步服務 (Tasks, Calendar, GAS 備份)
 * `src/components/`: 全域元件 (`SettingsPanel.tsx`, `InstallDocs.tsx`, `GoogleAccountButton.tsx`)
 
@@ -42,6 +44,6 @@ ssot_dependencies: ["chrome_pk/docs/spec-pk-components.md", "chrome_pk/PK_README
 
 ## 5. 深層 SSOT 導航 (Deep Reference)
 * **組成元件字典與架構切片 (SSOT)**: 詳見 `chrome_pk/docs/spec-pk-components.md`
+* **Gemini Cloud Agent 與 Function Calling 規格**: 詳見 `chrome_pk/docs/spec-pk-gemini-cloud-agent.md`
 * **架構地圖、資料夾結構與命名規範**: 詳見 `chrome_pk/docs/guide-pk-features-arch.md`
-* **完整元件矩陣、Storage Schema、通訊協議與熱區清單**: 詳見 `chrome_pk/PK_README.md`
 * **官方 Gemini 側欄雙向橋接規格**: 詳見 `0.doc_mg/docs/spec-official-gemini-bridge.md`
